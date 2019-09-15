@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -45,16 +46,26 @@ func (s myApi) handleAPI() http.HandlerFunc {
 	thing := func() int {
 		return 42
 	}
+	var once sync.Once
+	var serverStart time.Time
 
 	// return the handler
 	return func(w http.ResponseWriter, r *http.Request) {
+		// intialize somethings only once for perf
+		once.Do(func() {
+			s.logger.Println("called only once during the first request")
+			serverStart = time.Now()
+		})
+
 		// use thing
-		if thing() != 42 {
+		ting := thing()
+		if ting != 42 {
 			http.Error(w, "thing ought to be 42", http.StatusBadRequest)
 			return
 		}
 
-		w.Write([]byte("Hello\n"))
+		res := fmt.Sprintf("serverStart=%v\n. Hello. answer to life is %v \n", serverStart, ting)
+		w.Write([]byte(res))
 	}
 }
 
