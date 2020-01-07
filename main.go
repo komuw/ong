@@ -114,6 +114,10 @@ func run() error {
 	server := &http.Server{
 		Addr:         serverPort,
 		Handler:      api,
+		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
+		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
+		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+		ReadHeaderTimeout: 1 *time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
 		IdleTimeout:  120 * time.Second,
