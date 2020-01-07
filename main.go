@@ -79,17 +79,20 @@ func (s myApi) handleGreeting(code int) http.HandlerFunc {
 
 // middleware are just go functions
 // you can run code before and/or after the wrapped hanlder
-func (s myApi) Auth(h http.HandlerFunc) http.HandlerFunc {
+func (s myApi) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		
+		// code that is ran b4 wrapped handler
 		username, _, _ := r.BasicAuth()
 		if username != "admin" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.EHandlerrror(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		h(w, r)
+		wrappedHandler(w, r)
 		// you can also run code after wrapped handler here
 		// you can even choose not to call wrapped handler at all
+		fmt.Println("code ran after wrapped handler")
 	}
 }
 
