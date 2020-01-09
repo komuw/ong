@@ -79,17 +79,20 @@ func (s myAPI) handleGreeting(code int) http.HandlerFunc {
 
 // middleware are just go functions
 // you can run code before and/or after the wrapped hanlder
-func (s myAPI) Auth(h http.HandlerFunc) http.HandlerFunc {
+func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		// code that is ran b4 wrapped handler
 		username, _, _ := r.BasicAuth()
 		if username != "admin" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		h(w, r)
+		wrappedHandler(w, r)
 		// you can also run code after wrapped handler here
 		// you can even choose not to call wrapped handler at all
+		fmt.Println("code ran after wrapped handler")
 	}
 }
 
@@ -112,11 +115,15 @@ func run() error {
 
 	serverPort := ":8080"
 	server := &http.Server{
-		Addr:         serverPort,
-		Handler:      api,
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 1 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:    serverPort,
+		Handler: api,
+		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
+		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
+		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+		ReadHeaderTimeout: 1 * time.Second,
+		ReadTimeout:       1 * time.Second,
+		WriteTimeout:      1 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	api.logger.Printf("server listening at port %s", serverPort)
