@@ -83,6 +83,7 @@ func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// code that is ran b4 wrapped handler
+		fmt.Println("code ran BEFORE wrapped handler")
 		username, _, _ := r.BasicAuth()
 		if username != "admin" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -92,7 +93,7 @@ func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		wrappedHandler(w, r)
 		// you can also run code after wrapped handler here
 		// you can even choose not to call wrapped handler at all
-		fmt.Println("code ran after wrapped handler")
+		fmt.Println("code ran AFTER wrapped handler")
 	}
 }
 
