@@ -33,8 +33,28 @@ func (s myAPI) routes() {
 	s.router.HandleFunc("/api/", s.handleAPI())
 	s.router.HandleFunc("/greeting", s.Auth(
 		s.handleGreeting(202))) // you can even have your handler take a `*template.Template` dependency
+	
+	s.router.HandleFunc("/serveDirectory",
+		s.Auth(handleFileServer()),
+	)
+	
 	// etc
 }
+
+
+func handleFileServer() http.HandlerFunc {
+	// Do NOT let `http.FileServer` be able to serve your root directory.
+	// Otherwise, your .git folder and other sensitive info(including http://localhost:8080/main.go) may be available
+	// instead create a folder that only has your templates and server that.
+	fs := http.FileServer(http.Dir("./stuff"))
+	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
+	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println(req.URL)
+		realHandler(w, req)
+	}
+}
+
+
 
 // Handlers are methods on the server which gives them access to dependencies
 // Remember, other handlers have access to `s` too, so be careful with data races
