@@ -101,13 +101,20 @@ func (s myAPI) handleGreeting(code int) http.HandlerFunc {
 // middleware are just go functions
 // you can run code before and/or after the wrapped hanlder
 func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	const realm = "enter username and password"
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// code that is ran b4 wrapped handler
 		fmt.Println("code ran BEFORE wrapped handler")
 		username, _, _ := r.BasicAuth()
 
+		if username == ""  { //|| pass == ""
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		if subtle.ConstantTimeCompare([]byte(username), []byte("admin")) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
