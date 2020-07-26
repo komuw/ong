@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"crypto/subtle"
 )
 
 // myAPI rep component as struct
@@ -105,7 +106,8 @@ func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// code that is ran b4 wrapped handler
 		fmt.Println("code ran BEFORE wrapped handler")
 		username, _, _ := r.BasicAuth()
-		if username != "admin" {
+
+		if subtle.ConstantTimeCompare([]byte(username), []byte("admin")) != 1 {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
