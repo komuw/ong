@@ -4,13 +4,13 @@ package main
 // - https://www.youtube.com/watch?v=rWBSMsLG8po -  Mat Ryer.
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
-	"crypto/subtle"
 )
 
 // myAPI rep component as struct
@@ -34,14 +34,13 @@ func (s myAPI) routes() {
 	s.router.HandleFunc("/api/", s.handleAPI())
 	s.router.HandleFunc("/greeting", s.Auth(
 		s.handleGreeting(202))) // you can even have your handler take a `*template.Template` dependency
-	
+
 	s.router.HandleFunc("/serveDirectory",
 		s.Auth(handleFileServer()),
 	)
-	
+
 	// etc
 }
-
 
 func handleFileServer() http.HandlerFunc {
 	// Do NOT let `http.FileServer` be able to serve your root directory.
@@ -54,8 +53,6 @@ func handleFileServer() http.HandlerFunc {
 		realHandler(w, req)
 	}
 }
-
-
 
 // Handlers are methods on the server which gives them access to dependencies
 // Remember, other handlers have access to `s` too, so be careful with data races
@@ -108,7 +105,7 @@ func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		fmt.Println("code ran BEFORE wrapped handler")
 		username, _, _ := r.BasicAuth()
 
-		if username == ""  { //|| pass == ""
+		if username == "" { //|| pass == ""
 			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -146,7 +143,7 @@ func run() error {
 	serverPort := ":8080"
 	server := &http.Server{
 		Addr:    serverPort,
-		Handler: api,
+		Handler: http.TimeoutHandler(api, 10*time.Microsecond, "Komu Server timeout"),
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
