@@ -142,11 +142,13 @@ func run() error {
 
 	serverPort := ":8080"
 	server := &http.Server{
-		Addr:    serverPort,
-		Handler: http.TimeoutHandler(api, 10*time.Microsecond, "Komu Server timeout"),
+		Addr: serverPort,
+
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+		// 4. https://github.com/golang/go/issues/27375
+		Handler:           http.TimeoutHandler(api, 10*time.Microsecond, "Komu Server timeout"),
 		ReadHeaderTimeout: 1 * time.Second,
 		ReadTimeout:       1 * time.Second,
 		WriteTimeout:      1 * time.Second,
