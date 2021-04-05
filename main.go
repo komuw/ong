@@ -4,12 +4,16 @@ package main
 // - https://www.youtube.com/watch?v=rWBSMsLG8po -  Mat Ryer.
 
 import (
+	"context"
 	"crypto/subtle"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -132,6 +136,8 @@ func main() {
 }
 
 func run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	// TODO: does the server have to be a pointer?
 	api := myAPI{
 		db:     "someDb",
@@ -148,14 +154,28 @@ func run() error {
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler:           http.TimeoutHandler(api, 10*time.Microsecond, "Komu Server timeout"),
+		Handler:           http.TimeoutHandler(api, 10*time.Second, "Komu Server timeout"),
 		ReadHeaderTimeout: 1 * time.Second,
 		ReadTimeout:       1 * time.Second,
 		WriteTimeout:      1 * time.Second,
 		IdleTimeout:       120 * time.Second,
+
+		BaseContext: func(net.Listener) context.Context { return ctx },
 	}
+
+	sigHandler(server, ctx, cancel)
 
 	api.logger.Printf("server listening at port %s", serverPort)
 	err := server.ListenAndServe()
 	return err
+}
+
+func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
+	go func() {
+		<-sigs
+		cancel()
+		_ = srv.Shutdown(ctx)
+	}()
 }
