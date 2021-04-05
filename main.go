@@ -156,7 +156,7 @@ func run() error {
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler:           http.TimeoutHandler(api, 10*time.Second, "Komu Server timeout"),
+		Handler:           http.TimeoutHandler(api, 10*time.Second, "Custom Server timeout"),
 		ReadHeaderTimeout: 1 * time.Second,
 		ReadTimeout:       1 * time.Second,
 		WriteTimeout:      1 * time.Second,
