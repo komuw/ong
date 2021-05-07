@@ -15,6 +15,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 // myAPI rep component as struct
@@ -35,12 +37,19 @@ func (s myAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Have one place for all routes.
 // You can even move it to a routes.go file
 func (s myAPI) routes() {
-	s.router.HandleFunc("/api/", s.handleAPI())
-	s.router.HandleFunc("/greeting", s.Auth(
-		s.handleGreeting(202))) // you can even have your handler take a `*template.Template` dependency
-
+	s.router.HandleFunc("/api/",
+		s.flocOptOut(s.handleAPI()),
+	)
+	s.router.HandleFunc("/greeting",
+		// you can even have your handler take a `*template.Template` dependency
+		s.flocOptOut(
+			s.Auth(s.handleGreeting(202)),
+		),
+	)
 	s.router.HandleFunc("/serveDirectory",
-		s.Auth(handleFileServer()),
+		s.flocOptOut(
+			s.Auth(handleFileServer()),
+		),
 	)
 
 	// etc
@@ -53,7 +62,7 @@ func handleFileServer() http.HandlerFunc {
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println(req.URL)
+		log.Println(req.URL.Redacted())
 		realHandler(w, req)
 	}
 }
@@ -87,7 +96,7 @@ func (s myAPI) handleAPI() http.HandlerFunc {
 		}
 
 		res := fmt.Sprintf("serverStart=%v\n. Hello. answer to life is %v \n", serverStart, ting)
-		w.Write([]byte(res))
+		_, _ = w.Write([]byte(res))
 	}
 }
 
@@ -99,12 +108,21 @@ func (s myAPI) handleGreeting(code int) http.HandlerFunc {
 	}
 }
 
+// flocOptOut disables floc which is otherwise ON by default
+// see: https://github.com/WICG/floc#opting-out-of-computation
+func (s myAPI) flocOptOut(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// code that is ran b4 wrapped handler
+		w.Header().Set("Permissions-Policy", "interest-cohort=()")
+		wrappedHandler(w, r)
+	}
+}
+
 // middleware are just go functions
 // you can run code before and/or after the wrapped hanlder
 func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	const realm = "enter username and password"
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		// code that is ran b4 wrapped handler
 		fmt.Println("code ran BEFORE wrapped handler")
 		username, _, _ := r.BasicAuth()
@@ -184,8 +202,22 @@ func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc
 func serve(srv *http.Server, network string, address string, ctx context.Context) error {
 	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
 		return conn.Control(func(descriptor uintptr) {
-			syscall.SetsockoptInt(int(descriptor), syscall.SOL_SOCKET, syscall.SO_REUSEPORT, 1)
-			syscall.SetsockoptInt(int(descriptor), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+			_ = unix.SetsockoptInt(
+				int(descriptor),
+				unix.SOL_SOCKET,
+				// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
+				// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
+				// so we use x/sys/unix
+				// see: https://github.com/golang/go/issues/26771
+				unix.SO_REUSEPORT,
+				1,
+			)
+			_ = syscall.SetsockoptInt(
+				int(descriptor),
+				unix.SOL_SOCKET,
+				unix.SO_REUSEADDR,
+				1,
+			)
 		})
 	}}
 	l, err := cfg.Listen(ctx, network, address)
