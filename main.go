@@ -35,12 +35,19 @@ func (s myAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Have one place for all routes.
 // You can even move it to a routes.go file
 func (s myAPI) routes() {
-	s.router.HandleFunc("/api/", s.handleAPI())
-	s.router.HandleFunc("/greeting", s.Auth(
-		s.handleGreeting(202))) // you can even have your handler take a `*template.Template` dependency
-
+	s.router.HandleFunc("/api/",
+		s.flocOptOut(s.handleAPI()),
+	)
+	s.router.HandleFunc("/greeting",
+		// you can even have your handler take a `*template.Template` dependency
+		s.flocOptOut(
+			s.Auth(s.handleGreeting(202)),
+		),
+	)
 	s.router.HandleFunc("/serveDirectory",
-		s.Auth(handleFileServer()),
+		s.flocOptOut(
+			s.Auth(handleFileServer()),
+		),
 	)
 
 	// etc
@@ -96,6 +103,16 @@ func (s myAPI) handleGreeting(code int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// use code, which is a dependency specific to this handler
 		w.WriteHeader(code)
+	}
+}
+
+// flocOptOut disables floc which is otherwise ON by default
+// see: https://github.com/WICG/floc#opting-out-of-computation
+func (s myAPI) flocOptOut(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// code that is ran b4 wrapped handler
+		w.Header().Set("Permissions-Policy", "interest-cohort=()")
+		wrappedHandler(w, r)
 	}
 }
 
