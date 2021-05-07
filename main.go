@@ -94,7 +94,7 @@ func (s myAPI) handleAPI() http.HandlerFunc {
 		}
 
 		res := fmt.Sprintf("serverStart=%v\n. Hello. answer to life is %v \n", serverStart, ting)
-		w.Write([]byte(res))
+		_, _ = w.Write([]byte(res))
 	}
 }
 
@@ -200,8 +200,8 @@ func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc
 func serve(srv *http.Server, network string, address string, ctx context.Context) error {
 	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
 		return conn.Control(func(descriptor uintptr) {
-			syscall.SetsockoptInt(int(descriptor), syscall.SOL_SOCKET, syscall.SO_REUSEPORT, 1)
-			syscall.SetsockoptInt(int(descriptor), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+			_ = syscall.SetsockoptInt(int(descriptor), syscall.SOL_SOCKET, syscall.SO_REUSEPORT, 1)
+			_ = syscall.SetsockoptInt(int(descriptor), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 		})
 	}}
 	l, err := cfg.Listen(ctx, network, address)
