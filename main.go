@@ -60,7 +60,7 @@ func handleFileServer() http.HandlerFunc {
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println(req.URL)
+		log.Println(req.URL.Redacted())
 		realHandler(w, req)
 	}
 }
