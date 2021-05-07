@@ -104,7 +104,6 @@ func (s myAPI) handleGreeting(code int) http.HandlerFunc {
 func (s myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	const realm = "enter username and password"
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		// code that is ran b4 wrapped handler
 		fmt.Println("code ran BEFORE wrapped handler")
 		username, _, _ := r.BasicAuth()
