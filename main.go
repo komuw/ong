@@ -108,6 +108,9 @@ func (s myAPI) handleGreeting(code int) http.HandlerFunc {
 	}
 }
 
+// TODO: add these security headers;
+// https://web.dev/security-headers/
+
 // flocOptOut disables floc which is otherwise ON by default
 // see: https://github.com/WICG/floc#opting-out-of-computation
 func (s myAPI) flocOptOut(wrappedHandler http.HandlerFunc) http.HandlerFunc {
