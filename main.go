@@ -158,6 +158,8 @@ func main() {
 }
 
 func run() error {
+	undo := setRlimit()
+	defer undo()
 	maxprocs.Set()
 
 	ctx, cancel := context.WithCancel(context.Background())
