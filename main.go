@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix"
 )
 
@@ -157,6 +158,8 @@ func main() {
 }
 
 func run() error {
+	maxprocs.Set()
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// TODO: does the server have to be a pointer?
