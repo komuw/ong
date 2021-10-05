@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"go.uber.org/automaxprocs/maxprocs"
-	"golang.org/x/sys/unix"
+	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
 // myAPI rep component as struct
@@ -197,7 +197,7 @@ func run() error {
 
 func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc) {
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
+	signal.Notify(sigs, unix.SIGTERM, unix.SIGINT, unix.SIGQUIT, unix.SIGHUP)
 	go func() {
 		<-sigs
 		cancel()
@@ -218,7 +218,7 @@ func serve(srv *http.Server, network string, address string, ctx context.Context
 				unix.SO_REUSEPORT,
 				1,
 			)
-			_ = syscall.SetsockoptInt(
+			_ = unix.SetsockoptInt(
 				int(descriptor),
 				unix.SOL_SOCKET,
 				unix.SO_REUSEADDR,
