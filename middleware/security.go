@@ -26,6 +26,8 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 		xFrameHeader = "X-Frame-Options"
 		// protect from attacker embedding resources from another origin.
 		corpHeader = "Cross-Origin-Resource-Policy"
+		// protect from an attacker's website been able to open another ua site in a popup window to learn information about it.
+		coopHeader = "Cross-Origin-Opener-Policy"
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +86,11 @@ script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, 
 		w.Header().Set(
 			corpHeader,
 			"same-site",
+		)
+
+		w.Header().Set(
+			coopHeader,
+			"same-origin",
 		)
 
 		wrappedHandler(w, r)
