@@ -79,6 +79,7 @@ jobs:
       - name: tests and benchmarks
         run: |
           ulimit -a
+          env
           go test -timeout 1m -race -run=XXXX -bench=. ./...
           go test -timeout 4m -v -race ./...
 
