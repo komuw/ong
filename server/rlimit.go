@@ -1,8 +1,6 @@
-package main
+package server
 
 import (
-	"fmt"
-
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
@@ -30,9 +28,4 @@ func setRlimit() {
 	newRlimit.Cur = newRlimit.Max
 
 	err = unix.Setrlimit(unix.RLIMIT_NOFILE, &newRlimit)
-	_ = err
-}
-
-func printR(r unix.Rlimit) {
-	fmt.Printf("unix.Rlimit{Cur: %d, Max: %d}\n", r.Cur, r.Max)
 }
