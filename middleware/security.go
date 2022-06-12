@@ -48,18 +48,21 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 			// - https://web.dev/security-headers/
 			// - https://stackoverflow.com/a/66955464/2768067
 			// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src
+			// - https://web.dev/security-headers/#tt
 			//
 			// content is only permitted from:
 			// - the document's origin(and subdomains)
 			// - images may load from anywhere
 			// - media is allowed from youtube.com(not its subdomains)
 			// - executable scripts is only allowed from self(& subdomains).
+			// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
 			fmt.Sprintf(`
 default-src 'self' *.%s %s;
 img-src *;
 media-src youtube.com;
 object-src 'none';
 base-uri 'none';
+require-trusted-types-for 'script';
 script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, nonce),
 		)
 
