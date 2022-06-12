@@ -37,6 +37,12 @@ func Test_setRlimit(t *testing.T) {
 	})
 
 	t.Run("rlimit NOT reached", func(t *testing.T) {
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			// setRlimit() fails in github actions with error: `operation not permitted`
+			// specifically the call to `unix.Setrlimit()`
+			return
+		}
+
 		setRlimit()
 
 		var files []*os.File
