@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18]
-        platform: [ubuntu-18.04]
+        platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Set up Go
@@ -65,7 +65,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18]
-        platform: [ubuntu-18.04]
+        platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Set up Go
@@ -103,7 +103,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18]
-        platform: [ubuntu-18.04]
+        platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Set up Go
@@ -186,7 +186,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.18]
-        platform: [ubuntu-18.04]
+        platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Set up Go
@@ -210,7 +210,7 @@ jobs:
   #   strategy:
   #     matrix:
   #       go-version: [1.18]
-  #       platform: [ubuntu-18.04]
+  #       platform: [ubuntu-22.04]
   #   runs-on: ${{ matrix.platform }}
   #   steps:
   #     - name: Set up Go
