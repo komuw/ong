@@ -140,8 +140,11 @@ jobs:
       - name: static analysis
         run: |
           set -x
+
           diff <(gofmt -d .) <(printf "")
           diff <(goimports -d .) <(printf "")
+          diff <(gofumpt -extra -w -d .) <(printf "")
+
           go vet -all ./...
           go vet -vettool=/home/runner/go/bin/shadow -strict ./...
           /home/runner/go/bin/staticcheck -tests -go 1.18 ./...
