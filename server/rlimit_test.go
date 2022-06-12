@@ -56,6 +56,7 @@ func Test_setRlimit(t *testing.T) {
 		}
 
 		if len(errs) > 0 {
+			t.Logf("\n\t err: %v\n", errs[0])
 			t.Error("did NOT expect rlimit errors")
 		}
 	})
