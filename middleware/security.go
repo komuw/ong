@@ -22,6 +22,8 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 		// CSP is an added layer of security that helps to mitigate certain types of attacks, including Cross-Site Scripting & data injection attacks.
 		cspHeader             = "Content-Security-Policy"
 		xContentOptionsHeader = "X-Content-Type-Options"
+		// protect website from being embedded by any other websites
+		xFrameHeader = "X-Frame-Options"
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +72,11 @@ script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, 
 		w.Header().Set(
 			xContentOptionsHeader,
 			"nosniff",
+		)
+
+		w.Header().Set(
+			xFrameHeader,
+			"DENY",
 		)
 
 		wrappedHandler(w, r)
