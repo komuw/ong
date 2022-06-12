@@ -21,16 +21,61 @@ type extendedHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
-func Run(eh extendedHandler) error {
+type runContext struct {
+	port              string
+	network           string
+	host              string
+	handlerTimeout    time.Duration
+	readHeaderTimeout time.Duration
+	readTimeout       time.Duration
+	writeTimeout      time.Duration
+	idleTimeout       time.Duration
+}
+
+func NewRunContext(
+	port string,
+	network string,
+	host string,
+	handlerTimeout time.Duration,
+	readHeaderTimeout time.Duration,
+	readTimeout time.Duration,
+	writeTimeout time.Duration,
+	idleTimeout time.Duration,
+) runContext {
+	return runContext{
+		port:              port,
+		network:           network,
+		host:              host,
+		handlerTimeout:    handlerTimeout,
+		readHeaderTimeout: readHeaderTimeout,
+		readTimeout:       readTimeout,
+		writeTimeout:      writeTimeout,
+		idleTimeout:       idleTimeout,
+	}
+}
+
+func DefaultRunContext() runContext {
+	return runContext{
+		port:              "8080",
+		network:           "tcp",
+		host:              "127.0.0.1",
+		handlerTimeout:    10 * time.Second,
+		readHeaderTimeout: 1 * time.Second,
+		readTimeout:       1 * time.Second,
+		writeTimeout:      1 * time.Second,
+		idleTimeout:       120 * time.Second,
+	}
+}
+
+func Run(eh extendedHandler, rc runContext) error {
 	setRlimit()
 	maxprocs.Set()
 
 	eh.Routes()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	serverPort := ":8080"
-	network := "tcp"
-	address := fmt.Sprintf("127.0.0.1%s", serverPort)
+
+	serverPort := fmt.Sprintf(":%s", rc.port)
 	server := &http.Server{
 		Addr: serverPort,
 
@@ -38,19 +83,20 @@ func Run(eh extendedHandler) error {
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler:           http.TimeoutHandler(eh, 10*time.Second, "Custom Server timeout"),
-		ReadHeaderTimeout: 1 * time.Second,
-		ReadTimeout:       1 * time.Second,
-		WriteTimeout:      1 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		Handler:           http.TimeoutHandler(eh, rc.handlerTimeout, "Custom Server timeout"),
+		ReadHeaderTimeout: rc.readHeaderTimeout,
+		ReadTimeout:       rc.readTimeout,
+		WriteTimeout:      rc.writeTimeout,
+		IdleTimeout:       rc.idleTimeout,
 		ErrorLog:          eh.GetLogger(),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
 	sigHandler(server, ctx, cancel, eh.GetLogger())
 
+	address := fmt.Sprintf("%s%s", rc.host, serverPort)
 	eh.GetLogger().Printf("server listening at %s", address)
-	return serve(server, network, address, ctx)
+	return serve(server, rc.network, address, ctx)
 }
 
 func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc, logger *log.Logger) {

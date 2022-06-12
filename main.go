@@ -17,7 +17,7 @@ func main() {
 		router: http.NewServeMux(),
 	}
 
-	err := server.Run(api)
+	err := server.Run(api, server.DefaultRunContext())
 	if err != nil {
 		api.logger.Printf("\n%+v\n", err)
 		os.Exit(1)
