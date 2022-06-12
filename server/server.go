@@ -43,8 +43,8 @@ func Run(eh extendedHandler) error {
 		ReadTimeout:       1 * time.Second,
 		WriteTimeout:      1 * time.Second,
 		IdleTimeout:       120 * time.Second,
-
-		BaseContext: func(net.Listener) context.Context { return ctx },
+		ErrorLog:          eh.GetLogger(),
+		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
 	sigHandler(server, ctx, cancel, eh.GetLogger())
