@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -16,16 +16,16 @@ import (
 )
 
 type extendedHandler interface {
-	routes()
-	getLogger() *log.Logger
+	Routes()
+	GetLogger() *log.Logger
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
-func run(eh extendedHandler) error {
+func Run(eh extendedHandler) error {
 	setRlimit()
 	maxprocs.Set()
 
-	eh.routes()
+	eh.Routes()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	serverPort := ":8080"
@@ -47,9 +47,9 @@ func run(eh extendedHandler) error {
 		BaseContext: func(net.Listener) context.Context { return ctx },
 	}
 
-	sigHandler(server, ctx, cancel, eh.getLogger())
+	sigHandler(server, ctx, cancel, eh.GetLogger())
 
-	eh.getLogger().Printf("server listening at %s", address)
+	eh.GetLogger().Printf("server listening at %s", address)
 	return serve(server, network, address, ctx)
 }
 
