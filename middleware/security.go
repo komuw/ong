@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rs/xid"
 )
@@ -28,6 +29,7 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 		corpHeader = "Cross-Origin-Resource-Policy"
 		// protect from an attacker's website been able to open another ua site in a popup window to learn information about it.
 		coopHeader = "Cross-Origin-Opener-Policy"
+		stsHeader  = "Strict-Transport-Security"
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +94,15 @@ script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, 
 			coopHeader,
 			"same-origin",
 		)
+
+		if r.TLS != nil {
+			w.Header().Set(
+				stsHeader,
+				// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+				// A max-age(in seconds) of 2yrs is recommended
+				fmt.Sprintf(`max-age=%s; includeSubDomains; preload`, 15*24*60*60), // 15 days
+			)
+		}
 
 		wrappedHandler(w, r)
 	}
