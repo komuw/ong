@@ -1,8 +1,6 @@
 package server
 
 import (
-	"log"
-
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
