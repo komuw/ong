@@ -20,7 +20,8 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 		// allow or block the use of browser features(eg accelerometer, camera, autoplay etc)
 		permissionsPolicyHeader = "Permissions-Policy"
 		// CSP is an added layer of security that helps to mitigate certain types of attacks, including Cross-Site Scripting & data injection attacks.
-		cspHeader = "Content-Security-Policy"
+		cspHeader             = "Content-Security-Policy"
+		xContentOptionsHeader = "X-Content-Type-Options"
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +65,11 @@ object-src 'none';
 base-uri 'none';
 require-trusted-types-for 'script';
 script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, nonce),
+		)
+
+		w.Header().Set(
+			xContentOptionsHeader,
+			"nosniff",
 		)
 
 		wrappedHandler(w, r)
