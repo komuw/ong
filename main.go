@@ -192,23 +192,29 @@ func run() error {
 		BaseContext: func(net.Listener) context.Context { return ctx },
 	}
 
-	sigHandler(server, ctx, cancel)
+	sigHandler(server, ctx, cancel, api.logger)
 
 	api.logger.Printf("server listening at %s", address)
 	return serve(server, network, address, ctx)
 }
 
-func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc) {
+func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc, logger *log.Logger) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, unix.SIGTERM, unix.SIGINT, unix.SIGQUIT, unix.SIGHUP)
 	go func() {
-		<-sigs
-		cancel()
-		_ = srv.Shutdown(ctx)
+		defer cancel()
+
+		sigCaught := <-sigs
+		logger.Println("server got shutdown signal: ", sigCaught)
+
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			logger.Println("server shutdown error: ", err)
+		}
 	}()
 }
 
-func serve(srv *http.Server, network string, address string, ctx context.Context) error {
+func serve(srv *http.Server, network, address string, ctx context.Context) error {
 	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
 		return conn.Control(func(descriptor uintptr) {
 			_ = unix.SetsockoptInt(
