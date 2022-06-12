@@ -1,6 +1,6 @@
 module github.com/komuw/goweb
 
-go 1.16
+go 1.18
 
 require (
 	go.uber.org/automaxprocs v1.4.0
