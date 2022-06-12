@@ -18,6 +18,7 @@ func setRlimit() {
 	defer func() {
 		if err != nil {
 			log.Println("setRlimit err: ", err)
+			panic(err)
 		}
 	}()
 
