@@ -2,8 +2,6 @@ package server
 
 import (
 	"os"
-
-	"os"
 	"strings"
 	"testing"
 )
@@ -14,7 +12,6 @@ func Test_setRlimit(t *testing.T) {
 	maxFiles := 65_536 * 2 // most OSes set the soft limit at 1024, on ubuntu22.04 in github actions it is 65_536
 
 	t.Run("rlimit reached", func(t *testing.T) {
-
 		var files []*os.File
 		var errs []error
 
