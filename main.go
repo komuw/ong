@@ -50,21 +50,21 @@ func (s myAPI) routes() {
 	)
 	s.router.HandleFunc("/serveDirectory",
 		s.flocOptOut(
-			s.Auth(handleFileServer()),
+			s.Auth(s.handleFileServer()),
 		),
 	)
 
 	// etc
 }
 
-func handleFileServer() http.HandlerFunc {
+func (s myAPI) handleFileServer() http.HandlerFunc {
 	// Do NOT let `http.FileServer` be able to serve your root directory.
 	// Otherwise, your .git folder and other sensitive info(including http://localhost:8080/main.go) may be available
 	// instead create a folder that only has your templates and server that.
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println(req.URL.Redacted())
+		s.logger.Println(req.URL.Redacted())
 		realHandler(w, req)
 	}
 }
