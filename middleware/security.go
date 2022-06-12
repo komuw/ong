@@ -17,13 +17,15 @@ var ck = cspContextKey("cspContextKey")
 //
 func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 	const (
-		// allow or block the use of browser features(eg accelerometer, camera, autoplay etc)
+		// allow or block the use of browser features(eg accelerometer, camera, autoplay etc).
 		permissionsPolicyHeader = "Permissions-Policy"
 		// CSP is an added layer of security that helps to mitigate certain types of attacks, including Cross-Site Scripting & data injection attacks.
 		cspHeader             = "Content-Security-Policy"
 		xContentOptionsHeader = "X-Content-Type-Options"
-		// protect website from being embedded by any other websites
+		// protect website from being embedded by any other websites.
 		xFrameHeader = "X-Frame-Options"
+		// protect from attacker embedding resources from another origin.
+		corpHeader = "Cross-Origin-Resource-Policy"
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +79,11 @@ script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, 
 		w.Header().Set(
 			xFrameHeader,
 			"DENY",
+		)
+
+		w.Header().Set(
+			corpHeader,
+			"same-site",
 		)
 
 		wrappedHandler(w, r)
