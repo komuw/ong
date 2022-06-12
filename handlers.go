@@ -8,6 +8,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/komuw/goweb/middleware"
 )
 
 // myAPI rep component as struct
@@ -48,6 +50,10 @@ func (s *myAPI) Routes() {
 		s.flocOptOut(
 			s.Auth(s.handleFileServer()),
 		),
+	)
+
+	s.router.HandleFunc("/check",
+		middleware.Security(s.handleGreeting(200), "localhost"),
 	)
 
 	// etc
@@ -102,6 +108,9 @@ func (s *myAPI) handleAPI() http.HandlerFunc {
 func (s *myAPI) handleGreeting(code int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// use code, which is a dependency specific to this handler
+
+		nonce := middleware.GetCspNonce(r.Context())
+		s.GetLogger().Println("\n\t handleGreeting, nonce: ", nonce)
 		w.WriteHeader(code)
 	}
 }

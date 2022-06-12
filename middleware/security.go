@@ -1,0 +1,84 @@
+package middleware
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/rs/xid"
+)
+
+type cspContextKey string
+
+var ck = cspContextKey("cspContextKey")
+
+// usage:
+//    middleware.Security(yourHandler(), "example.com")
+//
+func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
+	const (
+		// allow or block the use of browser features(eg accelerometer, camera, autoplay etc)
+		permissionsPolicyHeader = "Permissions-Policy"
+		// CSP is an added layer of security that helps to mitigate certain types of attacks, including Cross-Site Scripting & data injection attacks.
+		cspHeader = "Content-Security-Policy"
+	)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		w.Header().Set(
+			permissionsPolicyHeader,
+			// flocOptOut disables floc which is otherwise ON by default
+			// see: https://github.com/WICG/floc#opting-out-of-computation
+			"interest-cohort=()",
+		)
+
+		// The nonce should be generated per request & propagated to the html of the page.
+		// The nonce can be fetched in middlewares using the GetCspNonce func
+		//
+		// eg;
+		// <script nonce="2726c7f26c">
+		//   var inline = 1;
+		// </script>
+		nonce := xid.New().String()
+		r = r.WithContext(context.WithValue(ctx, ck, nonce))
+		w.Header().Set(
+			cspHeader,
+			// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+			// - https://web.dev/security-headers/
+			// - https://stackoverflow.com/a/66955464/2768067
+			// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src
+			//
+			// content is only permitted from:
+			// - the document's origin(and subdomains)
+			// - images may load from anywhere
+			// - media is allowed from youtube.com(not its subdomains)
+			// - executable scripts is only allowed from self(& subdomains).
+			fmt.Sprintf(`
+default-src 'self' *.%s %s;
+img-src *;
+media-src youtube.com;
+object-src 'none';
+base-uri 'none';
+script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, nonce),
+		)
+
+		wrappedHandler(w, r)
+	}
+}
+
+// usage:
+//   func myHandler(w http.ResponseWriter, r *http.Request) {
+//   	nonce := middleware.GetCspNonce(r.Context())
+//   	_ = nonce
+//   }
+func GetCspNonce(c context.Context) string {
+	v := c.Value(ck)
+	if v != nil {
+		s, ok := v.(string)
+		if ok {
+			return s
+		}
+	}
+	return ""
+}
