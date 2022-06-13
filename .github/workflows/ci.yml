@@ -8,58 +8,31 @@ on: [pull_request, push]
 #     branches: [main]
 #   pull_request:
 
+
+# jobs:
+
+#   check:
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest]
+#         go: [1.18]
+#     runs-on: ${{ matrix.os }}
+#     steps:
+#     - uses: actions/checkout@v3
+#       with:
+#         # For pull requests, build and test the PR head not a merge of the PR with the destination.
+#         ref: ${{ github.event.pull_request.head.sha || github.ref }}
+#     - uses: ./.github/actions/setup-go
+#       with:
+#         go-version: ${{ matrix.go }}
+#     - run: ./gomod.sh
+#     - run: ./gofmt.sh
+#     - run: ./gogenerate.sh
+#     - run: ./govet.sh
+#     - run: ./staticcheck.sh
+
+
 jobs:
-
-
-  check_release_notes:
-    name: check_release_notes
-    timeout-minutes: 1
-    strategy:
-      matrix:
-        go-version: [1.18]
-        platform: [ubuntu-22.04]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: custom setupGo
-        uses: ./.github/actions/setup-go
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: checkout main branch too. # so that it is also available for diff operations
-        uses: actions/checkout@v3
-        with:
-          ref: main
-
-      # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions
-      - name: check if changes have release notes
-        if: github.ref != 'refs/heads/main'
-        env:
-          GIT_BRANCH: ${{ github.ref }}
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_BASE_REF: ${{ github.base_ref	}}
-        run: |
-          printf "GIT_BRANCH: $GIT_BRANCH \n"
-          printf "GITHUB_HEAD_REF: $GITHUB_HEAD_REF \n"
-          printf "GITHUB_BASE_REF: $GITHUB_BASE_REF \n"
-          printf "list git branches: \n"
-          git branch --list --all
-
-          if [[ "$GIT_BRANCH" == "refs/heads/main" ]]
-          then
-              printf "\n $GIT_BRANCH branch, ignoring check for relese notes \n"
-          elif [[  "$GIT_BRANCH" == *"refs/tags/"* ]]
-          then
-              printf "\n $GIT_BRANCH branch, ignoring check for relese notes \n"
-          else
-              ChangedFiles=`git diff --name-only remotes/origin/main`
-              echo $ChangedFiles
-              case "$ChangedFiles" in
-                *CHANGELOG.*)
-                    printf "\n Thanks, your commits include update to release notes. \n";;
-                *)
-                    printf "\n You should add release notes to CHANGELOG.md \n" && exit 77;;
-              esac
-          fi
 
   run_tests:
     name: run_tests
@@ -70,6 +43,11 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          # For pull requests, build and test the PR head not a merge of the PR with the destination.
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+
       - name: custom setupGo
         uses: ./.github/actions/setup-go
         with:
@@ -97,90 +75,90 @@ jobs:
           go tool cover -func=coverage.out
 
 
-  run_analysis:
-    name: run_analysis
-    timeout-minutes: 5
-    strategy:
-      matrix:
-        go-version: [1.18]
-        platform: [ubuntu-22.04]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: custom setupGo
-        uses: ./.github/actions/setup-go
-        with:
-          go-version: ${{ matrix.go-version }}
+  # run_analysis:
+  #   name: run_analysis
+  #   timeout-minutes: 5
+  #   strategy:
+  #     matrix:
+  #       go-version: [1.18]
+  #       platform: [ubuntu-22.04]
+  #   runs-on: ${{ matrix.platform }}
+  #   steps:
+  #     - name: custom setupGo
+  #       uses: ./.github/actions/setup-go
+  #       with:
+  #         go-version: ${{ matrix.go-version }}
 
-      - name: install apt and pip deps
-        run: |
-          pwd; ls -lsha
-          sudo apt-get -y update
-          sudo apt -y install wget
+  #     - name: install apt and pip deps
+  #       run: |
+  #         pwd; ls -lsha
+  #         sudo apt-get -y update
+  #         sudo apt -y install wget
 
-      - name: install tools
-        run: |
-          set -x
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          go install github.com/securego/gosec/cmd/gosec@latest
-          go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
-          go install github.com/orijtech/structslop/cmd/structslop@latest
-          go install github.com/orijtech/httperroryzer/cmd/httperroryzer@latest
-          go install golang.org/x/tools/cmd/stress@latest
-          go install golang.org/x/tools/cmd/goimports@latest
-          go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
-          go install github.com/kisielk/errcheck@latest
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+  #     - name: install tools
+  #       run: |
+  #         set -x
+  #         go install honnef.co/go/tools/cmd/staticcheck@latest
+  #         go install github.com/securego/gosec/cmd/gosec@latest
+  #         go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
+  #         go install github.com/orijtech/structslop/cmd/structslop@latest
+  #         go install github.com/orijtech/httperroryzer/cmd/httperroryzer@latest
+  #         go install golang.org/x/tools/cmd/stress@latest
+  #         go install golang.org/x/tools/cmd/goimports@latest
+  #         go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
+  #         go install github.com/kisielk/errcheck@latest
+  #         go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
-          /home/runner/go/bin/staticcheck -version
-        env:
-          SOME_ENV_VAR: '2020.1.6'
+  #         /home/runner/go/bin/staticcheck -version
+  #       env:
+  #         SOME_ENV_VAR: '2020.1.6'
 
-      - name: static analysis
-        run: |
-          set -x
+  #     - name: static analysis
+  #       run: |
+  #         set -x
 
-          diff <(gofmt -d .) <(printf "")
-          diff <(gofumpt -extra -w -d .) <(printf "")
-          diff <(goimports -d .) <(printf "")
+  #         diff <(gofmt -d .) <(printf "")
+  #         diff <(gofumpt -extra -w -d .) <(printf "")
+  #         diff <(goimports -d .) <(printf "")
 
-          go vet -all ./...
-          go vet -vettool=/home/runner/go/bin/shadow -strict ./...
-          /home/runner/go/bin/staticcheck -tests -go 1.18 ./...
-          # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.18
-          # /home/runner/go/bin/structslop ./... # does not seem to work with Go1.18
-          /home/runner/go/bin/httperroryzer ./...
-          # see: https://github.com/golang/go/commit/a98589711da5e9d935e8d690cfca92892e86d557
-          /home/runner/go/bin/errcheck -ignoregenerated -ignoretests -asserts ./...
+  #         go vet -all ./...
+  #         go vet -vettool=/home/runner/go/bin/shadow -strict ./...
+  #         /home/runner/go/bin/staticcheck -tests -go 1.18 ./...
+  #         # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.18
+  #         # /home/runner/go/bin/structslop ./... # does not seem to work with Go1.18
+  #         /home/runner/go/bin/httperroryzer ./...
+  #         # see: https://github.com/golang/go/commit/a98589711da5e9d935e8d690cfca92892e86d557
+  #         /home/runner/go/bin/errcheck -ignoregenerated -ignoretests -asserts ./...
           
-          # dont use golangci-lint
-          # see: https://twitter.com/dominikhonnef/status/1394766501157167112
-          /home/runner/go/bin/golangci-lint run --no-config --enable=bodyclose,exhaustive,exportloopref,gochecknoglobals,tparallel,unparam ./...
+  #         # dont use golangci-lint
+  #         # see: https://twitter.com/dominikhonnef/status/1394766501157167112
+  #         /home/runner/go/bin/golangci-lint run --no-config --enable=bodyclose,exhaustive,exportloopref,gochecknoglobals,tparallel,unparam ./...
 
-          mkdir -p /tmp/dgryski/semgrep-go
-          wget -nc --output-document=/tmp/dgryski/semgrep-go/rules.go https://raw.githubusercontent.com/dgryski/semgrep-go/master/ruleguard.rules.go
-          go get github.com/quasilyte/go-ruleguard/dsl
-          /home/runner/go/bin/ruleguard -c 1 -rules /tmp/dgryski/semgrep-go/rules.go ./...
-          go mod tidy
+  #         mkdir -p /tmp/dgryski/semgrep-go
+  #         wget -nc --output-document=/tmp/dgryski/semgrep-go/rules.go https://raw.githubusercontent.com/dgryski/semgrep-go/master/ruleguard.rules.go
+  #         go get github.com/quasilyte/go-ruleguard/dsl
+  #         /home/runner/go/bin/ruleguard -c 1 -rules /tmp/dgryski/semgrep-go/rules.go ./...
+  #         go mod tidy
 
-          # deadlock detection
-          # https://github.com/cockroachdb/cockroach/issues/7972
-          go get github.com/sasha-s/go-deadlock
-          find . -name "*.go" | xargs -n 1 sed -i.backup 's/sync.RWMutex/deadlock.RWMutex/'
-          find . -name "*.go" | xargs -n 1 sed -i.backup 's/sync.Mutex/deadlock.Mutex/'
-          find . -name '*.backup' -delete
-          /home/runner/go/bin/goimports -w .
-          go test -timeout 4m -v -race ./...
-          go mod tidy
+  #         # deadlock detection
+  #         # https://github.com/cockroachdb/cockroach/issues/7972
+  #         go get github.com/sasha-s/go-deadlock
+  #         find . -name "*.go" | xargs -n 1 sed -i.backup 's/sync.RWMutex/deadlock.RWMutex/'
+  #         find . -name "*.go" | xargs -n 1 sed -i.backup 's/sync.Mutex/deadlock.Mutex/'
+  #         find . -name '*.backup' -delete
+  #         /home/runner/go/bin/goimports -w .
+  #         go test -timeout 4m -v -race ./...
+  #         go mod tidy
 
-          # error shadowing
-          num_err_shadows=$(grep -irSn 'err = ' *.go | wc -l | tr -d ' ')
-          if [ "$num_err_shadows" != "0" ]; then
-              printf "\n\t fix error shadowing \n" && \
-              grep -irSn 'err = ' *.go
-              exit 77
-          fi
+  #         # error shadowing
+  #         num_err_shadows=$(grep -irSn 'err = ' *.go | wc -l | tr -d ' ')
+  #         if [ "$num_err_shadows" != "0" ]; then
+  #             printf "\n\t fix error shadowing \n" && \
+  #             grep -irSn 'err = ' *.go
+  #             exit 77
+  #         fi
 
-          # TODO: add https://github.com/system-pclub/GCatch
+  #         # TODO: add https://github.com/system-pclub/GCatch
 
   # do_acceptance:
   #   name: do_acceptance
