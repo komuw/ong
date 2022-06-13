@@ -65,8 +65,8 @@ func NewRunContext(
 	}
 }
 
-// DefaultRunContext returns a new runContext that has sensible defaults.
-func DefaultRunContext() runContext {
+// WithRunContext returns a new runContext that has sensible defaults given port and host.
+func WithRunContext(port, host string) runContext {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -77,8 +77,8 @@ func DefaultRunContext() runContext {
 	idleTimeout := handlerTimeout + (100 * time.Second)
 
 	return NewRunContext(
-		"8080",
-		"127.0.0.1",
+		port,
+		host,
 		"tcp",
 		readHeaderTimeout,
 		readTimeout,
@@ -86,6 +86,11 @@ func DefaultRunContext() runContext {
 		handlerTimeout,
 		idleTimeout,
 	)
+}
+
+// DefaultRunContext returns a new runContext that has sensible defaults.
+func DefaultRunContext() runContext {
+	return WithRunContext("8080", "127.0.0.1")
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
