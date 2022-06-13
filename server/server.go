@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -92,21 +93,38 @@ func Run(eh extendedHandler, rc runContext) error {
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
-	sigHandler(server, ctx, cancel, eh.GetLogger())
+	drainDur := drainDuration(rc)
+	sigHandler(server, ctx, cancel, eh.GetLogger(), drainDur)
 
 	address := fmt.Sprintf("%s%s", rc.host, serverPort)
 	eh.GetLogger().Printf("server listening at %s", address)
-	return serve(server, rc.network, address, ctx)
+
+	err := serve(server, rc.network, address, ctx)
+	if !errors.Is(err, http.ErrServerClosed) {
+		// The docs for http.server.Shutdown() says:
+		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
+		//   Make sure the program doesn't exit and waits instead for Shutdown to return.
+		return err
+	}
+
+	{
+		// wait for server.Shutdown() to return.
+		// cancel context incase drainDuration expires befure server.Shutdown() has completed.
+		time.Sleep(drainDur)
+		cancel()
+	}
+
+	return nil
 }
 
-func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc, logger *log.Logger) {
+func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc, logger *log.Logger, drainDur time.Duration) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, unix.SIGTERM, unix.SIGINT, unix.SIGQUIT, unix.SIGHUP)
 	go func() {
 		defer cancel()
 
 		sigCaught := <-sigs
-		logger.Println("server got shutdown signal: ", sigCaught)
+		logger.Println("server got shutdown signal: ", sigCaught, " will shutdown in a maximum of ", drainDur)
 
 		err := srv.Shutdown(ctx)
 		if err != nil {
@@ -142,4 +160,28 @@ func serve(srv *http.Server, network, address string, ctx context.Context) error
 	}
 
 	return srv.Serve(l)
+}
+
+func drainDuration(rc runContext) time.Duration {
+	max := 1 * time.Second
+
+	if rc.handlerTimeout > max {
+		max = rc.handlerTimeout
+	}
+	if rc.readHeaderTimeout > max {
+		max = rc.readHeaderTimeout
+	}
+	if rc.readTimeout > max {
+		max = rc.readTimeout
+	}
+	if rc.writeTimeout > max {
+		max = rc.writeTimeout
+	}
+	if rc.idleTimeout > max {
+		max = rc.idleTimeout
+	}
+
+	max = max + (10 * time.Second)
+
+	return max
 }

@@ -111,6 +111,7 @@ func (s *myAPI) handleGreeting(code int) http.HandlerFunc {
 
 		nonce := middleware.GetCspNonce(r.Context())
 		s.GetLogger().Println("\n\t handleGreeting, nonce: ", nonce)
+
 		w.WriteHeader(code)
 	}
 }
