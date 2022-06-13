@@ -2,9 +2,12 @@ package middleware
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
-	// "github.com/akshayjshah/attest"
+
+	"github.com/akshayjshah/attest"
 )
 
 // echoHandler echos back in the response, the msg that was passed in.
@@ -22,8 +25,19 @@ func TestSecurity(t *testing.T) {
 
 		msg := "hello"
 		host := "example.com"
-		got := Security(echoHandler(msg), host)
-		_ = got
-		// attest.Equal(t, got, "want")
+		wrappedHandler := Security(echoHandler(msg), host)
+
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
 	})
 }
