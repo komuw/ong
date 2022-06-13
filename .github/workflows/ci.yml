@@ -198,25 +198,6 @@ jobs:
 
           # TODO: add https://github.com/system-pclub/GCatch
 
-  # do_acceptance:
-  #   name: do_acceptance
-  #   timeout-minutes: 3
-  #   strategy:
-  #     matrix:
-  #       go-version: [1.18]
-  #       platform: [ubuntu-22.04]
-  #   runs-on: ${{ matrix.platform }}
-  #   steps:
-  #     - name: custom setupGo
-  #       uses: ./.github/actions/setup-go
-  #       with:
-  #         go-version: ${{ matrix.go-version }}
-
-  #     - name: dummy run
-  #       run: |
-  #         go build -trimpath -race -o goweb .
-  #         # ./goweb -h
-
 
   # run_stress_test:
   #   name: run_stress_test
