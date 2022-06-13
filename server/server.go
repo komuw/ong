@@ -1,3 +1,5 @@
+// Package server provides HTTP server implementation.
+// The server provided in here is opinionated and comes with good defaults.
 package server
 
 import (
@@ -22,6 +24,7 @@ type extendedHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
+// runContext defines parameters for running an HTTP server.
 type runContext struct {
 	port              string
 	network           string
@@ -33,6 +36,7 @@ type runContext struct {
 	idleTimeout       time.Duration
 }
 
+// NewRunContext returns a new runContext.
 func NewRunContext(
 	port string,
 	network string,
@@ -55,6 +59,7 @@ func NewRunContext(
 	}
 }
 
+// DefaultRunContext returns a new runContext that has sensible defaults.
 func DefaultRunContext() runContext {
 	return runContext{
 		port:              "8080",
@@ -68,6 +73,10 @@ func DefaultRunContext() runContext {
 	}
 }
 
+// Run listens on a network address and then calls Serve to handle requests on incoming connections.
+// It sets up a server with the parameters provided by rc.
+//
+// The server shuts down cleanly after receiving any terminating signal.
 func Run(eh extendedHandler, rc runContext) error {
 	setRlimit()
 	maxprocs.Set()
@@ -162,6 +171,7 @@ func serve(srv *http.Server, network, address string, ctx context.Context) error
 	return srv.Serve(l)
 }
 
+// drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
 func drainDuration(rc runContext) time.Duration {
 	max := 1 * time.Second
 
