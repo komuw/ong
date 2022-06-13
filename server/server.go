@@ -27,8 +27,8 @@ type extendedHandler interface {
 // runContext defines parameters for running an HTTP server.
 type runContext struct {
 	port              string
-	network           string
 	host              string
+	network           string
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
@@ -45,8 +45,8 @@ func (rc runContext) Equal(other runContext) bool {
 // NewRunContext returns a new runContext.
 func NewRunContext(
 	port string,
-	network string,
 	host string,
+	network string,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
@@ -55,8 +55,8 @@ func NewRunContext(
 ) runContext {
 	return runContext{
 		port:              port,
-		network:           network,
 		host:              host,
+		network:           network,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
@@ -78,8 +78,8 @@ func DefaultRunContext() runContext {
 
 	return NewRunContext(
 		"8080",
-		"tcp",
 		"127.0.0.1",
+		"tcp",
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,

@@ -16,8 +16,8 @@ func TestDrainDuration(t *testing.T) {
 		handlerTimeout := 170 * time.Second
 		rc := runContext{
 			port:              "8080",
-			network:           "tcp",
 			host:              "127.0.0.1",
+			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
 			readTimeout:       1 * time.Second,
 			writeTimeout:      160 * time.Second,
@@ -35,8 +35,8 @@ func TestDrainDuration(t *testing.T) {
 		writeTimeout := 3 * time.Minute
 		rc := runContext{
 			port:              "8080",
-			network:           "tcp",
 			host:              "127.0.0.1",
+			network:           "tcp",
 			readHeaderTimeout: 1 * time.Nanosecond,
 			readTimeout:       1 * time.Minute,
 			writeTimeout:      writeTimeout,
@@ -54,8 +54,8 @@ func TestDefaultRunContext(t *testing.T) {
 		got := DefaultRunContext()
 		want := runContext{
 			port:              "8080",
-			network:           "tcp",
 			host:              "127.0.0.1",
+			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
 			readTimeout:       2 * time.Second,
 			writeTimeout:      3 * time.Second,
