@@ -20,10 +20,15 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      # - uses: actions/checkout@v3
-      #   with:
-      #     # For pull requests, build and test the PR head not a merge of the PR with the destination.
-      #     ref: ${{ github.event.pull_request.head.sha || github.ref }}
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          # For pull requests, build and test the PR head not a merge of the PR with the destination.
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          # We need to full history for git-restore-mtime to know what modification dates to use.
+          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
+          fetch-depth: '0'
 
       - name: custom setupGo
         uses: ./.github/actions/setup-go
