@@ -23,7 +23,7 @@ runs:
       # Restore original modification time from git. git clone sets the
       # modification time to the current time, but Go tests that access fixtures
       # get invalidated if their modification times change.
-      sudo apt-get install -y git-restore-mtime
+      sudo apt -y install git-restore-mtime
       git restore-mtime
 
   # The PREFIX must uniquely identify the specific instance of a job executing.
