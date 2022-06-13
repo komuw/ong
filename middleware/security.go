@@ -10,7 +10,24 @@ import (
 
 type cspContextKey string
 
-var ck = cspContextKey("cspContextKey")
+const (
+	ck           = cspContextKey("cspContextKey")
+	defaultNonce = ""
+
+	// allow or block the use of browser features(eg accelerometer, camera, autoplay etc).
+	permissionsPolicyHeader = "Permissions-Policy"
+	// CSP is an added layer of security that helps to mitigate certain types of attacks, including Cross-Site Scripting & data injection attacks.
+	cspHeader             = "Content-Security-Policy"
+	xContentOptionsHeader = "X-Content-Type-Options"
+	// protect website from being embedded by any other websites.
+	xFrameHeader = "X-Frame-Options"
+	// protect from attacker embedding resources from another origin.
+	corpHeader = "Cross-Origin-Resource-Policy"
+	// protect from an attacker's website been able to open another ua site in a popup window to learn information about it.
+	coopHeader     = "Cross-Origin-Opener-Policy"
+	referrerHeader = "Referrer-Policy"
+	stsHeader      = "Strict-Transport-Security"
+)
 
 // Security is a middleware that adds some important HTTP security headers and assigns them sensible default values.
 //
@@ -18,22 +35,6 @@ var ck = cspContextKey("cspContextKey")
 //    middleware.Security(yourHandler(), "example.com")
 //
 func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
-	const (
-		// allow or block the use of browser features(eg accelerometer, camera, autoplay etc).
-		permissionsPolicyHeader = "Permissions-Policy"
-		// CSP is an added layer of security that helps to mitigate certain types of attacks, including Cross-Site Scripting & data injection attacks.
-		cspHeader             = "Content-Security-Policy"
-		xContentOptionsHeader = "X-Content-Type-Options"
-		// protect website from being embedded by any other websites.
-		xFrameHeader = "X-Frame-Options"
-		// protect from attacker embedding resources from another origin.
-		corpHeader = "Cross-Origin-Resource-Policy"
-		// protect from an attacker's website been able to open another ua site in a popup window to learn information about it.
-		coopHeader     = "Cross-Origin-Opener-Policy"
-		stsHeader      = "Strict-Transport-Security"
-		referrerHeader = "Referrer-Policy"
-	)
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -67,14 +68,7 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 			// - media is allowed from host(and its subdomains)
 			// - executable scripts is only allowed from self(& subdomains).
 			// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
-			fmt.Sprintf(`
-default-src 'self' %s *.%s;
-img-src *;
-media-src %s *.%s;
-object-src 'none';
-base-uri 'none';
-require-trusted-types-for 'script';
-script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, host, host, nonce),
+			getCsp(host, nonce),
 		)
 
 		w.Header().Set(
@@ -131,5 +125,16 @@ func GetCspNonce(c context.Context) string {
 			return s
 		}
 	}
-	return ""
+	return defaultNonce
+}
+
+func getCsp(host, nonce string) string {
+	return fmt.Sprintf(`
+default-src 'self' %s *.%s;
+img-src *;
+media-src %s *.%s;
+object-src 'none';
+base-uri 'none';
+require-trusted-types-for 'script';
+script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, host, host, nonce)
 }
