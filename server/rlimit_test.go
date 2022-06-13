@@ -6,8 +6,10 @@ import (
 	"testing"
 )
 
+// Test taken from; https://github.com/golang/go/blob/go1.19beta1/src/os/rlimit_test.go
 func Test_setRlimit(t *testing.T) {
-	// Test taken from; https://github.com/golang/go/blob/go1.19beta1/src/os/rlimit_test.go
+	// we cannot use t.Parallel() in this tests since `t.Setenv()` does not allow it.
+	t.Setenv("GOWEB_RUNNING_IN_TESTS", "TRUE")
 
 	maxFiles := 65_536 * 2 // most OSes set the soft limit at 1024, on ubuntu22.04 in github actions it is 65_536
 

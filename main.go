@@ -19,7 +19,7 @@ func main() {
 
 	err := server.Run(api, server.DefaultRunContext())
 	if err != nil {
-		api.logger.Printf("\n%+v\n", err)
+		api.logger.Printf("\n server.Run error: %+v\n", err)
 		os.Exit(1)
 	}
 }
