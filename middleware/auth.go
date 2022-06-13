@@ -12,7 +12,6 @@ func BasicAuth(wrappedHandler http.HandlerFunc, user, passwd string) http.Handle
 	e := func(w http.ResponseWriter) {
 		w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
