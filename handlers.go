@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
@@ -43,12 +42,12 @@ func (s *myAPI) Routes() {
 	s.router.HandleFunc("/greeting",
 		// you can even have your handler take a `*template.Template` dependency
 		s.flocOptOut(
-			s.Auth(s.handleGreeting(202)),
+			middleware.BasicAuth(s.handleGreeting(202), "user", "passwd"),
 		),
 	)
 	s.router.HandleFunc("/serveDirectory",
 		s.flocOptOut(
-			s.Auth(s.handleFileServer()),
+			middleware.BasicAuth(s.handleFileServer(), "user", "passwd"),
 		),
 	)
 
@@ -126,32 +125,5 @@ func (s *myAPI) flocOptOut(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// code that is ran b4 wrapped handler
 		w.Header().Set("Permissions-Policy", "interest-cohort=()")
 		wrappedHandler(w, r)
-	}
-}
-
-// middleware are just go functions
-// you can run code before and/or after the wrapped hanlder
-func (s *myAPI) Auth(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	const realm = "enter username and password"
-	return func(w http.ResponseWriter, r *http.Request) {
-		// code that is ran b4 wrapped handler
-		s.GetLogger().Println("code ran BEFORE wrapped handler")
-		username, _, _ := r.BasicAuth()
-
-		if username == "" { //|| pass == ""
-			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		if subtle.ConstantTimeCompare([]byte(username), []byte("admin")) != 1 {
-			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		wrappedHandler(w, r)
-		// you can also run code after wrapped handler here
-		// you can even choose not to call wrapped handler at all
-		s.GetLogger().Println("code ran AFTER wrapped handler")
 	}
 }
