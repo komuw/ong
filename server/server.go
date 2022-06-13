@@ -24,8 +24,8 @@ type extendedHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
-// runContext defines parameters for running an HTTP server.
-type runContext struct {
+// opts defines parameters for running an HTTP server.
+type opts struct {
 	port              string
 	host              string
 	network           string
@@ -36,14 +36,14 @@ type runContext struct {
 	idleTimeout       time.Duration
 }
 
-// Equal compares two runContext for equality.
+// Equal compares two opts for equality.
 // It was added for testing purposes.
-func (rc runContext) Equal(other runContext) bool {
+func (rc opts) Equal(other opts) bool {
 	return rc == other
 }
 
-// NewRunContext returns a new runContext.
-func NewRunContext(
+// NewOpts returns a new opts.
+func NewOpts(
 	port string,
 	host string,
 	network string,
@@ -52,8 +52,8 @@ func NewRunContext(
 	writeTimeout time.Duration,
 	handlerTimeout time.Duration,
 	idleTimeout time.Duration,
-) runContext {
-	return runContext{
+) opts {
+	return opts{
 		port:              port,
 		host:              host,
 		network:           network,
@@ -65,8 +65,8 @@ func NewRunContext(
 	}
 }
 
-// WithRunContext returns a new runContext that has sensible defaults given port and host.
-func WithRunContext(port, host string) runContext {
+// WithOpts returns a new opts that has sensible defaults given port and host.
+func WithOpts(port, host string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -76,7 +76,7 @@ func WithRunContext(port, host string) runContext {
 	handlerTimeout := writeTimeout + (10 * time.Second)
 	idleTimeout := handlerTimeout + (100 * time.Second)
 
-	return NewRunContext(
+	return NewOpts(
 		port,
 		host,
 		"tcp",
@@ -88,16 +88,16 @@ func WithRunContext(port, host string) runContext {
 	)
 }
 
-// DefaultRunContext returns a new runContext that has sensible defaults.
-func DefaultRunContext() runContext {
-	return WithRunContext("8080", "127.0.0.1")
+// DefaultOpts returns a new opts that has sensible defaults.
+func DefaultOpts() opts {
+	return WithOpts("8080", "127.0.0.1")
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
 // It sets up a server with the parameters provided by rc.
 //
 // The server shuts down cleanly after receiving any terminating signal.
-func Run(eh extendedHandler, rc runContext) error {
+func Run(eh extendedHandler, rc opts) error {
 	setRlimit()
 	_, _ = maxprocs.Set()
 
@@ -198,7 +198,7 @@ func serve(srv *http.Server, network, address string, ctx context.Context) error
 }
 
 // drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
-func drainDuration(rc runContext) time.Duration {
+func drainDuration(rc opts) time.Duration {
 	dur := 1 * time.Second
 
 	if rc.handlerTimeout > dur {
