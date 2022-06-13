@@ -1,10 +1,13 @@
-# DOCS: https://help.github.com/en/articles/workflow-syntax-for-github-actions
+# DOCS:
+#  1. https://help.github.com/en/articles/workflow-syntax-for-github-actions
+#  2. https://github.com/mvdan/github-actions-golang/issues/22
+#  3. https://github.com/stellar/go/blob/master/.github/actions/setup-go/action.yml
+#  4. https://github.com/stellar/go/blob/master/.github/workflows/go.yml
 
 name: goweb ci
 on: [pull_request, push]
 
 jobs:
-
 
   check_release_notes:
     name: check_release_notes
@@ -15,22 +18,17 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: checkout main branch too. # so that it is also available for diff operations
-        uses: actions/checkout@v2
+      # checkout main branch and the current branch so that we are able to do diff operations.
+      - name: checkout main branch too.
+        uses: actions/checkout@v3
         with:
           ref: main
-
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions
       - name: check if changes have release notes
-        if: github.ref != 'refs/heads/main'
+        if: ${{ github.ref != 'refs/heads/main' }}
         env:
           GIT_BRANCH: ${{ github.ref }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
@@ -41,7 +39,6 @@ jobs:
           printf "GITHUB_BASE_REF: $GITHUB_BASE_REF \n"
           printf "list git branches: \n"
           git branch --list --all
-
           if [[ "$GIT_BRANCH" == "refs/heads/main" ]]
           then
               printf "\n $GIT_BRANCH branch, ignoring check for relese notes \n"
@@ -68,13 +65,19 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.18
-
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          # For pull requests, build and test the PR head not a merge of the PR with the destination.
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          # We need to full history for git-restore-mtime to know what modification dates to use.
+          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
+          fetch-depth: '0'
+
+      - name: custom setupGo
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: ${{ matrix.go-version }}
 
       - name: tests and benchmarks
         run: |
@@ -97,7 +100,6 @@ jobs:
           go tool cover -html=coverage.out -o coverage.html
           go tool cover -func=coverage.out
 
-
   run_analysis:
     name: run_analysis
     timeout-minutes: 5
@@ -107,18 +109,24 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.18
-
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          # For pull requests, build and test the PR head not a merge of the PR with the destination.
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          # We need to full history for git-restore-mtime to know what modification dates to use.
+          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
+          fetch-depth: '0'
+
+      - name: custom setupGo
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: ${{ matrix.go-version }}
 
       - name: install apt and pip deps
         run: |
           pwd; ls -lsha
-          sudo apt-get -y update
+          sudo apt -y update
           sudo apt -y install wget
 
       - name: install tools
@@ -186,28 +194,6 @@ jobs:
 
           # TODO: add https://github.com/system-pclub/GCatch
 
-  do_acceptance:
-    name: do_acceptance
-    timeout-minutes: 3
-    strategy:
-      matrix:
-        go-version: [1.18]
-        platform: [ubuntu-22.04]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.18
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
-
-      - name: dummy run
-        run: |
-          go build -trimpath -race -o goweb .
-          # ./goweb -h
-
 
   # run_stress_test:
   #   name: run_stress_test
@@ -218,14 +204,10 @@ jobs:
   #       platform: [ubuntu-22.04]
   #   runs-on: ${{ matrix.platform }}
   #   steps:
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v1
-  #       with:
-  #         go-version: 1.18
-
-  #     - name: Check out code into the Go module directory
-  #       uses: actions/checkout@v1
-
+  # - name: custom setupGo
+  #   uses: ./.github/actions/setup-go
+  #   with:
+  #     go-version: ${{ matrix.go-version }}
   #     - name: stress test
   #       run: |
   #         go install golang.org/x/tools/cmd/stress@latest
