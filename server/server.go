@@ -79,7 +79,7 @@ func DefaultRunContext() runContext {
 // The server shuts down cleanly after receiving any terminating signal.
 func Run(eh extendedHandler, rc runContext) error {
 	setRlimit()
-	maxprocs.Set()
+	_, _ = maxprocs.Set()
 
 	eh.Routes()
 
