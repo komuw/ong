@@ -12,6 +12,8 @@ type cspContextKey string
 
 var ck = cspContextKey("cspContextKey")
 
+// Security is a middleware that adds some important HTTP security headers and assigns them sensible default values.
+//
 // usage:
 //    middleware.Security(yourHandler(), "example.com")
 //
@@ -114,6 +116,8 @@ script-src 'self' *.%s %s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, 
 	}
 }
 
+// GetCspNonce returns the Content-Security-Policy nonce that was set for that particular request.
+//
 // usage:
 //   func myHandler(w http.ResponseWriter, r *http.Request) {
 //   	nonce := middleware.GetCspNonce(r.Context())

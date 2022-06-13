@@ -5,8 +5,7 @@ import (
 )
 
 // setRlimit sets the RLIMIT_NOFILE to a higher value.
-// It return a function that you can call to reset the limits to their previous default values.
-// proposal in [3] is accepted & implemented; remove this func in Go1.19
+// Since the proposal in [3] has been implemented this func can be removed after Go1.19
 //
 // 1. http://0pointer.net/blog/file-descriptor-limits.html
 // 2. https://github.com/systemd/systemd/blob/e7901aba1480db21e06e21cef4f6486ad71b2ec5/src/basic/rlimit-util.c#L373
