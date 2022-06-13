@@ -29,10 +29,10 @@ type runContext struct {
 	port              string
 	network           string
 	host              string
-	handlerTimeout    time.Duration
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
+	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
 }
 
@@ -41,34 +41,36 @@ func NewRunContext(
 	port string,
 	network string,
 	host string,
-	handlerTimeout time.Duration,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
+	handlerTimeout time.Duration,
 	idleTimeout time.Duration,
 ) runContext {
 	return runContext{
 		port:              port,
 		network:           network,
 		host:              host,
-		handlerTimeout:    handlerTimeout,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
+		handlerTimeout:    handlerTimeout,
 		idleTimeout:       idleTimeout,
 	}
 }
 
 // DefaultRunContext returns a new runContext that has sensible defaults.
 func DefaultRunContext() runContext {
+	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
+	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 	return runContext{
 		port:              "8080",
 		network:           "tcp",
 		host:              "127.0.0.1",
-		handlerTimeout:    10 * time.Second,
 		readHeaderTimeout: 1 * time.Second,
 		readTimeout:       1 * time.Second,
 		writeTimeout:      1 * time.Second,
+		handlerTimeout:    10 * time.Second,
 		idleTimeout:       120 * time.Second,
 	}
 }
