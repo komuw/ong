@@ -8,7 +8,11 @@ import (
 )
 
 func TestDrainDuration(t *testing.T) {
+	t.Parallel()
+
 	t.Run("all in same units", func(t *testing.T) {
+		t.Parallel()
+
 		handlerTimeout := 170 * time.Second
 		rc := runContext{
 			port:              "8080",
@@ -26,6 +30,8 @@ func TestDrainDuration(t *testing.T) {
 	})
 
 	t.Run("different units", func(t *testing.T) {
+		t.Parallel()
+
 		writeTimeout := 3 * time.Minute
 		rc := runContext{
 			port:              "8080",
