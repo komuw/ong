@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rs/xid"
 )
@@ -102,7 +103,7 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 				stsHeader,
 				// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
 				// A max-age(in seconds) of 2yrs is recommended
-				fmt.Sprintf(`max-age=%d; includeSubDomains; preload`, 15*24*60*60), // 15 days
+				getSts(15*24*time.Hour), // 15 days
 			)
 		}
 
@@ -137,4 +138,9 @@ object-src 'none';
 base-uri 'none';
 require-trusted-types-for 'script';
 script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, host, host, nonce)
+}
+
+func getSts(age time.Duration) string {
+	dur := int64(age.Seconds())
+	return fmt.Sprintf(`max-age=%d; includeSubDomains; preload`, dur)
 }

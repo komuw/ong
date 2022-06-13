@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/akshayjshah/attest"
 )
@@ -53,6 +55,7 @@ func TestSecurity(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		r.TLS = &tls.ConnectionState{}
 		wrappedHandler.ServeHTTP(rec, r)
 
 		res := rec.Result()
@@ -66,7 +69,7 @@ func TestSecurity(t *testing.T) {
 			corpHeader:              "same-site",
 			coopHeader:              "same-origin",
 			referrerHeader:          "strict-origin-when-cross-origin",
-			// stsHeader:             "Strict-Transport-Security",
+			stsHeader:               getSts(15 * 24 * time.Hour),
 		}
 
 		for k, v := range expect {
