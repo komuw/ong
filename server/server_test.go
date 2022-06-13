@@ -14,7 +14,7 @@ func TestDrainDuration(t *testing.T) {
 		t.Parallel()
 
 		handlerTimeout := 170 * time.Second
-		rc := runContext{
+		rc := opts{
 			port:              "8080",
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -33,7 +33,7 @@ func TestDrainDuration(t *testing.T) {
 		t.Parallel()
 
 		writeTimeout := 3 * time.Minute
-		rc := runContext{
+		rc := opts{
 			port:              "8080",
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -49,10 +49,10 @@ func TestDrainDuration(t *testing.T) {
 	})
 }
 
-func TestRunContext(t *testing.T) {
+func TestOpts(t *testing.T) {
 	t.Run("sensible defaults", func(t *testing.T) {
-		got := DefaultRunContext()
-		want := runContext{
+		got := DefaultOpts()
+		want := opts{
 			port:              "8080",
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -66,8 +66,8 @@ func TestRunContext(t *testing.T) {
 	})
 
 	t.Run("sensible defaults", func(t *testing.T) {
-		got := WithRunContext("80", "localhost")
-		want := runContext{
+		got := WithOpts("80", "localhost")
+		want := opts{
 			port:              "80",
 			host:              "localhost",
 			network:           "tcp",
@@ -80,3 +80,34 @@ func TestRunContext(t *testing.T) {
 		attest.Equal(t, got, want)
 	})
 }
+
+// type myEH struct{ router *http.ServeMux }
+
+// func (m *myEH) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// 	m.router.ServeHTTP(w, r)
+// }
+
+// func (m *myEH) GetLogger() *log.Logger {
+// 	return log.New(os.Stderr, "logger: ", log.Lshortfile)
+// }
+
+// func (m *myEH) Routes() {
+// 	m.router.HandleFunc("/hello",
+// 		echoHandler("hello"),
+// 	)
+// }
+
+// // echoHandler echos back in the response, the msg that was passed in.
+// func echoHandler(msg string) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		fmt.Fprint(w, msg)
+// 	}
+// }
+
+// func TestRun(t *testing.T) {
+// 	t.Run("success", func(t *testing.T) {
+// 		eh := &myEH{router: http.NewServeMux()}
+// 		err := Run(eh, WithOpts("0", "localhost"))
+// 		attest.Ok(t, err)
+// 	})
+// }
