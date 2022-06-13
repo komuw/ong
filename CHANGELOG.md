@@ -5,4 +5,5 @@ Most recent version is listed first.
 
 ## v0.0.1
 - added some middlewares: https://github.com/komuw/goweb/pull/22
-- add build/test cache; https://github.com/komuw/goweb/pull/24
+- add build/test cache: https://github.com/komuw/goweb/pull/24
+- harmonize timeouts: https://github.com/komuw/goweb/pull/25
