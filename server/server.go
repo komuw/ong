@@ -36,6 +36,12 @@ type runContext struct {
 	idleTimeout       time.Duration
 }
 
+// Equal compares two runContext for equality.
+// It was added for testing purposes.
+func (rc runContext) Equal(other runContext) bool {
+	return rc == other
+}
+
 // NewRunContext returns a new runContext.
 func NewRunContext(
 	port string,
@@ -70,16 +76,16 @@ func DefaultRunContext() runContext {
 	handlerTimeout := writeTimeout + (10 * time.Second)
 	idleTimeout := handlerTimeout + (100 * time.Second)
 
-	return runContext{
-		port:              "8080",
-		network:           "tcp",
-		host:              "127.0.0.1",
-		readHeaderTimeout: readHeaderTimeout,
-		readTimeout:       readTimeout,
-		writeTimeout:      writeTimeout,
-		handlerTimeout:    handlerTimeout,
-		idleTimeout:       idleTimeout,
-	}
+	return NewRunContext(
+		"8080",
+		"tcp",
+		"127.0.0.1",
+		readHeaderTimeout,
+		readTimeout,
+		writeTimeout,
+		handlerTimeout,
+		idleTimeout,
+	)
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.

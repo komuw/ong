@@ -48,3 +48,20 @@ func TestDrainDuration(t *testing.T) {
 		attest.Equal(t, got, want)
 	})
 }
+
+func TestDefaultRunContext(t *testing.T) {
+	t.Run("sensible defaults", func(t *testing.T) {
+		got := DefaultRunContext()
+		want := runContext{
+			port:              "8080",
+			network:           "tcp",
+			host:              "127.0.0.1",
+			readHeaderTimeout: 1 * time.Second,
+			readTimeout:       2 * time.Second,
+			writeTimeout:      3 * time.Second,
+			handlerTimeout:    13 * time.Second,
+			idleTimeout:       113 * time.Second,
+		}
+		attest.Equal(t, got, want)
+	})
+}
