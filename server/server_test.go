@@ -18,10 +18,10 @@ func TestDrainDuration(t *testing.T) {
 			port:              "8080",
 			network:           "tcp",
 			host:              "127.0.0.1",
-			handlerTimeout:    handlerTimeout,
 			readHeaderTimeout: 1 * time.Second,
 			readTimeout:       1 * time.Second,
 			writeTimeout:      160 * time.Second,
+			handlerTimeout:    handlerTimeout,
 			idleTimeout:       120 * time.Second,
 		}
 		got := drainDuration(rc)
@@ -37,10 +37,10 @@ func TestDrainDuration(t *testing.T) {
 			port:              "8080",
 			network:           "tcp",
 			host:              "127.0.0.1",
-			handlerTimeout:    170 * time.Millisecond,
 			readHeaderTimeout: 1 * time.Nanosecond,
 			readTimeout:       1 * time.Minute,
 			writeTimeout:      writeTimeout,
+			handlerTimeout:    170 * time.Millisecond,
 			idleTimeout:       120 * time.Second,
 		}
 		got := drainDuration(rc)

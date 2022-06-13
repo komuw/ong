@@ -63,15 +63,22 @@ func NewRunContext(
 func DefaultRunContext() runContext {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
+
+	readHeaderTimeout := 1 * time.Second
+	readTimeout := readHeaderTimeout + (1 * time.Second)
+	writeTimeout := readTimeout + (1 * time.Second)
+	handlerTimeout := writeTimeout + (10 * time.Second)
+	idleTimeout := handlerTimeout + (100 * time.Second)
+
 	return runContext{
 		port:              "8080",
 		network:           "tcp",
 		host:              "127.0.0.1",
-		readHeaderTimeout: 1 * time.Second,
-		readTimeout:       1 * time.Second,
-		writeTimeout:      1 * time.Second,
-		handlerTimeout:    10 * time.Second,
-		idleTimeout:       120 * time.Second,
+		readHeaderTimeout: readHeaderTimeout,
+		readTimeout:       readTimeout,
+		writeTimeout:      writeTimeout,
+		handlerTimeout:    handlerTimeout,
+		idleTimeout:       idleTimeout,
 	}
 }
 
@@ -175,25 +182,25 @@ func serve(srv *http.Server, network, address string, ctx context.Context) error
 
 // drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
 func drainDuration(rc runContext) time.Duration {
-	max := 1 * time.Second
+	dur := 1 * time.Second
 
-	if rc.handlerTimeout > max {
-		max = rc.handlerTimeout
+	if rc.handlerTimeout > dur {
+		dur = rc.handlerTimeout
 	}
-	if rc.readHeaderTimeout > max {
-		max = rc.readHeaderTimeout
+	if rc.readHeaderTimeout > dur {
+		dur = rc.readHeaderTimeout
 	}
-	if rc.readTimeout > max {
-		max = rc.readTimeout
+	if rc.readTimeout > dur {
+		dur = rc.readTimeout
 	}
-	if rc.writeTimeout > max {
-		max = rc.writeTimeout
-	}
-	if rc.idleTimeout > max {
-		max = rc.idleTimeout
+	if rc.writeTimeout > dur {
+		dur = rc.writeTimeout
 	}
 
-	max = max + (10 * time.Second)
+	// drainDuration should not take into account rc.idleTimeout
+	// because server.Shutdown() already closes all idle connections.
 
-	return max
+	dur = dur + (10 * time.Second)
+
+	return dur
 }
