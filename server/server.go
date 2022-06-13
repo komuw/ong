@@ -113,7 +113,7 @@ func Run(eh extendedHandler, rc opts) error {
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler:           http.TimeoutHandler(eh, rc.handlerTimeout, "Custom Server timeout"),
+		Handler:           http.TimeoutHandler(eh, rc.handlerTimeout, fmt.Sprintf("goweb: Handler timeout exceeded: %s", rc.handlerTimeout)),
 		ReadHeaderTimeout: rc.readHeaderTimeout,
 		ReadTimeout:       rc.readTimeout,
 		WriteTimeout:      rc.writeTimeout,
