@@ -55,7 +55,7 @@ func TestSecurity(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		r.TLS = &tls.ConnectionState{}
+		r.TLS = &tls.ConnectionState{} // fake tls so that the STS header is set.
 		wrappedHandler.ServeHTTP(rec, r)
 
 		res := rec.Result()
