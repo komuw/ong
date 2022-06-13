@@ -1,13 +1,11 @@
-# DOCS: https://help.github.com/en/articles/workflow-syntax-for-github-actions
+# DOCS:
+#  1. https://help.github.com/en/articles/workflow-syntax-for-github-actions
+#  2. https://github.com/mvdan/github-actions-golang/issues/22
+#  3. https://github.com/stellar/go/blob/master/.github/actions/setup-go/action.yml
+#  4. https://github.com/stellar/go/blob/master/.github/workflows/go.yml
 
 name: goweb ci
 on: [pull_request, push]
-
-# on:
-#   push:
-#     branches: [main]
-#   pull_request:
-
 
 jobs:
 
