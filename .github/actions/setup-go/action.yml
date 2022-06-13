@@ -63,7 +63,7 @@ runs:
         ${{ env.PREFIX }}-go-build-${{ github.ref }}-
         ${{ env.PREFIX }}-go-build-
 
-  # Reset the cache for master/protected branches, to ensure they build and run the tests from zero
+  # Reset the cache for main/protected branches, to ensure they build and run the tests from zero
   # and that the module cache is cleaned (otherwise it accumulates orphan dependencies over time).
   - if: github.ref_protected
     shell: bash
