@@ -37,17 +37,19 @@ func (s *myAPI) GetLogger() *log.Logger {
 // You can even move it to a routes.go file
 func (s *myAPI) Routes() {
 	s.router.HandleFunc("/api/",
-		s.flocOptOut(s.handleAPI()),
+		middleware.Security(s.handleAPI(), "localhost"),
 	)
 	s.router.HandleFunc("/greeting",
 		// you can even have your handler take a `*template.Template` dependency
-		s.flocOptOut(
+		middleware.Security(
 			middleware.BasicAuth(s.handleGreeting(202), "user", "passwd"),
+			"localhost",
 		),
 	)
 	s.router.HandleFunc("/serveDirectory",
-		s.flocOptOut(
+		middleware.Security(
 			middleware.BasicAuth(s.handleFileServer(), "user", "passwd"),
+			"localhost",
 		),
 	)
 
@@ -112,18 +114,5 @@ func (s *myAPI) handleGreeting(code int) http.HandlerFunc {
 		s.GetLogger().Println("\n\t handleGreeting, nonce: ", nonce)
 
 		w.WriteHeader(code)
-	}
-}
-
-// TODO: add these security headers;
-// https://web.dev/security-headers/
-
-// flocOptOut disables floc which is otherwise ON by default
-// see: https://github.com/WICG/floc#opting-out-of-computation
-func (s *myAPI) flocOptOut(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// code that is ran b4 wrapped handler
-		w.Header().Set("Permissions-Policy", "interest-cohort=()")
-		wrappedHandler(w, r)
 	}
 }
