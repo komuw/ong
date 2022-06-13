@@ -9,29 +9,6 @@ on: [pull_request, push]
 #   pull_request:
 
 
-# jobs:
-
-#   check:
-#     strategy:
-#       matrix:
-#         os: [ubuntu-latest]
-#         go: [1.18]
-#     runs-on: ${{ matrix.os }}
-#     steps:
-#     - uses: actions/checkout@v3
-#       with:
-#         # For pull requests, build and test the PR head not a merge of the PR with the destination.
-#         ref: ${{ github.event.pull_request.head.sha || github.ref }}
-#     - uses: ./.github/actions/setup-go
-#       with:
-#         go-version: ${{ matrix.go }}
-#     - run: ./gomod.sh
-#     - run: ./gofmt.sh
-#     - run: ./gogenerate.sh
-#     - run: ./govet.sh
-#     - run: ./staticcheck.sh
-
-
 jobs:
 
   run_tests:

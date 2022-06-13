@@ -44,7 +44,7 @@ func TestDrainDuration(t *testing.T) {
 			idleTimeout:       120 * time.Second,
 		}
 		got := drainDuration(rc)
-		want := writeTimeout + (10 * time.Second)
+		want := writeTimeout + (109 * time.Second)
 		attest.Equal(t, got, want)
 	})
 }
