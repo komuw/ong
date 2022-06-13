@@ -27,7 +27,8 @@ runs:
       git restore-mtime
 
   # The PREFIX must uniquely identify the specific instance of a job executing.
-  - shell: bash
+  - name: set cache prefix
+    shell: bash
     run: echo 'PREFIX=${{ github.workflow }}-${{ github.job }}-${{ runner.os }}-${{ inputs.go-version }}-matrix(${{ join(matrix.*,'|') }})' >> $GITHUB_ENV
 
   # Cache the Go Modules downloaded during the job.
@@ -69,6 +70,7 @@ runs:
 
   # Reset the cache for main/protected branches, to ensure they build and run the tests from zero
   # and that the module cache is cleaned (otherwise it accumulates orphan dependencies over time).
-  - if: github.ref_protected
+  - name: reset cache for main branch
+    if: ${{ github.ref == 'refs/heads/main' || github.ref_protected }}
     shell: bash
     run: sudo rm -rf ~/go/pkg/mod ~/.cache/go-build ~/Library/Caches/go-build ~\AppData\Local\go-build
