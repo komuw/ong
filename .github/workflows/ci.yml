@@ -15,18 +15,15 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
+      - name: custom setupGo
+        uses: ./.github/actions/setup-go
         with:
           go-version: ${{ matrix.go-version }}
 
       - name: checkout main branch too. # so that it is also available for diff operations
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: main
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
 
       # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions
       - name: check if changes have release notes
@@ -68,13 +65,10 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
+      - name: custom setupGo
+        uses: ./.github/actions/setup-go
         with:
-          go-version: 1.18
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+          go-version: ${{ matrix.go-version }}
 
       - name: tests and benchmarks
         run: |
@@ -107,13 +101,10 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
+      - name: custom setupGo
+        uses: ./.github/actions/setup-go
         with:
-          go-version: 1.18
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+          go-version: ${{ matrix.go-version }}
 
       - name: install apt and pip deps
         run: |
@@ -186,27 +177,24 @@ jobs:
 
           # TODO: add https://github.com/system-pclub/GCatch
 
-  do_acceptance:
-    name: do_acceptance
-    timeout-minutes: 3
-    strategy:
-      matrix:
-        go-version: [1.18]
-        platform: [ubuntu-22.04]
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Set up Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.18
+  # do_acceptance:
+  #   name: do_acceptance
+  #   timeout-minutes: 3
+  #   strategy:
+  #     matrix:
+  #       go-version: [1.18]
+  #       platform: [ubuntu-22.04]
+  #   runs-on: ${{ matrix.platform }}
+  #   steps:
+  #     - name: custom setupGo
+  #       uses: ./.github/actions/setup-go
+  #       with:
+  #         go-version: ${{ matrix.go-version }}
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
-
-      - name: dummy run
-        run: |
-          go build -trimpath -race -o goweb .
-          # ./goweb -h
+  #     - name: dummy run
+  #       run: |
+  #         go build -trimpath -race -o goweb .
+  #         # ./goweb -h
 
 
   # run_stress_test:
@@ -218,10 +206,10 @@ jobs:
   #       platform: [ubuntu-22.04]
   #   runs-on: ${{ matrix.platform }}
   #   steps:
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v1
-  #       with:
-  #         go-version: 1.18
+      # - name: custom setupGo
+      #   uses: ./.github/actions/setup-go
+      #   with:
+      #     go-version: ${{ matrix.go-version }}
 
   #     - name: Check out code into the Go module directory
   #       uses: actions/checkout@v1
