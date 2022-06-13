@@ -146,7 +146,13 @@ func Run(eh extendedHandler, rc runContext) error {
 	return nil
 }
 
-func sigHandler(srv *http.Server, ctx context.Context, cancel context.CancelFunc, logger *log.Logger, drainDur time.Duration) {
+func sigHandler(
+	srv *http.Server,
+	ctx context.Context,
+	cancel context.CancelFunc,
+	logger *log.Logger,
+	drainDur time.Duration,
+) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, unix.SIGTERM, unix.SIGINT, unix.SIGQUIT, unix.SIGHUP)
 	go func() {
