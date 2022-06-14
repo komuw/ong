@@ -16,6 +16,10 @@ const (
 )
 
 // Set creates a cookie on the HTTP response.
+//
+// If domain is an empty string, the cookie is set for the current host(excluding subdomains)
+// else it is set for the given domain and its subdomains.
+// If mAge <= 0, a session cookie is created.
 func Set(
 	w http.ResponseWriter,
 	name string,
