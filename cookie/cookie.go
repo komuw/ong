@@ -20,9 +20,18 @@ func Set(
 	name string,
 	value string,
 	domain string,
-	maxAge time.Duration,
+	mAge time.Duration,
 	httpOnly bool,
 ) {
+	expires := time.Now().Add(mAge)
+	maxAge := int(mAge.Seconds())
+
+	if mAge <= 0 {
+		// this is a session cookie
+		expires = time.Time{}
+		maxAge = 0
+	}
+
 	c := &http.Cookie{
 		Name:  name,
 		Value: value,
@@ -30,10 +39,11 @@ func Set(
 		// If a domain is specified, then subdomains are always included.
 		Domain: domain,
 		// Expires is relative to the client the cookie is being set on, not the server.
-		Expires: time.Now().Add(maxAge),
+		// Session cookies are those that do not specify the Expires or Max-Age attribute.
+		Expires: expires,
 		// Every browser that supports MaxAge will ignore Expires regardless of it's value
 		// https://datatracker.ietf.org/doc/html/rfc2616#section-13.2.4
-		MaxAge: int(maxAge.Seconds()),
+		MaxAge: maxAge,
 		Path:   "/",
 
 		// Security
