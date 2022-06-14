@@ -20,13 +20,15 @@ const (
 // If domain is an empty string, the cookie is set for the current host(excluding subdomains)
 // else it is set for the given domain and its subdomains.
 // If mAge <= 0, a session cookie is created.
+// If jsAccess is false, the cookie will be in-accesible to Javascript.
+// In most cases you should set it to false(exceptions are rare, like when setting a csrf cookie)
 func Set(
 	w http.ResponseWriter,
 	name string,
 	value string,
 	domain string,
 	mAge time.Duration,
-	httpOnly bool,
+	jsAccess bool,
 ) {
 	expires := time.Now().Add(mAge)
 	maxAge := int(mAge.Seconds())
@@ -35,6 +37,11 @@ func Set(
 		// this is a session cookie
 		expires = time.Time{}
 		maxAge = 0
+	}
+
+	httpOnly := true
+	if jsAccess {
+		httpOnly = false
 	}
 
 	c := &http.Cookie{

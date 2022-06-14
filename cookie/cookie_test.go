@@ -10,9 +10,9 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
-func setHandler(name, value, domain string, mAge time.Duration) http.HandlerFunc {
+func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		Set(w, name, value, domain, mAge, true)
+		Set(w, name, value, domain, mAge, jsAccess)
 		fmt.Fprint(w, "hello")
 	}
 }
@@ -27,7 +27,7 @@ func TestSet(t *testing.T) {
 		value := "skmHajue8k"
 		domain := "localhost"
 		mAge := 1 * time.Minute
-		handler := setHandler(name, value, domain, mAge)
+		handler := setHandler(name, value, domain, mAge, false)
 
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -45,6 +45,7 @@ func TestSet(t *testing.T) {
 
 		attest.True(t, cookie.MaxAge >= 1)
 		attest.True(t, cookie.Expires.Sub(now) > 1)
+		attest.Equal(t, cookie.HttpOnly, true)
 	})
 
 	t.Run("session cookie", func(t *testing.T) {
@@ -54,7 +55,7 @@ func TestSet(t *testing.T) {
 		value := "skmHajue8k"
 		domain := "localhost"
 		mAge := 0 * time.Minute
-		handler := setHandler(name, value, domain, mAge)
+		handler := setHandler(name, value, domain, mAge, false)
 
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -70,12 +71,42 @@ func TestSet(t *testing.T) {
 		cookie := res.Cookies()[0]
 		attest.Equal(t, cookie.MaxAge, 0)
 		attest.Equal(t, cookie.Expires, time.Time{})
+		attest.Equal(t, cookie.HttpOnly, true)
+	})
+
+	t.Run("js accesible cookie", func(t *testing.T) {
+		t.Parallel()
+
+		name := "csrf"
+		value := "skmHajue8k"
+		domain := "localhost"
+		mAge := 1 * time.Minute
+		jsAccess := true
+		handler := setHandler(name, value, domain, mAge, jsAccess)
+
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, len(res.Cookies()), 1)
+		attest.Equal(t, res.Cookies()[0].Name, name)
+
+		cookie := res.Cookies()[0]
+		now := time.Now()
+
+		attest.True(t, cookie.MaxAge >= 1)
+		attest.True(t, cookie.Expires.Sub(now) > 1)
+		attest.Equal(t, cookie.HttpOnly, false)
 	})
 }
 
 func deleteHandler(name, value, domain string, mAge time.Duration) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		Set(w, name, value, domain, mAge, true)
+		Set(w, name, value, domain, mAge, false)
 		Delete(w, name, domain)
 		fmt.Fprint(w, "hello")
 	}
