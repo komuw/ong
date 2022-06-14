@@ -54,7 +54,7 @@ func Set(
 }
 
 // Delete removes the named cookie.
-func Delete(w http.ResponseWriter, name string, domain string) {
+func Delete(w http.ResponseWriter, name, domain string) {
 	h := w.Header().Values(serverCookieHeader)
 	if len(h) <= 0 {
 		return
@@ -68,11 +68,11 @@ func Delete(w http.ResponseWriter, name string, domain string) {
 
 	c := &http.Cookie{
 		Name:    name,
-		Domain:  domain,
-		Expires: time.Unix(0, 0),
-		Path:    "/",
 		Value:   "",
+		Domain:  domain,
+		Path:    "/",
 		MaxAge:  -1,
+		Expires: time.Unix(0, 0),
 	}
 	http.SetCookie(w, c)
 }
