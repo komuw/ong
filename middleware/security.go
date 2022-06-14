@@ -35,7 +35,7 @@ const (
 // usage:
 //    middleware.Security(yourHandler(), "example.com")
 //
-func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
+func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -66,10 +66,10 @@ func Security(wrappedHandler http.HandlerFunc, host string) http.HandlerFunc {
 			// content is only permitted from:
 			// - the document's origin(and subdomains)
 			// - images may load from anywhere
-			// - media is allowed from host(and its subdomains)
+			// - media is allowed from domain(and its subdomains)
 			// - executable scripts is only allowed from self(& subdomains).
 			// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
-			getCsp(host, nonce),
+			getCsp(domain, nonce),
 		)
 
 		w.Header().Set(
@@ -129,7 +129,7 @@ func GetCspNonce(c context.Context) string {
 	return defaultNonce
 }
 
-func getCsp(host, nonce string) string {
+func getCsp(domain, nonce string) string {
 	return fmt.Sprintf(`
 default-src 'self' %s *.%s;
 img-src *;
@@ -137,7 +137,7 @@ media-src %s *.%s;
 object-src 'none';
 base-uri 'none';
 require-trusted-types-for 'script';
-script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`, host, host, host, host, host, host, nonce)
+script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`, domain, domain, domain, domain, domain, domain, nonce)
 }
 
 func getSts(age time.Duration) string {

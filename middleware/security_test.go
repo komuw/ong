@@ -29,8 +29,8 @@ func TestSecurity(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		host := "example.com"
-		wrappedHandler := Security(echoHandler(msg), host)
+		domain := "example.com"
+		wrappedHandler := Security(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -50,8 +50,8 @@ func TestSecurity(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		host := "example.com"
-		wrappedHandler := Security(echoHandler(msg), host)
+		domain := "example.com"
+		wrappedHandler := Security(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -63,7 +63,7 @@ func TestSecurity(t *testing.T) {
 
 		expect := map[string]string{
 			permissionsPolicyHeader: "interest-cohort=()",
-			cspHeader:               getCsp(host, res.Header.Get(nonceHeader)),
+			cspHeader:               getCsp(domain, res.Header.Get(nonceHeader)),
 			xContentOptionsHeader:   "nosniff",
 			xFrameHeader:            "DENY",
 			corpHeader:              "same-site",
@@ -86,8 +86,8 @@ func TestGetCspNonce(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		host := "example.com"
-		wrappedHandler := Security(echoHandler(msg), host)
+		domain := "example.com"
+		wrappedHandler := Security(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
