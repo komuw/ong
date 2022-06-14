@@ -2,6 +2,8 @@
 debug
 debug.test
 coverage.txt
+coverage.html
+coverage.out
 .DS_Store
 
 # go-pry debug stuff
