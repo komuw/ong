@@ -7,3 +7,4 @@ Most recent version is listed first.
 - added some middlewares: https://github.com/komuw/goweb/pull/22
 - add build/test cache: https://github.com/komuw/goweb/pull/24
 - harmonize timeouts: https://github.com/komuw/goweb/pull/25
+- add panic middleware: https://github.com/komuw/goweb/pull/26
