@@ -9,6 +9,7 @@ import (
 const (
 	serverCookieHeader  = "Set-Cookie"
 	clientCookieHeader  = "Cookie"
+	_                   = clientCookieHeader // silence unused var linter
 	maxCookiesPerDomain = 50
 	maxCookieSize       = 4096 // bytes
 	// see: https://datatracker.ietf.org/doc/html/rfc6265#section-6.1
