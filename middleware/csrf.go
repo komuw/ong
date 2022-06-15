@@ -72,16 +72,14 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 				crsfToken = fromForm(r)
 			}
 
-			if crsfToken != "" {
-				if !bloom.get(crsfToken) {
-					cookie.Delete(w, cookieName, domain)
-					http.Error(
-						w,
-						errCsrfTokenNotFound.Error(),
-						http.StatusBadRequest,
-					)
-					return
-				}
+			if crsfToken != "" && !bloom.get(crsfToken) {
+				cookie.Delete(w, cookieName, domain)
+				http.Error(
+					w,
+					errCsrfTokenNotFound.Error(),
+					http.StatusBadRequest,
+				)
+				return
 			}
 		}
 
