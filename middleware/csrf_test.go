@@ -316,4 +316,35 @@ func TestCsrf(t *testing.T) {
 		attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)))
 		attest.True(t, csrfStore._len() > 0)
 	})
+
+	t.Run("POST requests must have valid token", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		reqCsrfTok := xid.New().String()
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+		r.AddCookie(&http.Cookie{
+			Name:     csrfCookieName,
+			Value:    reqCsrfTok,
+			Path:     "/",
+			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+			Secure:   true,  // https only.
+			SameSite: http.SameSiteStrictMode,
+		})
+		wrappedHandler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusBadRequest)
+		attest.Equal(t, string(rb), errCsrfTokenNotFound.Error()+"\n")
+		attest.Zero(t, res.Header.Get(tokenHeader))
+	})
 }
