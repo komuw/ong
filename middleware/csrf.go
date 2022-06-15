@@ -16,11 +16,13 @@ var errCsrfTokenNotFound = errors.New("csrf token not found")
 type csrfContextKey string
 
 const (
-	csrfCtxKey   = csrfContextKey("csrfContextKey")
-	defaultToken = ""
-	cookieName   = "csrftoken"    // named after what django uses.
-	cookieHeader = "X-Csrf-Token" // named after what fiber uses.
-	cookieForm   = cookieName
+	csrfCtxKey         = csrfContextKey("csrfContextKey")
+	defaultToken       = ""
+	cookieName         = "csrftoken"    // named after what django uses.
+	csrfHeader         = "X-Csrf-Token" // named after what fiber uses.
+	cookieForm         = cookieName
+	clientCookieHeader = "Cookie"
+	varyHeader         = "Vary"
 
 	tokenMaxAge   = 1 * time.Hour // same max-age as what fiber uses. django seems to use one year.
 	resetDuration = tokenMaxAge + (7 * time.Minute)
@@ -85,11 +87,12 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 
 		// 5. set cookie header
 		w.Header().Set(
-			cookieHeader,
+			csrfHeader,
 			csrfToken,
 		)
 
 		// 6. Vary header.
+		w.Header().Add(varyHeader, clientCookieHeader)
 
 		// 7. store csrfToken in context
 		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, csrfToken))
@@ -136,7 +139,7 @@ func getToken(r *http.Request) string {
 	}
 
 	fromHeader := func() string {
-		return r.Header.Get(cookieHeader)
+		return r.Header.Get(csrfHeader)
 	}
 
 	fromForm := func() string {

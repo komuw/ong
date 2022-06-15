@@ -117,7 +117,7 @@ func TestGetToken(t *testing.T) {
 
 		want := xid.New().String()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		r.Header.Set(cookieHeader, want)
+		r.Header.Set(csrfHeader, want)
 		got := getToken(r)
 		attest.Equal(t, got, want)
 	})
@@ -149,7 +149,7 @@ func TestGetToken(t *testing.T) {
 			Secure:   true,  // https only.
 			SameSite: http.SameSiteStrictMode,
 		})
-		r.Header.Set(cookieHeader, headerToken)
+		r.Header.Set(csrfHeader, headerToken)
 		err := r.ParseForm()
 		attest.Ok(t, err)
 		r.Form.Add(cookieForm, formToken)
