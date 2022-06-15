@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -156,5 +158,70 @@ func TestGetToken(t *testing.T) {
 
 		got := getToken(r)
 		attest.Equal(t, got, cookieToken)
+	})
+}
+
+const tokenHeader = "CUSTOM-CSRF-TOKEN-TEST-HEADER"
+
+func someCsrfHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(tokenHeader, GetCsrfToken(r.Context()))
+		fmt.Fprint(w, msg)
+	}
+}
+
+func TestCsrf(t *testing.T) {
+	t.Parallel()
+
+	t.Run("middleware succeds", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("fetch token from GET requests", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		reqCsrfTok := xid.New().String()
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		r.AddCookie(&http.Cookie{
+			Name:     cookieName,
+			Value:    reqCsrfTok,
+			Path:     "/",
+			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+			Secure:   true,  // https only.
+			SameSite: http.SameSiteStrictMode,
+		})
+		wrappedHandler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+		attest.Equal(t, res.Header.Get(tokenHeader), reqCsrfTok)
 	})
 }
