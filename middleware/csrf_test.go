@@ -297,7 +297,6 @@ func TestCsrf(t *testing.T) {
 		// (c) vary header is updated.
 		// (d) r.context is updated.
 		// (e) memory store is updated.
-		//
 
 		// (a)
 		attest.Equal(t, len(res.Cookies()), 1)
