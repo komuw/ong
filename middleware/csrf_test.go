@@ -348,4 +348,77 @@ func TestCsrf(t *testing.T) {
 		attest.Zero(t, res.Header.Get(tokenHeader))
 		attest.Equal(t, len(res.Cookies()), 0)
 	})
+
+	t.Run("POST requests with valid token", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		reqCsrfTok := xid.New().String()
+
+		{
+			// make GET request
+			rec := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			r.Header.Set(csrfHeader, reqCsrfTok)
+			wrappedHandler.ServeHTTP(rec, r)
+			res := rec.Result()
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		{
+			// make POST request using same csrf token
+			rec := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+			r.AddCookie(&http.Cookie{
+				Name:     csrfCookieName,
+				Value:    reqCsrfTok,
+				Path:     "/",
+				HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+				Secure:   true,  // https only.
+				SameSite: http.SameSiteStrictMode,
+			})
+			wrappedHandler.ServeHTTP(rec, r)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+
+			// assert that:
+			// (a) csrf cookie is set.
+			// (b) cookie header is set.
+			// (c) vary header is updated.
+			// (d) r.context is updated.
+			// (e) memory store is updated.
+
+			// (a)
+			attest.Equal(t, len(res.Cookies()), 1)
+			attest.Equal(t, res.Cookies()[0].Name, csrfCookieName)
+			attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
+
+			// (b)
+			attest.Equal(t, res.Header.Get(csrfHeader), res.Header.Get(tokenHeader))
+
+			// (c)
+			attest.Equal(t, res.Header.Get(varyHeader), clientCookieHeader)
+
+			// (d)
+			attest.NotZero(t, res.Header.Get(tokenHeader))
+
+			// (e)
+			attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)))
+			attest.True(t, csrfStore._len() > 0)
+		}
+	})
 }
