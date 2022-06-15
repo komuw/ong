@@ -11,7 +11,13 @@ import (
 	"github.com/rs/xid"
 )
 
-var errCsrfTokenNotFound = errors.New("csrf token not found/recognized")
+var (
+	errCsrfTokenNotFound = errors.New("csrf token not found/recognized")
+	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
+	// Image if you had `Csrf(loginHandler, domain)` & `Csrf(cartCheckoutHandler, domain)`, if they didn't share a global store,
+	// a customer navigating from login to checkout would get a errCsrfTokenNotFound error; which is not what we want.
+	csrfStore = newStore()
+)
 
 type csrfContextKey string
 
@@ -30,7 +36,6 @@ const (
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
 func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
-	store := newStore()
 	start := time.Now()
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +60,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
 			csrfToken = getToken(r)
 
-			if csrfToken == "" || !store.exists(csrfToken) {
+			if csrfToken == "" || !csrfStore.exists(csrfToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
 				http.Error(
@@ -95,13 +100,13 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, csrfToken))
 
 		// 7. save csrfToken in memory store.
-		store.set(csrfToken)
+		csrfStore.set(csrfToken)
 
 		// 8. reset memory to decrease its size.
 		now := time.Now()
 		diff := now.Sub(start)
 		if diff > resetDuration {
-			store.reset()
+			csrfStore.reset()
 			start = now
 		}
 
@@ -160,7 +165,7 @@ func getToken(r *http.Request) string {
 	return tok
 }
 
-// store persists csrf tokens server-side in-memory.
+// store persists csrf tokens server-side, in-memory.
 type store struct {
 	mu sync.RWMutex // protects m
 	m  map[string]struct{}

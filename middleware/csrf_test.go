@@ -103,7 +103,7 @@ func TestGetToken(t *testing.T) {
 		want := xid.New().String()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		r.AddCookie(&http.Cookie{
-			Name:     cookieName,
+			Name:     csrfCookieName,
 			Value:    want,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -131,7 +131,7 @@ func TestGetToken(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		err := r.ParseForm()
 		attest.Ok(t, err)
-		r.Form.Add(cookieForm, want)
+		r.Form.Add(csrfCookieForm, want)
 		got := getToken(r)
 		attest.Equal(t, got, want)
 	})
@@ -144,7 +144,7 @@ func TestGetToken(t *testing.T) {
 		formToken := xid.New().String()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		r.AddCookie(&http.Cookie{
-			Name:     cookieName,
+			Name:     csrfCookieName,
 			Value:    cookieToken,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -154,7 +154,7 @@ func TestGetToken(t *testing.T) {
 		r.Header.Set(csrfHeader, headerToken)
 		err := r.ParseForm()
 		attest.Ok(t, err)
-		r.Form.Add(cookieForm, formToken)
+		r.Form.Add(csrfCookieForm, formToken)
 
 		got := getToken(r)
 		attest.Equal(t, got, cookieToken)
@@ -205,7 +205,7 @@ func TestCsrf(t *testing.T) {
 		rec := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		r.AddCookie(&http.Cookie{
-			Name:     cookieName,
+			Name:     csrfCookieName,
 			Value:    reqCsrfTok,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -247,5 +247,74 @@ func TestCsrf(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
 		attest.Equal(t, res.Header.Get(tokenHeader), reqCsrfTok)
+	})
+
+	t.Run("can generate csrf tokens", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+		attest.NotZero(t, res.Header.Get(tokenHeader))
+	})
+
+	t.Run("token is set in all required places", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+
+		// assert that:
+		// (a) csrf cookie is set.
+		// (b) cookie header is set.
+		// (c) vary header is updated.
+		// (d) r.context is updated.
+		// (e) memory store is updated.
+		//
+
+		// (a)
+		attest.Equal(t, len(res.Cookies()), 1)
+		attest.Equal(t, res.Cookies()[0].Name, csrfCookieName)
+		attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
+
+		// (b)
+		attest.Equal(t, res.Header.Get(csrfHeader), res.Header.Get(tokenHeader))
+
+		// (c)
+		attest.Equal(t, res.Header.Get(varyHeader), clientCookieHeader)
+
+		// (d)
+		attest.NotZero(t, res.Header.Get(tokenHeader))
+
+		// (e)
+		attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)))
+		attest.True(t, csrfStore._len() > 0)
 	})
 }
