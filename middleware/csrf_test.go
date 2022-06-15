@@ -346,5 +346,6 @@ func TestCsrf(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusBadRequest)
 		attest.Equal(t, string(rb), errCsrfTokenNotFound.Error()+"\n")
 		attest.Zero(t, res.Header.Get(tokenHeader))
+		attest.Equal(t, len(res.Cookies()), 0)
 	})
 }
