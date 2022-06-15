@@ -224,4 +224,28 @@ func TestCsrf(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 		attest.Equal(t, res.Header.Get(tokenHeader), reqCsrfTok)
 	})
+
+	t.Run("fetch token from HEAD requests", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		reqCsrfTok := xid.New().String()
+		rec := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		r.Header.Set(csrfHeader, reqCsrfTok)
+		wrappedHandler.ServeHTTP(rec, r)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+		attest.Equal(t, res.Header.Get(tokenHeader), reqCsrfTok)
+	})
 }
