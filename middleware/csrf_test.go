@@ -121,4 +121,40 @@ func TestGetToken(t *testing.T) {
 		got := getToken(r)
 		attest.Equal(t, got, want)
 	})
+
+	t.Run("from form", func(t *testing.T) {
+		t.Parallel()
+
+		want := xid.New().String()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		err := r.ParseForm()
+		attest.Ok(t, err)
+		r.Form.Add(cookieForm, want)
+		got := getToken(r)
+		attest.Equal(t, got, want)
+	})
+
+	t.Run("cookie takes precedence", func(t *testing.T) {
+		t.Parallel()
+
+		cookieToken := xid.New().String()
+		headerToken := xid.New().String()
+		formToken := xid.New().String()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		r.AddCookie(&http.Cookie{
+			Name:     cookieName,
+			Value:    cookieToken,
+			Path:     "/",
+			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+			Secure:   true,  // https only.
+			SameSite: http.SameSiteStrictMode,
+		})
+		r.Header.Set(cookieHeader, headerToken)
+		err := r.ParseForm()
+		attest.Ok(t, err)
+		r.Form.Add(cookieForm, formToken)
+
+		got := getToken(r)
+		attest.Equal(t, got, cookieToken)
+	})
 }
