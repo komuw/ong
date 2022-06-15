@@ -53,7 +53,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
 			csrfToken = getToken(r)
 
-			if csrfToken == "" || !store.get(csrfToken) {
+			if csrfToken == "" || !store.exists(csrfToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, cookieName, domain)
 				http.Error(
@@ -158,7 +158,7 @@ func getToken(r *http.Request) string {
 
 // store persists csrf tokens server-side in-memory.
 type store struct {
-	mu sync.Mutex // protects m
+	mu sync.RWMutex // protects m
 	m  map[string]struct{}
 }
 
@@ -168,8 +168,10 @@ func newStore() *store {
 	}
 }
 
-func (s *store) get(csrfToken string) bool {
+func (s *store) exists(csrfToken string) bool {
+	s.mu.RLock()
 	_, ok := s.m[csrfToken]
+	s.mu.RUnlock()
 	return ok
 }
 
@@ -183,6 +185,14 @@ func (s *store) reset() {
 	s.mu.Lock()
 	s.m = map[string]struct{}{}
 	s.mu.Unlock()
+}
+
+// used in tests
+func (s *store) _len() int {
+	s.mu.RLock()
+	l := len(s.m)
+	s.mu.RUnlock()
+	return l
 }
 
 // django:
