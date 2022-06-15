@@ -115,8 +115,8 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 //
 // usage:
 //   func myHandler(w http.ResponseWriter, r *http.Request) {
-//   	nonce := middleware.GetCspNonce(r.Context())
-//   	_ = nonce
+//   	cspNonce := middleware.GetCspNonce(r.Context())
+//   	_ = cspNonce
 //   }
 func GetCspNonce(c context.Context) string {
 	v := c.Value(ck)
