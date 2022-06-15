@@ -30,13 +30,19 @@ const (
 	clientCookieHeader = "Cookie"
 	varyHeader         = "Vary"
 
+	// The memory store is reset(for memory efficiency) if either resetDuration OR maxRequestsToReset occurs.
 	tokenMaxAge   = 1 * time.Hour // same max-age as what fiber uses. django seems to use one year.
 	resetDuration = tokenMaxAge + (7 * time.Minute)
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
-func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
+// If maxRequestsToReset <= 0, it is set to a high default value.
+func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int32) http.HandlerFunc {
 	start := time.Now()
+	requestsServed := int32(0)
+	if maxRequestsToReset <= 0 {
+		maxRequestsToReset = 10_000_000
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -103,11 +109,13 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		csrfStore.set(csrfToken)
 
 		// 8. reset memory to decrease its size.
+		requestsServed = requestsServed + 1
 		now := time.Now()
 		diff := now.Sub(start)
-		if diff > resetDuration {
+		if (diff > resetDuration) || (requestsServed > maxRequestsToReset) {
 			csrfStore.reset()
 			start = now
+			requestsServed = 0
 		}
 
 		wrappedHandler(w, r)
