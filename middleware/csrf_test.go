@@ -60,7 +60,14 @@ func TestStore(t *testing.T) {
 
 		attest.False(t, store.exists("NonExistent"))
 		attest.True(t, store.exists(tokens[14]))
-		attest.Equal(t, store._len(), len(tokens))
+		attest.Approximately(
+			t,
+			store._len(),
+			len(tokens),
+			// The delta is because, the `store.set()` in the waitgroup may be
+			// called concurrently with the `store.reset()` in the previous goroutine.
+			10,
+		)
 	})
 
 	t.Run("reset", func(t *testing.T) {
