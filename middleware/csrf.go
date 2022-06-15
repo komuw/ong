@@ -20,6 +20,9 @@ const (
 	cookieName   = "csrftoken"    // named after what django uses.
 	cookieHeader = "X-Csrf-Token" // named after what fiber uses.
 	cookieForm   = cookieName
+
+	tokenMaxAge   = 1 * time.Hour // same max-age as what fiber uses. django seems to use one year.
+	resetDuration = tokenMaxAge + (7 * time.Minute)
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
@@ -43,6 +46,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	}
 
 	bloom := newBloom(10_000, 8)
+	start := time.Now()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -100,8 +104,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			cookieName,
 			crsfToken,
 			domain,
-			// same max-age as what fiber uses. django seems to use one year.
-			1*time.Hour,
+			tokenMaxAge,
 			true,
 		)
 
@@ -115,6 +118,14 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 
 		// 7. store crsfToken in context
 		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, crsfToken))
+
+		// 8. reset bloom to decrease false positives.
+		now := time.Now()
+		diff := now.Sub(start)
+		if diff > resetDuration {
+			bloom.reset()
+			start = now
+		}
 
 		wrappedHandler(w, r)
 	}

@@ -10,6 +10,7 @@ import (
 // It tells us whether an element is;
 // - DEFINITELY NOT in the set, or
 // - may be in the set.
+// With more elements in the bloom, the probability of false positives increases.
 type bloom struct {
 	size uint64
 	// todo: re-implement using actual bitsets for more efficiency & speed.
@@ -52,4 +53,8 @@ func (b *bloom) hash(item string) uint64 {
 	_, _ = b.h.WriteString(item)
 	index := b.h.Sum64() % b.size
 	return index
+}
+
+func (b *bloom) reset() {
+	b.bitArray = make([]uint64, b.size, b.size)
 }
