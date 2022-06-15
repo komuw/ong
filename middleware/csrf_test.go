@@ -66,7 +66,7 @@ func TestStore(t *testing.T) {
 			len(tokens),
 			// The delta is because, the `store.set()` in the waitgroup may be
 			// called concurrently with the `store.reset()` in the previous goroutine.
-			10,
+			14,
 		)
 	})
 
