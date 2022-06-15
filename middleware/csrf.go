@@ -128,10 +128,11 @@ func GetCsrfToken(c context.Context) string {
 // It tries to fetch from cookies, headers, http-forms in that order.
 func getToken(r *http.Request) string {
 	fromCookie := func() string {
-		if c, err := r.Cookie(cookieName); err != nil {
-			return c.Value
+		c, err := r.Cookie(cookieName)
+		if err != nil {
+			return ""
 		}
-		return ""
+		return c.Value
 	}
 
 	fromHeader := func() string {

@@ -1,10 +1,13 @@
 package middleware
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"github.com/rs/xid"
 )
 
 func TestStore(t *testing.T) {
@@ -78,5 +81,44 @@ func TestStore(t *testing.T) {
 
 		store.reset()
 		attest.Equal(t, store._len(), 0)
+	})
+}
+
+func TestGetToken(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty request", func(t *testing.T) {
+		t.Parallel()
+
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		tok := getToken(r)
+		attest.Zero(t, tok)
+	})
+
+	t.Run("from cookie", func(t *testing.T) {
+		t.Parallel()
+
+		want := xid.New().String()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		r.AddCookie(&http.Cookie{
+			Name:     cookieName,
+			Value:    want,
+			Path:     "/",
+			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+			Secure:   true,  // https only.
+			SameSite: http.SameSiteStrictMode,
+		})
+		got := getToken(r)
+		attest.Equal(t, got, want)
+	})
+
+	t.Run("from header", func(t *testing.T) {
+		t.Parallel()
+
+		want := xid.New().String()
+		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		r.Header.Set(cookieHeader, want)
+		got := getToken(r)
+		attest.Equal(t, got, want)
 	})
 }
