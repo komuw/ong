@@ -17,10 +17,10 @@ type csrfContextKey string
 
 const (
 	csrfCtxKey         = csrfContextKey("csrfContextKey")
-	defaultToken       = ""
-	cookieName         = "csrftoken"    // named after what django uses.
+	csrfDefaultToken   = ""
+	csrfCookieName     = "csrftoken"    // named after what django uses.
 	csrfHeader         = "X-Csrf-Token" // named after what fiber uses.
-	cookieForm         = cookieName
+	csrfCookieForm     = csrfCookieName
 	clientCookieHeader = "Cookie"
 	varyHeader         = "Vary"
 
@@ -57,7 +57,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 
 			if csrfToken == "" || !store.exists(csrfToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
-				cookie.Delete(w, cookieName, domain)
+				cookie.Delete(w, csrfCookieName, domain)
 				http.Error(
 					w,
 					errCsrfTokenNotFound.Error(),
@@ -72,30 +72,30 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			csrfToken = xid.New().String()
 		}
 
-		// 3. save csrfToken in memory store.
-		store.set(csrfToken)
-
-		// 4. create cookie
+		// 3. create cookie
 		cookie.Set(
 			w,
-			cookieName,
+			csrfCookieName,
 			csrfToken,
 			domain,
 			tokenMaxAge,
 			true,
 		)
 
-		// 5. set cookie header
+		// 4. set cookie header
 		w.Header().Set(
 			csrfHeader,
 			csrfToken,
 		)
 
-		// 6. Vary header.
+		// 5. update Vary header.
 		w.Header().Add(varyHeader, clientCookieHeader)
 
-		// 7. store csrfToken in context
+		// 6. store csrfToken in context
 		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, csrfToken))
+
+		// 7. save csrfToken in memory store.
+		store.set(csrfToken)
 
 		// 8. reset memory to decrease its size.
 		now := time.Now()
@@ -124,14 +124,14 @@ func GetCsrfToken(c context.Context) string {
 			return s
 		}
 	}
-	return defaultToken
+	return csrfDefaultToken
 }
 
 // getToken tries to fetch a csrf token from the incoming request r.
 // It tries to fetch from cookies, headers, http-forms in that order.
 func getToken(r *http.Request) string {
 	fromCookie := func() string {
-		c, err := r.Cookie(cookieName)
+		c, err := r.Cookie(csrfCookieName)
 		if err != nil {
 			return ""
 		}
@@ -146,7 +146,7 @@ func getToken(r *http.Request) string {
 		if err := r.ParseForm(); err != nil {
 			return ""
 		}
-		return r.Form.Get(cookieForm)
+		return r.Form.Get(csrfCookieForm)
 	}
 
 	tok := fromCookie()

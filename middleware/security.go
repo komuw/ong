@@ -12,8 +12,8 @@ import (
 type cspContextKey string
 
 const (
-	cspCtxKey    = cspContextKey("cspContextKey")
-	defaultNonce = ""
+	cspCtxKey       = cspContextKey("cspContextKey")
+	cspDefaultNonce = ""
 
 	// allow or block the use of browser features(eg accelerometer, camera, autoplay etc).
 	permissionsPolicyHeader = "Permissions-Policy"
@@ -126,7 +126,7 @@ func GetCspNonce(c context.Context) string {
 			return s
 		}
 	}
-	return defaultNonce
+	return cspDefaultNonce
 }
 
 func getCsp(domain, nonce string) string {

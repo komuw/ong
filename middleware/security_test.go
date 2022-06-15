@@ -98,6 +98,6 @@ func TestGetCspNonce(t *testing.T) {
 
 		got := res.Header.Get(nonceHeader)
 		attest.NotZero(t, got)
-		attest.True(t, got != defaultNonce)
+		attest.True(t, got != cspDefaultNonce)
 	})
 }
