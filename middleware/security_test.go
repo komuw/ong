@@ -12,7 +12,7 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
-const nonceHeader = "CUSTOM-CSP-NONCE"
+const nonceHeader = "CUSTOM-CSP-NONCE-TEST-HEADER"
 
 // echoHandler echos back in the response, the msg that was passed in.
 func echoHandler(msg string) http.HandlerFunc {
