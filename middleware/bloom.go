@@ -11,7 +11,8 @@ import (
 // - DEFINITELY NOT in the set, or
 // - may be in the set.
 type bloom struct {
-	size      uint64
+	size uint64
+	// todo: re-implement using actual bitsets for more efficiency & speed.
 	bitArray  []uint64
 	hashCount uint8
 	h         maphash.Hash
@@ -39,6 +40,7 @@ func (b *bloom) get(item string) bool {
 		index := b.hash(item + fmt.Sprint(i))
 		if b.bitArray[index] == 0 {
 			present = false
+			return present
 		}
 	}
 	return present
