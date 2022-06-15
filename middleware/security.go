@@ -12,7 +12,7 @@ import (
 type cspContextKey string
 
 const (
-	ck           = cspContextKey("cspContextKey")
+	cspCtxKey    = cspContextKey("cspContextKey")
 	defaultNonce = ""
 
 	// allow or block the use of browser features(eg accelerometer, camera, autoplay etc).
@@ -54,7 +54,7 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		//   var inline = 1;
 		// </script>
 		nonce := xid.New().String()
-		r = r.WithContext(context.WithValue(ctx, ck, nonce))
+		r = r.WithContext(context.WithValue(ctx, cspCtxKey, nonce))
 		w.Header().Set(
 			cspHeader,
 			// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
@@ -119,7 +119,7 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 //   	_ = cspNonce
 //   }
 func GetCspNonce(c context.Context) string {
-	v := c.Value(ck)
+	v := c.Value(cspCtxKey)
 	if v != nil {
 		s, ok := v.(string)
 		if ok {
