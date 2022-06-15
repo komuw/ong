@@ -16,7 +16,7 @@ var (
 	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
 	// Image if you had `Csrf(loginHandler, domain)` & `Csrf(cartCheckoutHandler, domain)`, if they didn't share a global store,
 	// a customer navigating from login to checkout would get a errCsrfTokenNotFound error; which is not what we want.
-	csrfStore = newStore()
+	csrfStore = newStore() //nolint:gochecknoglobals
 )
 
 type csrfContextKey string
