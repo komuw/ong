@@ -50,7 +50,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int
 		// - https://github.com/gofiber/fiber/blob/v2.34.1/middleware/csrf/csrf.go
 
 		// 1. check http method.
-		//     - if it is a 'safe' method like GET, try and get csrfToken from cookies.
+		//     - if it is a 'safe' method like GET, try and get csrfToken from request.
 		//     - if it is not a 'safe' method, try and get csrfToken from header/cookies/httpForm
 		//        - take the found token and try to get it from memory store.
 		//            - if not found in memory store, delete the cookie & return an error.
@@ -211,15 +211,3 @@ func (s *store) _len() int {
 	s.mu.RUnlock()
 	return l
 }
-
-// django:
-// for safe methods like GET:
-//   - call self._get_token(request) which gets token from cookies.
-//   - if not available generate one.
-//   - set cookie and header.
-// for POST:
-//    - call self._check_token()
-//    - which calls self._get_token(request) which gets token from cookies.
-//    - if not found raise REASON_NO_CSRF_COOKIE
-//    - check form
-//    - check header.
