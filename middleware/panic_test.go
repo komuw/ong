@@ -21,7 +21,11 @@ func handlerThatPanics(msg string, shouldPanic bool) http.HandlerFunc {
 }
 
 func TestPanic(t *testing.T) {
+	t.Parallel()
+
 	t.Run("catches panics", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello"
 		wrappedHandler := Panic(handlerThatPanics(msg, true))
 
@@ -36,6 +40,8 @@ func TestPanic(t *testing.T) {
 	})
 
 	t.Run("ok if no panic", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello"
 		wrappedHandler := Panic(handlerThatPanics(msg, false))
 

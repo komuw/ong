@@ -50,7 +50,11 @@ func TestDrainDuration(t *testing.T) {
 }
 
 func TestOpts(t *testing.T) {
+	t.Parallel()
+
 	t.Run("sensible defaults", func(t *testing.T) {
+		t.Parallel()
+
 		got := DefaultOpts()
 		want := opts{
 			port:              "8080",
@@ -66,6 +70,8 @@ func TestOpts(t *testing.T) {
 	})
 
 	t.Run("sensible defaults", func(t *testing.T) {
+		t.Parallel()
+
 		got := WithOpts("80", "localhost")
 		want := opts{
 			port:              "80",
@@ -105,7 +111,11 @@ func TestOpts(t *testing.T) {
 // }
 
 // func TestRun(t *testing.T) {
+//  t.Parallel()
+//
 // 	t.Run("success", func(t *testing.T) {
+//      t.Parallel()
+//
 // 		eh := &myEH{router: http.NewServeMux()}
 // 		err := Run(eh, WithOpts("0", "localhost"))
 // 		attest.Ok(t, err)

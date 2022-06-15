@@ -9,3 +9,4 @@ Most recent version is listed first.
 - harmonize timeouts: https://github.com/komuw/goweb/pull/25
 - add panic middleware: https://github.com/komuw/goweb/pull/26
 - cookies: https://github.com/komuw/goweb/pull/27
+- csrf middleware: https://github.com/komuw/goweb/pull/32
