@@ -11,7 +11,7 @@ import (
 	"github.com/rs/xid"
 )
 
-var errCsrfTokenNotFound = errors.New("csrf token not found")
+var errCsrfTokenNotFound = errors.New("csrf token not found/recognized")
 
 type csrfContextKey string
 
