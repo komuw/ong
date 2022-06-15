@@ -73,6 +73,9 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			}
 
 			if crsfToken != "" && !bloom.get(crsfToken) {
+				// bloom filter answers whether something is DEFINITELY NOT in the set.
+				// so if the token is definitely not in memory store,
+				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, cookieName, domain)
 				http.Error(
 					w,
