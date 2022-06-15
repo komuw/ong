@@ -12,6 +12,9 @@ import "net/http"
 // in order to check that the server will permit the actual request.
 // In that preflight, the browser sends headers that indicate the HTTP method and headers that will be used in the actual request.
 //
+// An origin is identified by a triple: scheme, fully qualified hostname and port.
+// `http://example.com` and `https://example.com` are different origins(http vs https)
+//
 // - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
 // Cors is a middleware to implement Cross-Origin Resource Sharing support.
