@@ -11,6 +11,10 @@ import (
 	"github.com/rs/xid"
 )
 
+// Most of the code here is insipired by:
+//   (a) https://github.com/gofiber/fiber whose license(MIT) can be found here:            https://github.com/gofiber/fiber/blob/v2.34.1/LICENSE
+//   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
+
 var (
 	errCsrfTokenNotFound = errors.New("csrf token not found/recognized")
 	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
