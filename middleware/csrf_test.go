@@ -63,10 +63,7 @@ func TestStore(t *testing.T) {
 
 		store := newStore()
 
-		tokens := []string{
-			"aaron", "abandoned", "aberdeen", "according", "accountability", "accreditation", "accredited", "accurately", "accused",
-		}
-
+		tokens := []string{"aaron", "abandoned", "according", "accreditation", "accurately", "accused"}
 		wg := &sync.WaitGroup{}
 		for _, tok := range tokens {
 			wg.Add(1)
