@@ -80,39 +80,16 @@ func TestBloom(t *testing.T) {
 	})
 
 	t.Run("space efficiency", func(t *testing.T) {
-		// f, err := os.Open("testdata/10_000_words.txt")
-		// attest.Ok(t, err)
-		// defer f.Close()
-
-		// words := []string{}
-		// scanner := bufio.NewScanner(f)
-		// for scanner.Scan() {
-		// 	words = append(words, scanner.Text())
-		// }
-		// err = scanner.Err()
-		// attest.Ok(t, err)
-
 		words := []string{
-			"dog",
-			"cat",
-			"giraffe",
-			"fly",
-			"mosquito",
-			"horse",
-			"eagle",
-			"bird",
-			"bison",
-			"boar",
-			"butterfly",
-			"ant",
-			"anaconda",
-			"bear",
-			"chicken",
-			"dolphin",
-			"donkey",
-			"crow",
-			"crocodile",
-			"wallace", "wallet", "wallpaper", "wallpapers", "walls", "walnut", "walt", "walter", "wan", "wang", "wanna", "want", "wanted", "wanting", "wants", "war", "warcraft", "ward", "ware", "warehouse", "warm", "warming", "warned", "warner", "warning", "warnings", "warrant", "warranties", "warranty", "warren", "warrior", "warriors", "wars", "was", "wash", "washer", "washing", "washington", "waste", "watch", "watched", "watches", "watching", "water", "waterproof", "waters", "watershed", "watson", "watt", "watts", "wav", "wave", "waves", "wax", "way", "wayne", "ways", "wb", "wc", "we", "weak", "wealth", "weapon", "weapons", "wear", "wearing", "weather", "web", "webcam", "webcams", "webcast", "weblog", "weblogs", "webmaster", "webmasters", "webpage", "webshots", "website", "websites", "webster", "wed", "wedding", "weddings", "wednesday", "weed", "week", "weekend", "weekends", "weekly", "weeks", "weight", "weighted", "weights", "weird", "welcome", "welding", "welfare", "well", "wellington", "wellness", "wells", "welsh", "wendy", "went", "were", "wesley", "west", "western", "westminster", "wet", "whale", "what", "whatever", "whats", "wheat", "wheel", "wheels", "when", "whenever", "where",
+			"dog", "cat", "giraffe", "fly", "mosquito", "horse", "eagle", "bird", "bison", "boar", "butterfly", "ant", "anaconda", "bear", "chicken", "dolphin",
+			"donkey", "crow", "crocodile", "wallace", "wallet", "wallpaper", "wallpapers", "walls", "walnut", "walt", "walter", "wan", "wang", "wanna", "want",
+			"wanted", "wanting", "wants", "war", "warcraft", "ward", "ware", "warehouse", "warm", "warming", "warned", "warner", "warning", "warnings", "warrant",
+			"warranties", "warranty", "warren", "warrior", "warriors", "wars", "was", "wash", "washer", "washing", "washington", "waste", "watch", "watched", "watches",
+			"watching", "water", "waterproof", "waters", "watershed", "watson", "watt", "watts", "wav", "wave", "waves", "wax", "way", "wayne", "ways", "wb", "wc", "we",
+			"weak", "wealth", "weapon", "weapons", "wear", "wearing", "weather", "web", "webcam", "webcams", "webcast", "weblog", "weblogs", "webmaster", "webmasters",
+			"webpage", "webshots", "website", "websites", "webster", "wed", "wedding", "weddings", "wednesday", "weed", "week", "weekend", "weekends", "weekly", "weeks",
+			"weight", "weighted", "weights", "weird", "welcome", "welding", "welfare", "well", "wellington", "wellness", "wells", "welsh", "wendy", "went", "were",
+			"wesley", "west", "western", "westminster", "wet", "whale", "what", "whatever", "whats", "wheat", "wheel", "wheels", "when", "whenever", "where",
 		}
 		size := uint64(len(words) / 10)
 		hashCount := uint8(7)
