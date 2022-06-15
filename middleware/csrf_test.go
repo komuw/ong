@@ -57,17 +57,33 @@ func TestStore(t *testing.T) {
 			}(tok)
 		}
 		wg.Wait()
+	})
 
-		attest.False(t, store.exists("NonExistent"))
-		attest.True(t, store.exists(tokens[14]))
-		attest.Approximately(
-			t,
-			store._len(),
-			len(tokens),
-			// The delta is because, the `store.set()` in the waitgroup may be
-			// called concurrently with the `store.reset()` in the previous goroutine.
-			14,
-		)
+	t.Run("set", func(t *testing.T) {
+		t.Parallel()
+
+		store := newStore()
+
+		tokens := []string{
+			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
+			"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
+		}
+		wg := &sync.WaitGroup{}
+		for _, tok := range tokens {
+			wg.Add(1)
+			go func(t string) {
+				store.set(t)
+				wg.Done()
+			}(tok)
+		}
+		wg.Wait()
+
+		attest.Equal(t, store._len(), len(tokens))
 	})
 
 	t.Run("reset", func(t *testing.T) {
