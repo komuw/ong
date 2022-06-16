@@ -60,6 +60,13 @@ func TestCorsPreflight(t *testing.T) {
 	})
 }
 
+// func TestIsOriginAllowed(t *testing.T) {
+// 	t.Run("TODO", func(t *testing.T) {
+// 		allow, allowAll := isOriginAllowed(tt.args.origin, tt.args.allowedOrigins, tt.args.allowedWildcardOrigins)
+
+// 	})
+// }
+
 // func TestCorsActualRequest(t *testing.T) {
 // 	t.Parallel()
 
