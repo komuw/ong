@@ -77,6 +77,13 @@ func TestIsOriginAllowed(t *testing.T) {
 			allow:          true,
 			allowAll:       true,
 		},
+		{
+			name:           "star allowedOrigins",
+			origin:         "some-origin",
+			allowedOrigins: []string{"*"},
+			allow:          true,
+			allowAll:       true,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
