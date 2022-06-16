@@ -16,7 +16,7 @@ func someCorsHandler(msg string) http.HandlerFunc {
 	}
 }
 
-func TestCors(t *testing.T) {
+func TestCorsPreflight(t *testing.T) {
 	t.Parallel()
 
 	t.Run("TODO", func(t *testing.T) {
