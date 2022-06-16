@@ -60,12 +60,37 @@ func TestCorsPreflight(t *testing.T) {
 	})
 }
 
-// func TestIsOriginAllowed(t *testing.T) {
-// 	t.Run("TODO", func(t *testing.T) {
-// 		allow, allowAll := isOriginAllowed(tt.args.origin, tt.args.allowedOrigins, tt.args.allowedWildcardOrigins)
+func TestIsOriginAllowed(t *testing.T) {
+	t.Parallel()
 
-// 	})
-// }
+	tests := []struct {
+		name           string
+		origin         string
+		allowedOrigins []string
+		allow          bool
+		allowAll       bool
+	}{
+		{
+			name:           "nil allowedOrigins",
+			origin:         "some-origin",
+			allowedOrigins: nil,
+			allow:          true,
+			allowAll:       true,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins)
+			allow, allowAll := isOriginAllowed(tt.origin, allowedOrigins, allowedWildcardOrigins)
+			attest.Equal(t, allow, tt.allow)
+			attest.Equal(t, allowAll, tt.allowAll)
+		})
+	}
+}
 
 // func TestCorsActualRequest(t *testing.T) {
 // 	t.Parallel()
