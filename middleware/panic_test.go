@@ -30,8 +30,8 @@ func TestPanic(t *testing.T) {
 		wrappedHandler := Panic(handlerThatPanics(msg, true))
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -46,8 +46,8 @@ func TestPanic(t *testing.T) {
 		wrappedHandler := Panic(handlerThatPanics(msg, false))
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
