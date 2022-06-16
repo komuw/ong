@@ -52,10 +52,11 @@ const (
 )
 
 // Cors is a middleware to implement Cross-Origin Resource Sharing support.
-func Cors(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	createWildcards := func(allowedOrigins []string) []wildcard {
-		allowedWildcardOrigins := []wildcard{}
-		for _, origin := range allowedOrigins {
+// Use * in allowedOrigins to allow all. Use * in allowedHeaders to allow all.
+func Cors(wrappedHandler http.HandlerFunc, allowedOrigins, allowedHeaders, allowedMethods []string) http.HandlerFunc {
+	createWildcards := func(ao []string) []wildcard {
+		awo := []wildcard{}
+		for _, origin := range ao {
 			if i := strings.IndexByte(origin, '*'); i >= 0 {
 				// Split the origin in two: start and end string without the *
 				prefix := origin[0:i]
@@ -65,31 +66,48 @@ func Cors(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 					suffix: suffix,
 					len:    len(prefix) + len(suffix),
 				}
-				allowedWildcardOrigins = append(allowedWildcardOrigins, w)
+				awo = append(awo, w)
 			}
 		}
-		return allowedWildcardOrigins
+		return awo
 	}
 
-	// use `*` to allow all.
-	allowedOrigins := []string{} // TODO: offer ability for library user to provide these.
+	if len(allowedOrigins) == 0 {
+		allowedOrigins = []string{"*"}
+	}
 	allowedWildcardOrigins := createWildcards(allowedOrigins)
-	_allowedMethods := []string{
-		// the spec by default allows this simple methods for cross-origin-requests: GET, POST, HEAD.
-		http.MethodGet,
-		http.MethodPost,
-		http.MethodHead,
-	}
-	allowedMethods := []string{} // TODO: offer ability for library users to augument these.
-	for _, v := range _allowedMethods {
-		allowedMethods = append(allowedMethods, strings.ToUpper(v))
+
+	if len(allowedMethods) == 0 {
+		allowedMethods = []string{
+			// the spec by default allows this simple methods for cross-origin-requests: GET, POST, HEAD.
+			strings.ToUpper(http.MethodGet),
+			strings.ToUpper(http.MethodPost),
+			strings.ToUpper(http.MethodHead),
+		}
+	} else {
+		canon := []string{}
+		for _, v := range allowedMethods {
+			canon = append(canon, strings.ToUpper(v))
+		}
+		allowedMethods = canon
+		canon = nil
 	}
 
-	// use `*` to allow all.
-	_allowedHeaders := []string{}
-	allowedHeaders := []string{} // TODO: offer ability for library user to provide these.
-	for _, v := range _allowedHeaders {
-		allowedHeaders = append(allowedHeaders, http.CanonicalHeaderKey(v))
+	if len(allowedHeaders) == 0 {
+		// use sensible defaults.
+		allowedHeaders = []string{
+			http.CanonicalHeaderKey("Origin"),
+			http.CanonicalHeaderKey("Accept"),
+			http.CanonicalHeaderKey("Content-Type"),
+			http.CanonicalHeaderKey("X-Requested-With"),
+		}
+	} else {
+		canon := []string{}
+		for _, v := range allowedHeaders {
+			canon = append(canon, http.CanonicalHeaderKey(v))
+		}
+		allowedHeaders = canon
+		canon = nil
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -256,9 +274,10 @@ func isOriginAllowed(
 }
 
 func isMethodAllowed(method string, allowedMethods []string) bool {
-	if len(allowedMethods) == 0 {
-		// If no method allowed, always return false, even for preflight request
-		return false
+	// todo: allow ability for users of library to set empty allowedMethods
+	//       ie, `len(allowedMethods) == 0` which would disallow all methods.
+	if slices.Contains(allowedMethods, "*") {
+		return true
 	}
 
 	method = strings.ToUpper(method)
