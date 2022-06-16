@@ -282,6 +282,10 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 		return []string{"*"}, []wildcard{}
 	}
 
+	if slices.Contains(allowedOrigins, "*") {
+		return []string{"*"}, []wildcard{}
+	}
+
 	canon := []string{}
 	for _, v := range ao {
 		canon = append(canon, strings.ToLower(v))
@@ -316,6 +320,10 @@ func getMethods(am []string) []string {
 		}
 	}
 
+	if slices.Contains(am, "*") {
+		return []string{"*"}
+	}
+
 	allowedMethods := []string{}
 	for _, v := range am {
 		allowedMethods = append(allowedMethods, strings.ToUpper(v))
@@ -334,6 +342,11 @@ func getHeaders(ah []string) []string {
 			http.CanonicalHeaderKey("X-Requested-With"),
 		}
 	}
+
+	if slices.Contains(ah, "*") {
+		return []string{"*"}
+	}
+
 	allowedHeaders := []string{}
 	for _, v := range ah {
 		allowedHeaders = append(allowedHeaders, http.CanonicalHeaderKey(v))

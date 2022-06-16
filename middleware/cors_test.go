@@ -99,6 +99,13 @@ func TestIsOriginAllowed(t *testing.T) {
 			allow:          false,
 			allowAll:       false,
 		},
+		{
+			name:           "star allowedOrigins is supreme",
+			origin:         "http://example.com",
+			allowedOrigins: []string{"https://example.com", "*"},
+			allow:          true,
+			allowAll:       true,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
