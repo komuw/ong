@@ -36,7 +36,27 @@ func TestCorsPreflight(t *testing.T) {
 		attest.Ok(t, err)
 
 		attest.Equal(t, res.StatusCode, http.StatusNoContent)
-		attest.Equal(t, string(rb), "") // someCorsHandler is not called.
+		attest.Equal(t, string(rb), "") // someCorsHandler is NOT called.
+	})
+
+	t.Run("http OPTIONS without preflight request header", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
+		// preflight request header NOT set
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg) // someCorsHandler is called.
 	})
 }
 
