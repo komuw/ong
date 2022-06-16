@@ -53,6 +53,24 @@ const (
 
 // Cors is a middleware to implement Cross-Origin Resource Sharing support.
 func Cors(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	createWildcards := func(allowedOrigins []string) []wildcard {
+		allowedWildcardOrigins := []wildcard{}
+		for _, origin := range allowedOrigins {
+			if i := strings.IndexByte(origin, '*'); i >= 0 {
+				// Split the origin in two: start and end string without the *
+				prefix := origin[0:i]
+				suffix := origin[i+1:]
+				w := wildcard{
+					prefix: prefix,
+					suffix: suffix,
+					len:    len(prefix) + len(suffix),
+				}
+				allowedWildcardOrigins = append(allowedWildcardOrigins, w)
+			}
+		}
+		return allowedWildcardOrigins
+	}
+
 	// use `*` to allow all.
 	allowedOrigins := []string{} // TODO: offer ability for library user to provide these.
 	allowedWildcardOrigins := createWildcards(allowedOrigins)
@@ -209,25 +227,6 @@ func (w wildcard) match(s string) bool {
 	return len(s) >= w.len &&
 		strings.HasPrefix(s, w.prefix) &&
 		strings.HasSuffix(s, w.suffix)
-}
-
-func createWildcards(allowedOrigins []string) []wildcard {
-	allowedWildcardOrigins := []wildcard{}
-	for _, origin := range allowedOrigins {
-		if i := strings.IndexByte(origin, '*'); i >= 0 {
-			// Split the origin in two: start and end string without the *
-			prefix := origin[0:i]
-			suffix := origin[i+1:]
-			w := wildcard{
-				prefix: prefix,
-				suffix: suffix,
-				len:    len(prefix) + len(suffix),
-			}
-			allowedWildcardOrigins = append(allowedWildcardOrigins, w)
-		}
-	}
-
-	return allowedWildcardOrigins
 }
 
 func isOriginAllowed(
