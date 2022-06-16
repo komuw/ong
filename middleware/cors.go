@@ -52,7 +52,9 @@ const (
 )
 
 // Cors is a middleware to implement Cross-Origin Resource Sharing support.
-// Use * in allowedOrigins to allow all. Use * in allowedHeaders to allow all.
+// Use * in allowedOrigins to allow all.
+// Use * in allowedHeaders to allow all.
+// Use * in allowedMethods to allow all.
 func Cors(wrappedHandler http.HandlerFunc, allowedOrigins, allowedHeaders, allowedMethods []string) http.HandlerFunc {
 	createWildcards := func(ao []string) []wildcard {
 		awo := []wildcard{}
@@ -278,6 +280,7 @@ func isOriginAllowed(
 func isMethodAllowed(method string, allowedMethods []string) bool {
 	// todo: allow ability for users of library to set empty allowedMethods
 	//       ie, `len(allowedMethods) == 0` which would disallow all methods.
+
 	if slices.Contains(allowedMethods, "*") {
 		return true
 	}
