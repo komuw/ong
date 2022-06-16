@@ -61,70 +61,9 @@ func Cors(
 	allowedMethods []string,
 	allowedHeaders []string,
 ) http.HandlerFunc {
-	createWildcards := func(ao []string) []wildcard {
-		awo := []wildcard{}
-		for _, origin := range ao {
-			if i := strings.IndexByte(origin, '*'); i >= 0 {
-				// Split the origin in two: start and end string without the *
-				prefix := origin[0:i]
-				suffix := origin[i+1:]
-				w := wildcard{
-					prefix: prefix,
-					suffix: suffix,
-					len:    len(prefix) + len(suffix),
-				}
-				awo = append(awo, w)
-			}
-		}
-		return awo
-	}
-
-	allowedWildcardOrigins := []wildcard{}
-	if len(allowedOrigins) == 0 {
-		allowedOrigins = []string{"*"}
-	} else {
-		canon := []string{}
-		for _, v := range allowedOrigins {
-			canon = append(canon, strings.ToLower(v))
-		}
-		allowedOrigins = canon
-		canon = nil
-
-		allowedWildcardOrigins = createWildcards(allowedOrigins)
-	}
-
-	if len(allowedMethods) == 0 {
-		allowedMethods = []string{
-			// the spec by default allows this simple methods for cross-origin-requests: GET, POST, HEAD.
-			strings.ToUpper(http.MethodGet),
-			strings.ToUpper(http.MethodPost),
-			strings.ToUpper(http.MethodHead),
-		}
-	} else {
-		canon := []string{}
-		for _, v := range allowedMethods {
-			canon = append(canon, strings.ToUpper(v))
-		}
-		allowedMethods = canon
-		canon = nil
-	}
-
-	if len(allowedHeaders) == 0 {
-		// use sensible defaults.
-		allowedHeaders = []string{
-			http.CanonicalHeaderKey("Origin"),
-			http.CanonicalHeaderKey("Accept"),
-			http.CanonicalHeaderKey("Content-Type"),
-			http.CanonicalHeaderKey("X-Requested-With"),
-		}
-	} else {
-		canon := []string{}
-		for _, v := range allowedHeaders {
-			canon = append(canon, http.CanonicalHeaderKey(v))
-		}
-		allowedHeaders = canon
-		canon = nil
-	}
+	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
+	allowedMethods = getMethods(allowedMethods)
+	allowedHeaders = getHeaders(allowedHeaders)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
@@ -336,4 +275,69 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 		}
 	}
 	return true
+}
+
+func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []wildcard) {
+	if len(ao) == 0 {
+		return []string{"*"}, []wildcard{}
+	}
+
+	canon := []string{}
+	for _, v := range ao {
+		canon = append(canon, strings.ToLower(v))
+	}
+	allowedOrigins = canon
+	canon = nil
+	ao = nil
+
+	for _, origin := range allowedOrigins {
+		if i := strings.IndexByte(origin, '*'); i >= 0 {
+			// Split the origin in two: start and end string without the *
+			prefix := origin[0:i]
+			suffix := origin[i+1:]
+			w := wildcard{
+				prefix: prefix,
+				suffix: suffix,
+				len:    len(prefix) + len(suffix),
+			}
+			allowedWildcardOrigins = append(allowedWildcardOrigins, w)
+		}
+	}
+	return allowedOrigins, allowedWildcardOrigins
+}
+
+func getMethods(am []string) []string {
+	if len(am) == 0 {
+		return []string{
+			// the spec by default allows this simple methods for cross-origin-requests: GET, POST, HEAD.
+			strings.ToUpper(http.MethodGet),
+			strings.ToUpper(http.MethodPost),
+			strings.ToUpper(http.MethodHead),
+		}
+	}
+
+	allowedMethods := []string{}
+	for _, v := range am {
+		allowedMethods = append(allowedMethods, strings.ToUpper(v))
+	}
+
+	return allowedMethods
+}
+
+func getHeaders(ah []string) []string {
+	if len(ah) == 0 {
+		// use sensible defaults.
+		return []string{
+			http.CanonicalHeaderKey("Origin"),
+			http.CanonicalHeaderKey("Accept"),
+			http.CanonicalHeaderKey("Content-Type"),
+			http.CanonicalHeaderKey("X-Requested-With"),
+		}
+	}
+	allowedHeaders := []string{}
+	for _, v := range ah {
+		allowedHeaders = append(allowedHeaders, http.CanonicalHeaderKey(v))
+	}
+
+	return allowedHeaders
 }
