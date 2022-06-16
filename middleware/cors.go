@@ -162,6 +162,43 @@ func handlePreflight(
 	headers.Set(acmaHeader, fmt.Sprintf("%d", int(corsCacheDur.Seconds())))
 }
 
+func handleActualRequest(
+	w http.ResponseWriter,
+	r *http.Request,
+	allowedOrigins []string,
+	allowedWildcardOrigins []wildcard,
+	allowedMethods []string,
+	allowedHeaders []string,
+) {
+	headers := w.Header()
+	origin := r.Header.Get(originHeader)
+	reqMethod := r.Method // note this is different from the one in `handlePreflight`
+
+	// Always set Vary, see https://github.com/rs/cors/issues/10
+	headers.Add(varyHeader, originHeader)
+
+	if origin == "" {
+		return
+	}
+
+	allow, allowAll := isOriginAllowed(r, origin, allowedOrigins, allowedWildcardOrigins)
+	if !allow {
+		return
+	}
+
+	if !isMethodAllowed(reqMethod, allowedMethods) {
+		return
+	}
+
+	// we need to set appropriate headers.
+	// (a) allowed origin.
+	if allowAll {
+		headers.Set(acaoHeader, "*")
+	} else {
+		headers.Set(acaoHeader, origin)
+	}
+}
+
 type wildcard struct {
 	prefix string
 	suffix string
@@ -265,41 +302,4 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 		}
 	}
 	return true
-}
-
-func handleActualRequest(
-	w http.ResponseWriter,
-	r *http.Request,
-	allowedOrigins []string,
-	allowedWildcardOrigins []wildcard,
-	allowedMethods []string,
-	allowedHeaders []string,
-) {
-	headers := w.Header()
-	origin := r.Header.Get(originHeader)
-	reqMethod := r.Method // note this is different from the one in `handlePreflight`
-
-	// Always set Vary, see https://github.com/rs/cors/issues/10
-	headers.Add(varyHeader, originHeader)
-
-	if origin == "" {
-		return
-	}
-
-	allow, allowAll := isOriginAllowed(r, origin, allowedOrigins, allowedWildcardOrigins)
-	if !allow {
-		return
-	}
-
-	if !isMethodAllowed(reqMethod, allowedMethods) {
-		return
-	}
-
-	// we need to set appropriate headers.
-	// (a) allowed origin.
-	if allowAll {
-		headers.Set(acaoHeader, "*")
-	} else {
-		headers.Set(acaoHeader, origin)
-	}
 }
