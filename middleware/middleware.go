@@ -13,16 +13,15 @@ func Get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions || r.Method == http.MethodGet {
 			// http OPTIONS is allowed because it is used for CORS(as a preflight request signal.)
-
 			wrappedHandler(w, r)
+		} else {
+			errMsg := fmt.Sprintf(msg, r.Method)
+			http.Error(
+				w,
+				errMsg,
+				http.StatusMethodNotAllowed,
+			)
+			return
 		}
-
-		errMsg := fmt.Sprintf(msg, r.Method)
-		http.Error(
-			w,
-			errMsg,
-			http.StatusMethodNotAllowed,
-		)
-		return
 	}
 }
