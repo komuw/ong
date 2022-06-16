@@ -19,13 +19,14 @@ func someCorsHandler(msg string) http.HandlerFunc {
 func TestCorsPreflight(t *testing.T) {
 	t.Parallel()
 
-	t.Run("TODO", func(t *testing.T) {
+	t.Run("preflight success", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Cors(someCorsHandler(msg))
+		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
+		req.Header.Add(acrmHeader, "is-set") // preflight request header set
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -34,8 +35,8 @@ func TestCorsPreflight(t *testing.T) {
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
+		attest.Equal(t, res.StatusCode, http.StatusNoContent)
+		attest.Equal(t, string(rb), "") // someCorsHandler is not called.
 	})
 }
 
