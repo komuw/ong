@@ -7,7 +7,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// Most of the code here is insipired by:
+// Most of the code here is insipired(or taken from) by:
 //   (a) https://github.com/gofiber/fiber whose license(MIT) can be found here: https://github.com/rs/cors/blob/v1.8.2/LICENSE
 
 // Cross-Origin Resource Sharing (CORS) is an HTTP-header based mechanism that allows a server to
