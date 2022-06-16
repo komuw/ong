@@ -106,6 +106,27 @@ func TestIsOriginAllowed(t *testing.T) {
 			allow:          true,
 			allowAll:       true,
 		},
+		{
+			name:           "wildcard allowedOrigins",
+			origin:         "http://example.com",
+			allowedOrigins: []string{"*example.com"},
+			allow:          true,
+			allowAll:       false,
+		},
+		{
+			name:           "wildcard even in scheme ",
+			origin:         "https://www.example.com",
+			allowedOrigins: []string{"*example.com"},
+			allow:          true,
+			allowAll:       false,
+		},
+		{
+			name:           "wildcard subdomain",
+			origin:         "https://subdomain.example.com",
+			allowedOrigins: []string{"*example.com"},
+			allow:          true,
+			allowAll:       false,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
