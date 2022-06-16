@@ -101,7 +101,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "star allowedOrigins is supreme",
-			origin:         "http://example.com",
+			origin:         "http://hey.com",
 			allowedOrigins: []string{"https://example.com", "*"},
 			allow:          true,
 			allowAll:       true,
