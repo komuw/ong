@@ -33,8 +33,8 @@ func TestSecurity(t *testing.T) {
 		wrappedHandler := Security(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -54,9 +54,9 @@ func TestSecurity(t *testing.T) {
 		wrappedHandler := Security(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		r.TLS = &tls.ConnectionState{} // fake tls so that the STS header is set.
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.TLS = &tls.ConnectionState{} // fake tls so that the STS header is set.
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -90,8 +90,8 @@ func TestGetCspNonce(t *testing.T) {
 		wrappedHandler := Security(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()

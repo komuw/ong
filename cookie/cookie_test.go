@@ -30,8 +30,8 @@ func TestSet(t *testing.T) {
 		handler := setHandler(name, value, domain, mAge, false)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		handler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -58,8 +58,8 @@ func TestSet(t *testing.T) {
 		handler := setHandler(name, value, domain, mAge, false)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		handler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -85,8 +85,8 @@ func TestSet(t *testing.T) {
 		handler := setHandler(name, value, domain, mAge, jsAccess)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		handler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -125,8 +125,8 @@ func TestDelete(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler := deleteHandler(name, value, domain, mAge)
 
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		handler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
 		res := rec.Result()
 		defer res.Body.Close()
 

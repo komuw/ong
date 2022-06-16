@@ -115,8 +115,8 @@ func TestGetToken(t *testing.T) {
 	t.Run("empty request", func(t *testing.T) {
 		t.Parallel()
 
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		tok := getToken(r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		tok := getToken(req)
 		attest.Zero(t, tok)
 	})
 
@@ -124,8 +124,8 @@ func TestGetToken(t *testing.T) {
 		t.Parallel()
 
 		want := xid.New().String()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		r.AddCookie(&http.Cookie{
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
 			Value:    want,
 			Path:     "/",
@@ -133,7 +133,7 @@ func TestGetToken(t *testing.T) {
 			Secure:   true,  // https only.
 			SameSite: http.SameSiteStrictMode,
 		})
-		got := getToken(r)
+		got := getToken(req)
 		attest.Equal(t, got, want)
 	})
 
@@ -141,9 +141,9 @@ func TestGetToken(t *testing.T) {
 		t.Parallel()
 
 		want := xid.New().String()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		r.Header.Set(csrfHeader, want)
-		got := getToken(r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Set(csrfHeader, want)
+		got := getToken(req)
 		attest.Equal(t, got, want)
 	})
 
@@ -151,11 +151,11 @@ func TestGetToken(t *testing.T) {
 		t.Parallel()
 
 		want := xid.New().String()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		err := r.ParseForm()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		err := req.ParseForm()
 		attest.Ok(t, err)
-		r.Form.Add(csrfCookieForm, want)
-		got := getToken(r)
+		req.Form.Add(csrfCookieForm, want)
+		got := getToken(req)
 		attest.Equal(t, got, want)
 	})
 
@@ -165,8 +165,8 @@ func TestGetToken(t *testing.T) {
 		cookieToken := xid.New().String()
 		headerToken := xid.New().String()
 		formToken := xid.New().String()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		r.AddCookie(&http.Cookie{
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
 			Value:    cookieToken,
 			Path:     "/",
@@ -174,12 +174,12 @@ func TestGetToken(t *testing.T) {
 			Secure:   true,  // https only.
 			SameSite: http.SameSiteStrictMode,
 		})
-		r.Header.Set(csrfHeader, headerToken)
-		err := r.ParseForm()
+		req.Header.Set(csrfHeader, headerToken)
+		err := req.ParseForm()
 		attest.Ok(t, err)
-		r.Form.Add(csrfCookieForm, formToken)
+		req.Form.Add(csrfCookieForm, formToken)
 
-		got := getToken(r)
+		got := getToken(req)
 		attest.Equal(t, got, cookieToken)
 	})
 }
@@ -204,8 +204,8 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain, -1)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -226,8 +226,8 @@ func TestCsrf(t *testing.T) {
 
 		reqCsrfTok := xid.New().String()
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		r.AddCookie(&http.Cookie{
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
 			Value:    reqCsrfTok,
 			Path:     "/",
@@ -235,7 +235,7 @@ func TestCsrf(t *testing.T) {
 			Secure:   true,  // https only.
 			SameSite: http.SameSiteStrictMode,
 		})
-		wrappedHandler.ServeHTTP(rec, r)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -257,9 +257,9 @@ func TestCsrf(t *testing.T) {
 
 		reqCsrfTok := xid.New().String()
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodHead, "/someUri", nil)
-		r.Header.Set(csrfHeader, reqCsrfTok)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		req.Header.Set(csrfHeader, reqCsrfTok)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -280,8 +280,8 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain, -1)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -302,8 +302,8 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain, -1)
 
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, r)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -349,8 +349,8 @@ func TestCsrf(t *testing.T) {
 
 		reqCsrfTok := xid.New().String()
 		rec := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodPost, "/someUri", nil)
-		r.AddCookie(&http.Cookie{
+		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
 			Value:    reqCsrfTok,
 			Path:     "/",
@@ -358,7 +358,7 @@ func TestCsrf(t *testing.T) {
 			Secure:   true,  // https only.
 			SameSite: http.SameSiteStrictMode,
 		})
-		wrappedHandler.ServeHTTP(rec, r)
+		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -384,9 +384,9 @@ func TestCsrf(t *testing.T) {
 		{
 			// make GET request
 			rec := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			r.Header.Set(csrfHeader, reqCsrfTok)
-			wrappedHandler.ServeHTTP(rec, r)
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.Header.Set(csrfHeader, reqCsrfTok)
+			wrappedHandler.ServeHTTP(rec, req)
 			res := rec.Result()
 			defer res.Body.Close()
 			rb, err := io.ReadAll(res.Body)
@@ -399,8 +399,8 @@ func TestCsrf(t *testing.T) {
 		{
 			// make POST request using same csrf token
 			rec := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodPost, "/someUri", nil)
-			r.AddCookie(&http.Cookie{
+			req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+			req.AddCookie(&http.Cookie{
 				Name:     csrfCookieName,
 				Value:    reqCsrfTok,
 				Path:     "/",
@@ -408,7 +408,7 @@ func TestCsrf(t *testing.T) {
 				Secure:   true,  // https only.
 				SameSite: http.SameSiteStrictMode,
 			})
-			wrappedHandler.ServeHTTP(rec, r)
+			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()
@@ -456,9 +456,9 @@ func TestCsrf(t *testing.T) {
 		for i := 0; i < (int(maxRequestsToReset) + 1); i++ {
 			reqCsrfTok := xid.New().String()
 			rec := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			r.Header.Set(csrfHeader, reqCsrfTok)
-			wrappedHandler.ServeHTTP(rec, r)
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.Header.Set(csrfHeader, reqCsrfTok)
+			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()

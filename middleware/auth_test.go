@@ -62,11 +62,11 @@ func TestBasicAuth(t *testing.T) {
 			t.Parallel()
 
 			rec := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			if tt.user != "" || tt.passwd != "" {
-				r.SetBasicAuth(tt.user, tt.passwd)
+				req.SetBasicAuth(tt.user, tt.passwd)
 			}
-			wrappedHandler.ServeHTTP(rec, r)
+			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()
