@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"golang.org/x/exp/slices"
 )
@@ -13,6 +15,21 @@ const (
 	// used by browsers when issuing a preflight request to let the server know which HTTP headers the client might send when the actual request is made
 	acrhHeader   = "Access-Control-Request-Headers"
 	originHeader = "Origin"
+	acaoHeader   = "Access-Control-Allow-Origin"
+	acamHeader   = "Access-Control-Allow-Methods"
+	acahHeader   = "Access-Control-Allow-Headers"
+	// header that if set to true, allows client & server to include credentials in cross-origin-requests.
+	// credentials are cookies, authorization headers, or TLS client certificates
+	// The only valid value of this header is `true`(`false` is not valid, omit the header entirely instead.)
+	acacHeader = "Access-Control-Allow-Credentials"
+	// header to allow CORS to resources in a private network(eg behind a VPN)
+	// you can set this header to `true` when you receive a preflight request if you want to allow access.
+	// Otherwise omit it entirely(as we will in this library)
+	acrpnHeader = "Access-Control-Request-Private-Network"
+	// how long(in seconds) the results of a preflight request can be cached.
+	// firefox uses 24hrs, chromium uses 2hrs, the default is 5minutes.
+	acmaHeader   = "Access-Control-Max-Age"
+	corsCacheDur = 2 * time.Hour
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -98,7 +115,8 @@ func handlePreflight(
 		return
 	}
 
-	if !isOriginAllowed(r, origin, allowedOrigins, allowedWildcardOrigins) {
+	allow, allowAll := isOriginAllowed(r, origin, allowedOrigins, allowedWildcardOrigins)
+	if !allow {
 		return
 	}
 
@@ -109,6 +127,35 @@ func handlePreflight(
 	if !areHeadersAllowed(reqHeader, allowedHeaders) {
 		return
 	}
+
+	// upto this point, it means we are going to allow the preflight.
+	// we need to set appropriate headers.
+	// (a) allowed origin.
+	// (b) allowed methods.
+	// (c) allowed headers.
+	// (d) cache.
+
+	// (a)
+	if allowAll {
+		headers.Set(acaoHeader, "*")
+	} else {
+		headers.Set(acaoHeader, origin)
+	}
+
+	// (b)
+	// spec says we can return just one method instead of all the supported ones.
+	// that one method has to be the one that came in via the `acrmHeader`
+	headers.Set(acamHeader, strings.ToUpper(reqMethod))
+
+	// (c)
+	if len(reqMethod) > 0 {
+		// spec says we can return the headers that came in via the `acrhHeader`
+		headers.Set(acahHeader, reqHeader)
+		// we do not set the `acacHeader`
+	}
+
+	// (d)
+	headers.Set(acmaHeader, fmt.Sprintf("%d", int(corsCacheDur.Seconds())))
 }
 
 type wildcard struct {
@@ -147,25 +194,25 @@ func isOriginAllowed(
 	origin string,
 	allowedOrigins []string,
 	allowedWildcardOrigins []wildcard,
-) bool {
+) (allow, allowAll bool) {
 	if slices.Contains(allowedOrigins, "*") {
-		return true
+		return true, true
 	}
 
 	origin = strings.ToLower(origin)
 	for _, o := range allowedOrigins {
 		if o == origin {
-			return true
+			return true, false
 		}
 	}
 
 	for _, w := range allowedWildcardOrigins {
 		if w.match(origin) {
-			return true
+			return true, false
 		}
 	}
 
-	return false
+	return false, false
 }
 
 func isMethodAllowed(method string, allowedMethods []string) bool {
