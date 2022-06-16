@@ -72,10 +72,12 @@ func Cors(wrappedHandler http.HandlerFunc, allowedOrigins, allowedHeaders, allow
 		return awo
 	}
 
+	allowedWildcardOrigins := []wildcard{}
 	if len(allowedOrigins) == 0 {
 		allowedOrigins = []string{"*"}
+	} else {
+		allowedWildcardOrigins = createWildcards(allowedOrigins)
 	}
-	allowedWildcardOrigins := createWildcards(allowedOrigins)
 
 	if len(allowedMethods) == 0 {
 		allowedMethods = []string{
