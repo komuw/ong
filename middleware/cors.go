@@ -164,7 +164,7 @@ func handlePreflight(
 		return
 	}
 
-	allow, allowAll := isOriginAllowed(r, origin, allowedOrigins, allowedWildcardOrigins)
+	allow, allowAll := isOriginAllowed(origin, allowedOrigins, allowedWildcardOrigins)
 	if !allow {
 		return
 	}
@@ -226,7 +226,7 @@ func handleActualRequest(
 		return
 	}
 
-	allow, allowAll := isOriginAllowed(r, origin, allowedOrigins, allowedWildcardOrigins)
+	allow, allowAll := isOriginAllowed(origin, allowedOrigins, allowedWildcardOrigins)
 	if !allow {
 		return
 	}
@@ -257,7 +257,6 @@ func (w wildcard) match(s string) bool {
 }
 
 func isOriginAllowed(
-	r *http.Request,
 	origin string,
 	allowedOrigins []string,
 	allowedWildcardOrigins []wildcard,
