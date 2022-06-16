@@ -91,6 +91,14 @@ func TestIsOriginAllowed(t *testing.T) {
 			allow:          true,
 			allowAll:       false,
 		},
+		{
+			name:   "not matched allowedOrigins",
+			origin: "http://example.com",
+			// an origin consists of the scheme, domain & port
+			allowedOrigins: []string{"https://example.com"},
+			allow:          false,
+			allowAll:       false,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
