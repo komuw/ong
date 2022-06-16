@@ -83,6 +83,13 @@ func Cors(
 	if len(allowedOrigins) == 0 {
 		allowedOrigins = []string{"*"}
 	} else {
+		canon := []string{}
+		for _, v := range allowedOrigins {
+			canon = append(canon, strings.ToLower(v))
+		}
+		allowedOrigins = canon
+		canon = nil
+
 		allowedWildcardOrigins = createWildcards(allowedOrigins)
 	}
 
