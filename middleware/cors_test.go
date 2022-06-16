@@ -60,6 +60,29 @@ func TestCorsPreflight(t *testing.T) {
 	})
 }
 
+// func TestCorsActualRequest(t *testing.T) {
+// 	t.Parallel()
+
+// 	t.Run("TODO", func(t *testing.T) {
+// 		t.Parallel()
+
+// 		msg := "hello"
+// 		wrappedHandler := Cors(someCorsHandler(msg))
+// 		rec := httptest.NewRecorder()
+// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+// 		wrappedHandler.ServeHTTP(rec, req)
+
+// 		res := rec.Result()
+// 		defer res.Body.Close()
+
+// 		rb, err := io.ReadAll(res.Body)
+// 		attest.Ok(t, err)
+
+// 		attest.Equal(t, res.StatusCode, http.StatusOK)
+// 		attest.Equal(t, string(rb), msg)
+// 	})
+// }
+
 func TestIsOriginAllowed(t *testing.T) {
 	t.Parallel()
 
@@ -141,25 +164,60 @@ func TestIsOriginAllowed(t *testing.T) {
 	}
 }
 
-// func TestCorsActualRequest(t *testing.T) {
-// 	t.Parallel()
+func TestIsMethodAllowed(t *testing.T) {
+	t.Parallel()
 
-// 	t.Run("TODO", func(t *testing.T) {
-// 		t.Parallel()
+	tests := []struct {
+		name           string
+		method         string
+		allowedMethods []string
+		allowed        bool
+	}{
+		{
+			name:           "nil allowedMethods",
+			method:         http.MethodDelete,
+			allowedMethods: nil,
+			allowed:        false,
+		},
+		{
+			name:           "nil allowedMethods allows some simple headers",
+			method:         http.MethodPost,
+			allowedMethods: nil,
+			allowed:        true,
+		},
+		{
+			name:           "star allowedMethods",
+			method:         http.MethodDelete,
+			allowedMethods: []string{"*"},
+			allowed:        true,
+		},
+		{
+			name:           "http OPTIONS is always allowed",
+			method:         http.MethodOptions,
+			allowedMethods: nil,
+			allowed:        true,
+		},
+		{
+			name:           "method matched",
+			method:         http.MethodConnect,
+			allowedMethods: []string{http.MethodConnect, http.MethodDelete},
+			allowed:        true,
+		},
+		{
+			name:           "method not matched",
+			method:         http.MethodConnect,
+			allowedMethods: []string{http.MethodGet, http.MethodDelete},
+			allowed:        false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-// 		msg := "hello"
-// 		wrappedHandler := Cors(someCorsHandler(msg))
-// 		rec := httptest.NewRecorder()
-// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-// 		wrappedHandler.ServeHTTP(rec, req)
-
-// 		res := rec.Result()
-// 		defer res.Body.Close()
-
-// 		rb, err := io.ReadAll(res.Body)
-// 		attest.Ok(t, err)
-
-// 		attest.Equal(t, res.StatusCode, http.StatusOK)
-// 		attest.Equal(t, string(rb), msg)
-// 	})
-// }
+			allowedMethods := getMethods(tt.allowedMethods)
+			allowed := isMethodAllowed(tt.method, allowedMethods)
+			attest.Equal(t, allowed, tt.allowed)
+		})
+	}
+}
