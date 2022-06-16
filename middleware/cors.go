@@ -53,7 +53,7 @@ func Cors(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	allowedOrigins := []string{} // TODO: offer ability for library user to provide these.
 	allowedWildcardOrigins := createWildcards(allowedOrigins)
 	_allowedMethods := []string{
-		// the spec by default allows this simple methods: GET, POST, HEAD.
+		// the spec by default allows this simple methods for cross-origin-requests: GET, POST, HEAD.
 		http.MethodGet,
 		http.MethodPost,
 		http.MethodHead,
