@@ -338,6 +338,71 @@ func TestCorsActualRequest(t *testing.T) {
 		attest.NotZero(t, res.Header.Get(varyHeader))
 		attest.NotZero(t, res.Header.Get(acaoHeader))
 	})
+
+	t.Run("origin", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name           string
+			origin         string
+			allowedOrigins []string
+			succeed        bool
+		}{
+			{
+				name:           "empty origin",
+				origin:         "",
+				allowedOrigins: []string{"*"},
+				succeed:        false,
+			},
+			{
+				name:           "star origins",
+				origin:         "http:/example.com",
+				allowedOrigins: []string{"*"},
+				succeed:        true,
+			},
+			{
+				name:           "origin not matched",
+				origin:         "http:/example.com",
+				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
+				succeed:        false,
+			},
+			{
+				name:           "origin matched",
+				origin:         "http:/www.example.com",
+				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
+				succeed:        true,
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				msg := "hello"
+				wrappedHandler := Cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"})
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+				req.Header.Add(originHeader, tt.origin)
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Equal(t, string(rb), msg)
+
+				attest.NotZero(t, res.Header.Get(varyHeader))
+
+				// if this header was set, then the actual request succeeded
+				gotSucess := res.Header.Get(acaoHeader) != ""
+				attest.Equal(t, gotSucess, tt.succeed)
+			})
+		}
+	})
 }
 
 func TestIsOriginAllowed(t *testing.T) {
