@@ -394,7 +394,70 @@ func TestCorsActualRequest(t *testing.T) {
 
 				attest.Equal(t, res.StatusCode, http.StatusOK)
 				attest.Equal(t, string(rb), msg)
+				attest.NotZero(t, res.Header.Get(varyHeader))
 
+				// if this header was set, then the actual request succeeded
+				gotSucess := res.Header.Get(acaoHeader) != ""
+				attest.Equal(t, gotSucess, tt.succeed)
+			})
+		}
+	})
+
+	t.Run("method", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name           string
+			method         string
+			allowedMethods []string
+			succeed        bool
+		}{
+			{
+				name:           "empty method",
+				method:         "",
+				allowedMethods: []string{"*"},
+				succeed:        true,
+			},
+			{
+				name:           "star methods",
+				method:         http.MethodDelete,
+				allowedMethods: []string{"*"},
+				succeed:        true,
+			},
+			{
+				name:           "method not matched",
+				method:         http.MethodDelete,
+				allowedMethods: []string{http.MethodGet, http.MethodPatch},
+				succeed:        false,
+			},
+			{
+				name:           "method matched",
+				method:         http.MethodDelete,
+				allowedMethods: []string{http.MethodGet, http.MethodDelete, http.MethodPatch},
+				succeed:        true,
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				msg := "hello"
+				wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"})
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(tt.method, "/someUri", nil)
+				req.Header.Add(originHeader, "http://some-origin.com")
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Equal(t, string(rb), msg)
 				attest.NotZero(t, res.Header.Get(varyHeader))
 
 				// if this header was set, then the actual request succeeded
