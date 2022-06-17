@@ -135,6 +135,7 @@ func TestCorsPreflight(t *testing.T) {
 			resContent     string
 		}{
 			{
+				// for empty method, it is not treated as a prefight request and instead treated as an actual request.
 				name:           "empty method",
 				method:         "",
 				allowedMethods: []string{"*"},
