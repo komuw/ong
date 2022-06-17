@@ -122,6 +122,79 @@ func TestCorsPreflight(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("method", func(t *testing.T) {
+		t.Parallel()
+		msg := "hello"
+		tests := []struct {
+			name           string
+			method         string
+			allowedMethods []string
+			succeed        bool
+			statusCode     int
+			resContent     string
+		}{
+			{
+				name:           "empty method",
+				method:         "",
+				allowedMethods: []string{"*"},
+				succeed:        false,
+				statusCode:     http.StatusOK,
+				resContent:     msg,
+			},
+			{
+				name:           "star methods",
+				method:         http.MethodDelete,
+				allowedMethods: []string{"*"},
+				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				resContent:     "",
+			},
+			{
+				name:           "method not matched",
+				method:         http.MethodDelete,
+				allowedMethods: []string{http.MethodGet, http.MethodPatch},
+				succeed:        false,
+				statusCode:     http.StatusNoContent,
+				resContent:     "",
+			},
+			{
+				name:           "method matched",
+				method:         http.MethodDelete,
+				allowedMethods: []string{http.MethodGet, http.MethodDelete, http.MethodPatch},
+				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				resContent:     "",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"})
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
+				req.Header.Add(originHeader, "http://some-origin.com")
+				req.Header.Add(acrmHeader, tt.method)
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, tt.statusCode)
+				attest.Equal(t, string(rb), tt.resContent)
+
+				// if this header was set, then the preflight request succeeded
+				gotSucess := res.Header.Get(acmaHeader) != ""
+				attest.Equal(t, gotSucess, tt.succeed)
+			})
+		}
+	})
 }
 
 // func TestCorsActualRequest(t *testing.T) {
