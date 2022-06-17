@@ -221,3 +221,55 @@ func TestIsMethodAllowed(t *testing.T) {
 		})
 	}
 }
+
+func TestAreHeadersAllowed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		reqHeader      string
+		allowedHeaders []string
+		allowed        bool
+	}{
+		{
+			name:           "nil allowedHeaders",
+			reqHeader:      "X-PINGOTHER, Content-Type",
+			allowedHeaders: nil,
+			allowed:        false,
+		},
+		{
+			name:           "star allowedHeaders",
+			reqHeader:      "X-PINGOTHER, Content-Type",
+			allowedHeaders: []string{"*"},
+			allowed:        true,
+		},
+		{
+			name:           "empty reqHeader",
+			reqHeader:      "",
+			allowedHeaders: nil,
+			allowed:        true,
+		},
+		{
+			name:           "match allowedHeaders",
+			reqHeader:      "X-PINGOTHER, Content-Type",
+			allowedHeaders: []string{"X-PINGOTHER"},
+			allowed:        true,
+		},
+		{
+			name:           "not matched allowedHeaders",
+			reqHeader:      "X-API-KEY, Content-Type",
+			allowedHeaders: []string{"X-PINGOTHER"},
+			allowed:        false,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			allowedHeaders := getHeaders(tt.allowedHeaders)
+			allowed := areHeadersAllowed(tt.reqHeader, allowedHeaders)
+			attest.Equal(t, allowed, tt.allowed)
+		})
+	}
+}
