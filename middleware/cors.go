@@ -261,20 +261,19 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 		return true
 	}
 
+	found := false
+outer:
 	for _, header := range requestedHeaders {
 		header = http.CanonicalHeaderKey(header)
-		found := false
 		for _, h := range allowedHeaders {
 			if h == header {
 				found = true
-				break
+				break outer
 			}
 		}
-		if !found {
-			return false
-		}
 	}
-	return true
+
+	return found
 }
 
 func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []wildcard) {
