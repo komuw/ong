@@ -50,6 +50,7 @@ const (
 	// by default only the cors-safelisted response headers(https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_response_header) are allowed.
 	// For this library, we won't allow any other headers to be exposed; which means we will omit setting this header entirely.
 	acehHeader   = "Access-Control-Expose-Headers"
+	_            = acehHeader
 	corsCacheDur = 2 * time.Hour
 )
 
@@ -293,8 +294,6 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 		canon = append(canon, strings.ToLower(v))
 	}
 	allowedOrigins = canon
-	canon = nil
-	ao = nil
 
 	for _, origin := range allowedOrigins {
 		if i := strings.IndexByte(origin, '*'); i >= 0 {
