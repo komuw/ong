@@ -80,6 +80,18 @@ func TestCorsPreflight(t *testing.T) {
 				allowedOrigins: []string{"*"},
 				succeed:        true,
 			},
+			{
+				name:           "origin not matched",
+				origin:         "http:/example.com",
+				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
+				succeed:        false,
+			},
+			{
+				name:           "origin matched",
+				origin:         "http:/www.example.com",
+				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
+				succeed:        true,
+			},
 		}
 
 		for _, tt := range tests {
