@@ -227,38 +227,44 @@ func TestAreHeadersAllowed(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		reqHeader      string
 		allowedHeaders []string
+		reqHeader      string
 		allowed        bool
 	}{
 		{
 			name:           "nil allowedHeaders",
-			reqHeader:      "X-PINGOTHER, Content-Type",
 			allowedHeaders: nil,
+			reqHeader:      "X-PINGOTHER, Content-Type",
 			allowed:        false,
 		},
 		{
 			name:           "star allowedHeaders",
-			reqHeader:      "X-PINGOTHER, Content-Type",
 			allowedHeaders: []string{"*"},
+			reqHeader:      "X-PINGOTHER, Content-Type",
 			allowed:        true,
 		},
 		{
 			name:           "empty reqHeader",
-			reqHeader:      "",
 			allowedHeaders: nil,
+			reqHeader:      "",
 			allowed:        true,
 		},
 		{
 			name:           "match allowedHeaders",
+			allowedHeaders: []string{"Content-Type", "X-PINGOTHER", "X-APP-KEY"},
 			reqHeader:      "X-PINGOTHER, Content-Type",
-			allowedHeaders: []string{"X-PINGOTHER"},
 			allowed:        true,
 		},
 		{
 			name:           "not matched allowedHeaders",
-			reqHeader:      "X-API-KEY, Content-Type",
 			allowedHeaders: []string{"X-PINGOTHER"},
+			reqHeader:      "X-API-KEY, Content-Type",
+			allowed:        false,
+		},
+		{
+			name:           "allowedHeaders should be a superset of reqHeader",
+			allowedHeaders: []string{"X-PINGOTHER"},
+			reqHeader:      "X-PINGOTHER, Content-Type",
 			allowed:        false,
 		},
 	}

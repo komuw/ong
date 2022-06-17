@@ -251,7 +251,15 @@ func isMethodAllowed(method string, allowedMethods []string) bool {
 
 func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 	// Access-Control-Request-Headers: X-PINGOTHER, Content-Type
-	requestedHeaders := strings.Split(reqHeader, ",")
+	requestedHeaders := strings.FieldsFunc(
+		reqHeader,
+		func(c rune) bool {
+			// reqHeader could be either of:
+			//   - `"X-PINGOTHER,Content-Type"`
+			//   - `"X-PINGOTHER, Content-Type"`
+			return c == ',' || c == ' '
+		},
+	)
 
 	if len(requestedHeaders) == 0 || len(reqHeader) == 0 {
 		return true
@@ -261,19 +269,15 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 		return true
 	}
 
-	found := false
-outer:
 	for _, header := range requestedHeaders {
 		header = http.CanonicalHeaderKey(header)
-		for _, h := range allowedHeaders {
-			if h == header {
-				found = true
-				break outer
-			}
+		found := slices.Contains(allowedHeaders, header)
+		if !found {
+			return false
 		}
 	}
 
-	return found
+	return true
 }
 
 func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []wildcard) {
