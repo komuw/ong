@@ -37,10 +37,12 @@ const (
 	// credentials are cookies, authorization headers, or TLS client certificates
 	// The only valid value of this header is `true`(`false` is not valid, omit the header entirely instead.)
 	acacHeader = "Access-Control-Allow-Credentials"
+	_          = acacHeader
 	// header to allow CORS to resources in a private network(eg behind a VPN)
 	// you can set this header to `true` when you receive a preflight request if you want to allow access.
 	// Otherwise omit it entirely(as we will in this library)
 	acrpnHeader = "Access-Control-Request-Private-Network"
+	_           = acrpnHeader
 	// how long(in seconds) the results of a preflight request can be cached.
 	// firefox uses 24hrs, chromium uses 2hrs, the default is 5minutes.
 	acmaHeader = "Access-Control-Max-Age"
