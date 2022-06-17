@@ -10,3 +10,4 @@ Most recent version is listed first.
 - add panic middleware: https://github.com/komuw/goweb/pull/26
 - cookies: https://github.com/komuw/goweb/pull/27
 - csrf middleware: https://github.com/komuw/goweb/pull/32
+- cors middleware: https://github.com/komuw/goweb/pull/33
