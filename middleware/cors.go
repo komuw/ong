@@ -253,7 +253,7 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 	// Access-Control-Request-Headers: X-PINGOTHER, Content-Type
 	requestedHeaders := strings.Split(reqHeader, ",")
 
-	if len(requestedHeaders) == 0 {
+	if len(requestedHeaders) == 0 || len(reqHeader) == 0 {
 		return true
 	}
 
