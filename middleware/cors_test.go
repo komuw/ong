@@ -196,6 +196,71 @@ func TestCorsPreflight(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("header", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name           string
+			header         string
+			allowedHeaders []string
+			succeed        bool
+		}{
+			{
+				name:           "empty header",
+				header:         "",
+				allowedHeaders: []string{"Content-Type"},
+				succeed:        true,
+			},
+			{
+				name:           "star header",
+				header:         "API-KEY",
+				allowedHeaders: []string{"*"},
+				succeed:        true,
+			},
+			{
+				name:           "header not matched",
+				header:         "API-KEY",
+				allowedHeaders: []string{"Content-Type", "Accept"},
+				succeed:        false,
+			},
+			{
+				name:           "header matched",
+				header:         "API-KEY",
+				allowedHeaders: []string{"Content-Type", "API-KEY", "Accept"},
+				succeed:        true,
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				msg := "hello"
+				wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, tt.allowedHeaders)
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
+				req.Header.Add(acrmHeader, "is-set") // preflight request header set
+				req.Header.Add(originHeader, "http://some-origin.com")
+				req.Header.Add(acrhHeader, tt.header)
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, http.StatusNoContent)
+				attest.Equal(t, string(rb), "") // someCorsHandler is NOT called.
+
+				// if this header was set, then the preflight request succeeded
+				gotSucess := res.Header.Get(acmaHeader) != ""
+				attest.Equal(t, gotSucess, tt.succeed)
+			})
+		}
+	})
 }
 
 // func TestCorsActualRequest(t *testing.T) {
