@@ -269,6 +269,8 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 		return true
 	}
 
+	// requestedHeaders should be a subset of allowedHeaders for us to return true.
+	// ie, allowedHeaders should be a superset of requestedHeaders.
 	for _, header := range requestedHeaders {
 		header = http.CanonicalHeaderKey(header)
 		found := slices.Contains(allowedHeaders, header)
