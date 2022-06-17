@@ -241,12 +241,7 @@ func isMethodAllowed(method string, allowedMethods []string) bool {
 		return true
 	}
 
-	for _, m := range allowedMethods {
-		if m == method {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(allowedMethods, method)
 }
 
 func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
