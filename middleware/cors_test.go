@@ -294,28 +294,51 @@ func TestCorsPreflight(t *testing.T) {
 	})
 }
 
-// func TestCorsActualRequest(t *testing.T) {
-// 	t.Parallel()
+func TestCorsActualRequest(t *testing.T) {
+	t.Parallel()
 
-// 	t.Run("TODO", func(t *testing.T) {
-// 		t.Parallel()
+	t.Run("actualRequest success", func(t *testing.T) {
+		t.Parallel()
 
-// 		msg := "hello"
-// 		wrappedHandler := Cors(someCorsHandler(msg))
-// 		rec := httptest.NewRecorder()
-// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-// 		wrappedHandler.ServeHTTP(rec, req)
+		msg := "hello"
+		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
-// 		res := rec.Result()
-// 		defer res.Body.Close()
+		res := rec.Result()
+		defer res.Body.Close()
 
-// 		rb, err := io.ReadAll(res.Body)
-// 		attest.Ok(t, err)
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
 
-// 		attest.Equal(t, res.StatusCode, http.StatusOK)
-// 		attest.Equal(t, string(rb), msg)
-// 	})
-// }
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("appropriate headers set", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"})
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(originHeader, "http://example.com")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+
+		attest.NotZero(t, res.Header.Get(varyHeader))
+		attest.NotZero(t, res.Header.Get(acaoHeader))
+	})
+}
 
 func TestIsOriginAllowed(t *testing.T) {
 	t.Parallel()
