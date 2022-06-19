@@ -108,63 +108,63 @@ type gzipRW struct {
 }
 
 // Write appends data to the gzip writer.
-func (g *gzipRW) Write(b []byte) (int, error) {
+func (grw *gzipRW) Write(b []byte) (int, error) {
 	// GZIP responseWriter is initialized. Use the GZIP responseWriter.
-	if g.gw != nil {
+	if grw.gw != nil {
 		fmt.Println("\n\t kkkkkkkkk")
-		return g.gw.Write(b)
+		return grw.gw.Write(b)
 	}
 
 	// If we have already decided not to use GZIP, immediately passthrough.
-	if g.ignore {
-		return g.ResponseWriter.Write(b)
+	if grw.ignore {
+		return grw.ResponseWriter.Write(b)
 	}
 
 	// Save the write into a buffer for later use in GZIP responseWriter
 	// (if content is long enough) or at close with regular responseWriter.
 	wantBuf := 512
-	if g.minSize > wantBuf {
-		wantBuf = g.minSize
+	if grw.minSize > wantBuf {
+		wantBuf = grw.minSize
 	}
 	toAdd := len(b)
-	if len(g.buf)+toAdd > wantBuf {
-		toAdd = wantBuf - len(g.buf)
+	if len(grw.buf)+toAdd > wantBuf {
+		toAdd = wantBuf - len(grw.buf)
 	}
-	g.buf = append(g.buf, b[:toAdd]...)
+	grw.buf = append(grw.buf, b[:toAdd]...)
 	remain := b[toAdd:]
 
 	// Only continue if they didn't already choose an encoding or a known unhandled content length or type.
-	if g.Header().Get(contentEncoding) == "" && g.Header().Get(contentRange) == "" {
+	if grw.Header().Get(contentEncoding) == "" && grw.Header().Get(contentRange) == "" {
 		// Check more expensive parts now.
-		pi, _ := strconv.ParseInt(g.Header().Get(contentLength), 10, 0)
+		pi, _ := strconv.ParseInt(grw.Header().Get(contentLength), 10, 0)
 		cl := int(pi)
-		ct := g.Header().Get(contentType)
-		if cl == 0 || cl >= g.minSize && (ct == "" || g.contentTypeFilter(ct)) {
+		ct := grw.Header().Get(contentType)
+		if cl == 0 || cl >= grw.minSize && (ct == "" || grw.contentTypeFilter(ct)) {
 			// If the current buffer is less than minSize and a Content-Length isn't set, then wait until we have more data.
-			if len(g.buf) < g.minSize && cl == 0 {
+			if len(grw.buf) < grw.minSize && cl == 0 {
 				return len(b), nil
 			}
 
 			// If the Content-Length is larger than minSize or the current buffer is larger than minSize, then continue.
-			if cl >= g.minSize || len(g.buf) >= g.minSize {
+			if cl >= grw.minSize || len(grw.buf) >= grw.minSize {
 				// If a Content-Type wasn't specified, infer it from the current buffer.
 				if ct == "" {
-					ct = http.DetectContentType(g.buf)
+					ct = http.DetectContentType(grw.buf)
 				}
 
 				// Handles the intended case of setting a nil Content-Type (as for http/server or http/fs)
 				// Set the header only if the key does not exist
-				if _, ok := g.Header()[contentType]; !ok {
-					g.Header().Set(contentType, ct)
+				if _, ok := grw.Header()[contentType]; !ok {
+					grw.Header().Set(contentType, ct)
 				}
 
 				// If the Content-Type is acceptable to GZIP, initialize the GZIP writer.
-				if g.contentTypeFilter(ct) {
-					if err := g.startGzip(); err != nil {
+				if grw.contentTypeFilter(ct) {
+					if err := grw.startGzip(); err != nil {
 						return 0, err
 					}
 					if len(remain) > 0 {
-						if _, err := g.gw.Write(remain); err != nil {
+						if _, err := grw.gw.Write(remain); err != nil {
 							return 0, err
 						}
 					}
@@ -175,11 +175,11 @@ func (g *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	// If we got here, we should not GZIP this response.
-	if err := g.nonGzipped(); err != nil {
+	if err := grw.nonGzipped(); err != nil {
 		return 0, err
 	}
 	if len(remain) > 0 {
-		if _, err := g.ResponseWriter.Write(remain); err != nil {
+		if _, err := grw.ResponseWriter.Write(remain); err != nil {
 			return 0, err
 		}
 	}
@@ -187,91 +187,87 @@ func (g *gzipRW) Write(b []byte) (int, error) {
 }
 
 // startGzip initializes a GZIP writer and writes the buffer.
-func (g *gzipRW) startGzip() error {
+func (grw *gzipRW) startGzip() error {
 	fmt.Println("\n\t startGzip called.")
 	// Set the GZIP header.
-	g.Header().Set(contentEncoding, "gzip")
+	grw.Header().Set(contentEncoding, "gzip")
 
 	// if the Content-Length is already set, then calls to Write on gzip
 	// will fail to set the Content-Length header since its already set
 	// See: https://github.com/golang/go/issues/14975.
-	g.Header().Del(contentLength)
+	grw.Header().Del(contentLength)
 
 	// Delete Accept-Ranges.
-	if !g.keepAcceptRanges {
-		g.Header().Del(acceptRanges)
+	if !grw.keepAcceptRanges {
+		grw.Header().Del(acceptRanges)
 	}
 
 	// Write the header to gzip response.
-	if g.code != 0 {
-		g.ResponseWriter.WriteHeader(g.code)
+	if grw.code != 0 {
+		grw.ResponseWriter.WriteHeader(grw.code)
 		// Ensure that no other WriteHeader's happen
-		g.code = 0
+		grw.code = 0
 	}
 
 	// Initialize and flush the buffer into the gzip response if there are any bytes.
 	// If there aren't any, we shouldn't initialize it yet because on Close it will
 	// write the gzip header even if nothing was ever written.
-	if len(g.buf) > 0 {
+	if len(grw.buf) > 0 {
 		// Initialize the GZIP response.
-		g.init()
-		n, err := g.gw.Write(g.buf)
+		//
+		// Bytes written during ServeHTTP are redirected to this gzip writer
+		// before being written to the underlying response.
+		gnw, _ := gzip.NewWriterLevel(grw.ResponseWriter, grw.level)
+		grw.gw = gnw
+
+		n, err := grw.gw.Write(grw.buf)
 
 		// This should never happen (per io.Writer docs), but if the write didn't
 		// accept the entire buffer but returned no specific error, we have no clue
 		// what's going on, so abort just to be safe.
-		if err == nil && n < len(g.buf) {
+		if err == nil && n < len(grw.buf) {
 			err = io.ErrShortWrite
 		}
-		g.buf = g.buf[:0]
+		grw.buf = grw.buf[:0]
 		return err
 	}
 	return nil
 }
 
 // nonGzipped writes to the underlying ResponseWriter without gzip.
-func (g *gzipRW) nonGzipped() error {
-	if g.code != 0 {
-		g.ResponseWriter.WriteHeader(g.code)
+func (grw *gzipRW) nonGzipped() error {
+	if grw.code != 0 {
+		grw.ResponseWriter.WriteHeader(grw.code)
 		// Ensure that no other WriteHeader's happen
-		g.code = 0
+		grw.code = 0
 	}
 
-	g.ignore = true
+	grw.ignore = true
 	// If Write was never called then don't call Write on the underlying ResponseWriter.
-	if len(g.buf) == 0 {
+	if len(grw.buf) == 0 {
 		return nil
 	}
-	n, err := g.ResponseWriter.Write(g.buf)
+	n, err := grw.ResponseWriter.Write(grw.buf)
 	// This should never happen (per io.Writer docs), but if the write didn't
 	// accept the entire buffer but returned no specific error, we have no clue
 	// what's going on, so abort just to be safe.
-	if err == nil && n < len(g.buf) {
+	if err == nil && n < len(grw.buf) {
 		err = io.ErrShortWrite
 	}
 
-	g.buf = g.buf[:0]
+	grw.buf = grw.buf[:0]
 	return err
 }
 
-// init graps a new gzip writer from the gzipWriterPool and writes the correct
-// content encoding header.
-func (g *gzipRW) init() {
-	// Bytes written during ServeHTTP are redirected to this gzip writer
-	// before being written to the underlying response.
-	gnw, _ := gzip.NewWriterLevel(g.ResponseWriter, g.level)
-	g.gw = gnw
-}
-
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
-func (g *gzipRW) Close() error {
-	if g.ignore {
+func (grw *gzipRW) Close() error {
+	if grw.ignore {
 		return nil
 	}
 
-	if g.gw == nil {
+	if grw.gw == nil {
 		// GZIP not triggered yet, write out regular response.
-		err := g.nonGzipped()
+		err := grw.nonGzipped()
 		// Returns the error if any at write.
 		if err != nil {
 			err = fmt.Errorf("gziphandler: write to regular responseWriter at close gets error: %q", err.Error())
@@ -279,8 +275,8 @@ func (g *gzipRW) Close() error {
 		return err
 	}
 
-	err := g.gw.Close()
-	g.gw = nil
+	err := grw.gw.Close()
+	grw.gw = nil
 	return err
 }
 
