@@ -61,13 +61,11 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		*grw = gzipRW{
 			ResponseWriter: w,
 			// Note: do not set `gw` here, it will be set when `startGzip` is called.
+			// TODO: maybe we should set `gw` here??
 			level:             defaultLevel,
 			minSize:           defaultMinSize,
-			buf:               grw.buf,
+			buf:               grw.buf[:0],
 			contentTypeFilter: defaultContentTypeFilter,
-		}
-		if len(grw.buf) > 0 {
-			grw.buf = grw.buf[:0]
 		}
 		defer func() {
 			grw.Close()
