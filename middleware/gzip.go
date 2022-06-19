@@ -34,7 +34,7 @@ const (
 	// HeaderNoCompression = "No-Gzip-Compression"
 )
 
-var grwPool = sync.Pool{New: func() interface{} { return &GzipResponseWriter{} }}
+var grwPool = sync.Pool{New: func() interface{} { return &gzipRW{} }}
 
 const (
 	// TODO: vet this.
@@ -58,8 +58,8 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		grw := grwPool.Get().(*GzipResponseWriter)
-		*grw = GzipResponseWriter{
+		grw := grwPool.Get().(*gzipRW)
+		*grw = gzipRW{
 			ResponseWriter: w,
 			// Note: do not set `gw` here, it will be set when `startGzip` is called.
 			level:             defaultLevel,
@@ -88,11 +88,11 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// GzipResponseWriter provides an http.ResponseWriter interface, which gzips
+// gzipRW provides an http.ResponseWriter interface, which gzips
 // bytes before writing them to the underlying response. This doesn't close the
 // writers, so don't forget to do that.
 // It can be configured to skip response smaller than minSize.
-type GzipResponseWriter struct {
+type gzipRW struct {
 	http.ResponseWriter
 	level int
 	gw    *gzip.Writer
@@ -109,9 +109,10 @@ type GzipResponseWriter struct {
 }
 
 // Write appends data to the gzip writer.
-func (w *GzipResponseWriter) Write(b []byte) (int, error) {
+func (w *gzipRW) Write(b []byte) (int, error) {
 	// GZIP responseWriter is initialized. Use the GZIP responseWriter.
 	if w.gw != nil {
+		fmt.Println("\n\t kkkkkkkkk")
 		return w.gw.Write(b)
 	}
 
@@ -187,7 +188,7 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 }
 
 // startGzip initializes a GZIP writer and writes the buffer.
-func (w *GzipResponseWriter) startGzip() error {
+func (w *gzipRW) startGzip() error {
 	fmt.Println("\n\t startGzip called.")
 	// Set the GZIP header.
 	w.Header().Set(contentEncoding, "gzip")
@@ -230,7 +231,7 @@ func (w *GzipResponseWriter) startGzip() error {
 }
 
 // nonGzipped writes to the underlying ResponseWriter without gzip.
-func (w *GzipResponseWriter) nonGzipped() error {
+func (w *gzipRW) nonGzipped() error {
 	if w.code != 0 {
 		w.ResponseWriter.WriteHeader(w.code)
 		// Ensure that no other WriteHeader's happen
@@ -256,7 +257,7 @@ func (w *GzipResponseWriter) nonGzipped() error {
 
 // init graps a new gzip writer from the gzipWriterPool and writes the correct
 // content encoding header.
-func (w *GzipResponseWriter) init() {
+func (w *gzipRW) init() {
 	// Bytes written during ServeHTTP are redirected to this gzip writer
 	// before being written to the underlying response.
 	gnw, _ := gzip.NewWriterLevel(w.ResponseWriter, defaultLevel)
@@ -264,7 +265,7 @@ func (w *GzipResponseWriter) init() {
 }
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
-func (w *GzipResponseWriter) Close() error {
+func (w *gzipRW) Close() error {
 	if w.ignore {
 		return nil
 	}
