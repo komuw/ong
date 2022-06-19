@@ -21,7 +21,11 @@ const (
 	defaultCompression = gzip.DefaultCompression
 	huffmanOnly        = gzip.HuffmanOnly
 
-	defaultLevel = bestSpeed
+	defaultLevel = bestSpeed // TODO: should this be the default?
+
+	// TODO: copy/add docs.
+	// TODO: check other impls for other sizes that they use.
+	defaultMinSize = 150
 )
 
 // Gzip is a middleware that transparently gzips the response body, for clients which support.
@@ -76,10 +80,6 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: copy/add docs.
-// TODO: check other impls for other sizes that they use.
-const defaultMinSize = 150
-
 var bufferPool = &sync.Pool{
 	New: func() interface{} {
 		buf := make([]byte, 0, defaultMinSize)
@@ -125,6 +125,97 @@ type responseWriter struct {
 
 	// Saves the WriteHeader value.
 	code int
+}
+
+// WriteHeader just saves the response code until close or
+// GZIP effective writes.
+func (w *responseWriter) WriteHeader(code int) {
+	if w.code == 0 {
+		w.code = code
+	}
+}
+
+// Write appends data to the gzip writer.
+func (w *responseWriter) Write(b []byte) (int, error) {
+	switch {
+	case w.buf != nil && w.gw != nil:
+		panic("gziphandler: both buf and gw are non nil in call to Write")
+	// GZIP responseWriter is initialized. Use the GZIP
+	// responseWriter.
+	case w.gw != nil:
+		return w.gw.Write(b)
+	// We're operating in pass through mode.
+	case w.buf == nil:
+		return w.ResponseWriter.Write(b)
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	// This may succeed if the Content-Type header was
+	// explicitly set.
+	if w.shouldPassThrough() {
+		if err := w.startPassThrough(); err != nil {
+			return 0, err
+		}
+
+		return w.ResponseWriter.Write(b)
+	}
+
+	if w.shouldBuffer(b) {
+		// Save the write into a buffer for later.
+		// This buffer will be flushed in either
+		// startGzip or startPassThrough.
+		*w.buf = append(*w.buf, b...)
+		return len(b), nil
+	}
+
+	// w.inferContentType(b) // TODO: maybe do this in future
+
+	// Now that we've called inferContentType, we have
+	// a Content-Type header.
+	if w.shouldPassThrough() {
+		if err := w.startPassThrough(); err != nil {
+			return 0, err
+		}
+
+		return w.ResponseWriter.Write(b)
+	}
+
+	if err := w.startGzip(); err != nil {
+		return 0, err
+	}
+
+	return w.gw.Write(b)
+}
+
+// startGzip initialize any GZIP specific informations.
+func (w *responseWriter) startGzip() (err error) {
+	h := w.Header()
+
+	// Set the GZIP header.
+	h.Set("Content-Encoding", "gzip")
+
+	// if the Content-Length is already set, then calls
+	// to Write on gzip will fail to set the
+	// Content-Length header since its already set
+	// See: https://github.com/golang/go/issues/14975.
+	h.Del("Content-Length")
+
+	// Write the header to gzip response.
+	w.ResponseWriter.WriteHeader(w.code)
+
+	// Bytes written during ServeHTTP are redirected to
+	// this gzip writer before being written to the
+	// underlying response.
+	w.gw = gzipWriterGet(w.ResponseWriter, defaultLevel)
+
+	if buf := *w.buf; len(buf) != 0 {
+		// Flush the buffer into the gzip response.
+		_, err = w.gw.Write(buf)
+	}
+
+	w.releaseBuffer() // TODO: this should be `defer w.releaseBuffer()` ??
+	return err
 }
 
 // Close will close the gzip.Writer and will put it back in
@@ -188,7 +279,7 @@ func (w *responseWriter) startPassThrough() (err error) {
 		_, err = w.ResponseWriter.Write(buf)
 	}
 
-	w.releaseBuffer()
+	w.releaseBuffer() // TODO: this should be `defer w.releaseBuffer()` ??
 	return err
 }
 
@@ -200,6 +291,14 @@ func (w *responseWriter) releaseBuffer() {
 	*w.buf = (*w.buf)[:0]
 	bufferPool.Put(w.buf)
 	w.buf = nil
+}
+
+func (w *responseWriter) shouldBuffer(b []byte) bool {
+	// If the all writes to date are bigger than the
+	// minSize, we no longer need to buffer and we can
+	// decide whether to enable compression or whether
+	// to operate in pass through mode.
+	return len(*w.buf)+len(b) < defaultMinSize
 }
 
 func shouldGzip(r *http.Request) bool {
