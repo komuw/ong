@@ -207,8 +207,8 @@ func shouldGzip(r *http.Request) bool {
 	// This is a truly bad way to do this. We should do better.
 	// see: https://github.com/tmthrgd/gziphandler/blob/9e3dc377f14f3554d9ae767761e33a87b38ed3f4/gzip.go#L364
 	//      https://github.com/nytimes/gziphandler/issues/65
-	val := r.Header.Get(acHeader)
-	if strings.Contains(val, "gzip") {
+
+	if strings.Contains(r.Header.Get(acHeader), "gzip") {
 		return true
 	}
 	return false

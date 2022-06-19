@@ -27,6 +27,7 @@ func TestGzip(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
