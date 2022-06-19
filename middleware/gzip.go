@@ -115,11 +115,8 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 		return w.gw.Write(b)
 	}
 
-	fmt.Println("\n\t GOT HEREkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-
 	// If we have already decided not to use GZIP, immediately passthrough.
 	if w.ignore {
-		fmt.Println("\n\t ignore set")
 		return w.ResponseWriter.Write(b)
 	}
 
@@ -145,11 +142,9 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 		if cl == 0 || cl >= w.minSize && (ct == "" || w.contentTypeFilter(ct)) {
 			// If the current buffer is less than minSize and a Content-Length isn't set, then wait until we have more data.
 			if len(w.buf) < w.minSize && cl == 0 {
-				fmt.Println("1111: ", len(w.buf), w.minSize, cl)
 				return len(b), nil
 			}
 
-			fmt.Println("2222")
 			// If the Content-Length is larger than minSize or the current buffer is larger than minSize, then continue.
 			if cl >= w.minSize || len(w.buf) >= w.minSize {
 				// If a Content-Type wasn't specified, infer it from the current buffer.
@@ -179,7 +174,6 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 		}
 	}
 
-	fmt.Println("\n\t we got to plain")
 	// If we got here, we should not GZIP this response.
 	if err := w.nonGzipped(); err != nil {
 		return 0, err
