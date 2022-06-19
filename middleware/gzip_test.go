@@ -23,7 +23,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(someCsrfHandler(msg))
+		wrappedHandler := Gzip(someGzipHandler(msg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -38,5 +38,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+
+		fmt.Println("res.Headers: ", res.Header)
 	})
 }
