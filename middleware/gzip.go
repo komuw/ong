@@ -71,7 +71,6 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		}
 		defer func() {
 			grw.Close()
-			grw.ResponseWriter = nil
 			grwPool.Put(grw)
 		}()
 
@@ -250,6 +249,10 @@ func (grw *gzipRW) nonGzipped() error {
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
 func (grw *gzipRW) Close() error {
+	defer func() {
+		grw.ResponseWriter = nil
+	}()
+
 	if grw.ignore {
 		return nil
 	}
