@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 // Most of the code here is insipired by(or taken from):
@@ -33,8 +32,6 @@ const (
 	// HeaderNoCompression = "No-Gzip-Compression"
 )
 
-var grwPool = sync.Pool{New: func() interface{} { return &gzipRW{} }}
-
 const (
 	// TODO: vet this.
 	acceptEncoding  = "Accept-Encoding"
@@ -57,20 +54,15 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		grw := grwPool.Get().(*gzipRW)
-		*grw = gzipRW{
+		grw := &gzipRW{
 			ResponseWriter: w,
 			// Note: do not set `gw` here, it will be set when `startGzip` is called.
 			// TODO: maybe we should set `gw` here??
 			level:             defaultLevel,
 			minSize:           defaultMinSize,
-			buf:               grw.buf[:0],
 			contentTypeFilter: defaultContentTypeFilter,
 		}
-		defer func() {
-			grw.Close()
-			grwPool.Put(grw)
-		}()
+		defer grw.Close()
 
 		if _, ok := w.(http.CloseNotifier); ok {
 			// TODO: handle this case.
@@ -213,6 +205,8 @@ func (grw *gzipRW) startGzip() error {
 		//
 		// Bytes written during ServeHTTP are redirected to this gzip writer
 		// before being written to the underlying response.
+
+		fmt.Println("\n\t len(grw.buf) > 0:: hereeee.")
 		gnw, _ := gzip.NewWriterLevel(grw.ResponseWriter, grw.level)
 		grw.gw = gnw
 
