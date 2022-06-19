@@ -5,13 +5,15 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/akshayjshah/attest"
 )
 
-func someGzipHandler(msg string) http.HandlerFunc {
+func someGzipHandler(msg string, iterations int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		msg = strings.Repeat(msg, iterations)
 		fmt.Fprint(w, msg)
 	}
 }
@@ -23,7 +25,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(someGzipHandler(msg))
+		wrappedHandler := Gzip(someGzipHandler(msg, 1))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -46,8 +48,8 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(someGzipHandler(msg))
-
+		iterations := defaultMinSize * 2
+		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")

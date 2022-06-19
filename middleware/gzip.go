@@ -62,9 +62,10 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		*grw = GzipResponseWriter{
 			ResponseWriter: w,
 			// Note: do not set `gw` here, it will be set when `startGzip` is called.
-			level:   defaultLevel,
-			minSize: defaultMinSize,
-			buf:     grw.buf,
+			level:             defaultLevel,
+			minSize:           defaultMinSize,
+			buf:               grw.buf,
+			contentTypeFilter: defaultContentTypeFilter,
 		}
 		if len(grw.buf) > 0 {
 			grw.buf = grw.buf[:0]
@@ -118,6 +119,7 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 
 	// If we have already decided not to use GZIP, immediately passthrough.
 	if w.ignore {
+		fmt.Println("\n\t ignore set")
 		return w.ResponseWriter.Write(b)
 	}
 
@@ -143,9 +145,11 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 		if cl == 0 || cl >= w.minSize && (ct == "" || w.contentTypeFilter(ct)) {
 			// If the current buffer is less than minSize and a Content-Length isn't set, then wait until we have more data.
 			if len(w.buf) < w.minSize && cl == 0 {
+				fmt.Println("1111: ", len(w.buf), w.minSize, cl)
 				return len(b), nil
 			}
 
+			fmt.Println("2222")
 			// If the Content-Length is larger than minSize or the current buffer is larger than minSize, then continue.
 			if cl >= w.minSize || len(w.buf) >= w.minSize {
 				// If a Content-Type wasn't specified, infer it from the current buffer.
@@ -175,6 +179,7 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 		}
 	}
 
+	fmt.Println("\n\t we got to plain")
 	// If we got here, we should not GZIP this response.
 	if err := w.nonGzipped(); err != nil {
 		return 0, err
@@ -189,6 +194,7 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 
 // startGzip initializes a GZIP writer and writes the buffer.
 func (w *GzipResponseWriter) startGzip() error {
+	fmt.Println("\n\t startGzip called.")
 	// Set the GZIP header.
 	w.Header().Set(contentEncoding, "gzip")
 
@@ -307,4 +313,31 @@ func shouldGzip(r *http.Request) bool {
 	}
 
 	return false
+}
+
+// defaultContentTypeFilter excludes common compressed audio, video and archive formats.
+func defaultContentTypeFilter(ct string) bool {
+	// Don't compress any audio/video types.
+	excludePrefixDefault := []string{"video/", "audio/", "image/jp"}
+
+	// Skip a bunch of compressed types that contains this string.
+	// Curated by supposedly still active formats on https://en.wikipedia.org/wiki/List_of_archive_formats
+	excludeContainsDefault := []string{"compress", "zip", "snappy", "lzma", "xz", "zstd", "brotli", "stuffit"}
+
+	ct = strings.TrimSpace(strings.ToLower(ct))
+	if ct == "" {
+		return true
+	}
+	for _, s := range excludeContainsDefault {
+		if strings.Contains(ct, s) {
+			return false
+		}
+	}
+
+	for _, prefix := range excludePrefixDefault {
+		if strings.HasPrefix(ct, prefix) {
+			return false
+		}
+	}
+	return true
 }
