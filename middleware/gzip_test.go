@@ -40,8 +40,28 @@ func TestGzip(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
 
-		fmt.Println("res.Headers: ", res.Header)
+	t.Run("small responses are not gzipped", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		iterations := (defaultMinSize / 100)
+		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+		attest.Zero(t, res.Header.Get(contentEncoding))
 	})
 
 	t.Run("middleware succeds", func(t *testing.T) {
@@ -61,9 +81,10 @@ func TestGzip(t *testing.T) {
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
 
+		fmt.Println("res.Headers: ", res.Header)
+		attest.Equal(t, res.Header.Get(contentEncoding), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
 
-		fmt.Println("res.Headers: ", res.Header)
 	})
 }
