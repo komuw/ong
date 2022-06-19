@@ -91,14 +91,6 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: do away with this and just use `*gzip.Writer`
-// gzipWriter implements the functions needed for compressing content.
-type gzipWriter interface {
-	Write(p []byte) (int, error)
-	Close() error
-	Flush() error
-}
-
 // GzipResponseWriter provides an http.ResponseWriter interface, which gzips
 // bytes before writing them to the underlying response. This doesn't close the
 // writers, so don't forget to do that.
@@ -107,7 +99,7 @@ type GzipResponseWriter struct {
 	http.ResponseWriter
 	level int
 	// gwFactory writer.GzipWriterFactory
-	gw gzipWriter
+	gw *gzip.Writer
 
 	code int // Saves the WriteHeader value.
 
@@ -126,6 +118,8 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 	if w.gw != nil {
 		return w.gw.Write(b)
 	}
+
+	fmt.Println("\n\t GOT HEREkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
 
 	// If we have already decided not to use GZIP, immediately passthrough.
 	if w.ignore {
