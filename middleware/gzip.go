@@ -11,7 +11,8 @@ import (
 )
 
 // Most of the code here is insipired by(or taken from):
-//   (a) https://github.com/tmthrgd/gziphandler whose license(Apache License, Version 2.0) can be found here: https://github.com/tmthrgd/gziphandler/blob/9e3dc377f14f3554d9ae767761e33a87b38ed3f4/LICENSE.md
+//   (a) https://github.com/tmthrgd/gziphandler whose license(Apache License, Version 2.0) can be found here:                   https://github.com/tmthrgd/gziphandler/blob/9e3dc377f14f3554d9ae767761e33a87b38ed3f4/LICENSE.md
+//   (b) https://github.com/klauspost/compress/tree/master/gzhttp whose license(Apache License, Version 2.0) can be found here: https://github.com/klauspost/compress/blob/4bc73d36928c39bbd7cf823171081d14c884edde/gzhttp/LICENSE
 
 const (
 	acHeader           = "Accept-Encoding"
@@ -311,7 +312,12 @@ func shouldGzip(r *http.Request) bool {
 	// see: https://github.com/tmthrgd/gziphandler/blob/9e3dc377f14f3554d9ae767761e33a87b38ed3f4/gzip.go#L364
 	//      https://github.com/nytimes/gziphandler/issues/65
 
-	if strings.Contains(r.Header.Get(acHeader), "gzip") {
+	// Note that we don't request this for HEAD requests,
+	// due to a bug in nginx:
+	//   https://trac.nginx.org/nginx/ticket/358
+	//   https://golang.org/issue/5522
+
+	if r.Method != http.MethodHead && strings.Contains(r.Header.Get(acHeader), "gzip") {
 		return true
 	}
 	return false
