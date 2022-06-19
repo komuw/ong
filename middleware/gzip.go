@@ -185,8 +185,9 @@ func (w *GzipResponseWriter) Write(b []byte) (int, error) {
 			}
 		}
 	}
+
 	// If we got here, we should not GZIP this response.
-	if err := w.startPlain(); err != nil {
+	if err := w.nonGzipped(); err != nil {
 		return 0, err
 	}
 	if len(remain) > 0 {
@@ -239,8 +240,8 @@ func (w *GzipResponseWriter) startGzip() error {
 	return nil
 }
 
-// startPlain writes to sent bytes and buffer the underlying ResponseWriter without gzip.
-func (w *GzipResponseWriter) startPlain() error {
+// nonGzipped writes to the underlying ResponseWriter without gzip.
+func (w *GzipResponseWriter) nonGzipped() error {
 	if w.code != 0 {
 		w.ResponseWriter.WriteHeader(w.code)
 		// Ensure that no other WriteHeader's happen
@@ -280,7 +281,7 @@ func (w *GzipResponseWriter) Close() error {
 
 	if w.gw == nil {
 		// GZIP not triggered yet, write out regular response.
-		err := w.startPlain()
+		err := w.nonGzipped()
 		// Returns the error if any at write.
 		if err != nil {
 			err = fmt.Errorf("gziphandler: write to regular responseWriter at close gets error: %q", err.Error())
