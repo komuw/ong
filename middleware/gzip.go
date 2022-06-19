@@ -58,25 +58,25 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		gw := grwPool.Get().(*GzipResponseWriter)
-		*gw = GzipResponseWriter{
+		gw, _ := gzip.NewWriterLevel(w, defaultLevel)
+		grw := grwPool.Get().(*GzipResponseWriter)
+		*grw = GzipResponseWriter{
 			ResponseWriter: w,
-			// gwFactory:         c.writer,
-			gw:      gzip.NewWriter(w),
-			level:   defaultLevel,
-			minSize: defaultMinSize,
+			gw:             gw,
+			level:          defaultLevel,
+			minSize:        defaultMinSize,
 			// contentTypeFilter: c.contentTypes,
 			// keepAcceptRanges:  c.keepAcceptRanges,
-			buf: gw.buf,
+			buf: grw.buf,
 			// setContentType: c.setContentType,
 		}
-		if len(gw.buf) > 0 {
-			gw.buf = gw.buf[:0]
+		if len(grw.buf) > 0 {
+			grw.buf = grw.buf[:0]
 		}
 		defer func() {
-			gw.Close()
-			gw.ResponseWriter = nil
-			grwPool.Put(gw)
+			grw.Close()
+			grw.ResponseWriter = nil
+			grwPool.Put(grw)
 		}()
 
 		if _, ok := w.(http.CloseNotifier); ok {
@@ -87,7 +87,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			// return
 		}
 
-		wrappedHandler(gw, r)
+		wrappedHandler(grw, r)
 	}
 }
 
@@ -98,8 +98,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 type GzipResponseWriter struct {
 	http.ResponseWriter
 	level int
-	// gwFactory writer.GzipWriterFactory
-	gw *gzip.Writer
+	gw    *gzip.Writer
 
 	code int // Saves the WriteHeader value.
 
@@ -264,7 +263,7 @@ func (w *GzipResponseWriter) nonGzipped() error {
 func (w *GzipResponseWriter) init() {
 	// Bytes written during ServeHTTP are redirected to this gzip writer
 	// before being written to the underlying response.
-	w.gw = gzip.NewWriter(w.ResponseWriter)
+	w.gw, _ = gzip.NewWriterLevel(w.ResponseWriter, defaultLevel)
 }
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
