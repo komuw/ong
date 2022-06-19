@@ -259,7 +259,8 @@ func (w *GzipResponseWriter) nonGzipped() error {
 func (w *GzipResponseWriter) init() {
 	// Bytes written during ServeHTTP are redirected to this gzip writer
 	// before being written to the underlying response.
-	w.gw, _ = gzip.NewWriterLevel(w.ResponseWriter, defaultLevel)
+	gnw, _ := gzip.NewWriterLevel(w.ResponseWriter, defaultLevel)
+	w.gw = gnw
 }
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
