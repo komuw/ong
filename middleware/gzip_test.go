@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -78,13 +79,15 @@ func TestGzip(t *testing.T) {
 		res := rec.Result()
 		defer res.Body.Close()
 
-		rb, err := io.ReadAll(res.Body)
+		reader, err := gzip.NewReader(res.Body)
+		attest.Ok(t, err)
+		defer reader.Close()
+
+		rb, err := io.ReadAll(reader)
 		attest.Ok(t, err)
 
-		fmt.Println("res.Headers: ", res.Header)
 		attest.Equal(t, res.Header.Get(contentEncoding), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
-
+		attest.True(t, strings.Contains(string(rb), msg))
 	})
 }
