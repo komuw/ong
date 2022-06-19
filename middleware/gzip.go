@@ -58,17 +58,13 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		gw, _ := gzip.NewWriterLevel(w, defaultLevel)
 		grw := grwPool.Get().(*GzipResponseWriter)
 		*grw = GzipResponseWriter{
 			ResponseWriter: w,
-			gw:             gw,
-			level:          defaultLevel,
-			minSize:        defaultMinSize,
-			// contentTypeFilter: c.contentTypes,
-			// keepAcceptRanges:  c.keepAcceptRanges,
-			buf: grw.buf,
-			// setContentType: c.setContentType,
+			// Note: do not set `gw` here, it will be set when `startGzip` is called.
+			level:   defaultLevel,
+			minSize: defaultMinSize,
+			buf:     grw.buf,
 		}
 		if len(grw.buf) > 0 {
 			grw.buf = grw.buf[:0]
