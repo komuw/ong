@@ -103,7 +103,6 @@ type gzipRW struct {
 	buf              []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 	ignore           bool   // If true, then we immediately passthru writes to the underlying ResponseWriter.
 	keepAcceptRanges bool   // Keep "Accept-Ranges" header.
-	setContentType   bool   // Add content type, if missing and detected.
 
 	contentTypeFilter func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
 }
@@ -155,7 +154,7 @@ func (g *gzipRW) Write(b []byte) (int, error) {
 
 				// Handles the intended case of setting a nil Content-Type (as for http/server or http/fs)
 				// Set the header only if the key does not exist
-				if _, ok := g.Header()[contentType]; g.setContentType && !ok {
+				if _, ok := g.Header()[contentType]; !ok {
 					g.Header().Set(contentType, ct)
 				}
 
