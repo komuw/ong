@@ -308,8 +308,13 @@ func shouldGzip(r *http.Request) bool {
 	//   https://trac.nginx.org/nginx/ticket/358
 	//   https://golang.org/issue/5522
 
-	if r.Method != http.MethodHead && strings.Contains(r.Header.Get(acHeader), "gzip") {
+	if r.Method == http.MethodHead {
+		return false
+	}
+
+	if strings.Contains(r.Header.Get(acHeader), "gzip") {
 		return true
 	}
+
 	return false
 }
