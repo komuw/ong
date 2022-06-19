@@ -3,7 +3,6 @@ package middleware
 import (
 	"compress/gzip"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -220,14 +219,8 @@ func (grw *gzipRW) startGzip() error {
 		gnw, _ := gzip.NewWriterLevel(grw.ResponseWriter, grw.level)
 		grw.gw = gnw
 
-		n, err := grw.gw.Write(grw.buf)
+		_, err := grw.gw.Write(grw.buf)
 
-		// This should never happen (per io.Writer docs), but if the write didn't
-		// accept the entire buffer but returned no specific error, we have no clue
-		// what's going on, so abort just to be safe.
-		if err == nil && n < len(grw.buf) {
-			err = io.ErrShortWrite
-		}
 		grw.buf = grw.buf[:0]
 		return err
 	}
@@ -249,13 +242,7 @@ func (grw *gzipRW) nonGzipped() error {
 	if len(grw.buf) == 0 {
 		return nil
 	}
-	n, err := grw.ResponseWriter.Write(grw.buf)
-	// This should never happen (per io.Writer docs), but if the write didn't
-	// accept the entire buffer but returned no specific error, we have no clue
-	// what's going on, so abort just to be safe.
-	if err == nil && n < len(grw.buf) {
-		err = io.ErrShortWrite
-	}
+	_, err := grw.ResponseWriter.Write(grw.buf)
 
 	grw.buf = grw.buf[:0]
 	return err
