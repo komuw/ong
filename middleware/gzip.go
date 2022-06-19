@@ -242,7 +242,9 @@ func (grw *gzipRW) nonGzipped() error {
 		grw.code = 0
 	}
 
+	// TODO: we might not need `grw.ignore`. remove it??
 	grw.ignore = true
+
 	// If Write was never called then don't call Write on the underlying ResponseWriter.
 	if len(grw.buf) == 0 {
 		return nil
@@ -268,10 +270,6 @@ func (grw *gzipRW) Close() error {
 	if grw.gw == nil {
 		// GZIP not triggered yet, write out regular response.
 		err := grw.nonGzipped()
-		// Returns the error if any at write.
-		if err != nil {
-			err = fmt.Errorf("gziphandler: write to regular responseWriter at close gets error: %q", err.Error())
-		}
 		return err
 	}
 
