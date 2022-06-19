@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -135,14 +136,17 @@ func (w *responseWriter) Close() error {
 	// Buffer not nil means the regular response must
 	// be returned.
 	case w.buf != nil:
+		fmt.Println("nonZipped")
 		return w.closeNonGzipped()
 	// If the GZIP responseWriter is not set no need
 	// to close it.
 	case w.gw != nil:
+		fmt.Println("Zipped")
 		return w.closeGzipped()
 	// Both buf and gw nil means we are operating in
 	// pass through mode.
 	default:
+		fmt.Println("passThrough")
 		return nil
 	}
 }
