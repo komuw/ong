@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -152,7 +151,6 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 
 // handleNonGzipped writes to the underlying ResponseWriter without gzip.
 func (grw *gzipRW) handleNonGzipped() error {
-	fmt.Println("\n\t handleNonGzipped called.")
 	grw.handledZip = false
 	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
 	grw.Header().Del(acceptRangesHeader)
@@ -175,7 +173,6 @@ func (grw *gzipRW) handleNonGzipped() error {
 
 // handleGzipped initializes a GZIP writer and writes the buffer.
 func (grw *gzipRW) handleGzipped() error {
-	fmt.Println("\n\t handleGzipped called.")
 	grw.handledZip = true
 
 	// Set the GZIP header.
