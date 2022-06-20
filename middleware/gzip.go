@@ -154,10 +154,9 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	// The current buffer is larger than minSize, continue.
-
-	// Handles the intended case of setting a nil Content-Type (as for http/server or http/fs)
-	// Set the header only if the key does not exist
-	if _, ok := grw.Header()[contentType]; !ok {
+	//
+	// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
+	if _, ok := grw.Header()[contentType]; !ok && ct != "" {
 		grw.Header().Set(contentType, ct)
 	}
 
