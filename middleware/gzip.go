@@ -56,7 +56,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		grw := &gzipRW{
 			ResponseWriter: w,
-			// Note: do not set `gw` here, it will be set when `startGzip` is called.
+			// Note: do not set `gw` here, it will be set when `handleGzipped` is called.
 			// TODO: maybe we should set `gw` here??
 			level:             defaultLevel,
 			minSize:           defaultMinSize,
@@ -146,7 +146,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 
 				// If the Content-Type is acceptable to GZIP, initialize the GZIP writer.
 				if grw.contentTypeFilter(ct) {
-					if err := grw.startGzip(); err != nil {
+					if err := grw.handleGzipped(); err != nil {
 						return 0, err
 					}
 					return len(b), nil
@@ -156,15 +156,15 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	// If we got here, we should not GZIP this response.
-	if err := grw.nonGzipped(); err != nil {
+	if err := grw.handleNonGzipped(); err != nil {
 		return 0, err
 	}
 	return len(b), nil
 }
 
-// startGzip initializes a GZIP writer and writes the buffer.
-func (grw *gzipRW) startGzip() error {
-	fmt.Println("\n\t startGzip called.")
+// handleGzipped initializes a GZIP writer and writes the buffer.
+func (grw *gzipRW) handleGzipped() error {
+	fmt.Println("\n\t handleGzipped called.")
 	// Set the GZIP header.
 	grw.Header().Set(contentEncoding, "gzip")
 
@@ -205,8 +205,8 @@ func (grw *gzipRW) startGzip() error {
 	return nil
 }
 
-// nonGzipped writes to the underlying ResponseWriter without gzip.
-func (grw *gzipRW) nonGzipped() error {
+// handleNonGzipped writes to the underlying ResponseWriter without gzip.
+func (grw *gzipRW) handleNonGzipped() error {
 	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
 	grw.Header().Del(acceptRanges)
 
@@ -241,7 +241,7 @@ func (grw *gzipRW) Close() error {
 
 	if grw.gw == nil {
 		// GZIP not triggered yet, write out regular response.
-		err := grw.nonGzipped()
+		err := grw.handleNonGzipped()
 		return err
 	}
 
