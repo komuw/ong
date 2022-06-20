@@ -19,6 +19,20 @@ func someGzipHandler(msg string, iterations int) http.HandlerFunc {
 	}
 }
 
+func handlerImplementingFlush(msg string, iterations int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if f, ok := w.(http.Flusher); ok {
+			msg = "FlusherCalled::" + strings.Repeat(msg, iterations)
+			fmt.Fprint(w, msg)
+
+			f.Flush()
+		} else {
+			msg = strings.Repeat(msg, iterations)
+			fmt.Fprint(w, msg)
+		}
+	}
+}
+
 func TestGzip(t *testing.T) {
 	t.Parallel()
 
@@ -89,5 +103,57 @@ func TestGzip(t *testing.T) {
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.True(t, strings.Contains(string(rb), msg))
+	})
+
+	t.Run("http.Flusher is supported and zipped", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		iterations := defaultMinSize * 2
+		wrappedHandler := Gzip(handlerImplementingFlush(msg, iterations))
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		reader, err := gzip.NewReader(res.Body)
+		attest.Ok(t, err)
+		defer reader.Close()
+
+		rb, err := io.ReadAll(reader)
+		attest.Ok(t, err)
+
+		attest.True(t, rec.Flushed)
+		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.True(t, strings.Contains(string(rb), msg))
+		attest.True(t, strings.Contains(string(rb), "FlusherCalled"))
+	})
+
+	t.Run("http.Flusher is supported and small is not zipped", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		iterations := 1
+		wrappedHandler := Gzip(handlerImplementingFlush(msg, iterations))
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.True(t, rec.Flushed)
+		attest.Zero(t, res.Header.Get(contentEncodingHeader))
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.True(t, strings.Contains(string(rb), msg))
+		attest.True(t, strings.Contains(string(rb), "FlusherCalled"))
 	})
 }
