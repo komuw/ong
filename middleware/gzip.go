@@ -64,6 +64,11 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		}
 		defer grw.Close()
 
+		// We do not handle range requests when compression is used, as the
+		// range specified applies to the compressed data, not to the uncompressed one.
+		// see: https://github.com/nytimes/gziphandler/issues/83
+		r.Header.Del("Range")
+
 		if _, ok := w.(http.CloseNotifier); ok {
 			// TODO: handle this case.
 
@@ -87,10 +92,9 @@ type gzipRW struct {
 
 	code int // Saves the WriteHeader value.
 
-	minSize          int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
-	buf              []byte // Holds the first part of the write before reaching the minSize or the end of the write.
-	ignore           bool   // If true, then we immediately passthru writes to the underlying ResponseWriter.
-	keepAcceptRanges bool   // Keep "Accept-Ranges" header.
+	minSize int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
+	buf     []byte // Holds the first part of the write before reaching the minSize or the end of the write.
+	ignore  bool   // If true, then we immediately passthru writes to the underlying ResponseWriter.
 
 	contentTypeFilter func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
 }
@@ -170,9 +174,8 @@ func (grw *gzipRW) startGzip() error {
 	grw.Header().Del(contentLength)
 
 	// Delete Accept-Ranges.
-	if !grw.keepAcceptRanges {
-		grw.Header().Del(acceptRanges)
-	}
+	// see: https://github.com/nytimes/gziphandler/issues/83
+	grw.Header().Del(acceptRanges)
 
 	// Write the header to gzip response.
 	if grw.code != 0 {
@@ -204,6 +207,9 @@ func (grw *gzipRW) startGzip() error {
 
 // nonGzipped writes to the underlying ResponseWriter without gzip.
 func (grw *gzipRW) nonGzipped() error {
+	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
+	grw.Header().Del(acceptRanges)
+
 	if grw.code != 0 {
 		grw.ResponseWriter.WriteHeader(grw.code)
 		// Ensure that no other WriteHeader's happen
