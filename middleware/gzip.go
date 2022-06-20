@@ -238,7 +238,7 @@ func (grw *gzipRW) Flush() {
 	}
 
 	if grw.gw != nil {
-		grw.gw.Flush()
+		_ = grw.gw.Flush()
 	}
 
 	if fw, ok := grw.ResponseWriter.(http.Flusher); ok {
