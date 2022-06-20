@@ -80,6 +80,9 @@ type gzipRW struct {
 }
 
 var (
+	// make sure we support http optional interfaces.
+	// https://github.com/komuw/goweb/issues/15
+	// https://blog.merovius.de/2017/07/30/the-trouble-with-optional-interfaces.html
 	_ http.ResponseWriter = &gzipRW{}
 	_ http.Flusher        = &gzipRW{}
 	_ http.Hijacker       = &gzipRW{}
