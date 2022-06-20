@@ -55,13 +55,9 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// see: https://github.com/nytimes/gziphandler/issues/83
 		r.Header.Del(rangeHeader)
 
-		if _, ok := w.(http.CloseNotifier); ok {
-			// TODO: handle this case.
-
-			// gwcn := GzipResponseWriterWithCloseNotify{gw}
-			// wrappedHandler(gwcn, r)
-			// return
-		}
+		// todo: we could detect if `w` is a `http.CloseNotifier` and do something special here.
+		// see: https://github.com/klauspost/compress/blob/4a97174a615ed745c450077edf0e1f7e97aabd58/gzhttp/compress.go#L383-L385
+		// However `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 
 		wrappedHandler(grw, r)
 	}
@@ -84,12 +80,11 @@ type gzipRW struct {
 }
 
 var (
-	// TODO: make sure these optional interfaces are implemented
 	_ http.ResponseWriter = &gzipRW{}
 	_ http.Flusher        = &gzipRW{}
 	_ http.Hijacker       = &gzipRW{}
-	// _ http.CloseNotifier  = &gzipRW{}
-	_ io.WriteCloser = &gzipRW{}
+	_ http.CloseNotifier  = &gzipRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
+	_ io.WriteCloser      = &gzipRW{}
 )
 
 // Write appends data to the gzip writer.
@@ -256,6 +251,11 @@ func (grw *gzipRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		return hj.Hijack()
 	}
 	return nil, nil, fmt.Errorf("http.Hijacker interface is not supported")
+}
+
+// CloseNotify implements http.CloseNotifier
+func (grw gzipRW) CloseNotify() <-chan bool {
+	return grw.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
 // shouldGzipReq checks whether the request is eligible to be gzipped.
