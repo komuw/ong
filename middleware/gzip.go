@@ -1,8 +1,11 @@
 package middleware
 
 import (
+	"bufio"
 	"compress/gzip"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -83,8 +86,8 @@ type gzipRW struct {
 var (
 	// TODO: make sure these optional interfaces are implemented
 	_ http.ResponseWriter = &gzipRW{}
-	// _ http.Flusher        = &gzipRW{}
-	// _ http.Hijacker       = &gzipRW{}
+	_ http.Flusher        = &gzipRW{}
+	_ http.Hijacker       = &gzipRW{}
 	// _ http.CloseNotifier  = &gzipRW{}
 	_ io.WriteCloser = &gzipRW{}
 )
@@ -220,6 +223,39 @@ func (grw *gzipRW) Close() error {
 
 	err := grw.gw.Close()
 	return err
+}
+
+// Flush flushes the underlying *gzip.Writer and then the
+// underlying http.ResponseWriter if it is an http.Flusher.
+// This makes gzipRW an http.Flusher.
+func (grw *gzipRW) Flush() {
+	if grw.gw == nil && grw.buf != nil {
+		// Fix for NYTimes/gziphandler#58:
+		//  Only flush once startGzip or
+		//  startPassThrough has been called.
+		//
+		// Flush is thus a no-op until the written
+		// body exceeds minSize, or we've decided
+		// not to compress.
+		return
+	}
+
+	if grw.gw != nil {
+		grw.gw.Flush()
+	}
+
+	if fw, ok := grw.ResponseWriter.(http.Flusher); ok {
+		fw.Flush()
+	}
+}
+
+// Hijack implements http.Hijacker. If the underlying ResponseWriter is a
+// Hijacker, its Hijack method is returned. Otherwise an error is returned.
+func (grw *gzipRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := grw.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, fmt.Errorf("http.Hijacker interface is not supported")
 }
 
 // shouldGzipReq checks whether the request is eligible to be gzipped.
