@@ -108,18 +108,9 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		return grw.ResponseWriter.Write(b)
 	}
 
-	// Save the write into a buffer for later use in GZIP responseWriter
-	// (if content is long enough) or at close with regular responseWriter.
-	wantBuf := 512
-	if grw.minSize > wantBuf {
-		wantBuf = grw.minSize
-	}
-	toAdd := len(b)
-	if len(grw.buf)+toAdd > wantBuf {
-		toAdd = wantBuf - len(grw.buf)
-	}
-	grw.buf = append(grw.buf, b[:toAdd]...)
-	remain := b[toAdd:]
+	// Save the write into a buffer for later use in GZIP responseWriter (if content is long enough) or at close with regular responseWriter.
+	// On the first write, w.buf changes from nil to a valid slice
+	grw.buf = append(grw.buf, b...)
 
 	// Only continue if they didn't already choose an encoding or a known unhandled content length or type.
 	if grw.Header().Get(contentEncoding) == "" && grw.Header().Get(contentRange) == "" {
@@ -154,11 +145,6 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 					if err := grw.startGzip(); err != nil {
 						return 0, err
 					}
-					if len(remain) > 0 {
-						if _, err := grw.gw.Write(remain); err != nil {
-							return 0, err
-						}
-					}
 					return len(b), nil
 				}
 			}
@@ -168,11 +154,6 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	// If we got here, we should not GZIP this response.
 	if err := grw.nonGzipped(); err != nil {
 		return 0, err
-	}
-	if len(remain) > 0 {
-		if _, err := grw.ResponseWriter.Write(remain); err != nil {
-			return 0, err
-		}
 	}
 	return len(b), nil
 }
