@@ -166,6 +166,27 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+// handleNonGzipped writes to the underlying ResponseWriter without gzip.
+func (grw *gzipRW) handleNonGzipped() error {
+	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
+	grw.Header().Del(acceptRanges)
+
+	if grw.code != 0 {
+		grw.ResponseWriter.WriteHeader(grw.code)
+		// Ensure that no other WriteHeader's happen
+		grw.code = 0
+	}
+
+	// If Write was never called then don't call Write on the underlying ResponseWriter.
+	if len(grw.buf) == 0 {
+		return nil
+	}
+	_, err := grw.ResponseWriter.Write(grw.buf)
+
+	grw.buf = grw.buf[:0]
+	return err
+}
+
 // handleGzipped initializes a GZIP writer and writes the buffer.
 func (grw *gzipRW) handleGzipped() error {
 	fmt.Println("\n\t handleGzipped called.")
@@ -206,27 +227,6 @@ func (grw *gzipRW) handleGzipped() error {
 		return err
 	}
 	return nil
-}
-
-// handleNonGzipped writes to the underlying ResponseWriter without gzip.
-func (grw *gzipRW) handleNonGzipped() error {
-	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
-	grw.Header().Del(acceptRanges)
-
-	if grw.code != 0 {
-		grw.ResponseWriter.WriteHeader(grw.code)
-		// Ensure that no other WriteHeader's happen
-		grw.code = 0
-	}
-
-	// If Write was never called then don't call Write on the underlying ResponseWriter.
-	if len(grw.buf) == 0 {
-		return nil
-	}
-	_, err := grw.ResponseWriter.Write(grw.buf)
-
-	grw.buf = grw.buf[:0]
-	return err
 }
 
 // WriteHeader just saves the response code until close or GZIP effective writes.
