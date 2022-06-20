@@ -46,7 +46,6 @@ const (
 func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		w.Header().Add(varyHeader, acHeader)
 
 		if !shouldGzip(r) {
