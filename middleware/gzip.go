@@ -58,9 +58,9 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			ResponseWriter: w,
 			// Note: do not set `gw` here, it will be set when `handleGzipped` is called.
 			// TODO: maybe we should set `gw` here??
-			level:             defaultLevel,
-			minSize:           defaultMinSize,
-			contentTypeFilter: defaultContentTypeFilter,
+			level:                   defaultLevel,
+			minSize:                 defaultMinSize,
+			shouldHandlecontentType: defaultContentTypesToHandle,
 		}
 		defer grw.Close()
 
@@ -96,7 +96,7 @@ type gzipRW struct {
 	buf     []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 	ignore  bool   // If true, then we immediately passthru writes to the underlying ResponseWriter.
 
-	contentTypeFilter func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
+	shouldHandlecontentType func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
 }
 
 // Write appends data to the gzip writer.
@@ -125,7 +125,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		}
 
 		ct := grw.Header().Get(contentType)
-		if cl == 0 || cl >= grw.minSize && (ct == "" || grw.contentTypeFilter(ct)) {
+		if cl == 0 || cl >= grw.minSize && (ct == "" || grw.shouldHandlecontentType(ct)) {
 			// If the current buffer is less than minSize and a Content-Length isn't set, then wait until we have more data.
 			if len(grw.buf) < grw.minSize && cl == 0 {
 				return len(b), nil
@@ -145,7 +145,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 				}
 
 				// If the Content-Type is acceptable to GZIP, initialize the GZIP writer.
-				if grw.contentTypeFilter(ct) {
+				if grw.shouldHandlecontentType(ct) {
 					if err := grw.handleGzipped(); err != nil {
 						return 0, err
 					}
@@ -276,8 +276,8 @@ func shouldGzip(r *http.Request) bool {
 	return false
 }
 
-// defaultContentTypeFilter excludes common compressed audio, video and archive formats.
-func defaultContentTypeFilter(ct string) bool {
+// defaultContentTypesToHandle excludes common compressed audio, video and archive formats.
+func defaultContentTypesToHandle(ct string) bool {
 	// Don't compress any audio/video types.
 	excludePrefixDefault := []string{"video/", "audio/", "image/jp"}
 
