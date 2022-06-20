@@ -140,7 +140,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	ct := ""
-	if ct := grw.Header().Get(contentType); ct == "" {
+	if ct = grw.Header().Get(contentType); ct == "" {
 		// If a Content-Type wasn't specified, infer it from the current buffer.
 		ct = http.DetectContentType(grw.buf)
 	}
