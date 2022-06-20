@@ -135,7 +135,9 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	if clStr := grw.Header().Get(contentLength); clStr != "" {
 		cl, _ = strconv.Atoi(clStr)
 	}
-	if cl < grw.minSize && cl != 0 {
+	if cl < grw.minSize && cl > 0 {
+		// if content-length == 0, it means that the header was not set.
+		// for those, we actually want to call `handleGzipped`; so we exempt them from this branch.
 		return nonGzipped()
 	}
 
