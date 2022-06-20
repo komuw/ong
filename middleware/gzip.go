@@ -199,7 +199,6 @@ func (grw *gzipRW) handleGzipped() error {
 		grw.gw = gnw
 
 		_, err := grw.gw.Write(grw.buf)
-
 		grw.buf = grw.buf[:0]
 		return err
 	}
@@ -228,6 +227,13 @@ func (grw *gzipRW) handleNonGzipped() error {
 
 	grw.buf = grw.buf[:0]
 	return err
+}
+
+// WriteHeader just saves the response code until close or GZIP effective writes.
+func (grw *gzipRW) WriteHeader(code int) {
+	if grw.code == 0 {
+		grw.code = code
+	}
 }
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
