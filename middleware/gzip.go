@@ -49,7 +49,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(varyHeader, acHeader)
 
-		if !shouldGzip(r) {
+		if !shouldGzipReq(r) {
 			wrappedHandler(w, r)
 			return
 		}
@@ -59,10 +59,9 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			ResponseWriter: w,
 			// Bytes written during ServeHTTP are redirected to this gzip writer
 			// before being written to the underlying response.
-			gw:                      gzipWriter,
-			level:                   defaultLevel,
-			minSize:                 defaultMinSize,
-			shouldHandlecontentType: defaultContentTypesToHandle,
+			gw:      gzipWriter,
+			level:   defaultLevel,
+			minSize: defaultMinSize,
 		}
 		defer grw.Close()
 
@@ -97,8 +96,7 @@ type gzipRW struct {
 	minSize int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
 	buf     []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 
-	handledZip              bool                 // whether this has yet to handle a zipped response.
-	shouldHandlecontentType func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
+	handledZip bool // whether this has yet to handle a zipped response.
 }
 
 var (
@@ -146,7 +144,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		// If a Content-Type wasn't specified, infer it from the current buffer.
 		ct = http.DetectContentType(grw.buf)
 	}
-	if !grw.shouldHandlecontentType(ct) {
+	if !shouldGzipCt(ct) {
 		return nonGzipped()
 	}
 
@@ -245,7 +243,8 @@ func (grw *gzipRW) Close() error {
 	return err
 }
 
-func shouldGzip(r *http.Request) bool {
+// shouldGzipReq checks whether the request is eligible to be gzipped.
+func shouldGzipReq(r *http.Request) bool {
 	// Examples of the `acHeader` are:
 	//   Accept-Encoding: gzip
 	//   Accept-Encoding: gzip, compress, br
@@ -271,8 +270,9 @@ func shouldGzip(r *http.Request) bool {
 	return false
 }
 
-// defaultContentTypesToHandle excludes common compressed audio, video and archive formats.
-func defaultContentTypesToHandle(ct string) bool {
+// shouldGzipCt checks whether the supplied content-type is eligible to be gzipped.
+// It excludes common compressed audio, video and archive formats.
+func shouldGzipCt(ct string) bool {
 	// Don't compress any audio/video types.
 	excludePrefixDefault := []string{"video/", "audio/", "image/jp"}
 
