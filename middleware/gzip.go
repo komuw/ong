@@ -93,7 +93,6 @@ type gzipRW struct {
 
 	minSize int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
 	buf     []byte // Holds the first part of the write before reaching the minSize or the end of the write.
-	ignore  bool   // If true, then we immediately passthru writes to the underlying ResponseWriter.
 
 	shouldHandlecontentType func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
 }
@@ -102,13 +101,7 @@ type gzipRW struct {
 func (grw *gzipRW) Write(b []byte) (int, error) {
 	// GZIP responseWriter is initialized. Use the GZIP responseWriter.
 	if grw.gw != nil {
-		fmt.Println("\n\t kkkkkkkkk", "\n.")
 		return grw.gw.Write(b)
-	}
-
-	// If we have already decided not to use GZIP, immediately passthrough.
-	if grw.ignore {
-		return grw.ResponseWriter.Write(b)
 	}
 
 	// Save the write into a buffer for later use in GZIP responseWriter (if content is long enough) or at close with regular responseWriter.
@@ -216,9 +209,6 @@ func (grw *gzipRW) handleNonGzipped() error {
 		grw.code = 0
 	}
 
-	// TODO: we might not need `grw.ignore`. remove it??
-	grw.ignore = true
-
 	// If Write was never called then don't call Write on the underlying ResponseWriter.
 	if len(grw.buf) == 0 {
 		return nil
@@ -238,14 +228,9 @@ func (grw *gzipRW) WriteHeader(code int) {
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
 func (grw *gzipRW) Close() error {
-	if grw.ignore {
-		return nil
-	}
-
 	if grw.gw == nil {
 		// GZIP not triggered yet, write out regular response.
-		err := grw.handleNonGzipped()
-		return err
+		return grw.handleNonGzipped()
 	}
 
 	err := grw.gw.Close()
