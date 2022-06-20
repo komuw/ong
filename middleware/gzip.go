@@ -142,7 +142,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		grw.Header().Set(contentTypeHeader, ct)
 	}
 
-	// Initialize the GZIP writer.
+	// gzip response.
 	if err := grw.handleGzipped(); err != nil {
 		return 0, err
 	}
