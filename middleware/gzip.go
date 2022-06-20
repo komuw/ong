@@ -3,6 +3,7 @@ package middleware
 import (
 	"compress/gzip"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -96,6 +97,15 @@ type gzipRW struct {
 
 	shouldHandlecontentType func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
 }
+
+var (
+	// TODO: make sure these optional interfaces are implemented
+	_ http.ResponseWriter = &gzipRW{}
+	// _ http.Flusher        = &gzipRW{}
+	// _ http.Hijacker       = &gzipRW{}
+	// _ http.CloseNotifier  = &gzipRW{}
+	_ io.WriteCloser = &gzipRW{}
+)
 
 // Write appends data to the gzip writer.
 func (grw *gzipRW) Write(b []byte) (int, error) {
