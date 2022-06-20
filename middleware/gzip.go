@@ -124,8 +124,11 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	// Only continue if they didn't already choose an encoding or a known unhandled content length or type.
 	if grw.Header().Get(contentEncoding) == "" && grw.Header().Get(contentRange) == "" {
 		// Check more expensive parts now.
-		pi, _ := strconv.ParseInt(grw.Header().Get(contentLength), 10, 0)
-		cl := int(pi)
+		cl := 0
+		if clStr := grw.Header().Get(contentLength); clStr != "" {
+			cl, _ = strconv.Atoi(clStr)
+		}
+
 		ct := grw.Header().Get(contentType)
 		if cl == 0 || cl >= grw.minSize && (ct == "" || grw.contentTypeFilter(ct)) {
 			// If the current buffer is less than minSize and a Content-Length isn't set, then wait until we have more data.
