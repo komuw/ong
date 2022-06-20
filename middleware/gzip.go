@@ -212,15 +212,14 @@ func (grw *gzipRW) WriteHeader(code int) {
 	}
 }
 
-// Close will close the gzip.Writer and will put it back in the gzipWriterPool.
+// Close will close the gzip.Writer.
 func (grw *gzipRW) Close() error {
 	if !grw.handledZip {
 		// GZIP not triggered yet, write out regular response.
 		return grw.handleNonGzipped()
 	}
 
-	err := grw.gw.Close()
-	return err
+	return grw.gw.Close()
 }
 
 // Flush flushes the underlying *gzip.Writer and then the
