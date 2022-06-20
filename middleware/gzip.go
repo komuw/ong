@@ -86,8 +86,8 @@ var (
 	_ http.ResponseWriter = &gzipRW{}
 	_ http.Flusher        = &gzipRW{}
 	_ http.Hijacker       = &gzipRW{}
-	_ http.CloseNotifier  = &gzipRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 	_ io.WriteCloser      = &gzipRW{}
+	// _ http.CloseNotifier  = &gzipRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
 // Write appends data to the gzip writer.
@@ -254,11 +254,6 @@ func (grw *gzipRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		return hj.Hijack()
 	}
 	return nil, nil, fmt.Errorf("http.Hijacker interface is not supported")
-}
-
-// CloseNotify implements http.CloseNotifier
-func (grw gzipRW) CloseNotify() <-chan bool {
-	return grw.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
 // shouldGzipReq checks whether the request is eligible to be gzipped.
