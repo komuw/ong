@@ -116,43 +116,56 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	// On the first write, w.buf changes from nil to a valid slice
 	grw.buf = append(grw.buf, b...)
 
-	// Only continue if they didn't already choose an encoding or a known unhandled content length or type.
-	if grw.Header().Get(contentEncoding) == "" && grw.Header().Get(contentRange) == "" {
-		// Check more expensive parts now.
-		cl := 0
-		if clStr := grw.Header().Get(contentLength); clStr != "" {
-			cl, _ = strconv.Atoi(clStr)
+	// Only continue if they didn't already choose an encoding .
+	if grw.Header().Get(contentEncoding) != "" || grw.Header().Get(contentRange) != "" {
+		if err := grw.handleNonGzipped(); err != nil {
+			return 0, err
+		}
+		return len(b), nil
+	}
+
+	// Check more expensive parts now.
+	cl := 0
+	if clStr := grw.Header().Get(contentLength); clStr != "" {
+		cl, _ = strconv.Atoi(clStr)
+	}
+	if cl < grw.minSize && cl != 0 {
+		if err := grw.handleNonGzipped(); err != nil {
+			return 0, err
+		}
+		return len(b), nil
+	}
+
+	ct := ""
+	if ct := grw.Header().Get(contentType); ct == "" {
+		// If a Content-Type wasn't specified, infer it from the current buffer.
+		ct = http.DetectContentType(grw.buf)
+	}
+	if !grw.shouldHandlecontentType(ct) {
+		if err := grw.handleNonGzipped(); err != nil {
+			return 0, err
+		}
+		return len(b), nil
+	}
+
+	// If the current buffer is less than minSize, then wait until we have more data.
+	if len(grw.buf) < grw.minSize {
+		return len(b), nil
+	}
+
+	// If the current buffer is larger than minSize, then continue.
+	if len(grw.buf) >= grw.minSize {
+		// Handles the intended case of setting a nil Content-Type (as for http/server or http/fs)
+		// Set the header only if the key does not exist
+		if _, ok := grw.Header()[contentType]; !ok {
+			grw.Header().Set(contentType, ct)
 		}
 
-		ct := grw.Header().Get(contentType)
-		if cl == 0 || cl >= grw.minSize && (ct == "" || grw.shouldHandlecontentType(ct)) {
-			// If the current buffer is less than minSize and a Content-Length isn't set, then wait until we have more data.
-			if len(grw.buf) < grw.minSize && cl == 0 {
-				return len(b), nil
-			}
-
-			// If the Content-Length is larger than minSize or the current buffer is larger than minSize, then continue.
-			if cl >= grw.minSize || len(grw.buf) >= grw.minSize {
-				// If a Content-Type wasn't specified, infer it from the current buffer.
-				if ct == "" {
-					ct = http.DetectContentType(grw.buf)
-				}
-
-				// Handles the intended case of setting a nil Content-Type (as for http/server or http/fs)
-				// Set the header only if the key does not exist
-				if _, ok := grw.Header()[contentType]; !ok {
-					grw.Header().Set(contentType, ct)
-				}
-
-				// If the Content-Type is acceptable to GZIP, initialize the GZIP writer.
-				if grw.shouldHandlecontentType(ct) {
-					if err := grw.handleGzipped(); err != nil {
-						return 0, err
-					}
-					return len(b), nil
-				}
-			}
+		// Initialize the GZIP writer.
+		if err := grw.handleGzipped(); err != nil {
+			return 0, err
 		}
+		return len(b), nil
 	}
 
 	// If we got here, we should not GZIP this response.
