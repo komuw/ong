@@ -232,10 +232,6 @@ func (grw *gzipRW) handleNonGzipped() error {
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
 func (grw *gzipRW) Close() error {
-	defer func() {
-		grw.ResponseWriter = nil
-	}()
-
 	if grw.ignore {
 		return nil
 	}
@@ -247,7 +243,6 @@ func (grw *gzipRW) Close() error {
 	}
 
 	err := grw.gw.Close()
-	grw.gw = nil
 	return err
 }
 
