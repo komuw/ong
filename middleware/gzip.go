@@ -54,10 +54,12 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		gzipWriter, _ := gzip.NewWriterLevel(w, defaultLevel)
 		grw := &gzipRW{
 			ResponseWriter: w,
-			// Note: do not set `gw` here, it will be set when `handleGzipped` is called.
-			// TODO: maybe we should set `gw` here??
+			// Bytes written during ServeHTTP are redirected to this gzip writer
+			// before being written to the underlying response.
+			gw:                      gzipWriter,
 			level:                   defaultLevel,
 			minSize:                 defaultMinSize,
 			shouldHandlecontentType: defaultContentTypesToHandle,
@@ -95,6 +97,7 @@ type gzipRW struct {
 	minSize int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
 	buf     []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 
+	handledZip              bool                 // whether this has yet to handle a zipped response.
 	shouldHandlecontentType func(ct string) bool // Only compress if the response is one of these content-types. All are accepted if empty.
 }
 
@@ -109,10 +112,8 @@ var (
 
 // Write appends data to the gzip writer.
 func (grw *gzipRW) Write(b []byte) (int, error) {
-	// GZIP responseWriter is initialized. Use the GZIP responseWriter.
-	if grw.gw != nil {
-		return grw.gw.Write(b)
-	}
+	// todo: we have the ability to re-use the grw.gw if it already exists.
+	// see: https://github.com/klauspost/compress/blob/4a97174a615ed745c450077edf0e1f7e97aabd58/gzhttp/compress.go#L81-L84 for implementation.
 
 	// Save the write into a buffer for later use in GZIP responseWriter (if content is long enough) or at close with regular responseWriter.
 	// On the first write, w.buf changes from nil to a valid slice
@@ -168,6 +169,8 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 
 // handleNonGzipped writes to the underlying ResponseWriter without gzip.
 func (grw *gzipRW) handleNonGzipped() error {
+	fmt.Println("\n\t handleNonGzipped called.")
+	grw.handledZip = false
 	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
 	grw.Header().Del(acceptRanges)
 
@@ -190,6 +193,8 @@ func (grw *gzipRW) handleNonGzipped() error {
 // handleGzipped initializes a GZIP writer and writes the buffer.
 func (grw *gzipRW) handleGzipped() error {
 	fmt.Println("\n\t handleGzipped called.")
+	grw.handledZip = true
+
 	// Set the GZIP header.
 	grw.Header().Set(contentEncoding, "gzip")
 
@@ -209,19 +214,10 @@ func (grw *gzipRW) handleGzipped() error {
 		grw.code = 0
 	}
 
-	// Initialize and flush the buffer into the gzip response if there are any bytes.
+	// Flush the buffer into the gzip response if there are any bytes.
 	// If there aren't any, we shouldn't initialize it yet because on Close it will
 	// write the gzip header even if nothing was ever written.
 	if len(grw.buf) > 0 {
-		// Initialize the GZIP response.
-		//
-		// Bytes written during ServeHTTP are redirected to this gzip writer
-		// before being written to the underlying response.
-
-		fmt.Println("\n\t len(grw.buf) > 0:: hereeee.")
-		gnw, _ := gzip.NewWriterLevel(grw.ResponseWriter, grw.level)
-		grw.gw = gnw
-
 		_, err := grw.gw.Write(grw.buf)
 		grw.buf = grw.buf[:0]
 		return err
@@ -238,7 +234,7 @@ func (grw *gzipRW) WriteHeader(code int) {
 
 // Close will close the gzip.Writer and will put it back in the gzipWriterPool.
 func (grw *gzipRW) Close() error {
-	if grw.gw == nil {
+	if !grw.handledZip {
 		// GZIP not triggered yet, write out regular response.
 		return grw.handleNonGzipped()
 	}
