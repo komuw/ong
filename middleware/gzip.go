@@ -116,24 +116,24 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	// On the first write, w.buf changes from nil to a valid slice
 	grw.buf = append(grw.buf, b...)
 
-	// Only continue if they didn't already choose an encoding .
-	if grw.Header().Get(contentEncoding) != "" || grw.Header().Get(contentRange) != "" {
+	nonGzipped := func() (int, error) {
 		if err := grw.handleNonGzipped(); err != nil {
 			return 0, err
 		}
 		return len(b), nil
 	}
 
-	// Check more expensive parts now.
+	// Only continue if they didn't already choose an encoding .
+	if grw.Header().Get(contentEncoding) != "" || grw.Header().Get(contentRange) != "" {
+		return nonGzipped()
+	}
+
 	cl := 0
 	if clStr := grw.Header().Get(contentLength); clStr != "" {
 		cl, _ = strconv.Atoi(clStr)
 	}
 	if cl < grw.minSize && cl != 0 {
-		if err := grw.handleNonGzipped(); err != nil {
-			return 0, err
-		}
-		return len(b), nil
+		return nonGzipped()
 	}
 
 	ct := ""
@@ -142,10 +142,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		ct = http.DetectContentType(grw.buf)
 	}
 	if !grw.shouldHandlecontentType(ct) {
-		if err := grw.handleNonGzipped(); err != nil {
-			return 0, err
-		}
-		return len(b), nil
+		return nonGzipped()
 	}
 
 	// If the current buffer is less than minSize, then wait until we have more data.
