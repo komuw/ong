@@ -30,7 +30,7 @@ func TestGzip(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
-		req.Header.Add(acHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -51,7 +51,7 @@ func TestGzip(t *testing.T) {
 		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		req.Header.Add(acHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -62,7 +62,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
-		attest.Zero(t, res.Header.Get(contentEncoding))
+		attest.Zero(t, res.Header.Get(contentEncodingHeader))
 	})
 
 	t.Run("middleware succeds", func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestGzip(t *testing.T) {
 		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		req.Header.Add(acHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -86,7 +86,7 @@ func TestGzip(t *testing.T) {
 		rb, err := io.ReadAll(reader)
 		attest.Ok(t, err)
 
-		attest.Equal(t, res.Header.Get(contentEncoding), "gzip")
+		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.True(t, strings.Contains(string(rb), msg))
 	})

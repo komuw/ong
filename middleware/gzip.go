@@ -14,53 +14,37 @@ import (
 //   (b) https://github.com/klauspost/compress/tree/master/gzhttp whose license(Apache License, Version 2.0) can be found here: https://github.com/klauspost/compress/blob/4bc73d36928c39bbd7cf823171081d14c884edde/gzhttp/LICENSE
 
 const (
-	acHeader           = "Accept-Encoding"
-	noCompression      = gzip.NoCompression
-	bestSpeed          = gzip.BestSpeed
-	bestCompression    = gzip.BestCompression
-	defaultCompression = gzip.DefaultCompression
-	huffmanOnly        = gzip.HuffmanOnly
-
-	defaultLevel = bestSpeed // TODO: should this be the default?
 
 	// TODO: copy/add docs.
 	// TODO: check other impls for other sizes that they use.
 	defaultMinSize = 150
 
-	// HeaderNoCompression can be used to disable compression.
-	// Any header value will disable compression.
-	// The Header is always removed from output.
-	// HeaderNoCompression = "No-Gzip-Compression"
-)
-
-const (
 	// TODO: vet this.
-	acceptEncoding  = "Accept-Encoding"
-	contentEncoding = "Content-Encoding"
-	contentRange    = "Content-Range"
-	acceptRanges    = "Accept-Ranges"
-	contentType     = "Content-Type"
-	contentLength   = "Content-Length"
+	acceptEncodingHeader  = "Accept-Encoding"
+	contentEncodingHeader = "Content-Encoding"
+	contentRangeHeader    = "Content-Range"
+	acceptRangesHeader    = "Accept-Ranges"
+	contentTypeHeader     = "Content-Type"
+	contentLengthHeader   = "Content-Length"
+	rangeHeader           = "Range"
 )
 
 // Gzip is a middleware that transparently gzips the response body, for clients which support.
 func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add(varyHeader, acHeader)
+		w.Header().Add(varyHeader, acceptEncodingHeader)
 
 		if !shouldGzipReq(r) {
 			wrappedHandler(w, r)
 			return
 		}
 
-		gzipWriter, _ := gzip.NewWriterLevel(w, defaultLevel)
+		gzipWriter, _ := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		grw := &gzipRW{
 			ResponseWriter: w,
 			// Bytes written during ServeHTTP are redirected to this gzip writer
 			// before being written to the underlying response.
 			gw:      gzipWriter,
-			level:   defaultLevel,
 			minSize: defaultMinSize,
 		}
 		defer grw.Close()
@@ -68,7 +52,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// We do not handle range requests when compression is used, as the
 		// range specified applies to the compressed data, not to the uncompressed one.
 		// see: https://github.com/nytimes/gziphandler/issues/83
-		r.Header.Del("Range")
+		r.Header.Del(rangeHeader)
 
 		if _, ok := w.(http.CloseNotifier); ok {
 			// TODO: handle this case.
@@ -88,8 +72,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // It can be configured to skip response smaller than minSize.
 type gzipRW struct {
 	http.ResponseWriter
-	level int
-	gw    *gzip.Writer
+	gw *gzip.Writer
 
 	code int // Saves the WriteHeader value.
 
@@ -125,12 +108,12 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	// Only continue if they didn't already choose an encoding .
-	if grw.Header().Get(contentEncoding) != "" || grw.Header().Get(contentRange) != "" {
+	if grw.Header().Get(contentEncodingHeader) != "" || grw.Header().Get(contentRangeHeader) != "" {
 		return nonGzipped()
 	}
 
 	cl := 0
-	if clStr := grw.Header().Get(contentLength); clStr != "" {
+	if clStr := grw.Header().Get(contentLengthHeader); clStr != "" {
 		cl, _ = strconv.Atoi(clStr)
 	}
 	if cl < grw.minSize && cl > 0 {
@@ -140,7 +123,7 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	ct := ""
-	if ct = grw.Header().Get(contentType); ct == "" {
+	if ct = grw.Header().Get(contentTypeHeader); ct == "" {
 		// If a Content-Type wasn't specified, infer it from the current buffer.
 		ct = http.DetectContentType(grw.buf)
 	}
@@ -156,8 +139,8 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	// The current buffer is larger than minSize, continue.
 	//
 	// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
-	if _, ok := grw.Header()[contentType]; !ok && ct != "" {
-		grw.Header().Set(contentType, ct)
+	if _, ok := grw.Header()[contentTypeHeader]; !ok && ct != "" {
+		grw.Header().Set(contentTypeHeader, ct)
 	}
 
 	// Initialize the GZIP writer.
@@ -172,7 +155,7 @@ func (grw *gzipRW) handleNonGzipped() error {
 	fmt.Println("\n\t handleNonGzipped called.")
 	grw.handledZip = false
 	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
-	grw.Header().Del(acceptRanges)
+	grw.Header().Del(acceptRangesHeader)
 
 	if grw.code != 0 {
 		grw.ResponseWriter.WriteHeader(grw.code)
@@ -196,16 +179,16 @@ func (grw *gzipRW) handleGzipped() error {
 	grw.handledZip = true
 
 	// Set the GZIP header.
-	grw.Header().Set(contentEncoding, "gzip")
+	grw.Header().Set(contentEncodingHeader, "gzip")
 
 	// if the Content-Length is already set, then calls to Write on gzip
 	// will fail to set the Content-Length header since its already set
 	// See: https://github.com/golang/go/issues/14975.
-	grw.Header().Del(contentLength)
+	grw.Header().Del(contentLengthHeader)
 
 	// Delete Accept-Ranges.
 	// see: https://github.com/nytimes/gziphandler/issues/83
-	grw.Header().Del(acceptRanges)
+	grw.Header().Del(acceptRangesHeader)
 
 	// Write the header to gzip response.
 	if grw.code != 0 {
@@ -245,7 +228,7 @@ func (grw *gzipRW) Close() error {
 
 // shouldGzipReq checks whether the request is eligible to be gzipped.
 func shouldGzipReq(r *http.Request) bool {
-	// Examples of the `acHeader` are:
+	// Examples of the `acceptEncodingHeader` are:
 	//   Accept-Encoding: gzip
 	//   Accept-Encoding: gzip, compress, br
 	//   Accept-Encoding: br;q=1.0, gzip;q=0.8, *;q=0.1
@@ -263,7 +246,7 @@ func shouldGzipReq(r *http.Request) bool {
 		return false
 	}
 
-	if strings.Contains(r.Header.Get(acHeader), "gzip") {
+	if strings.Contains(r.Header.Get(acceptEncodingHeader), "gzip") {
 		return true
 	}
 
