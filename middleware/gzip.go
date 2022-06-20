@@ -18,7 +18,6 @@ const (
 	// TODO: check other impls for other sizes that they use.
 	defaultMinSize = 150
 
-	// TODO: vet this.
 	acceptEncodingHeader  = "Accept-Encoding"
 	contentEncodingHeader = "Content-Encoding"
 	contentRangeHeader    = "Content-Range"
