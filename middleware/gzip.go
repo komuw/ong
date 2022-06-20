@@ -48,7 +48,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			gw:      gzipWriter,
 			minSize: defaultMinSize,
 		}
-		defer grw.Close()
+		defer func() { _ = grw.Close() }() // errcheck made me do this.
 
 		// We do not handle range requests when compression is used, as the
 		// range specified applies to the compressed data, not to the uncompressed one.
