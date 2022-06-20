@@ -153,23 +153,16 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		return len(b), nil
 	}
 
-	// If the current buffer is larger than minSize, then continue.
-	if len(grw.buf) >= grw.minSize {
-		// Handles the intended case of setting a nil Content-Type (as for http/server or http/fs)
-		// Set the header only if the key does not exist
-		if _, ok := grw.Header()[contentType]; !ok {
-			grw.Header().Set(contentType, ct)
-		}
+	// The current buffer is larger than minSize, continue.
 
-		// Initialize the GZIP writer.
-		if err := grw.handleGzipped(); err != nil {
-			return 0, err
-		}
-		return len(b), nil
+	// Handles the intended case of setting a nil Content-Type (as for http/server or http/fs)
+	// Set the header only if the key does not exist
+	if _, ok := grw.Header()[contentType]; !ok {
+		grw.Header().Set(contentType, ct)
 	}
 
-	// If we got here, we should not GZIP this response.
-	if err := grw.handleNonGzipped(); err != nil {
+	// Initialize the GZIP writer.
+	if err := grw.handleGzipped(); err != nil {
 		return 0, err
 	}
 	return len(b), nil
