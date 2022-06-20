@@ -102,7 +102,7 @@ type gzipRW struct {
 func (grw *gzipRW) Write(b []byte) (int, error) {
 	// GZIP responseWriter is initialized. Use the GZIP responseWriter.
 	if grw.gw != nil {
-		fmt.Println("\n\t kkkkkkkkk")
+		fmt.Println("\n\t kkkkkkkkk", "\n.")
 		return grw.gw.Write(b)
 	}
 
