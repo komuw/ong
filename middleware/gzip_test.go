@@ -156,4 +156,26 @@ func TestGzip(t *testing.T) {
 		attest.True(t, strings.Contains(string(rb), msg))
 		attest.True(t, strings.Contains(string(rb), "FlusherCalled"))
 	})
+
+	t.Run("without gzip acceptEncoding not zipped", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		iterations := defaultMinSize * 2
+		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, compress;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Zero(t, res.Header.Get(contentEncodingHeader))
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), strings.Repeat(msg, iterations))
+	})
 }
