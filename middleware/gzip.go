@@ -16,9 +16,14 @@ import (
 //   (b) https://github.com/klauspost/compress/tree/master/gzhttp whose license(Apache License, Version 2.0) can be found here: https://github.com/klauspost/compress/blob/4bc73d36928c39bbd7cf823171081d14c884edde/gzhttp/LICENSE
 
 const (
-
-	// TODO: copy/add docs.
-	// TODO: check other impls for other sizes that they use.
+	// defaultMinSize is the default minimum size for which we enable gzip compression.
+	// - compressing very small payloads may actually increase their size.
+	// - compressing small payloads may actually decrease end-to-end performance.
+	//
+	// nginx recommends 20 bytes; apache/mod_gzip, 500 bytes; apache/pagespeed, 0 bytes.
+	// In the past, google recommended 150 bytes and akamai 860 bytes, but both of these recommendations seem to have disappeared from their current documentation.
+	// klauspost/compress recommends 1024; based on the fact that the MTU size is 1500 bytes;
+	//  (even if you compress something from 1300bytes to 800bytes, it still gets transmitted in 1500bytes MTU; so u have done zero work.)
 	defaultMinSize = 150
 
 	acceptEncodingHeader  = "Accept-Encoding"
