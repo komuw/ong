@@ -37,9 +37,14 @@ type logger struct {
 	indent bool
 }
 
-// TODO: add heartbeat
+// todo: add heartbeat in the future.
 
-func New(ctx context.Context, w io.Writer, maxMsgs int, indent bool) logger {
+func New(
+	ctx context.Context,
+	w io.Writer,
+	maxMsgs int,
+	indent bool,
+) logger {
 	logID := getLogId(ctx)
 	ctx = context.WithValue(ctx, logCtxKey, logID)
 	if maxMsgs < 1 {
