@@ -62,15 +62,15 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if f.Flag('+') {
-			io.WriteString(f, e.Error())
-			io.WriteString(f, e.getStackTrace())
+			_, _ = io.WriteString(f, e.Error())
+			_, _ = io.WriteString(f, e.getStackTrace())
 			return
 		}
 		fallthrough
 	case 's':
-		io.WriteString(f, e.Error())
+		_, _ = io.WriteString(f, e.Error())
 	case 'q':
-		fmt.Fprintf(f, "%q", e.Error())
+		_, _ = fmt.Fprintf(f, "%q", e.Error())
 	}
 }
 

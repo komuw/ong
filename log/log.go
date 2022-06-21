@@ -146,7 +146,9 @@ func (l logger) flush() {
 				continue
 			}
 		}
-		l.w.Write(b.Bytes())
+		if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("GOWEB_RUNNING_IN_TESTS") != "" {
+			panic(err)
+		}
 		l.cBuf.mu.Unlock()
 	}
 
