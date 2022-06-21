@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -31,10 +32,11 @@ const (
 var logCtxKey = logContextKeyType("logContextKey")
 
 type logger struct {
-	w      io.Writer
-	cBuf   *circleBuf
-	ctx    context.Context
-	indent bool
+	w          io.Writer
+	cBuf       *circleBuf
+	ctx        context.Context
+	indent     bool
+	addCallers bool
 }
 
 // todo: add heartbeat in the future.
@@ -51,10 +53,11 @@ func New(
 		maxMsgs = 10
 	}
 	return logger{
-		w:      w,
-		cBuf:   newCirleBuf(maxMsgs),
-		ctx:    ctx,
-		indent: indent,
+		w:          w,
+		cBuf:       newCirleBuf(maxMsgs),
+		ctx:        ctx,
+		indent:     indent,
+		addCallers: false,
 	}
 }
 
@@ -65,16 +68,34 @@ func (l logger) WithCtx(ctx context.Context) logger {
 	cBuf := l.cBuf
 	cBuf.buf = cBuf.buf[:0] // TODO: add tests to prove that m.cBuf.buf has not been invalidated.
 	return logger{
-		w:      l.w,
-		cBuf:   cBuf,
-		ctx:    ctx,
-		indent: l.indent,
+		w:          l.w,
+		cBuf:       cBuf,
+		ctx:        ctx,
+		indent:     l.indent,
+		addCallers: l.addCallers,
+	}
+}
+
+func (l logger) WithCaller() logger {
+	cBuf := l.cBuf // todo: do we need to invalidate buffer?
+	return logger{
+		w:          l.w,
+		cBuf:       cBuf,
+		ctx:        l.ctx,
+		indent:     l.indent,
+		addCallers: true,
 	}
 }
 
 func (l logger) log(lvl level, f F) {
 	f["timestamp"] = time.Now().UTC()
 	f["logID"] = getLogId(l.ctx)
+	if l.addCallers {
+		if _, file, line, ok := runtime.Caller(1); ok {
+			f["line"] = fmt.Sprintf("%s:%d", file, line)
+		}
+	}
+
 	l.cBuf.store(f)
 
 	if lvl >= errorL {

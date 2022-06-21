@@ -61,15 +61,32 @@ func TestLogger(t *testing.T) {
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs, true)
 
-		infoMsg := "hello world"
-		l.Info(F{"what": infoMsg})
-		l.Error(errors.New("bad"))
+		{
+			infoMsg := "hello world"
+			l.Info(F{"what": infoMsg})
+			l.Error(errors.New("bad"))
 
-		id := getLogId(l.ctx)
-		attest.True(t, strings.Contains(w.String(), id))
-		attest.True(t, strings.Contains(w.String(), "level"))
-		attest.True(t, strings.Contains(w.String(), "stack"))
-		attest.True(t, strings.Contains(w.String(), "err"))
+			id := getLogId(l.ctx)
+			attest.True(t, strings.Contains(w.String(), id))
+			attest.True(t, strings.Contains(w.String(), "level"))
+			attest.True(t, strings.Contains(w.String(), "stack"))
+			attest.True(t, strings.Contains(w.String(), "err"))
+			attest.False(t, strings.Contains(w.String(), "line"))
+		}
+
+		{
+			l = l.WithCaller()
+			l.Info(F{"name": "john"})
+			errMsg := "kimeumana"
+			l.Error(errors.New(errMsg))
+
+			id := getLogId(l.ctx)
+			attest.True(t, strings.Contains(w.String(), id))
+			attest.True(t, strings.Contains(w.String(), "level"))
+			attest.True(t, strings.Contains(w.String(), "stack"))
+			attest.True(t, strings.Contains(w.String(), "err"))
+			attest.True(t, strings.Contains(w.String(), "line"))
+		}
 	})
 
 	t.Run("logs are rotated", func(t *testing.T) {
