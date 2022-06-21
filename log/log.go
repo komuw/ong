@@ -173,14 +173,3 @@ func (c *circleBuf) reset() {
 	c.buf = c.buf[:0]
 	c.mu.Unlock()
 }
-
-func main() {
-	my := New(context.Background(), os.Stdout, 3, true)
-	my.Info(F{"one": "one", "ok": "okay"})
-	my.Info(F{"two": "two"})
-	my.Info(F{"three": "three"})
-	my.Info(F{"four": "four"})
-	my.Info(F{"five": "five"})
-	my.Error(F{"err": "oops"})
-
-}
