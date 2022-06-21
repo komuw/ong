@@ -53,9 +53,9 @@ func TestStackError(t *testing.T) {
 	t.Run("formattting", func(t *testing.T) {
 		err := hello()
 
-		attest.Equal(t, fmt.Sprintf("%s", err), "error in foo")
+		attest.Equal(t, fmt.Sprintf("%s", err), "error in foo") //nolint:gocritic
 		attest.Equal(t, fmt.Sprintf("%q", err), `"error in foo"`)
-		attest.Equal(t, fmt.Sprintf("%v", err), "error in foo")
+		attest.Equal(t, fmt.Sprintf("%v", err), "error in foo") //nolint:gocritic
 
 		extendedFormatting := fmt.Sprintf("%+v", err)
 		for _, v := range []string{
