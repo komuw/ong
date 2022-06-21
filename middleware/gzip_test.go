@@ -183,7 +183,7 @@ func TestGzip(t *testing.T) {
 }
 
 func gzipBenchmarkHandler() http.HandlerFunc {
-	bin, err := ioutil.ReadFile("testdata/bench.json")
+	bin, err := ioutil.ReadFile("testdata/benchmark.json")
 	if err != nil {
 		panic(err)
 	}
