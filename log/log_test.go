@@ -71,7 +71,7 @@ func TestLogger(t *testing.T) {
 			attest.True(t, strings.Contains(w.String(), "level"))
 			attest.True(t, strings.Contains(w.String(), "stack"))
 			attest.True(t, strings.Contains(w.String(), "err"))
-			attest.False(t, strings.Contains(w.String(), "line"))
+			attest.False(t, strings.Contains(w.String(), "line")) // line not added
 		}
 
 		{
@@ -85,7 +85,7 @@ func TestLogger(t *testing.T) {
 			attest.True(t, strings.Contains(w.String(), "level"))
 			attest.True(t, strings.Contains(w.String(), "stack"))
 			attest.True(t, strings.Contains(w.String(), "err"))
-			attest.True(t, strings.Contains(w.String(), "line"))
+			attest.True(t, strings.Contains(w.String(), "line")) // line added
 		}
 	})
 
