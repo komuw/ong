@@ -196,7 +196,7 @@ func gzipBenchmarkHandler() http.HandlerFunc {
 	}
 }
 
-var result int
+var result int //nolint:gochecknoglobals
 
 func BenchmarkGoWebGzip(b *testing.B) {
 	var r int
