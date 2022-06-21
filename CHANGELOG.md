@@ -11,3 +11,4 @@ Most recent version is listed first.
 - cookies: https://github.com/komuw/goweb/pull/27
 - csrf middleware: https://github.com/komuw/goweb/pull/32
 - cors middleware: https://github.com/komuw/goweb/pull/33
+- gzip middleware: https://github.com/komuw/goweb/pull/36

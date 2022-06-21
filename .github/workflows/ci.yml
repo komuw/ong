@@ -85,6 +85,8 @@ jobs:
           env
           go test -timeout 1m -race -run=XXXX -bench=. ./...
           go test -timeout 4m -v -race ./...
+        env:
+          GOWEB_RUNNING_IN_TESTS: 'YES'
 
       - name: test coverage
         run: |
@@ -99,6 +101,8 @@ jobs:
           go test -timeout 4m -v -race -cover -coverprofile=coverage.out ./... && bash <(curl -s https://codecov.io/bash)
           go tool cover -html=coverage.out -o coverage.html
           go tool cover -func=coverage.out
+        env:
+          GOWEB_RUNNING_IN_TESTS: 'YES'
 
   run_analysis:
     name: run_analysis
@@ -193,6 +197,8 @@ jobs:
           fi
 
           # TODO: add https://github.com/system-pclub/GCatch
+        env:
+          GOWEB_RUNNING_IN_TESTS: 'YES'
 
 
   # run_stress_test:
