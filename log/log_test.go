@@ -11,7 +11,11 @@ import (
 )
 
 func TestLogger(t *testing.T) {
+	t.Parallel()
+
 	t.Run("info level does not do anything", func(t *testing.T) {
+		t.Parallel()
+
 		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs, true)
@@ -21,6 +25,8 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("error logs immediately", func(t *testing.T) {
+		t.Parallel()
+
 		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs, true)
@@ -31,6 +37,8 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("info logs are flushed on error", func(t *testing.T) {
+		t.Parallel()
+
 		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs, true)
@@ -45,6 +53,8 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("logId added", func(t *testing.T) {
+		t.Parallel()
+
 		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs, true)
@@ -59,6 +69,8 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("logs are rotated", func(t *testing.T) {
+		t.Parallel()
+
 		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs, true)
