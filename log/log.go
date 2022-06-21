@@ -149,7 +149,7 @@ func newCirleBuf(maxSize int) *circleBuf {
 		maxSize = 10
 	}
 	return &circleBuf{
-		buf:         make([]F, maxSize, maxSize),
+		buf:         make([]F, maxSize),
 		maxSize:     maxSize,
 		currentSize: 0,
 	}
