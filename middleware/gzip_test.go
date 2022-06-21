@@ -4,12 +4,14 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"github.com/klauspost/compress/gzhttp"
 )
 
 func someGzipHandler(msg string, iterations int) http.HandlerFunc {
@@ -178,4 +180,96 @@ func TestGzip(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), strings.Repeat(msg, iterations))
 	})
+}
+
+func gzipBenchmarkHandler() http.HandlerFunc {
+	bin, err := ioutil.ReadFile("testdata/bench.json")
+	if err != nil {
+		panic(err)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, bin)
+	}
+}
+
+var result1 int
+
+func BenchmarkGoWebGzip(b *testing.B) {
+	var r int
+	wrappedHandler := Gzip(gzipBenchmarkHandler())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// always record the result of Fib to prevent
+		// the compiler eliminating the function call.
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
+		attest.Equal(b, res.StatusCode, http.StatusOK)
+		r = res.StatusCode
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result1 = r
+}
+
+var result2 int
+
+func BenchmarkKlauspostGzip(b *testing.B) {
+	var r int
+	wrappedHandler := gzhttp.GzipHandler(gzipBenchmarkHandler())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// always record the result of Fib to prevent
+		// the compiler eliminating the function call.
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
+		attest.Equal(b, res.StatusCode, http.StatusOK)
+		r = res.StatusCode
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result2 = r
+}
+
+var result3 int
+
+func BenchmarkNoGzip(b *testing.B) {
+	var r int
+	wrappedHandler := Gzip(gzipBenchmarkHandler())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// always record the result of Fib to prevent
+		// the compiler eliminating the function call.
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, deflate;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(b, res.Header.Get(contentEncodingHeader), "")
+		attest.Equal(b, res.StatusCode, http.StatusOK)
+		r = res.StatusCode
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result3 = r
 }

@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/akshayjshah/attest v0.2.2
+	github.com/klauspost/compress v1.15.6
 	github.com/rs/xid v1.4.0
 	go.uber.org/automaxprocs v1.5.1
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
