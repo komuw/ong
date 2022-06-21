@@ -146,6 +146,7 @@ jobs:
           go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
           go install github.com/kisielk/errcheck@latest
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go install mvdan.cc/gofumpt@latest
 
           /home/runner/go/bin/staticcheck -version
         env:
