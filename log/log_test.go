@@ -54,7 +54,7 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), errMsg))
 	})
 
-	t.Run("logId added", func(t *testing.T) {
+	t.Run("neccesary fields added", func(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
@@ -68,6 +68,9 @@ func TestLogger(t *testing.T) {
 
 		id := getLogId(l.ctx)
 		attest.True(t, strings.Contains(w.String(), id))
+		attest.True(t, strings.Contains(w.String(), "level"))
+		attest.True(t, strings.Contains(w.String(), "stack"))
+		attest.True(t, strings.Contains(w.String(), "err"))
 	})
 
 	t.Run("logs are rotated", func(t *testing.T) {

@@ -37,6 +37,8 @@ type logger struct {
 	indent bool
 }
 
+// TODO: add heartbeat
+
 func New(ctx context.Context, w io.Writer, maxMsgs int, indent bool) logger {
 	logID := getLogId(ctx)
 	ctx = context.WithValue(ctx, logCtxKey, logID)
