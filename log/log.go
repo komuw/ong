@@ -117,9 +117,11 @@ func (l logger) Info(f F) {
 }
 
 // Error will log at the Info level.
-func (l logger) Error(e error, f F) {
-	f["level"] = "error"
-	f["err"] = e.Error()
+func (l logger) Error(e error) {
+	f := F{
+		"level": "error",
+		"err":   e.Error(),
+	}
 	if stack := errors.StackTrace(e); stack != "" {
 		f["stack"] = stack
 	}
