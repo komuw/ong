@@ -1,3 +1,4 @@
+// Package errors implements functions to manipulate errors.
 package errors
 
 import (
@@ -26,6 +27,7 @@ func (e *stackError) Unwrap() error {
 	return e.err
 }
 
+// New returns an error with the supplied message. New also records the stack trace at the point it was called.
 func New(text string) *stackError {
 	return Wrap(errors.New(text))
 }
@@ -60,23 +62,23 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if f.Flag('+') {
-			io.WriteString(f, e.Error())
-			io.WriteString(f, e.getStackTrace())
+			_, _ = io.WriteString(f, e.Error())
+			_, _ = io.WriteString(f, e.getStackTrace())
 			return
 		}
 		fallthrough
 	case 's':
-		io.WriteString(f, e.Error())
+		_, _ = io.WriteString(f, e.Error())
 	case 'q':
-		fmt.Fprintf(f, "%q", e.Error())
+		_, _ = fmt.Fprintf(f, "%q", e.Error())
 	}
 }
 
-// implements `zerolog.ErrorStackMarshaler`
-func MarshalStack(err error) interface{} {
+// StackTrace returns the stack trace contained in err, if it is a stackError, else an empty string.
+func StackTrace(err error) string {
 	sterr, ok := err.(*stackError)
 	if !ok {
-		return nil
+		return ""
 	}
 	return sterr.getStackTrace()
 }

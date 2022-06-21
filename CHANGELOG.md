@@ -12,3 +12,5 @@ Most recent version is listed first.
 - csrf middleware: https://github.com/komuw/goweb/pull/32
 - cors middleware: https://github.com/komuw/goweb/pull/33
 - gzip middleware: https://github.com/komuw/goweb/pull/36
+- errors: https://github.com/komuw/goweb/commit/2603c06ca1257d75fb170872124b2afd81eb3f3e
+- logger: https://github.com/komuw/goweb/pull/39
