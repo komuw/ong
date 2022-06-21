@@ -69,7 +69,7 @@ func (l logger) WithCtx(ctx context.Context) logger {
 	ctx = context.WithValue(ctx, logCtxKey, logID)
 
 	cBuf := l.cBuf
-	cBuf.buf = cBuf.buf[:0] // TODO: add tests to prove that m.cBuf.buf has not been invalidated.
+	cBuf.buf = cBuf.buf[:0] // start with a fresh buffer.
 	return logger{
 		w:          l.w,
 		cBuf:       cBuf,
@@ -81,7 +81,7 @@ func (l logger) WithCtx(ctx context.Context) logger {
 
 // WithCaller return a new logger, based on l, that will include callers info in its output.
 func (l logger) WithCaller() logger {
-	cBuf := l.cBuf // todo: do we need to invalidate buffer?
+	cBuf := l.cBuf // todo: do we need start with a fresh buffer?
 	return logger{
 		w:          l.w,
 		cBuf:       cBuf,
