@@ -27,6 +27,7 @@ func (e *stackError) Unwrap() error {
 	return e.err
 }
 
+// New returns an error with the supplied message. New also records the stack trace at the point it was called.
 func New(text string) *stackError {
 	return Wrap(errors.New(text))
 }
@@ -73,6 +74,7 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 	}
 }
 
+// StackTrace returns the stack trace contained in err, if it is a stackError, else an empty string.
 func StackTrace(err error) string {
 	sterr, ok := err.(*stackError)
 	if !ok {

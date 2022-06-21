@@ -42,6 +42,7 @@ type logger struct {
 
 // todo: add heartbeat in the future.
 
+// New creates a new logger.
 func New(
 	ctx context.Context,
 	w io.Writer,
@@ -62,6 +63,7 @@ func New(
 	}
 }
 
+// WithCtx return a new logger, based on l, with the given ctx.
 func (l logger) WithCtx(ctx context.Context) logger {
 	logID := getLogId(ctx)
 	ctx = context.WithValue(ctx, logCtxKey, logID)
@@ -77,6 +79,7 @@ func (l logger) WithCtx(ctx context.Context) logger {
 	}
 }
 
+// WithCaller return a new logger, based on l, that will include callers info in its output.
 func (l logger) WithCaller() logger {
 	cBuf := l.cBuf // todo: do we need to invalidate buffer?
 	return logger{
@@ -86,6 +89,24 @@ func (l logger) WithCaller() logger {
 		indent:     l.indent,
 		addCallers: true,
 	}
+}
+
+// Info will log at the Info level.
+func (l logger) Info(f F) {
+	f["level"] = "info"
+	l.log(infoL, f)
+}
+
+// Error will log at the Info level.
+func (l logger) Error(e error) {
+	f := F{
+		"level": "error",
+		"err":   e.Error(),
+	}
+	if stack := errors.StackTrace(e); stack != "" {
+		f["stack"] = stack
+	}
+	l.log(errorL, f)
 }
 
 func (l logger) log(lvl level, f F) {
@@ -132,24 +153,6 @@ func (l logger) flush() {
 	l.cBuf.reset()
 }
 
-// Info will log at the Info level.
-func (l logger) Info(f F) {
-	f["level"] = "info"
-	l.log(infoL, f)
-}
-
-// Error will log at the Info level.
-func (l logger) Error(e error) {
-	f := F{
-		"level": "error",
-		"err":   e.Error(),
-	}
-	if stack := errors.StackTrace(e); stack != "" {
-		f["stack"] = stack
-	}
-	l.log(errorL, f)
-}
-
 func getLogId(ctx context.Context) string {
 	if ctx != nil {
 		if vCtx := ctx.Value(logCtxKey); vCtx != nil {
@@ -161,6 +164,7 @@ func getLogId(ctx context.Context) string {
 	return xid.New().String()
 }
 
+// circleBuf implements a very simple & naive circular buffer.
 type circleBuf struct {
 	mu          sync.Mutex // protects buf
 	buf         []F
