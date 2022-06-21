@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -88,5 +89,51 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), "hello world : 6"))
 		attest.True(t, strings.Contains(w.String(), "hello world : 7"))
 		attest.True(t, strings.Contains(w.String(), errMsg))
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+
+		tokens := []string{
+			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
+			"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
+		}
+
+		for _, tok := range tokens {
+			go func(t string) {
+				l.Info(F{"one": "one" + t})
+			}(tok)
+		}
+
+		for _, tok := range tokens {
+			go func(t string) {
+				l.Error(F{"err": "two" + t})
+			}(tok)
+		}
+
+		for _, tok := range tokens {
+			go func(t string) {
+				l.Error(F{"err": "three" + t})
+			}(tok)
+		}
+
+		wg := &sync.WaitGroup{}
+		for _, tok := range tokens {
+			wg.Add(1)
+			go func(t string) {
+				l.Info(F{"four": "four" + t})
+				wg.Done()
+			}(tok)
+		}
+		wg.Wait()
 	})
 }

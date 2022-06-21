@@ -82,18 +82,23 @@ func (l logger) flush() {
 		encoder.SetIndent("", "  ")
 	}
 
-	// TODO: mutex lock read of m.cBuf.buf
-	for _, v := range l.cBuf.buf {
-		if v == nil {
-			continue
+	{
+		l.cBuf.mu.Lock()
+		for _, v := range l.cBuf.buf {
+			if v == nil {
+				continue
+			}
+			if err := encoder.Encode(v); err != nil {
+				if os.Getenv("GOWEB_RUNNING_IN_TESTS") != "" {
+					panic(err)
+				}
+				continue
+			}
 		}
-		if err := encoder.Encode(v); err != nil {
-			// TODO: error in tests
-			continue
-		}
+		l.w.Write(b.Bytes())
+		l.cBuf.mu.Unlock()
 	}
 
-	l.w.Write(b.Bytes())
 	l.cBuf.reset()
 }
 
