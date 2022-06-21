@@ -42,4 +42,18 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), infoMsg))
 		attest.True(t, strings.Contains(w.String(), errMsg))
 	})
+
+	t.Run("logId added", func(t *testing.T) {
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+
+		infoMsg := "hello world"
+		l.Info(F{"what": infoMsg})
+		errMsg := "oops, Houston we got 99 problems."
+		l.Error(F{"err": errMsg})
+
+		id := getLogId(l.ctx)
+		attest.True(t, strings.Contains(w.String(), id))
+	})
 }
