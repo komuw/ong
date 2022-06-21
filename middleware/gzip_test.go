@@ -10,8 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	nytimes "github.com/NYTimes/gziphandler"
 	"github.com/akshayjshah/attest"
+
+	nytimes "github.com/NYTimes/gziphandler"
 	klauspost "github.com/klauspost/compress/gzhttp"
 	tmthrgd "github.com/tmthrgd/gziphandler"
 )
