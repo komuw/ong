@@ -27,10 +27,9 @@ type (
 const (
 	infoL level = iota
 	errorL
-	disabledL // disabledL disables the logger.
 )
 
-var logCtxKey = logContextKeyType("logContextKey")
+const logCtxKey = logContextKeyType("logContextKey")
 
 type logger struct {
 	w          io.Writer
