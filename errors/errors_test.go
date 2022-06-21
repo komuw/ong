@@ -70,7 +70,5 @@ func TestStackError(t *testing.T) {
 				attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting),
 			)
 		}
-
 	})
-
 }
