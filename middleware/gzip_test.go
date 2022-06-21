@@ -4,9 +4,9 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -186,7 +186,7 @@ func TestGzip(t *testing.T) {
 }
 
 func gzipBenchmarkHandler() http.HandlerFunc {
-	bin, err := ioutil.ReadFile("testdata/benchmark.json")
+	bin, err := os.ReadFile("testdata/benchmark.json")
 	if err != nil {
 		panic(err)
 	}
