@@ -111,7 +111,7 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), errMsg))
 	})
 
-	t.Run("WithCtx invalidates buffer", func(t *testing.T) {
+	t.Run("WithCtx does not invalidate buffer", func(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
@@ -126,7 +126,6 @@ func TestLogger(t *testing.T) {
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 4"))
 		}
 
 		{
@@ -137,8 +136,7 @@ func TestLogger(t *testing.T) {
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 4"))
+			attest.True(t, strings.Contains(w.String(), "hello world : 3"))
 			attest.True(t, strings.Contains(w.String(), errMsg))
 		}
 	})

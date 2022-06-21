@@ -68,11 +68,9 @@ func (l logger) WithCtx(ctx context.Context) logger {
 	logID := getLogId(ctx)
 	ctx = context.WithValue(ctx, logCtxKey, logID)
 
-	cBuf := l.cBuf
-	cBuf.buf = cBuf.buf[:0] // start with a fresh buffer.
 	return logger{
 		w:          l.w,
-		cBuf:       cBuf,
+		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        ctx,
 		indent:     l.indent,
 		addCallers: l.addCallers,
