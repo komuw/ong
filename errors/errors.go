@@ -72,11 +72,10 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 	}
 }
 
-// implements `zerolog.ErrorStackMarshaler`
-func MarshalStack(err error) interface{} {
+func StackTrace(err error) string {
 	sterr, ok := err.(*stackError)
 	if !ok {
-		return nil
+		return ""
 	}
 	return sterr.getStackTrace()
 }

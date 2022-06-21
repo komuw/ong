@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/goweb/errors"
 )
 
 func TestLogger(t *testing.T) {
@@ -32,7 +33,7 @@ func TestLogger(t *testing.T) {
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs, true)
 		msg := "oops, Houston we got 99 problems."
-		l.Error(F{"err": msg})
+		l.Error(errors.New("bad"), F{"errMsg": msg})
 
 		attest.True(t, strings.Contains(w.String(), msg))
 	})
@@ -47,7 +48,7 @@ func TestLogger(t *testing.T) {
 		infoMsg := "hello world"
 		l.Info(F{"what": infoMsg})
 		errMsg := "oops, Houston we got 99 problems."
-		l.Error(F{"err": errMsg})
+		l.Error(errors.New("bad"), F{"errMsg": errMsg})
 
 		attest.True(t, strings.Contains(w.String(), infoMsg))
 		attest.True(t, strings.Contains(w.String(), errMsg))
@@ -63,7 +64,7 @@ func TestLogger(t *testing.T) {
 		infoMsg := "hello world"
 		l.Info(F{"what": infoMsg})
 		errMsg := "oops, Houston we got 99 problems."
-		l.Error(F{"err": errMsg})
+		l.Error(errors.New("bad"), F{"errMsg": errMsg})
 
 		id := getLogId(l.ctx)
 		attest.True(t, strings.Contains(w.String(), id))
@@ -81,7 +82,7 @@ func TestLogger(t *testing.T) {
 			l.Info(F{"what": infoMsg})
 		}
 		errMsg := "oops, Houston we got 99 problems."
-		l.Error(F{"err": errMsg})
+		l.Error(errors.New("bad"), F{"errMsg": errMsg})
 
 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
@@ -116,13 +117,13 @@ func TestLogger(t *testing.T) {
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l.Error(F{"err": "two" + t})
+				l.Error(errors.New("bad"), F{"errMsg": "two" + t})
 			}(tok)
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l.Error(F{"err": "three" + t})
+				l.Error(errors.New("bad-two"), F{"errMsg": "three" + t})
 			}(tok)
 		}
 

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/komuw/goweb/errors"
 	"github.com/rs/xid"
 )
 
@@ -104,11 +105,17 @@ func (l logger) flush() {
 
 // Info will log at the Info level.
 func (l logger) Info(f F) {
+	f["level"] = "info"
 	l.log(infoL, f)
 }
 
 // Error will log at the Info level.
-func (l logger) Error(f F) {
+func (l logger) Error(e error, f F) {
+	f["level"] = "error"
+	f["err"] = e.Error()
+	if stack := errors.StackTrace(e); stack != "" {
+		f["stack"] = stack
+	}
 	l.log(errorL, f)
 }
 
