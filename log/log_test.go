@@ -111,6 +111,38 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), errMsg))
 	})
 
+	t.Run("WithCtx invalidates buffer", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+		{
+			for i := 0; i <= (maxMsgs); i++ {
+				infoMsg := "hello world" + " : " + fmt.Sprint(i)
+				l.Info(F{"what": infoMsg})
+			}
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 4"))
+		}
+
+		{
+			l = l.WithCtx(context.Background())
+			errMsg := "oops, Houston we got 99 problems."
+			l.Error(errors.New(errMsg))
+
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 4"))
+			attest.True(t, strings.Contains(w.String(), errMsg))
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
