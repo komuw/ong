@@ -113,7 +113,7 @@ func (l logger) log(lvl level, f F) {
 	f["timestamp"] = time.Now().UTC()
 	f["logID"] = getLogId(l.ctx)
 	if l.addCallers {
-		if _, file, line, ok := runtime.Caller(1); ok {
+		if _, file, line, ok := runtime.Caller(2); ok {
 			f["line"] = fmt.Sprintf("%s:%d", file, line)
 		}
 	}
