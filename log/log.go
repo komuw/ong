@@ -81,10 +81,9 @@ func (l logger) WithCtx(ctx context.Context) logger {
 
 // WithCaller return a new logger, based on l, that will include callers info in its output.
 func (l logger) WithCaller() logger {
-	cBuf := l.cBuf // todo: do we need start with a fresh buffer?
 	return logger{
 		w:          l.w,
-		cBuf:       cBuf,
+		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
 		indent:     l.indent,
 		addCallers: true,

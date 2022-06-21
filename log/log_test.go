@@ -143,6 +143,36 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
+	t.Run("WithCaller does not invalidate buffer", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+		{
+			for i := 0; i <= (maxMsgs); i++ {
+				infoMsg := "hello world" + " : " + fmt.Sprint(i)
+				l.Info(F{"what": infoMsg})
+			}
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
+		}
+
+		{
+			l = l.WithCaller()
+			errMsg := "oops, Houston we got 99 problems."
+			l.Error(errors.New(errMsg))
+
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.True(t, strings.Contains(w.String(), "hello world : 3"))
+			attest.True(t, strings.Contains(w.String(), errMsg))
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
