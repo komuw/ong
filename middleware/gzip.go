@@ -14,6 +14,7 @@ import (
 // Most of the code here is insipired by(or taken from):
 //   (a) https://github.com/tmthrgd/gziphandler whose license(Apache License, Version 2.0) can be found here:                   https://github.com/tmthrgd/gziphandler/blob/9e3dc377f14f3554d9ae767761e33a87b38ed3f4/LICENSE.md
 //   (b) https://github.com/klauspost/compress/tree/master/gzhttp whose license(Apache License, Version 2.0) can be found here: https://github.com/klauspost/compress/blob/4bc73d36928c39bbd7cf823171081d14c884edde/gzhttp/LICENSE
+//   (c) https://github.com/CAFxX/httpcompression whose license(Apache License, Version 2.0) can be found here:                 https://github.com/CAFxX/httpcompression/blob/9d30d0704fe304b4586ae1585a54ee6eec47675f/LICENSE
 
 const (
 	// defaultMinSize is the default minimum size for which we enable gzip compression.
