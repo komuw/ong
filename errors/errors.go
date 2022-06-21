@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"io"
 	"runtime"
 	"strings"
 )
@@ -52,6 +53,23 @@ func (e *stackError) getStackTrace() string {
 		}
 	}
 	return trace.String()
+}
+
+// Format implements the fmt.Formatter interface
+func (e *stackError) Format(f fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if f.Flag('+') {
+			io.WriteString(f, e.Error())
+			io.WriteString(f, e.getStackTrace())
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(f, e.Error())
+	case 'q':
+		fmt.Fprintf(f, "%q", e.Error())
+	}
 }
 
 // implements `zerolog.ErrorStackMarshaler`

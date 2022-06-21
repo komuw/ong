@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -36,10 +37,10 @@ func TestStackError(t *testing.T) {
 
 		stackTrace := sterr.getStackTrace()
 		for _, v := range []string{
-			"goweb/errors/errors_test.go:26",
-			"goweb/errors/errors_test.go:19",
-			"goweb/errors/errors_test.go:13",
-			"goweb/errors/errors_test.go:31",
+			"goweb/errors/errors_test.go:27",
+			"goweb/errors/errors_test.go:20",
+			"goweb/errors/errors_test.go:14",
+			"goweb/errors/errors_test.go:32",
 		} {
 			attest.True(
 				t,
@@ -48,4 +49,28 @@ func TestStackError(t *testing.T) {
 			)
 		}
 	})
+
+	t.Run("formattting", func(t *testing.T) {
+		err := hello()
+
+		attest.Equal(t, fmt.Sprintf("%s", err), "error in foo")
+		attest.Equal(t, fmt.Sprintf("%q", err), `"error in foo"`)
+		attest.Equal(t, fmt.Sprintf("%v", err), "error in foo")
+
+		extendedFormatting := fmt.Sprintf("%+v", err)
+		for _, v := range []string{
+			"goweb/errors/errors_test.go:27",
+			"goweb/errors/errors_test.go:20",
+			"goweb/errors/errors_test.go:14",
+			"goweb/errors/errors_test.go:54",
+		} {
+			attest.True(
+				t,
+				strings.Contains(extendedFormatting, v),
+				attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting),
+			)
+		}
+
+	})
+
 }
