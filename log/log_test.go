@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"strings"
 	"sync"
 	"testing"
@@ -240,18 +241,25 @@ goarch: amd64
 pkg: github.com/komuw/goweb/log
 cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
 
-BenchmarkNoOp/goweb/log-8              775.4 ns/op	      43 B/op	       2 allocs/op
-BenchmarkNoOp/rs/zerolog-8             9_728  ns/op	     152 B/op	       0 allocs/op
-BenchmarkNoOp/Zap-8     	           17_889 ns/op	     347 B/op	       1 allocs/op
-BenchmarkNoOp/sirupsen/logrus-8        46_192 ns/op	    2553 B/op	      51 allocs/op
+BenchmarkBestCase/goweb/log-8            889.8 ns/op	      41 B/op	       2 allocs/op
+BenchmarkBestCase/rs/zerolog-8           11_360 ns/op	     153 B/op	       0 allocs/op
+BenchmarkBestCase/Zap-8                  22_620 ns/op	     343 B/op	       1 allocs/op
+BenchmarkBestCase/sirupsen/logrus-8      32_635 ns/op	    2112 B/op	      26 allocs/op
 */
 // The above benchmark is unfair to the others since goweb/log is not logging to a io.writer when all its logging are Info logs.
 
 /*
-BenchmarkActualWork/rs/zerolog-8         14_853 ns/op	     303 B/op	       0 allocs/op
-BenchmarkActualWork/Zap-8                22_763 ns/op	     690 B/op	       2 allocs/op
-BenchmarkActualWork/sirupsen/logrus-8    66_289 ns/op	    4468 B/op	      79 allocs/op
-BenchmarkActualWork/goweb/log-8          168_824 ns/op	    6476 B/op	      72 allocs/op
+BenchmarkAverageCase/rs/zerolog-8        12_513 ns/op	     153 B/op	       0 allocs/op
+BenchmarkAverageCase/Zap-8               21_818 ns/op	     348 B/op	       1 allocs/op
+BenchmarkAverageCase/sirupsen/logrus-8   33_401 ns/op	    1961 B/op	      26 allocs/op
+BenchmarkAverageCase/goweb/log-8         151_429 ns/op	    3643 B/op	      42 allocs/op
+*/
+
+/*
+BenchmarkWorstCase/rs/zerolog-8          17_867 ns/op	     303 B/op	       0 allocs/op
+BenchmarkWorstCase/Zap-8                 26_665 ns/op	     688 B/op	       2 allocs/op
+BenchmarkWorstCase/sirupsen/logrus-8     57_033 ns/op	    3663 B/op	      53 allocs/op
+BenchmarkWorstCase/goweb/log-8           196_254 ns/op	    6410 B/op	      71 allocs/op
 */
 // The above benchmark is 'more representative' since this time round, goweb/log is writing to io.writer for every invocation.
 
@@ -328,10 +336,10 @@ func getMessage() (F, []string) {
 	return f, sl
 }
 
-func BenchmarkNoOp(b *testing.B) {
+func BenchmarkBestCase(b *testing.B) {
 	f, sl := getMessage()
 	str := fmt.Sprintf("%s", sl)
-	b.Logf("no-op") //no-op because goweb/log does not log if it is not error level
+	b.Logf("best case") // best-case because goweb/log does not log if it is not error level
 
 	b.Run("Zap", func(b *testing.B) {
 		logger := newZapLogger(zap.DebugLevel)
@@ -347,7 +355,7 @@ func BenchmarkNoOp(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(sl)
+			logger.Info(str)
 		}
 	})
 
@@ -370,19 +378,24 @@ func BenchmarkNoOp(b *testing.B) {
 	})
 }
 
-func BenchmarkActualWork(b *testing.B) {
+func BenchmarkAverageCase(b *testing.B) {
 	f, sl := getMessage()
 	str := fmt.Sprintf("%s", sl)
+	logErr := stdlibErrors.New("hey")
 
-	b.Logf("actual work") //no-op because goweb/log does not log if it is not error level
+	rand.Seed(time.Now().UnixNano())
+
+	b.Logf("average case")
 
 	b.Run("Zap", func(b *testing.B) {
 		logger := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info("hi")
 			logger.Info(str)
+			if rand.Intn(100) >= 99 {
+				logger.Error(logErr.Error())
+			}
 		}
 	})
 
@@ -391,8 +404,10 @@ func BenchmarkActualWork(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info("hi")
-			logger.Info(sl)
+			logger.Info(str)
+			if rand.Intn(100) >= 99 {
+				logger.Error(logErr.Error())
+			}
 		}
 	})
 
@@ -401,8 +416,10 @@ func BenchmarkActualWork(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info().Msg("hi")
 			logger.Info().Msg(str)
+			if rand.Intn(100) >= 99 {
+				logger.Error().Msg(logErr.Error())
+			}
 		}
 	})
 
@@ -412,7 +429,57 @@ func BenchmarkActualWork(b *testing.B) {
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
 			logger.Info(f)
-			logger.Error(stdlibErrors.New("hey"))
+			if rand.Intn(100) >= 99 {
+				logger.Error(logErr)
+			}
+		}
+	})
+}
+
+func BenchmarkWorstCase(b *testing.B) {
+	f, sl := getMessage()
+	str := fmt.Sprintf("%s", sl)
+	logErr := stdlibErrors.New("hey")
+
+	b.Logf("worst case")
+
+	b.Run("Zap", func(b *testing.B) {
+		logger := newZapLogger(zap.DebugLevel)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info(str)
+			logger.Error(logErr.Error())
+		}
+	})
+
+	b.Run("sirupsen/logrus", func(b *testing.B) {
+		logger := newLogrus()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info(str)
+			logger.Error(logErr.Error())
+		}
+	})
+
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := newZerolog()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info().Msg(str)
+			logger.Error().Msg(logErr.Error())
+		}
+	})
+
+	b.Run("goweb/log", func(b *testing.B) {
+		logger := newGoWebLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info(f)
+			logger.Error(logErr)
 		}
 	})
 }
