@@ -74,4 +74,45 @@ func TestLogMiddleware(t *testing.T) {
 		//   - assert logs.
 		//   - assert cookies.
 	})
+
+	t.Run("each request gets its own log data.", func(t *testing.T) {
+		msg := "hello"
+		wrappedHandler := Log(someLogHandler(msg, false))
+
+		{
+			// first request
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		{
+			// second request
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		// TODO:
+		//   - assert logs.
+		//   - assert cookies.
+	})
 }
