@@ -185,6 +185,22 @@ func TestGzip(t *testing.T) {
 	})
 }
 
+//////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
+// note: Im not making any claims about which is faster or not.
+
+/*
+goos: linux
+goarch: amd64
+pkg: github.com/komuw/goweb/middleware
+cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
+
+BenchmarkNoGzip-8          	      19	  56_144_904 ns/op	 3_038_712 B/op	      77 allocs/op
+BenchmarkGoWebGzip-8       	      10	 102_784_222 ns/op	 4_408_756 B/op	     112 allocs/op
+BenchmarkKlauspostGzip-8   	       7	 149_572_590 ns/op	 3_327_585 B/op	     106 allocs/op
+BenchmarkNytimesGzip-8     	       4	 315_386_476 ns/op	 3_813_934 B/op	     116 allocs/op
+BenchmarkTmthrgdGzip-8     	       4	 319_786_254 ns/op	 3_527_012 B/op	     116 allocs/op
+*/
+
 func gzipBenchmarkHandler() http.HandlerFunc {
 	bin, err := os.ReadFile("testdata/benchmark.json")
 	if err != nil {
@@ -322,3 +338,5 @@ func BenchmarkNoGzip(b *testing.B) {
 	// so the compiler cannot eliminate the Benchmark itself.
 	result = r
 }
+
+//////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
