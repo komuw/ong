@@ -101,18 +101,14 @@ type logRW struct {
 
 // Write recodes the size of bytes sent for logging purposes.
 func (lrw *logRW) Write(b []byte) (int, error) {
-	if lrw.code == 0 {
-		lrw.code = http.StatusOK
-	}
+	lrw.code = http.StatusOK
 	lrw.sent = len(b)
 	return lrw.ResponseWriter.Write(b)
 }
 
 // WriteHeader recodes the status code for logging purposes.
 func (lrw *logRW) WriteHeader(statusCode int) {
-	if lrw.code == 0 {
-		lrw.code = statusCode
-	}
+	lrw.code = statusCode
 	lrw.ResponseWriter.WriteHeader(statusCode)
 }
 
