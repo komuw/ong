@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,14 +12,21 @@ import (
 
 // Log is a middleware that logs requests/responses.
 func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	// TODO: do we need a logger per request?
+	// We want different requests to share the same logger backed by the same circular buffere for storing logs.
+	// That way, if someone makes one request and it succeds then they make another one that errors.
+	// When the logs are been flushed for the request that errored, the logs for the request that succeeded will also be flushed.
+	// Thus app developers can be able to correlate issues/logs in much better way.
+	//
+	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 	logger := log.New(
 		context.Background(),
 		os.Stderr,
 		// TODO: increase maxMsgs
-		3,
+		5,
+		// TODO: should we set indent to true/false?
 		true,
 	)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		logger = logger.WithCtx(ctx)
@@ -69,7 +75,7 @@ func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 						"bytes":       lrw.sent,
 					},
 				)
-				logger.Error(errors.New("some-bad-error")) // TODO: remove this.
+				// logger.Error(errors.New("some-bad-error")) // TODO: remove this.
 			}
 		}()
 

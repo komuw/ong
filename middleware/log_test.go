@@ -109,6 +109,8 @@ func TestLogMiddleware(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
+
+			fmt.Println("came here.")
 		}
 
 		// TODO:
