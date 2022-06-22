@@ -87,6 +87,17 @@ func (l logger) WithCaller() logger {
 	}
 }
 
+// // WithFields return a new logger, based on l, that will include the given fields in all its output.
+// func (l logger) WithFields(f F) logger {
+// 	return logger{
+// 		w:          l.w,
+// 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
+// 		ctx:        l.ctx,
+// 		indent:     l.indent,
+// 		addCallers: l.addCallers,
+// 	}
+// }
+
 // Info will log at the Info level.
 func (l logger) Info(f F) {
 	f["level"] = "info"

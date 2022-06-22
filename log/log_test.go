@@ -4,12 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/goweb/errors"
+	"github.com/rs/zerolog"
+	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+
+	"go.uber.org/zap/zapcore"
 )
 
 func TestLogger(t *testing.T) {
@@ -217,3 +223,41 @@ func TestLogger(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+//////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
+// The benchmarks code here is insipired by(or taken from):
+//   (a) https://github.com/uber-go/zap/tree/v1.21.0/benchmarks whose license(MIT) can be found here: https://github.com/uber-go/zap/blob/v1.21.0/LICENSE.txt
+
+func newZerolog() zerolog.Logger {
+	return zerolog.New(io.Discard).With().Timestamp().Logger()
+}
+
+func newLogrus() *logrus.Logger {
+	return &logrus.Logger{
+		Out:       io.Discard,
+		Formatter: new(logrus.JSONFormatter),
+		Hooks:     make(logrus.LevelHooks),
+		Level:     logrus.DebugLevel,
+	}
+}
+
+// implements zap's `ztest.Discarder{}` which is internal.
+type Discarder struct {
+	io.Writer
+}
+
+func (d Discarder) Sync() error { return nil }
+
+func newZapLogger(lvl zapcore.Level) *zap.Logger {
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeDuration = zapcore.NanosDurationEncoder
+	ec.EncodeTime = zapcore.EpochNanosTimeEncoder
+	enc := zapcore.NewJSONEncoder(ec)
+	return zap.New(zapcore.NewCore(
+		enc,
+		Discarder{},
+		lvl,
+	))
+}
+
+//////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
