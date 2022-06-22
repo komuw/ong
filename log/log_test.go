@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/goweb/errors"
+
+	"github.com/akshayjshah/attest"
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
@@ -73,6 +74,7 @@ func TestLogger(t *testing.T) {
 			l.Info(F{"what": infoMsg})
 			l.Error(errors.New("bad"))
 
+			fmt.Println(w.String())
 			id := getLogId(l.ctx)
 			attest.True(t, strings.Contains(w.String(), id))
 			attest.True(t, strings.Contains(w.String(), "level"))
@@ -302,69 +304,92 @@ func getMessage() (F, []string) {
 	return f, sl
 }
 
-func BenchmarkTODO(b *testing.B) {
-
+func BenchmarkNoOp(b *testing.B) {
 	f, sl := getMessage()
-	_ = f
 	str := fmt.Sprintf("%s", sl)
-
-	// gowebLog := New(
-	// 	context.Background(),
-	// 	os.Stdout,
-	// 	100,
-	// 	true,
-	// )
-	// gowebLog.Info(f)
-	// gowebLog.Error(errors.New("blah"))
-
-	// zLog := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	// zLog.Info().Msgf("%s", sl)
-
-	b.Logf("TODO.")
+	b.Logf("no-op") //no-op because goweb/log does not log if it is not error level
 
 	b.Run("Zap", func(b *testing.B) {
 		logger := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				logger.Info(str)
-			}
-		})
+		for n := 0; n < b.N; n++ {
+			logger.Info(str)
+		}
 	})
 
 	b.Run("sirupsen/logrus", func(b *testing.B) {
 		logger := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				logger.Info(sl)
-			}
-		})
+		for n := 0; n < b.N; n++ {
+			logger.Info(sl)
+		}
 	})
 
 	b.Run("rs/zerolog", func(b *testing.B) {
 		logger := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
-		b.RunParallel(func(pb *testing.PB) {
-			for pb.Next() {
-				logger.Info().Msg(str)
-			}
-		})
+		for n := 0; n < b.N; n++ {
+			logger.Info().Msg(str)
+		}
 	})
 
-	// b.Run("goweb/log", func(b *testing.B) {
-	// 	logger := newGoWebLogger()
-	// 	b.ReportAllocs()
-	// 	b.ResetTimer()
-	// 	b.RunParallel(func(pb *testing.PB) {
-	// 		for pb.Next() {
-	// 			logger.Info(f)
-	// 		}
-	// 	})
-	// })
+	b.Run("goweb/log", func(b *testing.B) {
+		logger := newGoWebLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info(f)
+		}
+	})
+}
+
+func BenchmarkActualWork(b *testing.B) {
+	f, sl := getMessage()
+	str := fmt.Sprintf("%s", sl)
+	b.Logf("actual work") //no-op because goweb/log does not log if it is not error level
+
+	b.Run("Zap", func(b *testing.B) {
+		logger := newZapLogger(zap.DebugLevel)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info("hi")
+			logger.Info(str)
+		}
+	})
+
+	b.Run("sirupsen/logrus", func(b *testing.B) {
+		logger := newLogrus()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info("hi")
+			logger.Info(sl)
+		}
+	})
+
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := newZerolog()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info().Msg("hi")
+			logger.Info().Msg(str)
+		}
+	})
+
+	b.Run("goweb/log", func(b *testing.B) {
+		logger := newGoWebLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			logger.Info(f)
+			logger.Error(errors.New("hey"))
+		}
+	})
 }
 
 //////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
