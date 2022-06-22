@@ -38,6 +38,25 @@ func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 				//
 				// TODO: log at error.
 				// logger.Error(e error)
+
+				fmt.Printf(`
+				\n\t Error:
+				requestAddr: %s,
+				method: %s,
+				path: %s,
+				code: %d,
+				status: %s,
+				durationMS: %d,
+				bytes: %d,
+			`,
+					r.RemoteAddr,
+					r.Method,
+					r.URL.EscapedPath(),
+					lrw.code,
+					http.StatusText(lrw.code),
+					time.Now().Sub(start).Milliseconds(),
+					lrw.sent,
+				)
 			} else {
 				logger.Info(
 					log.F{
@@ -47,6 +66,7 @@ func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 						"code":        lrw.code,
 						"status":      http.StatusText(lrw.code),
 						"durationMS":  time.Now().Sub(start).Milliseconds(),
+						"bytes":       lrw.sent,
 					},
 				)
 				logger.Error(errors.New("some-bad-error")) // TODO: remove this.
@@ -54,27 +74,36 @@ func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		}()
 
 		wrappedHandler(lrw, r)
-
-		fmt.Println("\n\t at end: ", lrw)
 	}
 }
 
 // logRW provides an http.ResponseWriter interface, which logs requests/responses.
 type logRW struct {
 	http.ResponseWriter
-	code int // Saves the WriteHeader value.
+
+	// Code is the HTTP response code set by WriteHeader.
+	// It is used to save this value for logging purposes.
+	//
+	// Note that if a Handler never calls WriteHeader or Write,
+	// this might end up being 0, rather than the implicit
+	// http.StatusOK. To get the implicit value, use the Result
+	// method.
+	code int
+	// sent saves bytes sent
+	sent int
 }
 
 // Write recodes the size of bytes sent for logging purposes.
 func (lrw *logRW) Write(b []byte) (int, error) {
-	fmt.Println("\n\t Write called: ", len(b))
-
+	if lrw.code == 0 {
+		lrw.code = http.StatusOK
+	}
+	lrw.sent = len(b)
 	return lrw.ResponseWriter.Write(b)
 }
 
 // WriteHeader recodes the status code for logging purposes.
 func (lrw *logRW) WriteHeader(statusCode int) {
-	fmt.Println("\n\t WriteHeader called: ", statusCode)
 	if lrw.code == 0 {
 		lrw.code = statusCode
 	}
