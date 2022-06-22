@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	stdlibErrors "errors"
+
 	"github.com/komuw/goweb/errors"
 
 	"github.com/akshayjshah/attest"
@@ -249,7 +251,7 @@ BenchmarkNoOp/sirupsen/logrus-8        46_192 ns/op	    2553 B/op	      51 alloc
 BenchmarkActualWork/rs/zerolog-8         14_853 ns/op	     303 B/op	       0 allocs/op
 BenchmarkActualWork/Zap-8                22_763 ns/op	     690 B/op	       2 allocs/op
 BenchmarkActualWork/sirupsen/logrus-8    66_289 ns/op	    4468 B/op	      79 allocs/op
-BenchmarkActualWork/goweb/log-8          213_091 ns/op	    8268 B/op	      92 allocs/op
+BenchmarkActualWork/goweb/log-8          168_824 ns/op	    6476 B/op	      72 allocs/op
 */
 // The above benchmark is 'more representative' since this time round, goweb/log is writing to io.writer for every invocation.
 
@@ -409,7 +411,7 @@ func BenchmarkActualWork(b *testing.B) {
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
 			logger.Info(f)
-			logger.Error(errors.New("hey"))
+			logger.Error(stdlibErrors.New("hey"))
 		}
 	})
 }
