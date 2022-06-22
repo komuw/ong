@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/goweb/errors"
@@ -255,9 +256,115 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	enc := zapcore.NewJSONEncoder(ec)
 	return zap.New(zapcore.NewCore(
 		enc,
-		Discarder{},
+		Discarder{io.Discard},
 		lvl,
 	))
+}
+
+func newGoWebLogger() logger {
+	maxMsgs := 100_000
+	return New(
+		context.Background(),
+		io.Discard,
+		maxMsgs,
+		true,
+	)
+}
+
+func getMessage() (F, []string) {
+	type car struct {
+		mft  string
+		date uint64
+	}
+	c := car{mft: "Toyota", date: uint64(1994)}
+	f := F{
+		"some-random-id": "kad8184dHjekI1ESL",
+		"age":            34,
+		"name":           "John Snow",
+		"gender":         "male",
+		"company":        "ACME INC",
+		"email":          "sandersgonzalez@pivitol.com",
+		"phone":          "+1 (914) 563-2007",
+		"startdate":      time.Now(),
+		"height":         float64(89.22),
+		"car_length":     float32(123.8999),
+		"carVal":         c,
+		"carPtr":         &c,
+	}
+
+	sl := make([]string, 0, len(f))
+
+	for k, v := range f {
+		sl = append(sl, k)
+		sl = append(sl, fmt.Sprintf("%v", v))
+	}
+
+	return f, sl
+}
+
+func BenchmarkTODO(b *testing.B) {
+
+	f, sl := getMessage()
+	_ = f
+	str := fmt.Sprintf("%s", sl)
+
+	// gowebLog := New(
+	// 	context.Background(),
+	// 	os.Stdout,
+	// 	100,
+	// 	true,
+	// )
+	// gowebLog.Info(f)
+	// gowebLog.Error(errors.New("blah"))
+
+	// zLog := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	// zLog.Info().Msgf("%s", sl)
+
+	b.Logf("TODO.")
+
+	b.Run("Zap", func(b *testing.B) {
+		logger := newZapLogger(zap.DebugLevel)
+		b.ReportAllocs()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(str)
+			}
+		})
+	})
+
+	b.Run("sirupsen/logrus", func(b *testing.B) {
+		logger := newLogrus()
+		b.ReportAllocs()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info(sl)
+			}
+		})
+	})
+
+	b.Run("rs/zerolog", func(b *testing.B) {
+		logger := newZerolog()
+		b.ReportAllocs()
+		b.ResetTimer()
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Info().Msg(str)
+			}
+		})
+	})
+
+	// b.Run("goweb/log", func(b *testing.B) {
+	// 	logger := newGoWebLogger()
+	// 	b.ReportAllocs()
+	// 	b.ResetTimer()
+	// 	b.RunParallel(func(pb *testing.PB) {
+	// 		for pb.Next() {
+	// 			logger.Info(f)
+	// 		}
+	// 	})
+	// })
 }
 
 //////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
