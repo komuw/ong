@@ -30,8 +30,11 @@ func someLogHandler(msg string, toErr bool) http.HandlerFunc {
 }
 
 func TestLogMiddleware(t *testing.T) {
+	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello"
 		wrappedHandler := Log(someLogHandler(msg, false))
 
@@ -54,6 +57,8 @@ func TestLogMiddleware(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello"
 		wrappedHandler := Log(someLogHandler(msg, true))
 
@@ -76,6 +81,8 @@ func TestLogMiddleware(t *testing.T) {
 	})
 
 	t.Run("requests share log data.", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello"
 		wrappedHandler := Log(someLogHandler(msg, false))
 
