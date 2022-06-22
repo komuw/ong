@@ -231,6 +231,28 @@ func TestLogger(t *testing.T) {
 // The benchmarks code here is insipired by(or taken from):
 //   (a) https://github.com/uber-go/zap/tree/v1.21.0/benchmarks whose license(MIT) can be found here: https://github.com/uber-go/zap/blob/v1.21.0/LICENSE.txt
 
+// note: Im not making any claims about which is faster or not.
+/*
+goos: linux
+goarch: amd64
+pkg: github.com/komuw/goweb/log
+cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
+
+BenchmarkNoOp/goweb/log-8              775.4 ns/op	      43 B/op	       2 allocs/op
+BenchmarkNoOp/rs/zerolog-8             9_728  ns/op	     152 B/op	       0 allocs/op
+BenchmarkNoOp/Zap-8     	           17_889 ns/op	     347 B/op	       1 allocs/op
+BenchmarkNoOp/sirupsen/logrus-8        46_192 ns/op	    2553 B/op	      51 allocs/op
+*/
+// The above benchmark is unfair to the others since goweb/log is not logging to a io.writer when all its logging are Info logs.
+
+/*
+BenchmarkActualWork/rs/zerolog-8         14_853 ns/op	     303 B/op	       0 allocs/op
+BenchmarkActualWork/Zap-8                22_763 ns/op	     690 B/op	       2 allocs/op
+BenchmarkActualWork/sirupsen/logrus-8    66_289 ns/op	    4468 B/op	      79 allocs/op
+BenchmarkActualWork/goweb/log-8          213_091 ns/op	    8268 B/op	      92 allocs/op
+*/
+// The above benchmark is 'more representative' since this time round, goweb/log is writing to io.writer for every invocation.
+
 func newZerolog() zerolog.Logger {
 	return zerolog.New(io.Discard).With().Timestamp().Logger()
 }
