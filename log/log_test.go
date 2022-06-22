@@ -288,7 +288,7 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 }
 
 func newGoWebLogger() logger {
-	maxMsgs := 100_000
+	maxMsgs := 50_000
 	return New(
 		context.Background(),
 		io.Discard,
@@ -373,6 +373,7 @@ func BenchmarkNoOp(b *testing.B) {
 func BenchmarkActualWork(b *testing.B) {
 	f, sl := getMessage()
 	str := fmt.Sprintf("%s", sl)
+
 	b.Logf("actual work") //no-op because goweb/log does not log if it is not error level
 
 	b.Run("Zap", func(b *testing.B) {
