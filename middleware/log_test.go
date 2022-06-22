@@ -75,12 +75,12 @@ func TestLogMiddleware(t *testing.T) {
 		//   - assert cookies.
 	})
 
-	t.Run("each request gets its own log data.", func(t *testing.T) {
+	t.Run("requests share log data.", func(t *testing.T) {
 		msg := "hello"
 		wrappedHandler := Log(someLogHandler(msg, false))
 
 		{
-			// first request
+			// first request that succeds
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodHead, "/FirstUri", nil)
 			wrappedHandler.ServeHTTP(rec, req)
@@ -96,7 +96,7 @@ func TestLogMiddleware(t *testing.T) {
 		}
 
 		{
-			// second request
+			// second request that succeds
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/SecondUri", nil)
 			wrappedHandler.ServeHTTP(rec, req)
@@ -113,9 +113,31 @@ func TestLogMiddleware(t *testing.T) {
 			fmt.Println("came here.")
 		}
 
+		{
+			// third request that errors
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/ThirdUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+
+			fmt.Println("came here.")
+		}
+
 		// TODO:
-		//   - that for first request we log http HEAD and `FirstUri`
-		//   - that for first request we log http GET and `SecondUri`
+		//   - that after first request we DO NOT log
+		//   - that after second request  we DO NOT log
+		//   - that after third request.
+		//        - we log the first request had http HEAD and `FirstUri`
+		//        - we log the second request had http GET and `SecondUri`
+		//        - we log the third request had http POST and `ThirdUri`
 
 		// TODO:
 		//   - assert logs.
