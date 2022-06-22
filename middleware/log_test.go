@@ -82,7 +82,7 @@ func TestLogMiddleware(t *testing.T) {
 		{
 			// first request
 			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req := httptest.NewRequest(http.MethodHead, "/FirstUri", nil)
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -98,7 +98,7 @@ func TestLogMiddleware(t *testing.T) {
 		{
 			// second request
 			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/anotherUri", nil)
+			req := httptest.NewRequest(http.MethodGet, "/SecondUri", nil)
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -112,8 +112,8 @@ func TestLogMiddleware(t *testing.T) {
 		}
 
 		// TODO:
-		//   - that for first request we log http HEAD and `someUri`
-		//   - that for first request we log http GET and `anotherUri`
+		//   - that for first request we log http HEAD and `FirstUri`
+		//   - that for first request we log http GET and `SecondUri`
 
 		// TODO:
 		//   - assert logs.
