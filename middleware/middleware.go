@@ -17,11 +17,12 @@ type opts struct {
 	logOutput          io.Writer
 }
 
-// all is a middleware that bundles all the core middlewares into one.
+// allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
 //
 // usage:
-//   all(wh, opts{"example.com", -1, nil, nil, nil, os.Stdout})
-func all(
+//   allDefaultMiddlewares(wh, opts{"example.com", -1, nil, nil, nil, os.Stdout})
+//
+func allDefaultMiddlewares(
 	wrappedHandler http.HandlerFunc,
 	o opts,
 ) http.HandlerFunc {
@@ -71,7 +72,7 @@ func all(
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 func Get(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
-	return all(
+	return allDefaultMiddlewares(
 		get(wrappedHandler),
 		o,
 	)
@@ -98,7 +99,7 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
 func Post(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
-	return all(
+	return allDefaultMiddlewares(
 		post(wrappedHandler),
 		o,
 	)
@@ -123,7 +124,7 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
 func Head(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
-	return all(
+	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
 	)
@@ -148,7 +149,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 func Put(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
-	return all(
+	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
 	)
@@ -173,7 +174,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 func Delete(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
-	return all(
+	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
 	)
