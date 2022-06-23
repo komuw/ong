@@ -16,6 +16,8 @@ import (
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
 var (
+	// errCsrfTokenNotFound is returned when a request using a non-safe http method
+	// either does not supply a csrf token, or the supplied token is not recognized by the server.
 	errCsrfTokenNotFound = errors.New("csrf token not found")
 	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
 	// Image if you had `Csrf(loginHandler, domain)` & `Csrf(cartCheckoutHandler, domain)`, if they didn't share a global store,
