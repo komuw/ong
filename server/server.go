@@ -159,7 +159,7 @@ func sigHandler(
 		defer cancel()
 
 		sigCaught := <-sigs
-		logger.Printf("\nserver got shutdown signal: <%v>, will shutdown in a maximum of %s\n", sigCaught, drainDur)
+		logger.Printf("\nserver got shutdown signal: <%v>, will shutdown in: %s\n", sigCaught, drainDur)
 
 		err := srv.Shutdown(ctx)
 		if err != nil {
