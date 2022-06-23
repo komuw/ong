@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -21,36 +22,43 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 func TestAllMiddleware(t *testing.T) {
 	t.Parallel()
 
+	msg := "hello world"
+	errMsg := "not allowed. only allows http"
 	tests := []struct {
-		name       string
-		middleware func(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc
-		httpMethod string
-		expected   int
+		name               string
+		middleware         func(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc
+		httpMethod         string
+		expectedStatusCode int
+		expectedMsg        string
 	}{
 		{
-			name:       "All middleware http GET",
-			middleware: All,
-			httpMethod: http.MethodGet,
-			expected:   http.StatusOK,
+			name:               "All middleware http GET",
+			middleware:         All,
+			httpMethod:         http.MethodGet,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        msg,
 		},
 		{
-			name:       "All middleware http TRACE",
-			middleware: All,
-			httpMethod: http.MethodTrace,
-			expected:   http.StatusOK,
+			name:               "All middleware http TRACE",
+			middleware:         All,
+			httpMethod:         http.MethodTrace,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        msg,
 		},
 
 		{
-			name:       "Get middleware http GET",
-			middleware: Get,
-			httpMethod: http.MethodGet,
-			expected:   http.StatusOK,
+			name:               "Get middleware http GET",
+			middleware:         Get,
+			httpMethod:         http.MethodGet,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        msg,
 		},
 		{
-			name:       "Get middleware http TRACE",
-			middleware: Get,
-			httpMethod: http.MethodTrace,
-			expected:   http.StatusMethodNotAllowed,
+			name:               "Get middleware http TRACE",
+			middleware:         Get,
+			httpMethod:         http.MethodTrace,
+			expectedStatusCode: http.StatusMethodNotAllowed,
+			expectedMsg:        errMsg,
 		},
 	}
 	for _, tt := range tests {
@@ -58,9 +66,8 @@ func TestAllMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			msg := "hello world"
 			opts := WithOpts("example.com")
-			wrappedHandler := All(someMiddlewareTestHandler(msg), opts)
+			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), opts)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(tt.httpMethod, "/someUri", nil)
@@ -72,8 +79,8 @@ func TestAllMiddleware(t *testing.T) {
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
 
-			attest.Equal(t, res.StatusCode, tt.expected)
-			attest.Equal(t, string(rb), msg)
+			attest.Equal(t, res.StatusCode, tt.expectedStatusCode)
+			attest.True(t, strings.Contains(string(rb), tt.expectedMsg))
 		})
 	}
 }
