@@ -205,6 +205,49 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
+	t.Run("WithFields", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+		flds := F{"version": "v0.1.2", "env": "prod", "service": "web-commerce"}
+		l = l.WithFields(flds)
+
+		msg := "hello"
+		l.Info(F{"msg": msg})
+		errMsg := "oops, Houston we got 99 problems."
+		l.Error(errors.New(errMsg))
+		fmt.Println("\n\t res one: ", w.String())
+
+		for _, v := range []string{
+			"version",
+			"v0.1.2",
+			"web-commerce",
+			msg,
+			errMsg,
+		} {
+			attest.True(t, strings.Contains(w.String(), v))
+		}
+		attest.Equal(t, l.flds, flds)
+
+		newFlds := F{"okay": "yes", "country": "Norway"}
+		l = l.WithFields(newFlds)
+		newErrMsg := "new error"
+		l.Error(errors.New(newErrMsg))
+		// asserts that the `l.flds` maps does not grow without bound.
+		attest.Equal(t, l.flds, newFlds)
+		for _, v := range []string{
+			"okay",
+			"yes",
+			"Norway",
+			msg,
+			newErrMsg,
+		} {
+			attest.True(t, strings.Contains(w.String(), v))
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 

@@ -15,6 +15,7 @@ import (
 
 	"github.com/komuw/goweb/errors"
 	"github.com/rs/xid"
+	"golang.org/x/exp/maps"
 )
 
 type (
@@ -38,6 +39,7 @@ type logger struct {
 	ctx        context.Context
 	indent     bool
 	addCallers bool
+	flds       F
 }
 
 // todo: add heartbeat in the future.
@@ -60,6 +62,7 @@ func New(
 		ctx:        ctx,
 		indent:     indent,
 		addCallers: false,
+		flds:       nil,
 	}
 }
 
@@ -74,6 +77,7 @@ func (l logger) WithCtx(ctx context.Context) logger {
 		ctx:        ctx,
 		indent:     l.indent,
 		addCallers: l.addCallers,
+		flds:       l.flds,
 	}
 }
 
@@ -85,22 +89,21 @@ func (l logger) WithCaller() logger {
 		ctx:        l.ctx,
 		indent:     l.indent,
 		addCallers: true,
+		flds:       l.flds,
 	}
 }
 
-// TODO: add this maybe?
-// // WithFields return a new logger, based on l, that will include the given fields in all its output.
-// func (l logger) WithFields(f F) logger {
-// 	return logger{
-// 		w:          l.w,
-// 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-// 		ctx:        l.ctx,
-// 		indent:     l.indent,
-// 		addCallers: l.addCallers,
-// 	}
-// }
-
-// TODO: add log.Fatal
+// WithFields return a new logger, based on l, that will include the given fields in all its output.
+func (l logger) WithFields(f F) logger {
+	return logger{
+		w:          l.w,
+		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
+		ctx:        l.ctx,
+		indent:     l.indent,
+		addCallers: l.addCallers,
+		flds:       f,
+	}
+}
 
 // Info will log at the Info level.
 func (l logger) Info(f F) {
@@ -134,6 +137,11 @@ func (l logger) log(lvl level, f F) {
 		if _, file, line, ok := runtime.Caller(2); ok {
 			f["line"] = fmt.Sprintf("%s:%d", file, line)
 		}
+	}
+
+	if l.flds != nil {
+		// Copy(dst, src)
+		maps.Copy(f, l.flds) // keys in dst(`f`) that are also in l.flds, are overwritten.
 	}
 
 	l.cBuf.store(f)
