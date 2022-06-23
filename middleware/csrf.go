@@ -39,6 +39,8 @@ const (
 	resetDuration = tokenMaxAge + (7 * time.Minute)
 )
 
+// TODO: remove maxRequestsToReset
+
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
 // If maxRequestsToReset <= 0, it is set to a high default value.
 func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int) http.HandlerFunc {
