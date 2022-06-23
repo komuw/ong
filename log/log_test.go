@@ -141,7 +141,7 @@ func TestLogger(t *testing.T) {
 
 		attest.True(t, strings.Contains(w.String(), msg))
 		for _, v := range []string{"one", "two", "three", "four", "five", "six", "seven", "eight"} {
-			attest.True(t, strings.Contains(w.String(), v))
+			attest.True(t, strings.Contains(w.String(), v), attest.Sprintf("`%s` not found", v))
 		}
 	})
 
