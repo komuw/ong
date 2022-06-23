@@ -22,8 +22,10 @@ func Panic(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 					http.StatusInternalServerError,
 				)
 
-				// TODO: pass in a logger to this middleware.
-				log.Println(string(debug.Stack()))
+				// TODO:
+				//   - pass in a logger to this middleware.
+				//   - use log.F{} here.
+				log.Println(string(debug.Stack()), r.RemoteAddr, r.Method)
 			}
 		}()
 
