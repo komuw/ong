@@ -37,24 +37,26 @@ func (s *myAPI) GetLogger() *log.Logger {
 // You can even move it to a routes.go file
 func (s *myAPI) Routes() {
 	s.router.HandleFunc("/api/",
-		middleware.Security(s.handleAPI(), "localhost"),
+		middleware.All(s.handleAPI(), middleware.WithOpts("localhost")),
 	)
 	s.router.HandleFunc("/greeting",
 		// you can even have your handler take a `*template.Template` dependency
-		middleware.Security(
+		middleware.All(
 			middleware.BasicAuth(s.handleGreeting(202), "user", "passwd"),
-			"localhost",
+			middleware.WithOpts("localhost"),
 		),
 	)
 	s.router.HandleFunc("/serveDirectory",
-		middleware.Security(
+		middleware.All(
 			middleware.BasicAuth(s.handleFileServer(), "user", "passwd"),
-			"localhost",
+			middleware.WithOpts("localhost"),
 		),
 	)
 
 	s.router.HandleFunc("/check",
-		middleware.Security(s.handleGreeting(200), "localhost"),
+		middleware.All(s.handleGreeting(200),
+			middleware.WithOpts("localhost"),
+		),
 	)
 
 	// etc

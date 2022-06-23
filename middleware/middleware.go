@@ -6,15 +6,40 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
-type Opts struct {
-	Domain             string
-	MaxRequestsToReset int
-	AllowedOrigins     []string
-	AllowedMethods     []string
-	AllowedHeaders     []string
-	LogOutput          io.Writer
+type opts struct {
+	domain             string
+	maxRequestsToReset int
+	allowedOrigins     []string
+	allowedMethods     []string
+	allowedHeaders     []string
+	logOutput          io.Writer
+}
+
+// NewOpts returns a new opts.
+func NewOpts(
+	domain string,
+	maxRequestsToReset int,
+	allowedOrigins []string,
+	allowedMethods []string,
+	allowedHeaders []string,
+	logOutput io.Writer,
+) opts {
+	return opts{
+		domain:             domain,
+		maxRequestsToReset: maxRequestsToReset,
+		allowedOrigins:     allowedOrigins,
+		allowedMethods:     allowedMethods,
+		allowedHeaders:     allowedHeaders,
+		logOutput:          logOutput,
+	}
+}
+
+// WithOpts returns a new opts that has sensible defaults given domain.
+func WithOpts(domain string) opts {
+	return NewOpts(domain, -1, nil, nil, nil, os.Stdout)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -24,14 +49,14 @@ type Opts struct {
 //
 func allDefaultMiddlewares(
 	wrappedHandler http.HandlerFunc,
-	o Opts,
+	o opts,
 ) http.HandlerFunc {
-	domain := o.Domain
-	maxRequestsToReset := o.MaxRequestsToReset
-	allowedOrigins := o.AllowedOrigins
-	allowedMethods := o.AllowedOrigins
-	allowedHeaders := o.AllowedHeaders
-	logOutput := o.LogOutput
+	domain := o.domain
+	maxRequestsToReset := o.maxRequestsToReset
+	allowedOrigins := o.allowedOrigins
+	allowedMethods := o.allowedOrigins
+	allowedHeaders := o.allowedHeaders
+	logOutput := o.logOutput
 
 	// TODO: add load-shedding & ratelimiting.
 	//   Those will probably come in between log & security.
@@ -71,7 +96,7 @@ func allDefaultMiddlewares(
 }
 
 // All is a middleware that allows all http methods.
-func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func All(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
 		o,
@@ -85,7 +110,7 @@ func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
-func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Get(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
 		o,
@@ -112,7 +137,7 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
-func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Post(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
 		o,
@@ -137,7 +162,7 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
-func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Head(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
@@ -162,7 +187,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
-func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Put(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
@@ -187,7 +212,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
-func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Delete(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
