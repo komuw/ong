@@ -12,6 +12,7 @@ import (
 	"time"
 
 	stdlibErrors "errors"
+	stdLog "log"
 
 	"github.com/komuw/goweb/errors"
 
@@ -244,6 +245,29 @@ func TestLogger(t *testing.T) {
 		} {
 			attest.True(t, strings.Contains(w.String(), v))
 		}
+	})
+
+	t.Run("WithImmediate logs immediately", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		msg := "hello world"
+		l := New(context.Background(), w, 2, true).WithImmediate(true)
+		l.Info(F{"msg": msg})
+
+		attest.True(t, strings.Contains(w.String(), msg))
+	})
+
+	t.Run("interop with stdlibLog", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		msg := "hello world"
+		l := New(context.Background(), w, 2, true).WithCaller().WithImmediate(true)
+		sl := stdLog.New(l, "stdlib", stdLog.Lshortfile)
+		sl.Println(msg)
+
+		attest.True(t, strings.Contains(w.String(), msg))
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

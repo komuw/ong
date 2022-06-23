@@ -18,6 +18,10 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// Most of the code here is insipired by(or taken from):
+//   (a) https://github.com/rs/zerolog whose license(MIT) can be found here:      https://github.com/rs/zerolog/blob/v1.27.0/LICENSE
+//   (b) https://github.com/sirupsen/logrus whose license(MIT) can be found here: https://github.com/sirupsen/logrus/blob/v1.8.1/LICENSE
+
 type (
 	level             string
 	logContextKeyType string
@@ -40,6 +44,7 @@ type logger struct {
 	indent     bool
 	addCallers bool
 	flds       F
+	immediate  bool // log without buffering. important especially when using logger as an output for the stdlib logger.
 }
 
 // todo: add heartbeat in the future.
@@ -63,6 +68,7 @@ func New(
 		indent:     indent,
 		addCallers: false,
 		flds:       nil,
+		immediate:  false,
 	}
 }
 
@@ -78,6 +84,7 @@ func (l logger) WithCtx(ctx context.Context) logger {
 		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       l.flds,
+		immediate:  l.immediate,
 	}
 }
 
@@ -90,6 +97,7 @@ func (l logger) WithCaller() logger {
 		indent:     l.indent,
 		addCallers: true,
 		flds:       l.flds,
+		immediate:  l.immediate,
 	}
 }
 
@@ -102,6 +110,20 @@ func (l logger) WithFields(f F) logger {
 		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       f,
+		immediate:  l.immediate,
+	}
+}
+
+// WithImmediate return a new logger, based on l, that will log immediately without buffering if immediate is true.
+func (l logger) WithImmediate(immediate bool) logger {
+	return logger{
+		w:          l.w,
+		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
+		ctx:        l.ctx,
+		indent:     l.indent,
+		addCallers: l.addCallers,
+		flds:       l.flds,
+		immediate:  immediate,
 	}
 }
 
@@ -129,6 +151,24 @@ func (l logger) Error(e error, fs ...F) {
 	l.log(errorL, dst)
 }
 
+// Write implements the io.Writer interface.
+// This is useful to set as a writer for the standard library log.
+//
+// usage:
+//   l := log.New(ctx, os.Stdout, 100, true).WithImmediate(true)
+//   sl := stdLog.New(l, "stdlib", stdLog.LstdFlags)
+//   sl.Println("hello world")
+//
+func (l logger) Write(p []byte) (n int, err error) {
+	n = len(p)
+	if n > 0 && p[n-1] == '\n' {
+		// Trim CR added by stdlog.
+		p = p[0 : n-1]
+	}
+	l.WithCaller().Info(F{"message": string(p)})
+	return
+}
+
 func (l logger) log(lvl level, f F) {
 	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
@@ -146,7 +186,7 @@ func (l logger) log(lvl level, f F) {
 
 	l.cBuf.store(f)
 
-	if lvl == errorL {
+	if lvl == errorL || l.immediate {
 		// flush
 		l.flush()
 	}
