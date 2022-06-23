@@ -21,7 +21,8 @@ func main() {
 
 	err := server.Run(api, server.DefaultOpts())
 	if err != nil {
-		api.logger.Error(err, log.F{
+		// don't use `api.logger`, it might be nil.
+		api.GetLogger().Error(err, log.F{
 			"msg": "server.Run error",
 		})
 		os.Exit(1)
