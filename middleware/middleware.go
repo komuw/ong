@@ -18,6 +18,7 @@ type opts struct {
 }
 
 // all is a middleware that bundles all the core middlewares into one.
+//
 // usage:
 //   all(wh, opts{"example.com", -1, nil, nil, nil, os.Stdout})
 func all(
@@ -77,12 +78,11 @@ func Get(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 }
 
 func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	msg := "http method: %s not allowed. only allows http GET/OPTIONS"
+	msg := "http method: %s not allowed. only allows http GET"
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions || r.Method == http.MethodGet {
-			// http OPTIONS is allowed because it is used for CORS(as a preflight request signal.)
-			wrappedHandler(w, r)
-		} else {
+		// We do not need to allow `http.MethodOptions` here.
+		// This is coz, the Cors middleware has already handled that for us and it comes before the Get middleware.
+		if r.Method != http.MethodGet {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			http.Error(
 				w,
@@ -91,6 +91,8 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			)
 			return
 		}
+
+		wrappedHandler(w, r)
 	}
 }
 
@@ -103,12 +105,9 @@ func Post(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 }
 
 func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	msg := "http method: %s not allowed. only allows http POST/OPTIONS"
+	msg := "http method: %s not allowed. only allows http POST"
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions || r.Method == http.MethodPost {
-			// http OPTIONS is allowed because it is used for CORS(as a preflight request signal.)
-			wrappedHandler(w, r)
-		} else {
+		if r.Method != http.MethodPost {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			http.Error(
 				w,
@@ -117,6 +116,8 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			)
 			return
 		}
+
+		wrappedHandler(w, r)
 	}
 }
 
@@ -129,12 +130,9 @@ func Head(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 }
 
 func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	msg := "http method: %s not allowed. only allows http HEAD/OPTIONS"
+	msg := "http method: %s not allowed. only allows http HEAD"
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions || r.Method == http.MethodHead {
-			// http OPTIONS is allowed because it is used for CORS(as a preflight request signal.)
-			wrappedHandler(w, r)
-		} else {
+		if r.Method != http.MethodHead {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			http.Error(
 				w,
@@ -143,6 +141,8 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			)
 			return
 		}
+
+		wrappedHandler(w, r)
 	}
 }
 
@@ -155,12 +155,9 @@ func Put(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 }
 
 func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	msg := "http method: %s not allowed. only allows http PUT/OPTIONS"
+	msg := "http method: %s not allowed. only allows http PUT"
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions || r.Method == http.MethodPut {
-			// http OPTIONS is allowed because it is used for CORS(as a preflight request signal.)
-			wrappedHandler(w, r)
-		} else {
+		if r.Method != http.MethodPut {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			http.Error(
 				w,
@@ -169,6 +166,8 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			)
 			return
 		}
+
+		wrappedHandler(w, r)
 	}
 }
 
@@ -181,12 +180,9 @@ func Delete(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 }
 
 func delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	msg := "http method: %s not allowed. only allows http DELETE/OPTIONS"
+	msg := "http method: %s not allowed. only allows http DELETE"
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions || r.Method == http.MethodDelete {
-			// http OPTIONS is allowed because it is used for CORS(as a preflight request signal.)
-			wrappedHandler(w, r)
-		} else {
+		if r.Method != http.MethodDelete {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			http.Error(
 				w,
@@ -195,5 +191,7 @@ func delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			)
 			return
 		}
+
+		wrappedHandler(w, r)
 	}
 }
