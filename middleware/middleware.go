@@ -10,36 +10,33 @@ import (
 )
 
 type opts struct {
-	domain             string
-	maxRequestsToReset int
-	allowedOrigins     []string
-	allowedMethods     []string
-	allowedHeaders     []string
-	logOutput          io.Writer
+	domain         string
+	allowedOrigins []string
+	allowedMethods []string
+	allowedHeaders []string
+	logOutput      io.Writer
 }
 
 // NewOpts returns a new opts.
 func NewOpts(
 	domain string,
-	maxRequestsToReset int,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
 	logOutput io.Writer,
 ) opts {
 	return opts{
-		domain:             domain,
-		maxRequestsToReset: maxRequestsToReset,
-		allowedOrigins:     allowedOrigins,
-		allowedMethods:     allowedMethods,
-		allowedHeaders:     allowedHeaders,
-		logOutput:          logOutput,
+		domain:         domain,
+		allowedOrigins: allowedOrigins,
+		allowedMethods: allowedMethods,
+		allowedHeaders: allowedHeaders,
+		logOutput:      logOutput,
 	}
 }
 
 // WithOpts returns a new opts that has sensible defaults given domain.
 func WithOpts(domain string) opts {
-	return NewOpts(domain, -1, nil, nil, nil, os.Stdout)
+	return NewOpts(domain, nil, nil, nil, os.Stdout)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -52,7 +49,6 @@ func allDefaultMiddlewares(
 	o opts,
 ) http.HandlerFunc {
 	domain := o.domain
-	maxRequestsToReset := o.maxRequestsToReset
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
@@ -80,7 +76,6 @@ func allDefaultMiddlewares(
 							wrappedHandler,
 						),
 						domain,
-						maxRequestsToReset,
 					),
 					allowedOrigins,
 					allowedMethods,
