@@ -72,7 +72,7 @@ func TestAllMiddleware(t *testing.T) {
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
 
-			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, res.StatusCode, tt.expected)
 			attest.Equal(t, string(rb), msg)
 		})
 	}
