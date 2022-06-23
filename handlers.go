@@ -18,7 +18,6 @@ import (
 type myAPI struct {
 	db     string
 	router *http.ServeMux // some router
-	logger log.Logger     // some logger, maybe
 }
 
 // Make `myAPI` implement the http.Handler interface(https://golang.org/pkg/net/http/#Handler)
