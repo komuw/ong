@@ -91,12 +91,16 @@ func (l Logger) WithCtx(ctx context.Context) Logger {
 
 // WithCaller return a new logger, based on l, that will include callers info in its output.
 func (l Logger) WithCaller() Logger {
+	return l.withcaller(true)
+}
+
+func (l Logger) withcaller(add bool) Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
 		indent:     l.indent,
-		addCallers: true,
+		addCallers: add,
 		flds:       l.flds,
 		immediate:  l.immediate,
 	}
@@ -115,8 +119,8 @@ func (l Logger) WithFields(f F) Logger {
 	}
 }
 
-// WithImmediate return a new logger, based on l, that will log immediately without buffering if immediate is true.
-func (l Logger) WithImmediate(immediate bool) Logger {
+// WithImmediate return a new logger, based on l, that will log immediately without buffering.
+func (l Logger) WithImmediate() Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
@@ -124,7 +128,7 @@ func (l Logger) WithImmediate(immediate bool) Logger {
 		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       l.flds,
-		immediate:  immediate,
+		immediate:  true,
 	}
 }
 
@@ -166,18 +170,21 @@ func (l Logger) Write(p []byte) (n int, err error) {
 		// Trim CR added by stdlog.
 		p = p[0 : n-1]
 	}
-	l.WithImmediate(true).WithCaller().Info(F{"message": string(p)})
+	// NB: we need to disable callers, otherwise this line is going to be listed as the caller..
+	//     the caller is the line where `.Info` or `.Error` is called.
+	l.withcaller(false).WithImmediate().Info(F{"message": string(p)})
 	return
 }
 
-// StdLogger returns a logger from the Go standard library that will use logger as its output.
+// StdLogger returns a logger from the Go standard library log package.
+// That logger will use l as its output.
 // usage:
 //   l := log.New(ctx, os.Stdout, 100, true)
 //   stdLogger := l.StdLogger()
 //   stdLogger.Println("hey")
 //
 func (l Logger) StdLogger() *stdLog.Logger {
-	l = l.WithImmediate(true).WithCaller()
+	l = l.WithImmediate().WithCaller()
 	return stdLog.New(l, "", 0)
 }
 
@@ -186,6 +193,7 @@ func (l Logger) log(lvl level, f F) {
 	f["timestamp"] = time.Now().UTC()
 	f["logID"] = GetId(l.ctx)
 	if l.addCallers {
+		// the caller is the line where `.Info` or `.Error` is called.
 		if _, file, line, ok := runtime.Caller(2); ok {
 			f["line"] = fmt.Sprintf("%s:%d", file, line)
 		}

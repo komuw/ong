@@ -106,7 +106,7 @@ func Run(eh extendedHandler, rc opts) error {
 	eh.Routes()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	logger := eh.GetLogger().WithCtx(ctx).WithImmediate(true)
+	logger := eh.GetLogger().WithCtx(ctx).WithImmediate()
 
 	serverPort := fmt.Sprintf(":%s", rc.port)
 	server := &http.Server{

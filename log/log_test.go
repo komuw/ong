@@ -252,7 +252,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		msg := "hello world"
-		l := New(context.Background(), w, 2, true).WithImmediate(true)
+		l := New(context.Background(), w, 2, true).WithImmediate()
 		l.Info(F{"msg": msg})
 
 		attest.True(t, strings.Contains(w.String(), msg))
