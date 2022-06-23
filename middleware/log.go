@@ -36,7 +36,6 @@ func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		lrw := &logRW{
 			ResponseWriter: w,
 		}
-
 		defer func() {
 			flds := log.F{
 				"requestAddr": r.RemoteAddr,
