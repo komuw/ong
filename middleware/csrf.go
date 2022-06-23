@@ -71,6 +71,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			if csrfToken == "" || !csrfStore.exists(csrfToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(gowebMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
 				http.Error(
 					w,
 					errCsrfTokenNotFound.Error(),

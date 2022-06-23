@@ -36,6 +36,10 @@ func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFun
 					"code":        code,
 					"status":      status,
 				}
+				if gowebErr := w.Header().Get(gowebMiddlewareErrorHeader); gowebErr != "" {
+					flds["gowebErr"] = gowebErr
+				}
+
 				if e, ok := err.(error); ok {
 					logger.Error(e, flds)
 				} else {

@@ -73,6 +73,9 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 				"durationMS":  time.Since(start).Milliseconds(),
 				"bytes":       lrw.sent,
 			}
+			if gowebErr := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebErr != "" {
+				flds["gowebErr"] = gowebErr
+			}
 
 			if lrw.code >= http.StatusBadRequest {
 				// both client and server errors.
