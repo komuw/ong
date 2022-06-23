@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/goweb/log"
 	"github.com/rs/xid"
 )
 
@@ -242,5 +244,29 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
 		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		attest.Equal(t, logHeader, someLogID)
+	})
+}
+
+func TestGetLogId(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		id := getLogId(req)
+		attest.NotZero(t, id)
+
+		expected := "expected-one"
+		req = httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		req.Header.Add(logIDKey, expected)
+		id = getLogId(req)
+		attest.Equal(t, id, expected)
+
+		expected = "expected-two"
+		ctx := context.WithValue(context.Background(), log.CtxKey, expected)
+		req = httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		req = req.WithContext(ctx)
+		id = getLogId(req)
+		attest.Equal(t, id, expected)
 	})
 }
