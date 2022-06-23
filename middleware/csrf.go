@@ -34,8 +34,9 @@ const (
 	clientCookieHeader = "Cookie"
 	varyHeader         = "Vary"
 
+	// same max-age as what fiber uses. django seems to use one year.
+	tokenMaxAge = 1 * time.Hour
 	// The memory store is reset(for memory efficiency) every resetDuration.
-	tokenMaxAge   = 1 * time.Hour // same max-age as what fiber uses. django seems to use one year.
 	resetDuration = tokenMaxAge + (7 * time.Minute)
 )
 
