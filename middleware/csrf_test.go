@@ -444,35 +444,4 @@ func TestCsrf(t *testing.T) {
 			attest.True(t, csrfStore._len() > 0)
 		}
 	})
-
-	t.Run("memory store reset", func(t *testing.T) {
-		t.Parallel()
-
-		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
-
-		for i := 0; i < (int(10) + 1); i++ {
-			reqCsrfTok := xid.New().String()
-			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.Header.Set(csrfHeader, reqCsrfTok)
-			wrappedHandler.ServeHTTP(rec, req)
-
-			res := rec.Result()
-			defer res.Body.Close()
-
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
-
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
-			attest.Equal(t, res.Header.Get(tokenHeader), reqCsrfTok)
-			if i < int(1) {
-				attest.True(t, csrfStore._len() > 0)
-			} else {
-				attest.Equal(t, csrfStore._len(), 0)
-			}
-		}
-	})
 }
