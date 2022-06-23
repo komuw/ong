@@ -206,8 +206,8 @@ func serve(ctx context.Context, srv *http.Server, network, address string, logge
 	logger.Info(log.F{
 		"msg": fmt.Sprintf("server listening at %s", address),
 	})
-	if err := srv.Serve(l); err != nil {
-		return gowebErrors.Wrap(err)
+	if errS := srv.Serve(l); errS != nil {
+		return gowebErrors.Wrap(errS)
 	}
 	return nil
 }
