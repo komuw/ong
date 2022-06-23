@@ -103,18 +103,29 @@ func Delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+type opts struct {
+	domain             string
+	maxRequestsToReset int
+	allowedOrigins     []string
+	allowedMethods     []string
+	allowedHeaders     []string
+	logOutput          io.Writer
+}
+
 /*
   get(wh, "example.com", -1, nil, nil, nil, os.Stdout)
 */
 func get(
 	wrappedHandler http.HandlerFunc,
-	domain string,
-	maxRequestsToReset int,
-	allowedOrigins []string,
-	allowedMethods []string,
-	allowedHeaders []string,
-	logOutput io.Writer,
+	o opts,
 ) {
+	domain := o.domain
+	maxRequestsToReset := o.maxRequestsToReset
+	allowedOrigins := o.allowedOrigins
+	allowedMethods := o.allowedOrigins
+	allowedHeaders := o.allowedHeaders
+	logOutput := o.logOutput
+
 	// TODO: add load-shedding & ratelimiting.
 	//   Those will probably come in between log & security.
 
@@ -139,7 +150,9 @@ func get(
 						domain,
 						maxRequestsToReset,
 					),
-					allowedOrigins, allowedMethods, allowedHeaders,
+					allowedOrigins,
+					allowedMethods,
+					allowedHeaders,
 				),
 				domain,
 			),
