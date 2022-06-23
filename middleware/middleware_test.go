@@ -81,8 +81,8 @@ func TestAllMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := WithOpts("example.com")
-			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), opts)
+			o := WithOpts("example.com")
+			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(tt.httpMethod, "/someUri", nil)
