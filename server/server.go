@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
 
 	"go.uber.org/automaxprocs/maxprocs"
@@ -128,16 +129,14 @@ func Run(eh extendedHandler, rc opts) error {
 	sigHandler(server, ctx, cancel, logger, drainDur)
 
 	address := fmt.Sprintf("%s%s", rc.host, serverPort)
-	logger.Info(log.F{
-		"msg": fmt.Sprintf("server listening at %s", address),
-	})
 
-	err := serve(server, rc.network, address, ctx)
+	err := serve(ctx, server, rc.network, address, logger)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
 		//   Make sure the program doesn't exit and waits instead for Shutdown to return.
-		return err
+
+		return err // already wrapped in the `serve` func.
 	}
 
 	{
@@ -178,7 +177,7 @@ func sigHandler(
 	}()
 }
 
-func serve(srv *http.Server, network, address string, ctx context.Context) error {
+func serve(ctx context.Context, srv *http.Server, network, address string, logger log.Logger) error {
 	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
 		return conn.Control(func(descriptor uintptr) {
 			_ = unix.SetsockoptInt(
@@ -201,10 +200,16 @@ func serve(srv *http.Server, network, address string, ctx context.Context) error
 	}}
 	l, err := cfg.Listen(ctx, network, address)
 	if err != nil {
-		return err
+		return gowebErrors.Wrap(err)
 	}
 
-	return srv.Serve(l)
+	logger.Info(log.F{
+		"msg": fmt.Sprintf("server listening at %s", address),
+	})
+	if err := srv.Serve(l); err != nil {
+		return gowebErrors.Wrap(err)
+	}
+	return nil
 }
 
 // drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
