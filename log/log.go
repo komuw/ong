@@ -18,15 +18,15 @@ import (
 )
 
 type (
-	level             uint8
+	level             string
 	logContextKeyType string
 	// F is the fields to use as a log message.
 	F map[string]interface{}
 )
 
 const (
-	infoL level = iota
-	errorL
+	infoL  level = "info"
+	errorL level = "error"
 )
 
 const logCtxKey = logContextKeyType("logContextKey")
@@ -87,6 +87,7 @@ func (l logger) WithCaller() logger {
 	}
 }
 
+// TODO: add this maybe?
 // // WithFields return a new logger, based on l, that will include the given fields in all its output.
 // func (l logger) WithFields(f F) logger {
 // 	return logger{
@@ -98,25 +99,34 @@ func (l logger) WithCaller() logger {
 // 	}
 // }
 
+// TODO: add log.Fatal
+
 // Info will log at the Info level.
 func (l logger) Info(f F) {
-	f["level"] = "info"
 	l.log(infoL, f)
 }
 
 // Error will log at the Info level.
-func (l logger) Error(e error) {
+func (l logger) Error(e error, fs ...F) {
 	f := F{
-		"level": "error",
-		"err":   e.Error(),
+		"err": e.Error(),
 	}
+
+	for _, f := range fs {
+		for k, v := range f {
+			f[k] = v
+		}
+	}
+
 	if stack := errors.StackTrace(e); stack != "" {
 		f["stack"] = stack
 	}
+
 	l.log(errorL, f)
 }
 
 func (l logger) log(lvl level, f F) {
+	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
 	f["logID"] = getLogId(l.ctx)
 	if l.addCallers {
@@ -127,7 +137,7 @@ func (l logger) log(lvl level, f F) {
 
 	l.cBuf.store(f)
 
-	if lvl >= errorL {
+	if lvl == errorL {
 		// flush
 		l.flush()
 	}

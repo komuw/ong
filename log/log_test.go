@@ -123,6 +123,23 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), errMsg))
 	})
 
+	t.Run("various ways of calling l.Error", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+		msg := "some-error"
+		err := errors.New(msg)
+
+		l.Error(err)
+		l.Error(err, F{"a": "b"})
+		l.Error(err, F{"a": "b"}, F{"c": "d"})
+		l.Error(err, nil)
+
+		attest.True(t, strings.Contains(w.String(), msg))
+	})
+
 	t.Run("WithCtx does not invalidate buffer", func(t *testing.T) {
 		t.Parallel()
 
@@ -479,7 +496,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
 			logger.Info(f)
-			logger.Error(logErr)
+			logger.Error(logErr, f)
 		}
 	})
 }
