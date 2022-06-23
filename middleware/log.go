@@ -70,7 +70,7 @@ func Log(wrappedHandler http.HandlerFunc, logOutput io.Writer, domain string) ht
 				"path":        r.URL.EscapedPath(),
 				"code":        lrw.code,
 				"status":      http.StatusText(lrw.code),
-				"durationMS":  time.Now().Sub(start).Milliseconds(),
+				"durationMS":  time.Since(start).Milliseconds(),
 				"bytes":       lrw.sent,
 			}
 
