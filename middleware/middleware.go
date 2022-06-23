@@ -70,6 +70,20 @@ func allDefaultMiddlewares(
 	)
 }
 
+// All is a middleware that allows all http methods.
+func All(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
+	return allDefaultMiddlewares(
+		all(wrappedHandler),
+		o,
+	)
+}
+
+func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		wrappedHandler(w, r)
+	}
+}
+
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 func Get(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
