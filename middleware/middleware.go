@@ -4,6 +4,7 @@ package middleware
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -100,4 +101,51 @@ func Delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+/*
+  get(wh, "example.com", -1, nil, nil, nil, os.Stdout)
+*/
+func get(
+	wrappedHandler http.HandlerFunc,
+	domain string,
+	maxRequestsToReset int,
+	allowedOrigins []string,
+	allowedMethods []string,
+	allowedHeaders []string,
+	logOutput io.Writer,
+) {
+	// TODO: add load-shedding & ratelimiting.
+	//   Those will probably come in between log & security.
+
+	// The way the middlewares are layered is:
+	// 1. panic on the outer since we want it to watch all other middlewares.
+	// 2. log since we would like to get logs as early in the lifecycle as possible.
+	// 3. security since we want some minimum level of security.
+	// 4. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 5. csrf since this one is a bit more involved perf-wise.
+	// 6. gzip since it is very involved perf-wise.
+	//
+	// user -> panic -> log -> security -> cors -> csrf -> gzip -> actual-handler
+
+	Panic(
+		Log(
+			Security(
+				Cors(
+					Csrf(
+						Gzip(
+							wrappedHandler,
+						),
+						domain,
+						maxRequestsToReset,
+					),
+					allowedOrigins, allowedMethods, allowedHeaders,
+				),
+				domain,
+			),
+			domain,
+			logOutput,
+		),
+		logOutput,
+	)
 }
