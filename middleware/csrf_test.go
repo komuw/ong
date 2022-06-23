@@ -452,7 +452,6 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		// resetDuration = 2 * time.Second
 		for i := 0; i < (int(10) + 1); i++ {
 			reqCsrfTok := xid.New().String()
 			rec := httptest.NewRecorder()
