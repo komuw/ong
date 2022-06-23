@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	stdLog "log"
 	"os"
 	"runtime"
 	"strings"
@@ -37,7 +38,7 @@ const (
 // CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
 const CtxKey = logContextKeyType("Goweb-logID")
 
-type logger struct {
+type Logger struct {
 	w          io.Writer
 	cBuf       *circleBuf
 	ctx        context.Context
@@ -55,13 +56,13 @@ func New(
 	w io.Writer,
 	maxMsgs int,
 	indent bool,
-) logger {
+) Logger {
 	logID := GetId(ctx)
 	ctx = context.WithValue(ctx, CtxKey, logID)
 	if maxMsgs < 1 {
 		maxMsgs = 10
 	}
-	return logger{
+	return Logger{
 		w:          w,
 		cBuf:       newCirleBuf(maxMsgs),
 		ctx:        ctx,
@@ -73,11 +74,11 @@ func New(
 }
 
 // WithCtx return a new logger, based on l, with the given ctx.
-func (l logger) WithCtx(ctx context.Context) logger {
+func (l Logger) WithCtx(ctx context.Context) Logger {
 	logID := GetId(ctx)
 	ctx = context.WithValue(ctx, CtxKey, logID)
 
-	return logger{
+	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        ctx,
@@ -89,8 +90,8 @@ func (l logger) WithCtx(ctx context.Context) logger {
 }
 
 // WithCaller return a new logger, based on l, that will include callers info in its output.
-func (l logger) WithCaller() logger {
-	return logger{
+func (l Logger) WithCaller() Logger {
+	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
@@ -102,8 +103,8 @@ func (l logger) WithCaller() logger {
 }
 
 // WithFields return a new logger, based on l, that will include the given fields in all its output.
-func (l logger) WithFields(f F) logger {
-	return logger{
+func (l Logger) WithFields(f F) Logger {
+	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
@@ -115,8 +116,8 @@ func (l logger) WithFields(f F) logger {
 }
 
 // WithImmediate return a new logger, based on l, that will log immediately without buffering if immediate is true.
-func (l logger) WithImmediate(immediate bool) logger {
-	return logger{
+func (l Logger) WithImmediate(immediate bool) Logger {
+	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
@@ -128,12 +129,12 @@ func (l logger) WithImmediate(immediate bool) logger {
 }
 
 // Info will log at the Info level.
-func (l logger) Info(f F) {
+func (l Logger) Info(f F) {
 	l.log(infoL, f)
 }
 
 // Error will log at the Info level.
-func (l logger) Error(e error, fs ...F) {
+func (l Logger) Error(e error, fs ...F) {
 	dst := F{}
 	if e != nil {
 		dst = F{"err": e.Error()}
@@ -155,21 +156,32 @@ func (l logger) Error(e error, fs ...F) {
 // This is useful to set as a writer for the standard library log.
 //
 // usage:
-//   l := log.New(ctx, os.Stdout, 100, true).WithImmediate(true)
-//   sl := stdLog.New(l, "stdlib", stdLog.LstdFlags)
-//   sl.Println("hello world")
+//   l := log.New(ctx, os.Stdout, 100, true)
+//   stdLogger := stdLog.New(l, "stdlib", stdLog.LstdFlags)
+//   stdLogger.Println("hello world")
 //
-func (l logger) Write(p []byte) (n int, err error) {
+func (l Logger) Write(p []byte) (n int, err error) {
 	n = len(p)
 	if n > 0 && p[n-1] == '\n' {
 		// Trim CR added by stdlog.
 		p = p[0 : n-1]
 	}
-	l.WithCaller().Info(F{"message": string(p)})
+	l.WithImmediate(true).WithCaller().Info(F{"message": string(p)})
 	return
 }
 
-func (l logger) log(lvl level, f F) {
+// StdLogger returns a logger from the Go standard library that will use logger as its output.
+// usage:
+//   l := log.New(ctx, os.Stdout, 100, true)
+//   stdLogger := l.StdLogger()
+//   stdLogger.Println("hey")
+//
+func (l Logger) StdLogger() *stdLog.Logger {
+	l = l.WithImmediate(true).WithCaller()
+	return stdLog.New(l, "", 0)
+}
+
+func (l Logger) log(lvl level, f F) {
 	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
 	f["logID"] = GetId(l.ctx)
@@ -192,7 +204,7 @@ func (l logger) log(lvl level, f F) {
 	}
 }
 
-func (l logger) flush() {
+func (l Logger) flush() {
 	b := &bytes.Buffer{}
 	encoder := json.NewEncoder(b)
 	if l.indent {

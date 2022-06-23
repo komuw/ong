@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -14,13 +13,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/komuw/goweb/log"
+
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
 type extendedHandler interface {
 	Routes()
-	GetLogger() *log.Logger
+	GetLogger() log.Logger
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
@@ -104,6 +105,7 @@ func Run(eh extendedHandler, rc opts) error {
 	eh.Routes()
 
 	ctx, cancel := context.WithCancel(context.Background())
+	logger := eh.GetLogger().WithCtx(ctx).WithImmediate(true)
 
 	serverPort := fmt.Sprintf(":%s", rc.port)
 	server := &http.Server{
@@ -118,15 +120,17 @@ func Run(eh extendedHandler, rc opts) error {
 		ReadTimeout:       rc.readTimeout,
 		WriteTimeout:      rc.writeTimeout,
 		IdleTimeout:       rc.idleTimeout,
-		ErrorLog:          eh.GetLogger(),
+		ErrorLog:          logger.StdLogger(),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
 	drainDur := drainDuration(rc)
-	sigHandler(server, ctx, cancel, eh.GetLogger(), drainDur)
+	sigHandler(server, ctx, cancel, logger, drainDur)
 
 	address := fmt.Sprintf("%s%s", rc.host, serverPort)
-	eh.GetLogger().Printf("server listening at %s", address)
+	logger.Info(log.F{
+		"msg": fmt.Sprintf("server listening at %s", address),
+	})
 
 	err := serve(server, rc.network, address, ctx)
 	if !errors.Is(err, http.ErrServerClosed) {
@@ -150,7 +154,7 @@ func sigHandler(
 	srv *http.Server,
 	ctx context.Context,
 	cancel context.CancelFunc,
-	logger *log.Logger,
+	logger log.Logger,
 	drainDur time.Duration,
 ) {
 	sigs := make(chan os.Signal, 1)
@@ -159,11 +163,17 @@ func sigHandler(
 		defer cancel()
 
 		sigCaught := <-sigs
-		logger.Printf("\nserver got shutdown signal: <%v>, will shutdown in: %s\n", sigCaught, drainDur)
+		logger.Info(log.F{
+			"msg":              "server got shutdown signal",
+			"signal":           fmt.Sprintf("%v", sigCaught),
+			"shutdownDuration": drainDur.String(),
+		})
 
 		err := srv.Shutdown(ctx)
 		if err != nil {
-			logger.Println("server shutdown error: ", err)
+			logger.Error(err, log.F{
+				"msg": "server shutdown error",
+			})
 		}
 	}()
 }

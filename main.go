@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/komuw/goweb/log"
+
 	"github.com/komuw/goweb/server"
 )
 
@@ -19,7 +21,9 @@ func main() {
 
 	err := server.Run(api, server.DefaultOpts())
 	if err != nil {
-		api.logger.Printf("\n server.Run error: %+v\n", err)
+		api.logger.Error(err, log.F{
+			"msg": "server.Run error",
+		})
 		os.Exit(1)
 	}
 }
