@@ -36,7 +36,11 @@ func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFun
 					"code":        code,
 					"status":      status,
 				}
-				logger.Error(nil, flds)
+				if e, ok := err.(error); ok {
+					logger.Error(e, flds)
+				} else {
+					logger.Error(nil, flds)
+				}
 			}
 		}()
 
