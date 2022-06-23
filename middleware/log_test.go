@@ -58,8 +58,11 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Equal(t, string(rb), successMsg)
 		attest.Zero(t, logOutput.String())
 
-		// TODO:
-		//   - assert cookies.
+		logHeader := res.Header.Get(logIDKey)
+		attest.NotZero(t, logHeader)
+		attest.True(t, len(res.Cookies()) >= 1)
+		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 	})
 
 	t.Run("error", func(t *testing.T) {
@@ -97,8 +100,11 @@ func TestLogMiddleware(t *testing.T) {
 			attest.True(t, strings.Contains(logOutput.String(), v))
 		}
 
-		// TODO:
-		//   - assert cookies.
+		logHeader := res.Header.Get(logIDKey)
+		attest.NotZero(t, logHeader)
+		attest.True(t, len(res.Cookies()) >= 1)
+		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 	})
 
 	t.Run("requests share log data.", func(t *testing.T) {
@@ -125,6 +131,12 @@ func TestLogMiddleware(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), successMsg)
 			attest.Zero(t, logOutput.String())
+
+			logHeader := res.Header.Get(logIDKey)
+			attest.NotZero(t, logHeader)
+			attest.True(t, len(res.Cookies()) >= 1)
+			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 
 		{
@@ -142,6 +154,12 @@ func TestLogMiddleware(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), successMsg)
 			attest.Zero(t, logOutput.String())
+
+			logHeader := res.Header.Get(logIDKey)
+			attest.NotZero(t, logHeader)
+			attest.True(t, len(res.Cookies()) >= 1)
+			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 
 		{
@@ -180,10 +198,12 @@ func TestLogMiddleware(t *testing.T) {
 			} {
 				attest.True(t, strings.Contains(logOutput.String(), v))
 			}
+
+			logHeader := res.Header.Get(logIDKey)
+			attest.NotZero(t, logHeader)
+			attest.True(t, len(res.Cookies()) >= 1)
+			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
-
-		// TODO:
-		//   - assert cookies.
-
 	})
 }
