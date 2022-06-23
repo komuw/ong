@@ -407,38 +407,38 @@ func BenchmarkBestCase(b *testing.B) {
 	b.Logf("best case") // best-case because goweb/log does not log if it is not error level
 
 	b.Run("Zap", func(b *testing.B) {
-		logger := newZapLogger(zap.DebugLevel)
+		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 		}
 	})
 
 	b.Run("sirupsen/logrus", func(b *testing.B) {
-		logger := newLogrus()
+		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 		}
 	})
 
 	b.Run("rs/zerolog", func(b *testing.B) {
-		logger := newZerolog()
+		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info().Msg(str)
+			l.Info().Msg(str)
 		}
 	})
 
 	b.Run("goweb/log", func(b *testing.B) {
-		logger := newGoWebLogger()
+		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(f)
+			l.Info(f)
 		}
 	})
 }
@@ -453,49 +453,49 @@ func BenchmarkAverageCase(b *testing.B) {
 	b.Logf("average case")
 
 	b.Run("Zap", func(b *testing.B) {
-		logger := newZapLogger(zap.DebugLevel)
+		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 			if rand.Intn(100) >= 99 {
-				logger.Error(logErr.Error())
+				l.Error(logErr.Error())
 			}
 		}
 	})
 
 	b.Run("sirupsen/logrus", func(b *testing.B) {
-		logger := newLogrus()
+		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 			if rand.Intn(100) >= 99 {
-				logger.Error(logErr.Error())
+				l.Error(logErr.Error())
 			}
 		}
 	})
 
 	b.Run("rs/zerolog", func(b *testing.B) {
-		logger := newZerolog()
+		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info().Msg(str)
+			l.Info().Msg(str)
 			if rand.Intn(100) >= 99 {
-				logger.Error().Msg(logErr.Error())
+				l.Error().Msg(logErr.Error())
 			}
 		}
 	})
 
 	b.Run("goweb/log", func(b *testing.B) {
-		logger := newGoWebLogger()
+		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(f)
+			l.Info(f)
 			if rand.Intn(100) >= 99 {
-				logger.Error(logErr)
+				l.Error(logErr)
 			}
 		}
 	})
@@ -509,42 +509,42 @@ func BenchmarkWorstCase(b *testing.B) {
 	b.Logf("worst case")
 
 	b.Run("Zap", func(b *testing.B) {
-		logger := newZapLogger(zap.DebugLevel)
+		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
-			logger.Error(logErr.Error())
+			l.Info(str)
+			l.Error(logErr.Error())
 		}
 	})
 
 	b.Run("sirupsen/logrus", func(b *testing.B) {
-		logger := newLogrus()
+		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
-			logger.Error(logErr.Error())
+			l.Info(str)
+			l.Error(logErr.Error())
 		}
 	})
 
 	b.Run("rs/zerolog", func(b *testing.B) {
-		logger := newZerolog()
+		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info().Msg(str)
-			logger.Error().Msg(logErr.Error())
+			l.Info().Msg(str)
+			l.Error().Msg(logErr.Error())
 		}
 	})
 
 	b.Run("goweb/log", func(b *testing.B) {
-		logger := newGoWebLogger()
+		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(f)
-			logger.Error(logErr, f)
+			l.Info(f)
+			l.Error(logErr, f)
 		}
 	})
 }
