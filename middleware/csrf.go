@@ -16,7 +16,7 @@ import (
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
 var (
-	errCsrfTokenNotFound = errors.New("csrf token not found/recognized")
+	errCsrfTokenNotFound = errors.New("csrf token not found")
 	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
 	// Image if you had `Csrf(loginHandler, domain)` & `Csrf(cartCheckoutHandler, domain)`, if they didn't share a global store,
 	// a customer navigating from login to checkout would get a errCsrfTokenNotFound error; which is not what we want.
