@@ -60,6 +60,21 @@ func TestAllMiddleware(t *testing.T) {
 			expectedStatusCode: http.StatusMethodNotAllowed,
 			expectedMsg:        errMsg,
 		},
+
+		{
+			name:               "POST middleware http POST",
+			middleware:         Post,
+			httpMethod:         http.MethodPost,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        msg,
+		},
+		{
+			name:               "POST middleware http TRACE",
+			middleware:         Post,
+			httpMethod:         http.MethodTrace,
+			expectedStatusCode: http.StatusMethodNotAllowed,
+			expectedMsg:        errMsg,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
