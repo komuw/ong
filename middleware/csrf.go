@@ -34,8 +34,10 @@ const (
 	clientCookieHeader = "Cookie"
 	varyHeader         = "Vary"
 
-	// same max-age as what fiber uses. django seems to use one year.
-	tokenMaxAge = 1 * time.Hour
+	// gorilla/csrf; 12hrs
+	// django: 1yr??
+	// gofiber/fiber; 1hr
+	tokenMaxAge = 12 * time.Hour
 	// The memory store is reset(for memory efficiency) every resetDuration.
 	resetDuration = tokenMaxAge + (7 * time.Minute)
 )
