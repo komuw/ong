@@ -35,7 +35,9 @@ func New(text string) *stackError {
 // Wrap returns err, capturing a stack trace.
 func Wrap(err error) *stackError {
 	stack := make([]uintptr, 50)
-	length := runtime.Callers(3, stack[:])
+	// skip 0 identifies the frame for `runtime.Callers` itself and
+	// skip 1 identifies the caller of `runtime.Callers`(ie of `Wrap`).
+	length := runtime.Callers(2, stack[:])
 	return &stackError{
 		err:   err,
 		stack: stack[:length],
