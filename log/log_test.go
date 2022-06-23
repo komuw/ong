@@ -77,8 +77,7 @@ func TestLogger(t *testing.T) {
 			l.Info(F{"what": infoMsg})
 			l.Error(errors.New("bad"))
 
-			fmt.Println(w.String())
-			id := getLogId(l.ctx)
+			id := GetId(l.ctx)
 			attest.True(t, strings.Contains(w.String(), id))
 			attest.True(t, strings.Contains(w.String(), "level"))
 			attest.True(t, strings.Contains(w.String(), "stack"))
@@ -92,7 +91,7 @@ func TestLogger(t *testing.T) {
 			errMsg := "kimeumana"
 			l.Error(errors.New(errMsg))
 
-			id := getLogId(l.ctx)
+			id := GetId(l.ctx)
 			attest.True(t, strings.Contains(w.String(), id))
 			attest.True(t, strings.Contains(w.String(), "level"))
 			attest.True(t, strings.Contains(w.String(), "stack"))
@@ -121,6 +120,28 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), "hello world : 6"))
 		attest.True(t, strings.Contains(w.String(), "hello world : 7"))
 		attest.True(t, strings.Contains(w.String(), errMsg))
+	})
+
+	t.Run("various ways of calling l.Error", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+		msg := "some-error"
+		err := errors.New(msg)
+
+		l.Error(err)
+		l.Error(err, F{"one": "two"})
+		l.Error(err, F{"three": "four"}, F{"five": "six"})
+		l.Error(err, nil)
+		l.Error(nil)
+		l.Error(nil, F{"seven": "eight"})
+
+		attest.True(t, strings.Contains(w.String(), msg))
+		for _, v := range []string{"one", "two", "three", "four", "five", "six", "seven", "eight"} {
+			attest.True(t, strings.Contains(w.String(), v), attest.Sprintf("`%s` not found", v))
+		}
 	})
 
 	t.Run("WithCtx does not invalidate buffer", func(t *testing.T) {
@@ -180,6 +201,48 @@ func TestLogger(t *testing.T) {
 			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
 			attest.True(t, strings.Contains(w.String(), "hello world : 3"))
 			attest.True(t, strings.Contains(w.String(), errMsg))
+		}
+	})
+
+	t.Run("WithFields", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(context.Background(), w, maxMsgs, true)
+		flds := F{"version": "v0.1.2", "env": "prod", "service": "web-commerce"}
+		l = l.WithFields(flds)
+
+		msg := "hello"
+		l.Info(F{"msg": msg})
+		errMsg := "oops, Houston we got 99 problems."
+		l.Error(errors.New(errMsg))
+
+		for _, v := range []string{
+			"version",
+			"v0.1.2",
+			"web-commerce",
+			msg,
+			errMsg,
+		} {
+			attest.True(t, strings.Contains(w.String(), v))
+		}
+		attest.Equal(t, l.flds, flds)
+
+		newFlds := F{"okay": "yes", "country": "Norway"}
+		l = l.WithFields(newFlds)
+		newErrMsg := "new error"
+		l.Error(errors.New(newErrMsg))
+		// asserts that the `l.flds` maps does not grow without bound.
+		attest.Equal(t, l.flds, newFlds)
+		for _, v := range []string{
+			"okay",
+			"yes",
+			"Norway",
+			msg,
+			newErrMsg,
+		} {
+			attest.True(t, strings.Contains(w.String(), v))
 		}
 	})
 
@@ -252,14 +315,14 @@ BenchmarkBestCase/sirupsen/logrus-8      32_635 ns/op	    2112 B/op	      26 all
 BenchmarkAverageCase/rs/zerolog-8        12_513 ns/op	     153 B/op	       0 allocs/op
 BenchmarkAverageCase/Zap-8               21_818 ns/op	     348 B/op	       1 allocs/op
 BenchmarkAverageCase/sirupsen/logrus-8   33_401 ns/op	    1961 B/op	      26 allocs/op
-BenchmarkAverageCase/goweb/log-8         151_429 ns/op	    3643 B/op	      42 allocs/op
+BenchmarkAverageCase/goweb/log-8         172_514 ns/op	    3571 B/op	      42 allocs/op
 */
 
 /*
 BenchmarkWorstCase/rs/zerolog-8          17_867 ns/op	     303 B/op	       0 allocs/op
 BenchmarkWorstCase/Zap-8                 26_665 ns/op	     688 B/op	       2 allocs/op
 BenchmarkWorstCase/sirupsen/logrus-8     57_033 ns/op	    3663 B/op	      53 allocs/op
-BenchmarkWorstCase/goweb/log-8           196_254 ns/op	    6410 B/op	      71 allocs/op
+BenchmarkWorstCase/goweb/log-8           333_297 ns/op	   10025 B/op	     103 allocs/op
 */
 // The above benchmark is 'more representative' since this time round, goweb/log is writing to io.writer for every invocation.
 
@@ -342,38 +405,38 @@ func BenchmarkBestCase(b *testing.B) {
 	b.Logf("best case") // best-case because goweb/log does not log if it is not error level
 
 	b.Run("Zap", func(b *testing.B) {
-		logger := newZapLogger(zap.DebugLevel)
+		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 		}
 	})
 
 	b.Run("sirupsen/logrus", func(b *testing.B) {
-		logger := newLogrus()
+		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 		}
 	})
 
 	b.Run("rs/zerolog", func(b *testing.B) {
-		logger := newZerolog()
+		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info().Msg(str)
+			l.Info().Msg(str)
 		}
 	})
 
 	b.Run("goweb/log", func(b *testing.B) {
-		logger := newGoWebLogger()
+		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(f)
+			l.Info(f)
 		}
 	})
 }
@@ -388,49 +451,49 @@ func BenchmarkAverageCase(b *testing.B) {
 	b.Logf("average case")
 
 	b.Run("Zap", func(b *testing.B) {
-		logger := newZapLogger(zap.DebugLevel)
+		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 			if rand.Intn(100) >= 99 {
-				logger.Error(logErr.Error())
+				l.Error(logErr.Error())
 			}
 		}
 	})
 
 	b.Run("sirupsen/logrus", func(b *testing.B) {
-		logger := newLogrus()
+		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
+			l.Info(str)
 			if rand.Intn(100) >= 99 {
-				logger.Error(logErr.Error())
+				l.Error(logErr.Error())
 			}
 		}
 	})
 
 	b.Run("rs/zerolog", func(b *testing.B) {
-		logger := newZerolog()
+		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info().Msg(str)
+			l.Info().Msg(str)
 			if rand.Intn(100) >= 99 {
-				logger.Error().Msg(logErr.Error())
+				l.Error().Msg(logErr.Error())
 			}
 		}
 	})
 
 	b.Run("goweb/log", func(b *testing.B) {
-		logger := newGoWebLogger()
+		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(f)
+			l.Info(f)
 			if rand.Intn(100) >= 99 {
-				logger.Error(logErr)
+				l.Error(logErr)
 			}
 		}
 	})
@@ -444,42 +507,42 @@ func BenchmarkWorstCase(b *testing.B) {
 	b.Logf("worst case")
 
 	b.Run("Zap", func(b *testing.B) {
-		logger := newZapLogger(zap.DebugLevel)
+		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
-			logger.Error(logErr.Error())
+			l.Info(str)
+			l.Error(logErr.Error())
 		}
 	})
 
 	b.Run("sirupsen/logrus", func(b *testing.B) {
-		logger := newLogrus()
+		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(str)
-			logger.Error(logErr.Error())
+			l.Info(str)
+			l.Error(logErr.Error())
 		}
 	})
 
 	b.Run("rs/zerolog", func(b *testing.B) {
-		logger := newZerolog()
+		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info().Msg(str)
-			logger.Error().Msg(logErr.Error())
+			l.Info().Msg(str)
+			l.Error().Msg(logErr.Error())
 		}
 	})
 
 	b.Run("goweb/log", func(b *testing.B) {
-		logger := newGoWebLogger()
+		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			logger.Info(f)
-			logger.Error(logErr)
+			l.Info(f)
+			l.Error(logErr, f)
 		}
 	})
 }

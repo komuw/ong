@@ -15,21 +15,23 @@ import (
 
 	"github.com/komuw/goweb/errors"
 	"github.com/rs/xid"
+	"golang.org/x/exp/maps"
 )
 
 type (
-	level             uint8
+	level             string
 	logContextKeyType string
 	// F is the fields to use as a log message.
 	F map[string]interface{}
 )
 
 const (
-	infoL level = iota
-	errorL
+	infoL  level = "info"
+	errorL level = "error"
 )
 
-const logCtxKey = logContextKeyType("logContextKey")
+// CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
+const CtxKey = logContextKeyType("Goweb-logID")
 
 type logger struct {
 	w          io.Writer
@@ -37,6 +39,7 @@ type logger struct {
 	ctx        context.Context
 	indent     bool
 	addCallers bool
+	flds       F
 }
 
 // todo: add heartbeat in the future.
@@ -48,8 +51,8 @@ func New(
 	maxMsgs int,
 	indent bool,
 ) logger {
-	logID := getLogId(ctx)
-	ctx = context.WithValue(ctx, logCtxKey, logID)
+	logID := GetId(ctx)
+	ctx = context.WithValue(ctx, CtxKey, logID)
 	if maxMsgs < 1 {
 		maxMsgs = 10
 	}
@@ -59,13 +62,14 @@ func New(
 		ctx:        ctx,
 		indent:     indent,
 		addCallers: false,
+		flds:       nil,
 	}
 }
 
 // WithCtx return a new logger, based on l, with the given ctx.
 func (l logger) WithCtx(ctx context.Context) logger {
-	logID := getLogId(ctx)
-	ctx = context.WithValue(ctx, logCtxKey, logID)
+	logID := GetId(ctx)
+	ctx = context.WithValue(ctx, CtxKey, logID)
 
 	return logger{
 		w:          l.w,
@@ -73,6 +77,7 @@ func (l logger) WithCtx(ctx context.Context) logger {
 		ctx:        ctx,
 		indent:     l.indent,
 		addCallers: l.addCallers,
+		flds:       l.flds,
 	}
 }
 
@@ -84,50 +89,64 @@ func (l logger) WithCaller() logger {
 		ctx:        l.ctx,
 		indent:     l.indent,
 		addCallers: true,
+		flds:       l.flds,
 	}
 }
 
-// // WithFields return a new logger, based on l, that will include the given fields in all its output.
-// func (l logger) WithFields(f F) logger {
-// 	return logger{
-// 		w:          l.w,
-// 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-// 		ctx:        l.ctx,
-// 		indent:     l.indent,
-// 		addCallers: l.addCallers,
-// 	}
-// }
+// WithFields return a new logger, based on l, that will include the given fields in all its output.
+func (l logger) WithFields(f F) logger {
+	return logger{
+		w:          l.w,
+		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
+		ctx:        l.ctx,
+		indent:     l.indent,
+		addCallers: l.addCallers,
+		flds:       f,
+	}
+}
 
 // Info will log at the Info level.
 func (l logger) Info(f F) {
-	f["level"] = "info"
 	l.log(infoL, f)
 }
 
 // Error will log at the Info level.
-func (l logger) Error(e error) {
-	f := F{
-		"level": "error",
-		"err":   e.Error(),
+func (l logger) Error(e error, fs ...F) {
+	dst := F{}
+	if e != nil {
+		dst = F{"err": e.Error()}
+		if stack := errors.StackTrace(e); stack != "" {
+			dst["stack"] = stack
+		}
 	}
-	if stack := errors.StackTrace(e); stack != "" {
-		f["stack"] = stack
+
+	for _, f := range fs {
+		for k, v := range f {
+			dst[k] = v
+		}
 	}
-	l.log(errorL, f)
+
+	l.log(errorL, dst)
 }
 
 func (l logger) log(lvl level, f F) {
+	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
-	f["logID"] = getLogId(l.ctx)
+	f["logID"] = GetId(l.ctx)
 	if l.addCallers {
 		if _, file, line, ok := runtime.Caller(2); ok {
 			f["line"] = fmt.Sprintf("%s:%d", file, line)
 		}
 	}
 
+	if l.flds != nil {
+		// Copy(dst, src)
+		maps.Copy(f, l.flds) // keys in dst(`f`) that are also in l.flds, are overwritten.
+	}
+
 	l.cBuf.store(f)
 
-	if lvl >= errorL {
+	if lvl == errorL {
 		// flush
 		l.flush()
 	}
@@ -162,9 +181,10 @@ func (l logger) flush() {
 	l.cBuf.reset()
 }
 
-func getLogId(ctx context.Context) string {
+// GetId returns a logID which is fetched either from the provided context or auto-generated.
+func GetId(ctx context.Context) string {
 	if ctx != nil {
-		if vCtx := ctx.Value(logCtxKey); vCtx != nil {
+		if vCtx := ctx.Value(CtxKey); vCtx != nil {
 			if s, ok := vCtx.(string); ok {
 				return s
 			}

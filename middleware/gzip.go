@@ -212,9 +212,9 @@ func (grw *gzipRW) handleGzipped() error {
 }
 
 // WriteHeader just saves the response code until close or GZIP effective writes.
-func (grw *gzipRW) WriteHeader(code int) {
+func (grw *gzipRW) WriteHeader(statusCode int) {
 	if grw.code == 0 {
-		grw.code = code
+		grw.code = statusCode
 	}
 }
 
