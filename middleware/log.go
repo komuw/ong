@@ -26,10 +26,10 @@ func Log(wrappedHandler http.HandlerFunc, logOutput io.Writer, domain string) ht
 	logger := log.New(
 		context.Background(),
 		logOutput,
-		// TODO: increase maxMsgs
-		5,
-		// TODO: should we set indent to true/false?
-		true,
+		// enought to hold messages for 5reqs/sec for 15minutes.
+		5*60*15,
+		// dont indent.
+		false,
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
