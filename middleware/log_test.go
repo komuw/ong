@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"github.com/rs/xid"
 )
 
 const someLogHandlerHeader = "SomeLogHandlerHeader"
@@ -205,5 +206,41 @@ func TestLogMiddleware(t *testing.T) {
 			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
 			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
+	})
+
+	t.Run("re-uses logID", func(t *testing.T) {
+		t.Parallel()
+
+		logOutput := &bytes.Buffer{}
+		successMsg := "hello"
+		domain := "example.com"
+		wrappedHandler := Log(someLogHandler(successMsg), logOutput, domain)
+
+		someLogID := "hey-some-log-id:" + xid.New().String()
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		req.AddCookie(&http.Cookie{
+			Name:  logIDKey,
+			Value: someLogID,
+		})
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), successMsg)
+		attest.Zero(t, logOutput.String())
+
+		logHeader := res.Header.Get(logIDKey)
+		attest.NotZero(t, logHeader)
+		attest.True(t, len(res.Cookies()) >= 1)
+		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, logHeader, res.Cookies()[0].Value)
+		attest.Equal(t, logHeader, someLogID)
 	})
 }
