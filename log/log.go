@@ -108,18 +108,18 @@ func (l logger) Info(f F) {
 
 // Error will log at the Info level.
 func (l logger) Error(e error, fs ...F) {
-	f := F{
-		"err": e.Error(),
+	f := F{}
+	if e != nil {
+		f = F{"err": e.Error()}
+		if stack := errors.StackTrace(e); stack != "" {
+			f["stack"] = stack
+		}
 	}
 
 	for _, f := range fs {
 		for k, v := range f {
 			f[k] = v
 		}
-	}
-
-	if stack := errors.StackTrace(e); stack != "" {
-		f["stack"] = stack
 	}
 
 	l.log(errorL, f)

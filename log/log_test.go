@@ -136,6 +136,8 @@ func TestLogger(t *testing.T) {
 		l.Error(err, F{"a": "b"})
 		l.Error(err, F{"a": "b"}, F{"c": "d"})
 		l.Error(err, nil)
+		l.Error(nil)
+		l.Error(nil, F{"e": "f"})
 
 		attest.True(t, strings.Contains(w.String(), msg))
 	})
