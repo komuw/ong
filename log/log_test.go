@@ -77,7 +77,6 @@ func TestLogger(t *testing.T) {
 			l.Info(F{"what": infoMsg})
 			l.Error(errors.New("bad"))
 
-			fmt.Println(w.String())
 			id := GetId(l.ctx)
 			attest.True(t, strings.Contains(w.String(), id))
 			attest.True(t, strings.Contains(w.String(), "level"))
@@ -218,7 +217,6 @@ func TestLogger(t *testing.T) {
 		l.Info(F{"msg": msg})
 		errMsg := "oops, Houston we got 99 problems."
 		l.Error(errors.New(errMsg))
-		fmt.Println("\n\t res one: ", w.String())
 
 		for _, v := range []string{
 			"version",
