@@ -2,15 +2,15 @@ package middleware
 
 import (
 	"context"
+	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/komuw/goweb/log"
 )
 
 // Log is a middleware that logs requests/responses.
-func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func Log(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFunc {
 	// We want different requests to share the same logger backed by the same circular buffere for storing logs.
 	// That way, if someone makes one request and it succeds then they make another one that errors.
 	// When the logs are been flushed for the request that errored, the logs for the request that succeeded will also be flushed.
@@ -19,7 +19,7 @@ func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 	logger := log.New(
 		context.Background(),
-		os.Stderr,
+		logOutput,
 		// TODO: increase maxMsgs
 		5,
 		// TODO: should we set indent to true/false?

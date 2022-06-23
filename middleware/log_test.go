@@ -1,24 +1,28 @@
 package middleware
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/akshayjshah/attest"
 )
 
-func someLogHandler(successMsg string, errorMsg string) http.HandlerFunc {
+const someLogHandlerHeader = "SomeLogHandlerHeader"
+
+func someLogHandler(successMsg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// sleep so that the log middleware has some useful duration metrics to report.
 		time.Sleep(3 * time.Millisecond)
-		if errorMsg != "" {
+		if r.Header.Get(someLogHandlerHeader) != "" {
 			http.Error(
 				w,
-				errorMsg,
+				r.Header.Get(someLogHandlerHeader),
 				http.StatusInternalServerError,
 			)
 			return
@@ -35,8 +39,9 @@ func TestLogMiddleware(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
+		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		wrappedHandler := Log(someLogHandler(successMsg, ""))
+		wrappedHandler := Log(someLogHandler(successMsg), logOutput)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -50,21 +55,23 @@ func TestLogMiddleware(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), successMsg)
+		attest.Zero(t, logOutput.String())
 
 		// TODO:
-		//   - assert logs.
 		//   - assert cookies.
 	})
 
 	t.Run("error", func(t *testing.T) {
 		t.Parallel()
 
+		logOutput := &bytes.Buffer{}
 		errorMsg := "someLogHandler failed"
 		successMsg := "hello"
-		wrappedHandler := Log(someLogHandler(successMsg, errorMsg))
+		wrappedHandler := Log(someLogHandler(successMsg), logOutput)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		req.Header.Set(someLogHandlerHeader, errorMsg)
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -76,16 +83,29 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
 		attest.Equal(t, string(rb), errorMsg+"\n")
 
+		for _, v := range []string{
+			"bytes",
+			"code",
+			fmt.Sprint(res.StatusCode),
+			"durationMS",
+			"logID",
+			"requestAddr",
+			"error",
+		} {
+			attest.True(t, strings.Contains(logOutput.String(), v))
+		}
+
 		// TODO:
-		//   - assert logs.
 		//   - assert cookies.
 	})
 
 	t.Run("requests share log data.", func(t *testing.T) {
 		t.Parallel()
 
+		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		wrappedHandler := Log(someLogHandler(successMsg, ""))
+		errorMsg := "someLogHandler failed"
+		wrappedHandler := Log(someLogHandler(successMsg), logOutput)
 
 		{
 			// first request that succeds
@@ -101,6 +121,7 @@ func TestLogMiddleware(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), successMsg)
+			attest.Zero(t, logOutput.String())
 		}
 
 		{
@@ -117,14 +138,14 @@ func TestLogMiddleware(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), successMsg)
-
-			fmt.Println("came here.")
+			attest.Zero(t, logOutput.String())
 		}
 
 		{
 			// third request that errors
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/ThirdUri", nil)
+			req.Header.Set(someLogHandlerHeader, errorMsg)
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -133,22 +154,32 @@ func TestLogMiddleware(t *testing.T) {
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
 
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), successMsg)
+			attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
+			attest.Equal(t, string(rb), errorMsg+"\n")
 
-			fmt.Println("came here.")
+			for _, v := range []string{
+				// from first request
+				"info",
+				http.MethodHead,
+				"FirstUri",
+				fmt.Sprint(http.StatusOK),
+				// from second request
+				http.MethodGet,
+				"SecondUri",
+				// from third request
+				"error",
+				http.MethodPost,
+				"ThirdUri",
+				fmt.Sprint(http.StatusInternalServerError),
+				// common
+				"durationMS",
+				"bytes",
+			} {
+				attest.True(t, strings.Contains(logOutput.String(), v))
+			}
 		}
 
 		// TODO:
-		//   - that after first request we DO NOT log
-		//   - that after second request  we DO NOT log
-		//   - that after third request.
-		//        - we log the first request had http HEAD and `FirstUri`
-		//        - we log the second request had http GET and `SecondUri`
-		//        - we log the third request had http POST and `ThirdUri`
-
-		// TODO:
-		//   - assert logs.
 		//   - assert cookies.
 
 	})
