@@ -41,11 +41,11 @@ const (
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
 // If maxRequestsToReset <= 0, it is set to a high default value.
-func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int32) http.HandlerFunc {
+func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int) http.HandlerFunc {
 	start := time.Now()
-	requestsServed := int32(0)
+	requestsServed := 0
 	if maxRequestsToReset <= 0 {
-		maxRequestsToReset = 10_000_000
+		maxRequestsToReset = 3_000_000
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

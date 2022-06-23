@@ -450,7 +450,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		maxRequestsToReset := int32(50)
+		maxRequestsToReset := 50
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain, maxRequestsToReset)
 
 		for i := 0; i < (int(maxRequestsToReset) + 1); i++ {
