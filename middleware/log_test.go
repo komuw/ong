@@ -252,21 +252,44 @@ func TestGetLogId(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
-		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
-		id := getLogId(req)
-		attest.NotZero(t, id)
+		{
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			id := getLogId(req)
+			attest.NotZero(t, id)
+		}
 
-		expected := "expected-one"
-		req = httptest.NewRequest(http.MethodHead, "/someUri", nil)
-		req.Header.Add(logIDKey, expected)
-		id = getLogId(req)
-		attest.Equal(t, id, expected)
+		{
+			expected := "expected-one"
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req.Header.Add(logIDKey, expected)
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
+		}
 
-		expected = "expected-two"
-		ctx := context.WithValue(context.Background(), log.CtxKey, expected)
-		req = httptest.NewRequest(http.MethodHead, "/someUri", nil)
-		req = req.WithContext(ctx)
-		id = getLogId(req)
-		attest.Equal(t, id, expected)
+		{
+			expected := "expected-two"
+			ctx := context.WithValue(context.Background(), log.CtxKey, expected)
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req = req.WithContext(ctx)
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
+		}
+
+		{
+			// cookies take precedence.
+			expected := "cookie-expected-three"
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req.AddCookie(&http.Cookie{
+				Name:  logIDKey,
+				Value: expected,
+			})
+			req = req.WithContext(
+				context.WithValue(context.Background(), log.CtxKey, "context-logID"),
+			)
+			req.Header.Add(logIDKey, "header-logID")
+
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
+		}
 	})
 }
