@@ -1,8 +1,11 @@
 package middleware
 
 import (
+	"bufio"
 	"context"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
@@ -75,6 +78,16 @@ type logRW struct {
 	sent int
 }
 
+var (
+	// make sure we support http optional interfaces.
+	// https://github.com/komuw/goweb/issues/15
+	// https://blog.merovius.de/2017/07/30/the-trouble-with-optional-interfaces.html
+	_ http.ResponseWriter = &logRW{}
+	_ http.Flusher        = &logRW{}
+	_ http.Hijacker       = &logRW{}
+	// _ http.CloseNotifier  = &logRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
+)
+
 // Write recodes the size of bytes sent for logging purposes.
 func (lrw *logRW) Write(b []byte) (int, error) {
 	if lrw.code == 0 {
@@ -90,14 +103,17 @@ func (lrw *logRW) WriteHeader(statusCode int) {
 	lrw.ResponseWriter.WriteHeader(statusCode)
 }
 
-// TODO: fix this.
-var (
-	// make sure we support http optional interfaces.
-	// https://github.com/komuw/goweb/issues/15
-	// https://blog.merovius.de/2017/07/30/the-trouble-with-optional-interfaces.html
-	_ http.ResponseWriter = &logRW{}
-	// _ http.Flusher        = &logRW{}
-	// _ http.Hijacker       = &logRW{}
-	// _ io.WriteCloser      = &logRW{}
-	// _ http.CloseNotifier  = &logRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
-)
+// Flush implements http.Flusher
+func (lrw *logRW) Flush() {
+	if fw, ok := lrw.ResponseWriter.(http.Flusher); ok {
+		fw.Flush()
+	}
+}
+
+// Hijack implements http.Hijacker
+func (lrw *logRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := lrw.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, fmt.Errorf("http.Hijacker interface is not supported")
+}
