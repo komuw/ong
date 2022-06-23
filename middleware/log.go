@@ -187,5 +187,4 @@ func getLogId(req *http.Request) string {
 	}
 
 	return fromCtx(req.Context())
-
 }
