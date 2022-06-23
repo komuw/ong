@@ -315,14 +315,14 @@ BenchmarkBestCase/sirupsen/logrus-8      32_635 ns/op	    2112 B/op	      26 all
 BenchmarkAverageCase/rs/zerolog-8        12_513 ns/op	     153 B/op	       0 allocs/op
 BenchmarkAverageCase/Zap-8               21_818 ns/op	     348 B/op	       1 allocs/op
 BenchmarkAverageCase/sirupsen/logrus-8   33_401 ns/op	    1961 B/op	      26 allocs/op
-BenchmarkAverageCase/goweb/log-8         151_429 ns/op	    3643 B/op	      42 allocs/op
+BenchmarkAverageCase/goweb/log-8         172_514 ns/op	    3571 B/op	      42 allocs/op
 */
 
 /*
 BenchmarkWorstCase/rs/zerolog-8          17_867 ns/op	     303 B/op	       0 allocs/op
 BenchmarkWorstCase/Zap-8                 26_665 ns/op	     688 B/op	       2 allocs/op
 BenchmarkWorstCase/sirupsen/logrus-8     57_033 ns/op	    3663 B/op	      53 allocs/op
-BenchmarkWorstCase/goweb/log-8           196_254 ns/op	    6410 B/op	      71 allocs/op
+BenchmarkWorstCase/goweb/log-8           333_297 ns/op	   10025 B/op	     103 allocs/op
 */
 // The above benchmark is 'more representative' since this time round, goweb/log is writing to io.writer for every invocation.
 
