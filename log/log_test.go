@@ -133,13 +133,16 @@ func TestLogger(t *testing.T) {
 		err := errors.New(msg)
 
 		l.Error(err)
-		l.Error(err, F{"a": "b"})
-		l.Error(err, F{"a": "b"}, F{"c": "d"})
+		l.Error(err, F{"one": "two"})
+		l.Error(err, F{"three": "four"}, F{"five": "six"})
 		l.Error(err, nil)
 		l.Error(nil)
-		l.Error(nil, F{"e": "f"})
+		l.Error(nil, F{"seven": "eight"})
 
 		attest.True(t, strings.Contains(w.String(), msg))
+		for _, v := range []string{"one", "two", "three", "four", "five", "six", "seven", "eight"} {
+			attest.True(t, strings.Contains(w.String(), v))
+		}
 	})
 
 	t.Run("WithCtx does not invalidate buffer", func(t *testing.T) {
