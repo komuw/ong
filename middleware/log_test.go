@@ -41,7 +41,8 @@ func TestLogMiddleware(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		wrappedHandler := Log(someLogHandler(successMsg), logOutput)
+		domain := "example.com"
+		wrappedHandler := Log(someLogHandler(successMsg), logOutput, domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -67,7 +68,8 @@ func TestLogMiddleware(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		errorMsg := "someLogHandler failed"
 		successMsg := "hello"
-		wrappedHandler := Log(someLogHandler(successMsg), logOutput)
+		domain := "example.com"
+		wrappedHandler := Log(someLogHandler(successMsg), logOutput, domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -105,7 +107,8 @@ func TestLogMiddleware(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
 		errorMsg := "someLogHandler failed"
-		wrappedHandler := Log(someLogHandler(successMsg), logOutput)
+		domain := "example.com"
+		wrappedHandler := Log(someLogHandler(successMsg), logOutput, domain)
 
 		{
 			// first request that succeds
