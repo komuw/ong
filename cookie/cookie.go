@@ -30,7 +30,10 @@ func Set(
 	mAge time.Duration,
 	jsAccess bool,
 ) {
-	expires := time.Now().Add(mAge)
+	// Since expires is relative to the browser & we are calculating it on the server-side;
+	// there's a possibility of it not doing what u expect.
+	// However, browsers usually ignore this in place of maxAge.
+	expires := time.Now().UTC().Add(mAge)
 	maxAge := int(mAge.Seconds())
 
 	if mAge <= 0 {

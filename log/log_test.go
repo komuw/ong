@@ -78,7 +78,7 @@ func TestLogger(t *testing.T) {
 			l.Error(errors.New("bad"))
 
 			fmt.Println(w.String())
-			id := getLogId(l.ctx)
+			id := GetId(l.ctx)
 			attest.True(t, strings.Contains(w.String(), id))
 			attest.True(t, strings.Contains(w.String(), "level"))
 			attest.True(t, strings.Contains(w.String(), "stack"))
@@ -92,7 +92,7 @@ func TestLogger(t *testing.T) {
 			errMsg := "kimeumana"
 			l.Error(errors.New(errMsg))
 
-			id := getLogId(l.ctx)
+			id := GetId(l.ctx)
 			attest.True(t, strings.Contains(w.String(), id))
 			attest.True(t, strings.Contains(w.String(), "level"))
 			attest.True(t, strings.Contains(w.String(), "stack"))

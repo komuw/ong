@@ -29,7 +29,8 @@ const (
 	errorL level = "error"
 )
 
-const logCtxKey = logContextKeyType("logContextKey")
+// CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
+const CtxKey = logContextKeyType("Goweb-logID")
 
 type logger struct {
 	w          io.Writer
@@ -48,8 +49,8 @@ func New(
 	maxMsgs int,
 	indent bool,
 ) logger {
-	logID := getLogId(ctx)
-	ctx = context.WithValue(ctx, logCtxKey, logID)
+	logID := GetId(ctx)
+	ctx = context.WithValue(ctx, CtxKey, logID)
 	if maxMsgs < 1 {
 		maxMsgs = 10
 	}
@@ -64,8 +65,8 @@ func New(
 
 // WithCtx return a new logger, based on l, with the given ctx.
 func (l logger) WithCtx(ctx context.Context) logger {
-	logID := getLogId(ctx)
-	ctx = context.WithValue(ctx, logCtxKey, logID)
+	logID := GetId(ctx)
+	ctx = context.WithValue(ctx, CtxKey, logID)
 
 	return logger{
 		w:          l.w,
@@ -128,7 +129,7 @@ func (l logger) Error(e error, fs ...F) {
 func (l logger) log(lvl level, f F) {
 	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
-	f["logID"] = getLogId(l.ctx)
+	f["logID"] = GetId(l.ctx)
 	if l.addCallers {
 		if _, file, line, ok := runtime.Caller(2); ok {
 			f["line"] = fmt.Sprintf("%s:%d", file, line)
@@ -172,9 +173,10 @@ func (l logger) flush() {
 	l.cBuf.reset()
 }
 
-func getLogId(ctx context.Context) string {
+// GetId returns a logID which is fetched either from the provided context or auto-generated.
+func GetId(ctx context.Context) string {
 	if ctx != nil {
-		if vCtx := ctx.Value(logCtxKey); vCtx != nil {
+		if vCtx := ctx.Value(CtxKey); vCtx != nil {
 			if s, ok := vCtx.(string); ok {
 				return s
 			}
