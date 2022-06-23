@@ -1,9 +1,11 @@
 package middleware
 
 import (
-	"log"
+	"fmt"
+	"io"
 	"net/http"
-	"runtime/debug"
+
+	"github.com/komuw/goweb/log"
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -11,21 +13,30 @@ import (
 
 // Panic is a middleware that recovers from panics in wrappedHandler.
 // It logs the stack trace and returns an InternalServerError response.
-func Panic(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			err := recover()
 			if err != nil {
+				logger := log.New(r.Context(), logOutput, 5*60*15, false).WithCaller()
+
+				code := http.StatusInternalServerError
+				status := http.StatusText(code)
 				http.Error(
 					w,
-					http.StatusText(http.StatusInternalServerError),
-					http.StatusInternalServerError,
+					status,
+					code,
 				)
 
-				// TODO:
-				//   - pass in a logger to this middleware.
-				//   - use log.F{} here.
-				log.Println(string(debug.Stack()), r.RemoteAddr, r.Method)
+				flds := log.F{
+					"err":         fmt.Sprint(err),
+					"requestAddr": r.RemoteAddr,
+					"method":      r.Method,
+					"path":        r.URL.EscapedPath(),
+					"code":        code,
+					"status":      status,
+				}
+				logger.Error(nil, flds)
 			}
 		}()
 
