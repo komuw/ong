@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -39,43 +38,21 @@ func Log(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		defer func() {
+			flds := log.F{
+				"requestAddr": r.RemoteAddr,
+				"method":      r.Method,
+				"path":        r.URL.EscapedPath(),
+				"code":        lrw.code,
+				"status":      http.StatusText(lrw.code),
+				"durationMS":  time.Now().Sub(start).Milliseconds(),
+				"bytes":       lrw.sent,
+			}
+
 			if lrw.code >= http.StatusBadRequest {
 				// both client and server errors.
-				//
-				// TODO: log at error.
-				// logger.Error(e error)
-
-				fmt.Printf(`
-				\n\t Error:
-				requestAddr: %s,
-				method: %s,
-				path: %s,
-				code: %d,
-				status: %s,
-				durationMS: %d,
-				bytes: %d,
-			`,
-					r.RemoteAddr,
-					r.Method,
-					r.URL.EscapedPath(),
-					lrw.code,
-					http.StatusText(lrw.code),
-					time.Now().Sub(start).Milliseconds(),
-					lrw.sent,
-				)
+				logger.Error(nil, flds)
 			} else {
-				logger.Info(
-					log.F{
-						"requestAddr": r.RemoteAddr,
-						"method":      r.Method,
-						"path":        r.URL.EscapedPath(),
-						"code":        lrw.code,
-						"status":      http.StatusText(lrw.code),
-						"durationMS":  time.Now().Sub(start).Milliseconds(),
-						"bytes":       lrw.sent,
-					},
-				)
-				// logger.Error(errors.New("some-bad-error")) // TODO: remove this.
+				logger.Info(flds)
 			}
 		}()
 
@@ -101,7 +78,9 @@ type logRW struct {
 
 // Write recodes the size of bytes sent for logging purposes.
 func (lrw *logRW) Write(b []byte) (int, error) {
-	lrw.code = http.StatusOK
+	if lrw.code == 0 {
+		lrw.code = http.StatusOK
+	}
 	lrw.sent = len(b)
 	return lrw.ResponseWriter.Write(b)
 }

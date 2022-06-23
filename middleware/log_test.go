@@ -11,19 +11,19 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
-func someLogHandler(msg string, toErr bool) http.HandlerFunc {
+func someLogHandler(successMsg string, errorMsg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// sleep so that the log middleware has some useful duration metrics to report.
 		time.Sleep(3 * time.Millisecond)
-		if toErr {
+		if errorMsg != "" {
 			http.Error(
 				w,
-				"someLogHandler failed.",
+				errorMsg,
 				http.StatusInternalServerError,
 			)
 			return
 		} else {
-			fmt.Fprint(w, msg)
+			fmt.Fprint(w, successMsg)
 			return
 		}
 	}
@@ -35,8 +35,8 @@ func TestLogMiddleware(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := Log(someLogHandler(msg, false))
+		successMsg := "hello"
+		wrappedHandler := Log(someLogHandler(successMsg, ""))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -49,7 +49,7 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Ok(t, err)
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
+		attest.Equal(t, string(rb), successMsg)
 
 		// TODO:
 		//   - assert logs.
@@ -59,8 +59,9 @@ func TestLogMiddleware(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := Log(someLogHandler(msg, true))
+		errorMsg := "someLogHandler failed"
+		successMsg := "hello"
+		wrappedHandler := Log(someLogHandler(successMsg, errorMsg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -72,8 +73,8 @@ func TestLogMiddleware(t *testing.T) {
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
+		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
+		attest.Equal(t, string(rb), errorMsg+"\n")
 
 		// TODO:
 		//   - assert logs.
@@ -83,8 +84,8 @@ func TestLogMiddleware(t *testing.T) {
 	t.Run("requests share log data.", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := Log(someLogHandler(msg, false))
+		successMsg := "hello"
+		wrappedHandler := Log(someLogHandler(successMsg, ""))
 
 		{
 			// first request that succeds
@@ -99,7 +100,7 @@ func TestLogMiddleware(t *testing.T) {
 			attest.Ok(t, err)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
+			attest.Equal(t, string(rb), successMsg)
 		}
 
 		{
@@ -115,7 +116,7 @@ func TestLogMiddleware(t *testing.T) {
 			attest.Ok(t, err)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
+			attest.Equal(t, string(rb), successMsg)
 
 			fmt.Println("came here.")
 		}
@@ -133,7 +134,7 @@ func TestLogMiddleware(t *testing.T) {
 			attest.Ok(t, err)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
+			attest.Equal(t, string(rb), successMsg)
 
 			fmt.Println("came here.")
 		}
