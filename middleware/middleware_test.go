@@ -50,7 +50,7 @@ func TestAllMiddleware(t *testing.T) {
 			name:       "Get middleware http TRACE",
 			middleware: Get,
 			httpMethod: http.MethodTrace,
-			expected:   http.StatusOK,
+			expected:   http.StatusMethodNotAllowed,
 		},
 	}
 	for _, tt := range tests {
