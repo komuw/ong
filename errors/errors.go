@@ -29,15 +29,20 @@ func (e *stackError) Unwrap() error {
 
 // New returns an error with the supplied message. New also records the stack trace at the point it was called.
 func New(text string) *stackError {
-	return Wrap(errors.New(text))
+	return wrap(errors.New(text), 3)
 }
 
 // Wrap returns err, capturing a stack trace.
 func Wrap(err error) *stackError {
+	return wrap(err, 3)
+}
+
+func wrap(err error, skip int) *stackError {
 	stack := make([]uintptr, 50)
 	// skip 0 identifies the frame for `runtime.Callers` itself and
-	// skip 1 identifies the caller of `runtime.Callers`(ie of `Wrap`).
-	length := runtime.Callers(2, stack[:])
+	// skip 1 identifies the caller of `runtime.Callers`(ie of `wrap`).
+	length := runtime.Callers(skip, stack[:])
+
 	return &stackError{
 		err:   err,
 		stack: stack[:length],
