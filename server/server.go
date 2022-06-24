@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -14,13 +13,16 @@ import (
 	"syscall"
 	"time"
 
+	gowebErrors "github.com/komuw/goweb/errors"
+	"github.com/komuw/goweb/log"
+
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
 type extendedHandler interface {
 	Routes()
-	GetLogger() *log.Logger
+	GetLogger() log.Logger
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
@@ -104,6 +106,7 @@ func Run(eh extendedHandler, rc opts) error {
 	eh.Routes()
 
 	ctx, cancel := context.WithCancel(context.Background())
+	logger := eh.GetLogger().WithCtx(ctx).WithImmediate()
 
 	serverPort := fmt.Sprintf(":%s", rc.port)
 	server := &http.Server{
@@ -118,22 +121,22 @@ func Run(eh extendedHandler, rc opts) error {
 		ReadTimeout:       rc.readTimeout,
 		WriteTimeout:      rc.writeTimeout,
 		IdleTimeout:       rc.idleTimeout,
-		ErrorLog:          eh.GetLogger(),
+		ErrorLog:          logger.StdLogger(),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
 	drainDur := drainDuration(rc)
-	sigHandler(server, ctx, cancel, eh.GetLogger(), drainDur)
+	sigHandler(server, ctx, cancel, logger, drainDur)
 
 	address := fmt.Sprintf("%s%s", rc.host, serverPort)
-	eh.GetLogger().Printf("server listening at %s", address)
 
-	err := serve(server, rc.network, address, ctx)
+	err := serve(ctx, server, rc.network, address, logger)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
 		//   Make sure the program doesn't exit and waits instead for Shutdown to return.
-		return err
+
+		return err // already wrapped in the `serve` func.
 	}
 
 	{
@@ -150,7 +153,7 @@ func sigHandler(
 	srv *http.Server,
 	ctx context.Context,
 	cancel context.CancelFunc,
-	logger *log.Logger,
+	logger log.Logger,
 	drainDur time.Duration,
 ) {
 	sigs := make(chan os.Signal, 1)
@@ -159,16 +162,22 @@ func sigHandler(
 		defer cancel()
 
 		sigCaught := <-sigs
-		logger.Printf("\nserver got shutdown signal: <%v>, will shutdown in a maximum of %s\n", sigCaught, drainDur)
+		logger.Info(log.F{
+			"msg":              "server got shutdown signal",
+			"signal":           fmt.Sprintf("%v", sigCaught),
+			"shutdownDuration": drainDur.String(),
+		})
 
 		err := srv.Shutdown(ctx)
 		if err != nil {
-			logger.Println("server shutdown error: ", err)
+			logger.Error(err, log.F{
+				"msg": "server shutdown error",
+			})
 		}
 	}()
 }
 
-func serve(srv *http.Server, network, address string, ctx context.Context) error {
+func serve(ctx context.Context, srv *http.Server, network, address string, logger log.Logger) error {
 	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
 		return conn.Control(func(descriptor uintptr) {
 			_ = unix.SetsockoptInt(
@@ -191,10 +200,16 @@ func serve(srv *http.Server, network, address string, ctx context.Context) error
 	}}
 	l, err := cfg.Listen(ctx, network, address)
 	if err != nil {
-		return err
+		return gowebErrors.Wrap(err)
 	}
 
-	return srv.Serve(l)
+	logger.Info(log.F{
+		"msg": fmt.Sprintf("server listening at %s", address),
+	})
+	if errS := srv.Serve(l); errS != nil {
+		return gowebErrors.Wrap(errS)
+	}
+	return nil
 }
 
 // drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.

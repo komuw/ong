@@ -1,7 +1,10 @@
 package errors
 
 import (
+	stdErrors "errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"strings"
 	"testing"
 
@@ -27,30 +30,82 @@ func foo() error {
 	return New("error in foo")
 }
 
+func prepFile() error {
+	kk := "police"
+	_ = kk
+	if err := open("/tmp/nonExistentFile-akJGdadE.txt"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func open(p string) error {
+	f, err := os.Open(p)
+	if err != nil {
+		return Wrap(err)
+	}
+	defer f.Close()
+
+	return nil
+}
+
 func TestStackError(t *testing.T) {
+	t.Parallel()
+
 	t.Run("success", func(t *testing.T) {
-		err := hello()
+		t.Parallel()
 
-		sterr, ok := err.(*stackError)
-		attest.True(t, ok)
-		attest.Equal(t, sterr.Error(), "error in foo")
+		t.Run("errors.New", func(t *testing.T) {
+			t.Parallel()
 
-		stackTrace := sterr.getStackTrace()
-		for _, v := range []string{
-			"goweb/errors/errors_test.go:27",
-			"goweb/errors/errors_test.go:20",
-			"goweb/errors/errors_test.go:14",
-			"goweb/errors/errors_test.go:32",
-		} {
-			attest.True(
-				t,
-				strings.Contains(stackTrace, v),
-				attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace),
-			)
-		}
+			err := hello()
+
+			sterr, ok := err.(*stackError)
+			attest.True(t, ok)
+			attest.Equal(t, sterr.Error(), "error in foo")
+
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				"goweb/errors/errors_test.go:30",
+				"goweb/errors/errors_test.go:23",
+				"goweb/errors/errors_test.go:17",
+				"goweb/errors/errors_test.go:61",
+			} {
+				attest.True(
+					t,
+					strings.Contains(stackTrace, v),
+					attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace),
+				)
+			}
+		})
+
+		t.Run("errors.Wrap", func(t *testing.T) {
+			t.Parallel()
+
+			err := prepFile()
+
+			sterr, ok := err.(*stackError)
+			attest.True(t, ok)
+			attest.True(t, stdErrors.Is(err, os.ErrNotExist))
+
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				"goweb/errors/errors_test.go:45",
+				"goweb/errors/errors_test.go:36",
+				"goweb/errors/errors_test.go:85",
+			} {
+				attest.True(
+					t,
+					strings.Contains(stackTrace, v),
+					attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace),
+				)
+			}
+		})
 	})
 
 	t.Run("formattting", func(t *testing.T) {
+		t.Parallel()
+
 		err := hello()
 
 		attest.Equal(t, fmt.Sprintf("%s", err), "error in foo") //nolint:gocritic
@@ -59,10 +114,10 @@ func TestStackError(t *testing.T) {
 
 		extendedFormatting := fmt.Sprintf("%+v", err)
 		for _, v := range []string{
-			"goweb/errors/errors_test.go:27",
-			"goweb/errors/errors_test.go:20",
-			"goweb/errors/errors_test.go:14",
-			"goweb/errors/errors_test.go:54",
+			"goweb/errors/errors_test.go:30",
+			"goweb/errors/errors_test.go:23",
+			"goweb/errors/errors_test.go:17",
+			"goweb/errors/errors_test.go:109",
 		} {
 			attest.True(
 				t,
@@ -70,5 +125,18 @@ func TestStackError(t *testing.T) {
 				attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting),
 			)
 		}
+	})
+
+	t.Run("errors Is As Unwrap", func(t *testing.T) {
+		t.Parallel()
+
+		err := prepFile()
+		var targetErr *fs.PathError
+
+		_, ok := err.(*stackError)
+		attest.True(t, ok)
+		attest.True(t, stdErrors.Is(err, os.ErrNotExist))
+		attest.NotZero(t, stdErrors.Unwrap(err))
+		attest.True(t, stdErrors.As(err, &targetErr))
 	})
 }

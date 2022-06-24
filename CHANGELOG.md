@@ -15,3 +15,4 @@ Most recent version is listed first.
 - errors: https://github.com/komuw/goweb/commit/2603c06ca1257d75fb170872124b2afd81eb3f3e
 - logger: https://github.com/komuw/goweb/pull/39
 - logging middleware: https://github.com/komuw/goweb/pull/41
+- quality of life improvements: https://github.com/komuw/goweb/pull/45

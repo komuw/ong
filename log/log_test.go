@@ -12,6 +12,7 @@ import (
 	"time"
 
 	stdlibErrors "errors"
+	stdLog "log"
 
 	"github.com/komuw/goweb/errors"
 
@@ -246,6 +247,75 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
+	t.Run("WithImmediate logs immediately", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		msg := "hello world"
+		l := New(context.Background(), w, 2, true).WithImmediate()
+		l.Info(F{"msg": msg})
+
+		attest.True(t, strings.Contains(w.String(), msg))
+	})
+
+	t.Run("interop with stdlibLog", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		msg := "hello world"
+		l := New(context.Background(), w, 2, true)
+		stdLogger := stdLog.New(l, "stdlib", stdLog.Lshortfile)
+		stdLogger.Println(msg)
+
+		attest.True(t, strings.Contains(w.String(), msg))
+	})
+
+	t.Run("get stdlibLog", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		msg := "hey what up?"
+		l := New(context.Background(), w, 2, true)
+		stdLogger := l.StdLogger()
+		stdLogger.Println(msg)
+		fmt.Println(w.String())
+		attest.True(t, strings.Contains(w.String(), msg))
+	})
+
+	t.Run("WithCaller uses correct line", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(context.Background(), w, 2, true)
+			l.WithCaller().WithImmediate().Info(F{"msg": msg})
+			attest.True(t, strings.Contains(w.String(), msg))
+			attest.True(t, strings.Contains(w.String(), "goweb/log/log_test.go:292"))
+		}
+
+		{
+			// for stdlib we disable caller info, since it would otherwise
+			// point to `goweb/log/log.go` as the caller.
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(context.Background(), w, 2, true)
+			l.WithCaller().StdLogger().Println(msg)
+			attest.True(t, strings.Contains(w.String(), msg))
+			attest.False(t, strings.Contains(w.String(), "goweb/log/log_test.go"))
+		}
+
+		{
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(context.Background(), w, 2, true).WithCaller()
+			stdLogger := stdLog.New(l, "stdlib", 0)
+			stdLogger.Println(msg)
+			attest.True(t, strings.Contains(w.String(), msg))
+			attest.False(t, strings.Contains(w.String(), "goweb/log/log_test.go"))
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
@@ -358,7 +428,7 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	))
 }
 
-func newGoWebLogger() logger {
+func newGoWebLogger() Logger {
 	maxMsgs := 50_000
 	return New(
 		context.Background(),

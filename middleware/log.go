@@ -16,7 +16,7 @@ import (
 const logIDKey = string(log.CtxKey)
 
 // Log is a middleware that logs requests/responses.
-func Log(wrappedHandler http.HandlerFunc, logOutput io.Writer, domain string) http.HandlerFunc {
+func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) http.HandlerFunc {
 	// We want different requests to share the same logger backed by the same circular buffere for storing logs.
 	// That way, if someone makes one request and it succeds then they make another one that errors.
 	// When the logs are been flushed for the request that errored, the logs for the request that succeeded will also be flushed.
@@ -72,6 +72,9 @@ func Log(wrappedHandler http.HandlerFunc, logOutput io.Writer, domain string) ht
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
 				"bytes":       lrw.sent,
+			}
+			if gowebErr := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebErr != "" {
+				flds["gowebErr"] = gowebErr
 			}
 
 			if lrw.code >= http.StatusBadRequest {

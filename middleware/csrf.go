@@ -16,7 +16,9 @@ import (
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
 var (
-	errCsrfTokenNotFound = errors.New("csrf token not found/recognized")
+	// errCsrfTokenNotFound is returned when a request using a non-safe http method
+	// either does not supply a csrf token, or the supplied token is not recognized by the server.
+	errCsrfTokenNotFound = errors.New("csrf token not found")
 	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
 	// Image if you had `Csrf(loginHandler, domain)` & `Csrf(cartCheckoutHandler, domain)`, if they didn't share a global store,
 	// a customer navigating from login to checkout would get a errCsrfTokenNotFound error; which is not what we want.
@@ -34,19 +36,17 @@ const (
 	clientCookieHeader = "Cookie"
 	varyHeader         = "Vary"
 
-	// The memory store is reset(for memory efficiency) if either resetDuration OR maxRequestsToReset occurs.
-	tokenMaxAge   = 1 * time.Hour // same max-age as what fiber uses. django seems to use one year.
+	// gorilla/csrf; 12hrs
+	// django: 1yr??
+	// gofiber/fiber; 1hr
+	tokenMaxAge = 12 * time.Hour
+	// The memory store is reset(for memory efficiency) every resetDuration.
 	resetDuration = tokenMaxAge + (7 * time.Minute)
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
-// If maxRequestsToReset <= 0, it is set to a high default value.
-func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int32) http.HandlerFunc {
+func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	start := time.Now()
-	requestsServed := int32(0)
-	if maxRequestsToReset <= 0 {
-		maxRequestsToReset = 10_000_000
-	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -73,10 +73,11 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int
 			if csrfToken == "" || !csrfStore.exists(csrfToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(gowebMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
 				http.Error(
 					w,
 					errCsrfTokenNotFound.Error(),
-					http.StatusBadRequest,
+					http.StatusForbidden,
 				)
 				return
 			}
@@ -94,7 +95,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int
 			csrfToken,
 			domain,
 			tokenMaxAge,
-			true,
+			true, // accessible to javascript
 		)
 
 		// 4. set cookie header
@@ -113,13 +114,11 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string, maxRequestsToReset int
 		csrfStore.set(csrfToken)
 
 		// 8. reset memory to decrease its size.
-		requestsServed = requestsServed + 1
 		now := time.Now()
 		diff := now.Sub(start)
-		if (diff > resetDuration) || (requestsServed > maxRequestsToReset) {
+		if diff > resetDuration {
 			csrfStore.reset()
 			start = now
-			requestsServed = 0
 		}
 
 		wrappedHandler(w, r)
@@ -145,7 +144,7 @@ func GetCsrfToken(c context.Context) string {
 }
 
 // getToken tries to fetch a csrf token from the incoming request r.
-// It tries to fetch from cookies, headers, http-forms in that order.
+// It tries to fetch from cookies, http-forms, headers in that order.
 func getToken(r *http.Request) string {
 	fromCookie := func() string {
 		c, err := r.Cookie(csrfCookieName)
@@ -166,15 +165,17 @@ func getToken(r *http.Request) string {
 		return r.Form.Get(csrfCookieForm)
 	}
 
-	tok := fromCookie()
-	if tok == "" {
-		tok = fromHeader()
+	if tok := fromCookie(); tok != "" {
+		return tok
 	}
-	if tok == "" {
-		tok = fromForm()
+	if tok := fromForm(); tok != "" {
+		return tok
+	}
+	if tok := fromHeader(); tok != "" {
+		return tok
 	}
 
-	return tok
+	return ""
 }
 
 // store persists csrf tokens server-side, in-memory.

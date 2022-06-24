@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/komuw/goweb/log"
 	"github.com/komuw/goweb/middleware"
 )
 
@@ -17,7 +18,6 @@ import (
 type myAPI struct {
 	db     string
 	router *http.ServeMux // some router
-	logger *log.Logger    // some logger, maybe
 }
 
 // Make `myAPI` implement the http.Handler interface(https://golang.org/pkg/net/http/#Handler)
@@ -26,35 +26,34 @@ func (s *myAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
-func (s *myAPI) GetLogger() *log.Logger {
-	if s.logger == nil {
-		s.logger = log.New(os.Stdout, "logger: ", log.Lshortfile)
-	}
-	return s.logger
+func (s *myAPI) GetLogger() log.Logger {
+	return log.New(context.Background(), os.Stdout, 1000, false)
 }
 
 // Have one place for all routes.
 // You can even move it to a routes.go file
 func (s *myAPI) Routes() {
 	s.router.HandleFunc("/api/",
-		middleware.Security(s.handleAPI(), "localhost"),
+		middleware.All(s.handleAPI(), middleware.WithOpts("localhost")),
 	)
 	s.router.HandleFunc("/greeting",
 		// you can even have your handler take a `*template.Template` dependency
-		middleware.Security(
+		middleware.All(
 			middleware.BasicAuth(s.handleGreeting(202), "user", "passwd"),
-			"localhost",
+			middleware.WithOpts("localhost"),
 		),
 	)
 	s.router.HandleFunc("/serveDirectory",
-		middleware.Security(
+		middleware.All(
 			middleware.BasicAuth(s.handleFileServer(), "user", "passwd"),
-			"localhost",
+			middleware.WithOpts("localhost"),
 		),
 	)
 
 	s.router.HandleFunc("/check",
-		middleware.Security(s.handleGreeting(200), "localhost"),
+		middleware.All(s.handleGreeting(200),
+			middleware.WithOpts("localhost"),
+		),
 	)
 
 	// etc
@@ -67,7 +66,7 @@ func (s *myAPI) handleFileServer() http.HandlerFunc {
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
 	return func(w http.ResponseWriter, req *http.Request) {
-		s.GetLogger().Println(req.URL.Redacted())
+		s.GetLogger().Info(log.F{"msg": "handleFileServer", "redactedURL": req.URL.Redacted()})
 		realHandler(w, req)
 	}
 }
@@ -89,7 +88,8 @@ func (s *myAPI) handleAPI() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// intialize somethings only once for perf
 		once.Do(func() {
-			s.GetLogger().Println("called only once during the first request")
+			s.GetLogger().Info(log.F{"msg": "called only once during the first request"})
+
 			serverStart = time.Now()
 		})
 
@@ -111,7 +111,7 @@ func (s *myAPI) handleGreeting(code int) http.HandlerFunc {
 		// use code, which is a dependency specific to this handler
 
 		nonce := middleware.GetCspNonce(r.Context())
-		s.GetLogger().Println("\n\t handleGreeting, nonce: ", nonce)
+		s.GetLogger().Info(log.F{"msg": "handleGreeting", "nonce": nonce})
 
 		w.WriteHeader(code)
 	}

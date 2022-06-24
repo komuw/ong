@@ -130,6 +130,12 @@ func GetCspNonce(c context.Context) string {
 }
 
 func getCsp(domain, nonce string) string {
+	// content is only permitted from:
+	// - the document's origin(and subdomains)
+	// - images may load from anywhere
+	// - media is allowed from domain(and its subdomains)
+	// - executable scripts is only allowed from self(& subdomains).
+	// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
 	return fmt.Sprintf(`
 default-src 'self' %s *.%s;
 img-src *;

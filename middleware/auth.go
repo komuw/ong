@@ -10,7 +10,9 @@ func BasicAuth(wrappedHandler http.HandlerFunc, user, passwd string) http.Handle
 	const realm = "enter username and password"
 
 	e := func(w http.ResponseWriter) {
-		w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+		errMsg := `Basic realm="` + realm + `"`
+		w.Header().Set("WWW-Authenticate", errMsg)
+		w.Header().Set(gowebMiddlewareErrorHeader, errMsg)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	}
 
