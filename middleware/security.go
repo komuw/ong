@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/rs/xid"
 )
 
 type cspContextKey string
@@ -53,7 +51,7 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		// <script nonce="2726c7f26c">
 		//   var inline = 1;
 		// </script>
-		nonce := xid.New().String()
+		nonce := getRandom()
 		r = r.WithContext(context.WithValue(ctx, cspCtxKey, nonce))
 		w.Header().Set(
 			cspHeader,

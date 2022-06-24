@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/komuw/goweb/cookie"
-	"github.com/rs/xid"
 )
 
 // Most of the code here is insipired by(or taken from):
@@ -85,7 +84,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 
 		// 2. If csrfToken is still an empty string. generate it.
 		if csrfToken == "" {
-			csrfToken = xid.New().String()
+			csrfToken = getRandom()
 		}
 
 		// 3. create cookie

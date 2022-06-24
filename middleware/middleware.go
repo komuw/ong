@@ -3,10 +3,14 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/rs/xid"
 )
 
 // gowebMidllewareErrorHeader is a http header that is set by Goweb
@@ -242,4 +246,16 @@ func delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		wrappedHandler(w, r)
 	}
+}
+
+func getRandom() string {
+	// django appears to use 32 random characters for its csrf token.
+	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
+	const tokenLength = 32
+	b := make([]byte, tokenLength)
+	if _, err := rand.Read(b); err != nil {
+		return xid.New().String() + xid.New().String()
+	}
+
+	return base64.RawURLEncoding.EncodeToString(b)
 }
