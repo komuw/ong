@@ -3,6 +3,7 @@ package errors
 import (
 	stdErrors "errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 	"testing"
@@ -65,10 +66,10 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"goweb/errors/errors_test.go:29",
-				"goweb/errors/errors_test.go:22",
-				"goweb/errors/errors_test.go:16",
-				"goweb/errors/errors_test.go:60",
+				"goweb/errors/errors_test.go:30",
+				"goweb/errors/errors_test.go:23",
+				"goweb/errors/errors_test.go:17",
+				"goweb/errors/errors_test.go:61",
 			} {
 				attest.True(
 					t,
@@ -89,9 +90,9 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"goweb/errors/errors_test.go:44",
-				"goweb/errors/errors_test.go:35",
-				"goweb/errors/errors_test.go:84",
+				"goweb/errors/errors_test.go:45",
+				"goweb/errors/errors_test.go:36",
+				"goweb/errors/errors_test.go:85",
 			} {
 				attest.True(
 					t,
@@ -113,10 +114,10 @@ func TestStackError(t *testing.T) {
 
 		extendedFormatting := fmt.Sprintf("%+v", err)
 		for _, v := range []string{
-			"goweb/errors/errors_test.go:29",
-			"goweb/errors/errors_test.go:22",
-			"goweb/errors/errors_test.go:16",
-			"goweb/errors/errors_test.go:108",
+			"goweb/errors/errors_test.go:30",
+			"goweb/errors/errors_test.go:23",
+			"goweb/errors/errors_test.go:17",
+			"goweb/errors/errors_test.go:109",
 		} {
 			attest.True(
 				t,
@@ -124,5 +125,18 @@ func TestStackError(t *testing.T) {
 				attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting),
 			)
 		}
+	})
+
+	t.Run("errors Is As Unwrap", func(t *testing.T) {
+		t.Parallel()
+
+		err := prepFile()
+		var targetErr *fs.PathError
+
+		_, ok := err.(*stackError)
+		attest.True(t, ok)
+		attest.True(t, stdErrors.Is(err, os.ErrNotExist))
+		attest.NotZero(t, stdErrors.Unwrap(err))
+		attest.True(t, stdErrors.As(err, &targetErr))
 	})
 }
