@@ -94,6 +94,22 @@ func TestAllMiddleware(t *testing.T) {
 			expectedStatusCode: http.StatusMethodNotAllowed,
 			expectedMsg:        errMsg,
 		},
+
+		// // Put
+		// {
+		// 	name:               "Put middleware http PUT",
+		// 	middleware:         Put,
+		// 	httpMethod:         http.MethodPut,
+		// 	expectedStatusCode: http.StatusOK,
+		// 	expectedMsg:        msg,
+		// },
+		// {
+		// 	name:               "Put middleware http TRACE",
+		// 	middleware:         Put,
+		// 	httpMethod:         http.MethodTrace,
+		// 	expectedStatusCode: http.StatusMethodNotAllowed,
+		// 	expectedMsg:        errMsg,
+		// },
 	}
 
 	csrfToken := ""
