@@ -76,8 +76,27 @@ func TestAllMiddleware(t *testing.T) {
 			expectedMsg:        errMsg,
 		},
 	}
+
+	csrfToken := ""
+	{
+		// non-safe http methods(like POST) require a server-known csrf token;
+		// otherwise it fails with http 403
+		// so here we make a http GET so that we can have a csrf token.
+		o := WithOpts("example.com")
+		wrappedHandler := All(someMiddlewareTestHandler("hey"), o)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+		csrfToken = res.Header.Get(csrfHeader)
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.NotZero(t, csrfToken)
+	}
+
 	for _, tt := range tests {
 		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -86,6 +105,11 @@ func TestAllMiddleware(t *testing.T) {
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(tt.httpMethod, "/someUri", nil)
+			req.AddCookie(
+				&http.Cookie{
+					Name:  csrfCookieName,
+					Value: csrfToken,
+				})
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
