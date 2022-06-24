@@ -95,7 +95,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			csrfToken,
 			domain,
 			tokenMaxAge,
-			true,
+			true, // accessible to javascript
 		)
 
 		// 4. set cookie header
