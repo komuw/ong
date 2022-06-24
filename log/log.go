@@ -157,7 +157,7 @@ func (l Logger) Error(e error, fs ...F) {
 }
 
 // Write implements the io.Writer interface.
-// This is useful to set as a writer for the standard library log.
+// This is useful if you want to set this logger as a writer for the standard library log.
 //
 // usage:
 //   l := log.New(ctx, os.Stdout, 100, true)
