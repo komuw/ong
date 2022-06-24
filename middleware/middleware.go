@@ -195,7 +195,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 func Put(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
-		head(wrappedHandler),
+		put(wrappedHandler),
 		o,
 	)
 }
@@ -221,7 +221,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 func Delete(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
-		head(wrappedHandler),
+		delete(wrappedHandler),
 		o,
 	)
 }
