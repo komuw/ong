@@ -366,7 +366,7 @@ func TestCsrf(t *testing.T) {
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
 
-		attest.Equal(t, res.StatusCode, http.StatusBadRequest)
+		attest.Equal(t, res.StatusCode, http.StatusForbidden)
 		attest.Equal(t, string(rb), errCsrfTokenNotFound.Error()+"\n")
 		attest.Zero(t, res.Header.Get(tokenHeader))
 		attest.Equal(t, len(res.Cookies()), 0)

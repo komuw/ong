@@ -77,7 +77,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 				http.Error(
 					w,
 					errCsrfTokenNotFound.Error(),
-					http.StatusBadRequest,
+					http.StatusForbidden,
 				)
 				return
 			}
