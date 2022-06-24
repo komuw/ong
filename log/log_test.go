@@ -282,6 +282,40 @@ func TestLogger(t *testing.T) {
 		attest.True(t, strings.Contains(w.String(), msg))
 	})
 
+	t.Run("WithCaller uses correct line", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(context.Background(), w, 2, true)
+			l.WithCaller().WithImmediate().Info(F{"msg": msg})
+			attest.True(t, strings.Contains(w.String(), msg))
+			attest.True(t, strings.Contains(w.String(), "goweb/log/log_test.go:292"))
+		}
+
+		{
+			// for stdlib we disable caller info, since it would otherwise
+			// point to `goweb/log/log.go` as the caller.
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(context.Background(), w, 2, true)
+			l.WithCaller().StdLogger().Println(msg)
+			attest.True(t, strings.Contains(w.String(), msg))
+			attest.False(t, strings.Contains(w.String(), "goweb/log/log_test.go"))
+		}
+
+		{
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(context.Background(), w, 2, true).WithCaller()
+			stdLogger := stdLog.New(l, "stdlib", 0)
+			stdLogger.Println(msg)
+			attest.True(t, strings.Contains(w.String(), msg))
+			attest.False(t, strings.Contains(w.String(), "goweb/log/log_test.go"))
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
