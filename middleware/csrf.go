@@ -144,7 +144,7 @@ func GetCsrfToken(c context.Context) string {
 }
 
 // getToken tries to fetch a csrf token from the incoming request r.
-// It tries to fetch from cookies, headers, http-forms in that order.
+// It tries to fetch from cookies, http-forms, headers in that order.
 func getToken(r *http.Request) string {
 	fromCookie := func() string {
 		c, err := r.Cookie(csrfCookieName)
@@ -165,15 +165,17 @@ func getToken(r *http.Request) string {
 		return r.Form.Get(csrfCookieForm)
 	}
 
-	tok := fromCookie()
-	if tok == "" {
-		tok = fromHeader()
+	if tok := fromCookie(); tok != "" {
+		return tok
 	}
-	if tok == "" {
-		tok = fromForm()
+	if tok := fromForm(); tok != "" {
+		return tok
+	}
+	if tok := fromHeader(); tok != "" {
+		return tok
 	}
 
-	return tok
+	return ""
 }
 
 // store persists csrf tokens server-side, in-memory.
