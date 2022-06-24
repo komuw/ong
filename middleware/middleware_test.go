@@ -31,6 +31,7 @@ func TestAllMiddleware(t *testing.T) {
 		expectedStatusCode int
 		expectedMsg        string
 	}{
+		// All
 		{
 			name:               "All middleware http GET",
 			middleware:         All,
@@ -46,6 +47,7 @@ func TestAllMiddleware(t *testing.T) {
 			expectedMsg:        msg,
 		},
 
+		// Get
 		{
 			name:               "Get middleware http GET",
 			middleware:         Get,
@@ -61,16 +63,33 @@ func TestAllMiddleware(t *testing.T) {
 			expectedMsg:        errMsg,
 		},
 
+		// Post
 		{
-			name:               "POST middleware http POST",
+			name:               "Post middleware http POST",
 			middleware:         Post,
 			httpMethod:         http.MethodPost,
 			expectedStatusCode: http.StatusOK,
 			expectedMsg:        msg,
 		},
 		{
-			name:               "POST middleware http TRACE",
+			name:               "Post middleware http TRACE",
 			middleware:         Post,
+			httpMethod:         http.MethodTrace,
+			expectedStatusCode: http.StatusMethodNotAllowed,
+			expectedMsg:        errMsg,
+		},
+
+		// Head
+		{
+			name:               "Head middleware http HEAD",
+			middleware:         Head,
+			httpMethod:         http.MethodHead,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        msg,
+		},
+		{
+			name:               "Head middleware http TRACE",
+			middleware:         Head,
 			httpMethod:         http.MethodTrace,
 			expectedStatusCode: http.StatusMethodNotAllowed,
 			expectedMsg:        errMsg,
