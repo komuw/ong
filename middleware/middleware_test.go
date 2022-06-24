@@ -174,3 +174,30 @@ func TestAllMiddleware(t *testing.T) {
 		})
 	}
 }
+
+func TestServer(t *testing.T) {
+	t.Parallel()
+
+	t.Run("integration with server succeds", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		o := WithOpts("example.com")
+		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
+
+		ts := httptest.NewServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		res, err := http.Get(ts.URL)
+		attest.Ok(t, err)
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
+}

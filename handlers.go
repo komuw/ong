@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,27 +31,38 @@ func (s *myAPI) GetLogger() log.Logger {
 	return log.New(context.Background(), os.Stdout, 1000, false)
 }
 
+func (s *myAPI) addPattern(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	if !strings.HasSuffix(pattern, "/") {
+		// this will make the mux send requests for;
+		//   - localhost:80/check
+		//   - localhost:80/check/
+		// to the same handler.
+		pattern = pattern + "/"
+	}
+	s.router.HandleFunc(pattern, handler)
+}
+
 // Have one place for all routes.
 // You can even move it to a routes.go file
 func (s *myAPI) Routes() {
-	s.router.HandleFunc("/api/",
+	s.addPattern("/api/",
 		middleware.All(s.handleAPI(), middleware.WithOpts("localhost")),
 	)
-	s.router.HandleFunc("/greeting",
+	s.addPattern("/greeting",
 		// you can even have your handler take a `*template.Template` dependency
 		middleware.All(
 			middleware.BasicAuth(s.handleGreeting(202), "user", "passwd"),
 			middleware.WithOpts("localhost"),
 		),
 	)
-	s.router.HandleFunc("/serveDirectory",
+	s.addPattern("/serveDirectory",
 		middleware.All(
 			middleware.BasicAuth(s.handleFileServer(), "user", "passwd"),
 			middleware.WithOpts("localhost"),
 		),
 	)
 
-	s.router.HandleFunc("/check",
+	s.addPattern("/check",
 		middleware.All(s.handleGreeting(200),
 			middleware.WithOpts("localhost"),
 		),
