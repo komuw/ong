@@ -110,6 +110,22 @@ func TestAllMiddleware(t *testing.T) {
 			expectedStatusCode: http.StatusMethodNotAllowed,
 			expectedMsg:        errMsg,
 		},
+
+		// Delete
+		{
+			name:               "Delete middleware http DELETE",
+			middleware:         Delete,
+			httpMethod:         http.MethodDelete,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        msg,
+		},
+		{
+			name:               "Delete middleware http TRACE",
+			middleware:         Delete,
+			httpMethod:         http.MethodTrace,
+			expectedStatusCode: http.StatusMethodNotAllowed,
+			expectedMsg:        errMsg,
+		},
 	}
 
 	csrfToken := ""
