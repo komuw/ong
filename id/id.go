@@ -8,13 +8,8 @@ import (
 	"time"
 )
 
-// New returns a new random string
-func New() string {
-	return Random(16)
-}
-
 /*
-customEncodeURL is like bas64.customEncodeURL except, replace:
+customEncodeURL is like `bas64.customEncodeURL` except we replace:
 	(a) `-_` with `HQ`
 	(b) `0,O,o` with `3,A,q`
 	(c) `U,V,u,v` with `K,X,k,x`
@@ -27,6 +22,11 @@ var customEncodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz38234
 var customEncoding = base64.NewEncoding(customEncodeURL).WithPadding(base64.NoPadding)
 
 var mathRandFromTime = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
+
+// New returns a new random string
+func New() string {
+	return Random(16)
+}
 
 // Random generates a random string of size n.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
