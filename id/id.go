@@ -1,4 +1,4 @@
-// Package id is a unique id generator library
+// Package id is a unique id generator
 package id
 
 import (
