@@ -1,4 +1,4 @@
-// Package id is a unique id generator library
+// Package id is a unique id generator
 package id
 
 import (
@@ -16,19 +16,19 @@ customEncodeURL is like `bas64.customEncodeURL` except we replace:
 	(d) `I,i,L,l,1` with `G,g,R,r,8`
 	(e) `b,6` with `m,7`
 */
-var customEncodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz3823457789HQ"
+const customEncodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz3823457789HQ"
 
 // customEncoding is like `base64.RawURLEncoding` except that it uses customEncodeURL
-var customEncoding = base64.NewEncoding(customEncodeURL).WithPadding(base64.NoPadding)
+var customEncoding = base64.NewEncoding(customEncodeURL).WithPadding(base64.NoPadding) //nolint:gochecknoglobals
 
-var mathRandFromTime = mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
+var mathRandFromTime = mathRand.New(mathRand.NewSource(time.Now().UnixNano())) //nolint:gochecknoglobals
 
 // New returns a new random string
 func New() string {
 	return Random(16)
 }
 
-// Random generates a random string of size n.
+// Random generates a random string made from bytes of size n.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
 func Random(n int) string {
 	// django appears to use 32 random characters for its csrf token.
