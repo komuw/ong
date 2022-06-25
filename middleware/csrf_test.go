@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
-	"github.com/rs/xid"
+	"github.com/komuw/goweb/id"
 )
 
 func TestStore(t *testing.T) {
@@ -123,7 +123,7 @@ func TestGetToken(t *testing.T) {
 	t.Run("from cookie", func(t *testing.T) {
 		t.Parallel()
 
-		want := xid.New().String()
+		want := id.Random(cspTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
@@ -140,7 +140,7 @@ func TestGetToken(t *testing.T) {
 	t.Run("from header", func(t *testing.T) {
 		t.Parallel()
 
-		want := xid.New().String()
+		want := id.Random(cspTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Set(csrfHeader, want)
 		got := getToken(req)
@@ -150,7 +150,7 @@ func TestGetToken(t *testing.T) {
 	t.Run("from form", func(t *testing.T) {
 		t.Parallel()
 
-		want := xid.New().String()
+		want := id.Random(cspTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		err := req.ParseForm()
 		attest.Ok(t, err)
@@ -162,9 +162,9 @@ func TestGetToken(t *testing.T) {
 	t.Run("cookie takes precedence", func(t *testing.T) {
 		t.Parallel()
 
-		cookieToken := xid.New().String()
-		headerToken := xid.New().String()
-		formToken := xid.New().String()
+		cookieToken := id.Random(cspTokenLength)
+		headerToken := id.Random(cspTokenLength)
+		formToken := id.Random(cspTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
@@ -224,7 +224,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := xid.New().String()
+		reqCsrfTok := id.Random(cspTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
@@ -255,7 +255,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := xid.New().String()
+		reqCsrfTok := id.Random(cspTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 		req.Header.Set(csrfHeader, reqCsrfTok)
@@ -347,7 +347,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := xid.New().String()
+		reqCsrfTok := id.Random(cspTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
@@ -379,7 +379,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := xid.New().String()
+		reqCsrfTok := id.Random(cspTokenLength)
 
 		{
 			// make GET request
@@ -442,6 +442,91 @@ func TestCsrf(t *testing.T) {
 			// (e)
 			attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)))
 			attest.True(t, csrfStore._len() > 0)
+		}
+	})
+
+	t.Run("POST requests with valid token from mutiple tabs", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		reqCsrfTok := id.Random(cspTokenLength)
+
+		{
+			// make GET request
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.Header.Set(csrfHeader, reqCsrfTok)
+			wrappedHandler.ServeHTTP(rec, req)
+			res := rec.Result()
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		{
+			runTestPerTab := func() {
+				// make POST request using same csrf token
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+				req.AddCookie(&http.Cookie{
+					Name:     csrfCookieName,
+					Value:    reqCsrfTok,
+					Path:     "/",
+					HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+					Secure:   true,  // https only.
+					SameSite: http.SameSiteStrictMode,
+				})
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Equal(t, string(rb), msg)
+
+				// assert that:
+				// (a) csrf cookie is set.
+				// (b) cookie header is set.
+				// (c) vary header is updated.
+				// (d) r.context is updated.
+				// (e) memory store is updated.
+
+				// (a)
+				attest.Equal(t, len(res.Cookies()), 1)
+				attest.Equal(t, res.Cookies()[0].Name, csrfCookieName)
+				attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
+
+				// (b)
+				attest.Equal(t, res.Header.Get(csrfHeader), res.Header.Get(tokenHeader))
+
+				// (c)
+				attest.Equal(t, res.Header.Get(varyHeader), clientCookieHeader)
+
+				// (d)
+				attest.NotZero(t, res.Header.Get(tokenHeader))
+
+				// (e)
+				attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)))
+				attest.True(t, csrfStore._len() > 0)
+			}
+
+			wg := &sync.WaitGroup{}
+			for tabNumber := 0; tabNumber <= 5; tabNumber++ {
+				wg.Add(1)
+				go func() {
+					runTestPerTab()
+					wg.Done()
+				}()
+			}
+			wg.Wait()
 		}
 	})
 }

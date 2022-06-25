@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/komuw/goweb/errors"
-	"github.com/rs/xid"
+	"github.com/komuw/goweb/id"
 	"golang.org/x/exp/maps"
 )
 
@@ -250,7 +250,7 @@ func GetId(ctx context.Context) string {
 			}
 		}
 	}
-	return xid.New().String()
+	return id.New()
 }
 
 // circleBuf implements a very simple & naive circular buffer.
