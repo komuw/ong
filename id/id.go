@@ -29,9 +29,6 @@ func New() string {
 // Random generates a random string made from bytes of size n.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
 func Random(n int) string {
-	// django appears to use 32 random characters for its csrf token.
-	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
-
 	b := make([]byte, n)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, n)
