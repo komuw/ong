@@ -21,8 +21,6 @@ const customEncodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz382
 // customEncoding is like `base64.RawURLEncoding` except that it uses customEncodeURL
 var customEncoding = base64.NewEncoding(customEncodeURL).WithPadding(base64.NoPadding) //nolint:gochecknoglobals
 
-var mathRandFromTime = mathRand.New(mathRand.NewSource(time.Now().UnixNano())) //nolint:gochecknoglobals
-
 // New returns a new random string
 func New() string {
 	return Random(16)
@@ -37,6 +35,10 @@ func Random(n int) string {
 	b := make([]byte, n)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, n)
+		mathRandFromTime := mathRand.New(
+			// this codepath is rarely executed so we dont need to put `mathRandFromTime` as a global var.
+			mathRand.NewSource(time.Now().UnixNano()),
+		)
 		_, _ = mathRandFromTime.Read(b) // docs say that it always returns a nil error.
 	}
 
