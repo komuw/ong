@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/komuw/goweb/id"
+
 	"github.com/komuw/goweb/cookie"
 )
 
@@ -41,6 +43,10 @@ const (
 	tokenMaxAge = 12 * time.Hour
 	// The memory store is reset(for memory efficiency) every resetDuration.
 	resetDuration = tokenMaxAge + (7 * time.Minute)
+
+	// django appears to use 32 random characters for its csrf token.
+	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
+	csrfTokenLength = 32
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
@@ -83,9 +89,11 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		}
 
 		// 2. If csrfToken is still an empty string. generate it.
-		if csrfToken == "" {
-			csrfToken = getRandom()
+		if csrfToken != "" {
+			cookie.Delete(w, csrfCookieName, domain)
+			csrfStore.delete(csrfToken)
 		}
+		csrfToken = id.Random(csrfTokenLength)
 
 		// 3. create cookie
 		cookie.Set(
@@ -205,6 +213,12 @@ func (s *store) set(csrfToken string) {
 func (s *store) reset() {
 	s.mu.Lock()
 	s.m = map[string]struct{}{}
+	s.mu.Unlock()
+}
+
+func (s *store) delete(csrfToken string) {
+	s.mu.Lock()
+	delete(s.m, csrfToken)
 	s.mu.Unlock()
 }
 

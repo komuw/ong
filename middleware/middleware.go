@@ -3,14 +3,10 @@
 package middleware
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-
-	"github.com/rs/xid"
 )
 
 // gowebMidllewareErrorHeader is a http header that is set by Goweb
@@ -225,12 +221,13 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 func Delete(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
-		delete(wrappedHandler),
+		deleteH(wrappedHandler),
 		o,
 	)
 }
 
-func delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+// this is not called `delete` since that is a Go builtin func for deleting from maps.
+func deleteH(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http DELETE"
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -246,16 +243,4 @@ func delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		wrappedHandler(w, r)
 	}
-}
-
-func getRandom() string {
-	// django appears to use 32 random characters for its csrf token.
-	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
-	const tokenLength = 32
-	b := make([]byte, tokenLength)
-	if _, err := rand.Read(b); err != nil {
-		return xid.New().String() + xid.New().String()
-	}
-
-	return base64.RawURLEncoding.EncodeToString(b)
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/komuw/goweb/id"
 )
 
 type cspContextKey string
@@ -26,6 +28,8 @@ const (
 	coopHeader     = "Cross-Origin-Opener-Policy"
 	referrerHeader = "Referrer-Policy"
 	stsHeader      = "Strict-Transport-Security"
+
+	cspTokenLength = csrfTokenLength
 )
 
 // Security is a middleware that adds some important HTTP security headers and assigns them sensible default values.
@@ -51,7 +55,7 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		// <script nonce="2726c7f26c">
 		//   var inline = 1;
 		// </script>
-		nonce := getRandom()
+		nonce := id.Random(cspTokenLength)
 		r = r.WithContext(context.WithValue(ctx, cspCtxKey, nonce))
 		w.Header().Set(
 			cspHeader,
