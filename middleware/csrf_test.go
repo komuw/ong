@@ -123,7 +123,7 @@ func TestGetToken(t *testing.T) {
 	t.Run("from cookie", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(cspTokenLength)
+		want := id.Random(csrfTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
@@ -140,7 +140,7 @@ func TestGetToken(t *testing.T) {
 	t.Run("from header", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(cspTokenLength)
+		want := id.Random(csrfTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Set(csrfHeader, want)
 		got := getToken(req)
@@ -150,7 +150,7 @@ func TestGetToken(t *testing.T) {
 	t.Run("from form", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(cspTokenLength)
+		want := id.Random(csrfTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		err := req.ParseForm()
 		attest.Ok(t, err)
@@ -162,9 +162,9 @@ func TestGetToken(t *testing.T) {
 	t.Run("cookie takes precedence", func(t *testing.T) {
 		t.Parallel()
 
-		cookieToken := id.Random(cspTokenLength)
-		headerToken := id.Random(cspTokenLength)
-		formToken := id.Random(cspTokenLength)
+		cookieToken := id.Random(csrfTokenLength)
+		headerToken := id.Random(csrfTokenLength)
+		formToken := id.Random(csrfTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
@@ -224,7 +224,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(cspTokenLength)
+		reqCsrfTok := id.Random(csrfTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
@@ -255,7 +255,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(cspTokenLength)
+		reqCsrfTok := id.Random(csrfTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 		req.Header.Set(csrfHeader, reqCsrfTok)
@@ -347,7 +347,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(cspTokenLength)
+		reqCsrfTok := id.Random(csrfTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
@@ -379,7 +379,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(cspTokenLength)
+		reqCsrfTok := id.Random(csrfTokenLength)
 
 		{
 			// make GET request
@@ -452,7 +452,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(cspTokenLength)
+		reqCsrfTok := id.Random(csrfTokenLength)
 
 		{
 			// make GET request
