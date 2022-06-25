@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/goweb/id"
 	"github.com/komuw/goweb/log"
-	"github.com/rs/xid"
 )
 
 const someLogHandlerHeader = "SomeLogHandlerHeader"
@@ -218,7 +218,7 @@ func TestLogMiddleware(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Log(someLogHandler(successMsg), domain, logOutput)
 
-		someLogID := "hey-some-log-id:" + xid.New().String()
+		someLogID := "hey-some-log-id:" + id.New()
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)

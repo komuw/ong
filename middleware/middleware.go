@@ -221,12 +221,13 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 func Delete(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
-		delete(wrappedHandler),
+		deleteH(wrappedHandler),
 		o,
 	)
 }
 
-func delete(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+// this is not called `delete` since that is a Go builtin func for deleting from maps.
+func deleteH(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http DELETE"
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {

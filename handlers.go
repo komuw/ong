@@ -39,6 +39,9 @@ func (s *myAPI) addPattern(pattern string, handler func(http.ResponseWriter, *ht
 		// to the same handler.
 		pattern = pattern + "/"
 	}
+	if !strings.HasPrefix(pattern, "/") {
+		pattern = "/" + pattern
+	}
 	s.router.HandleFunc(pattern, handler)
 }
 
@@ -62,7 +65,7 @@ func (s *myAPI) Routes() {
 		),
 	)
 
-	s.addPattern("/check",
+	s.addPattern("check",
 		middleware.All(s.handleGreeting(200),
 			middleware.WithOpts("localhost"),
 		),
