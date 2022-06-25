@@ -28,7 +28,7 @@ func New() string {
 	return Random(16)
 }
 
-// Random generates a random string of size n.
+// Random generates a random string made from bytes of size n.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
 func Random(n int) string {
 	// django appears to use 32 random characters for its csrf token.
