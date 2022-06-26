@@ -31,7 +31,7 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 	if len(_hold) < minSampleSize {
 		// the number of requests in the last `samplingPeriod` seconds is less than
 		// is neccessary to make a decision
-		return 0
+		return 0 * time.Millisecond
 	}
 
 	return percentile(_hold, 0.99)
