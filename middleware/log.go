@@ -73,8 +73,8 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 				"durationMS":  time.Since(start).Milliseconds(),
 				"bytes":       lrw.sent,
 			}
-			if gowebErr := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebErr != "" {
-				flds["gowebErr"] = gowebErr
+			if gowebError := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebError != "" {
+				flds["gowebError"] = gowebError
 			}
 
 			if lrw.code >= http.StatusBadRequest {
