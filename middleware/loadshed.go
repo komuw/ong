@@ -41,7 +41,7 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 	for _, lat := range lq {
 		at := time.Unix(lat.at, 0).UTC()
 		elapsed := now.Sub(at)
-		if elapsed < samplingPeriod {
+		if elapsed <= samplingPeriod {
 			_hold = append(_hold, lat)
 		}
 	}

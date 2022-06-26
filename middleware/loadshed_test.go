@@ -180,6 +180,10 @@ func TestLatencyQueue(t *testing.T) {
 			)
 		}
 
-lq.getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int)
+		now := time.Now().UTC()
+		samplingPeriod := 10 * time.Millisecond
+		minSampleSize := 10
+		got := lq.getP99(now, samplingPeriod, minSampleSize)
+		fmt.Println("\n\t got: ", got)
 	})
 }
