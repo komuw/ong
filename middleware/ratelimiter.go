@@ -53,13 +53,13 @@ func percentile(N latencyQueue, percent float64) time.Duration {
 		return N[int(k)].duration
 	}
 
-	d0 := N[int(f)].duration.Seconds() * (c - k)
-	d1 := N[int(c)].duration.Seconds() * (k - f)
+	d0 := float64(N[int(f)].duration.Nanoseconds()) * (c - k)
+	d1 := float64(N[int(c)].duration.Nanoseconds()) * (k - f)
 	d2 := d0 + d1
 
 	fmt.Println("d2: ", d2)
 
-	return time.Duration(d2) * time.Second
+	return time.Duration(d2) * time.Nanosecond
 }
 
 // TODO: with the algorithm we are gong with; this looks like a loadShedder rather than a rateLimiter.
