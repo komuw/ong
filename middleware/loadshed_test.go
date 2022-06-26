@@ -255,4 +255,24 @@ func TestLatencyQueue(t *testing.T) {
 		got := lq.getP99(now, samplingPeriod, minSampleSize)
 		attest.Zero(t, got)
 	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		lq := NewLatencyQueue()
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 20; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				lq.add(1*time.Second, time.Now().UTC())
+				lq.reSize()
+				lq.size()
+				lq.getP99(time.Now().UTC(), 1*time.Second, 3)
+			}()
+		}
+		wg.Wait()
+	})
 }
