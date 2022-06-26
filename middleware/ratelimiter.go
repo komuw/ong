@@ -28,11 +28,11 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	minSampleSize := 10
 	samplingPeriod := 10 * time.Second
 	// The p99 latency(in milliSeconds) at which point we start dropping requests.
-	breach_latency := 3 * time.Second
+	breachLatency := 3 * time.Second
 
 	_ = minSampleSize
 	_ = samplingPeriod
-	_ = breach_latency // TODO: remove this.
+	_ = breachLatency // TODO: remove this.
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		startReq := time.Now().UTC()
