@@ -120,6 +120,38 @@ func TestGetToken(t *testing.T) {
 		attest.Zero(t, tok)
 	})
 
+	t.Run("small token size", func(t *testing.T) {
+		t.Parallel()
+		{
+			want := id.Random(csrfBytesTokenLength)
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.AddCookie(&http.Cookie{
+				Name:     csrfCookieName,
+				Value:    want,
+				Path:     "/",
+				HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+				Secure:   true,  // https only.
+				SameSite: http.SameSiteStrictMode,
+			})
+			tok := getToken(req)
+			attest.Zero(t, tok)
+		}
+		{
+			want := id.Random(csrfBytesTokenLength / 2)
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.AddCookie(&http.Cookie{
+				Name:     csrfCookieName,
+				Value:    want,
+				Path:     "/",
+				HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+				Secure:   true,  // https only.
+				SameSite: http.SameSiteStrictMode,
+			})
+			tok := getToken(req)
+			attest.Zero(t, tok)
+		}
+	})
+
 	t.Run("from cookie", func(t *testing.T) {
 		t.Parallel()
 
