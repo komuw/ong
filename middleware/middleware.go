@@ -77,19 +77,21 @@ func allDefaultMiddlewares(
 
 	return Panic(
 		Log(
-			Security(
-				Cors(
-					Csrf(
-						Gzip(
-							wrappedHandler,
+			LoadShedder(
+				Security(
+					Cors(
+						Csrf(
+							Gzip(
+								wrappedHandler,
+							),
+							domain,
 						),
-						domain,
+						allowedOrigins,
+						allowedMethods,
+						allowedHeaders,
 					),
-					allowedOrigins,
-					allowedMethods,
-					allowedHeaders,
+					domain,
 				),
-				domain,
 			),
 			domain,
 			logOutput,
