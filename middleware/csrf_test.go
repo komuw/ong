@@ -123,7 +123,7 @@ func TestGetToken(t *testing.T) {
 	t.Run("from cookie", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(csrfBytesTokenLength)
+		want := id.Random(2 * csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
@@ -134,37 +134,37 @@ func TestGetToken(t *testing.T) {
 			SameSite: http.SameSiteStrictMode,
 		})
 		got := getToken(req)
-		attest.Equal(t, got, want)
+		attest.Equal(t, got, want[csrfStringTokenlength:])
 	})
 
 	t.Run("from header", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(csrfBytesTokenLength)
+		want := id.Random(2 * csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Set(csrfHeader, want)
 		got := getToken(req)
-		attest.Equal(t, got, want)
+		attest.Equal(t, got, want[csrfStringTokenlength:])
 	})
 
 	t.Run("from form", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(csrfBytesTokenLength)
+		want := id.Random(2 * csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		err := req.ParseForm()
 		attest.Ok(t, err)
 		req.Form.Add(csrfCookieForm, want)
 		got := getToken(req)
-		attest.Equal(t, got, want)
+		attest.Equal(t, got, want[csrfStringTokenlength:])
 	})
 
 	t.Run("cookie takes precedence", func(t *testing.T) {
 		t.Parallel()
 
-		cookieToken := id.Random(csrfBytesTokenLength)
-		headerToken := id.Random(csrfBytesTokenLength)
-		formToken := id.Random(csrfBytesTokenLength)
+		cookieToken := id.Random(2 * csrfBytesTokenLength)
+		headerToken := id.Random(2 * csrfBytesTokenLength)
+		formToken := id.Random(2 * csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
@@ -180,7 +180,7 @@ func TestGetToken(t *testing.T) {
 		req.Form.Add(csrfCookieForm, formToken)
 
 		got := getToken(req)
-		attest.Equal(t, got, cookieToken)
+		attest.Equal(t, got, cookieToken[csrfStringTokenlength:])
 	})
 }
 
