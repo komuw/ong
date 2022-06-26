@@ -45,6 +45,8 @@ func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFun
 				} else {
 					logger.Error(nil, flds)
 				}
+
+				w.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
 			}
 		}()
 

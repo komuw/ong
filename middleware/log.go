@@ -83,6 +83,8 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 			} else {
 				logger.Info(flds)
 			}
+
+			lrw.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
 		}()
 
 		wrappedHandler(lrw, r)
