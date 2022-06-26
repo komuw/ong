@@ -89,11 +89,9 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		}
 
 		// 2. If csrfToken is still an empty string. generate it.
-		if csrfToken != "" {
-			cookie.Delete(w, csrfCookieName, domain)
-			csrfStore.delete(csrfToken)
+		if csrfToken == "" {
+			csrfToken = id.Random(csrfTokenLength)
 		}
-		csrfToken = id.Random(csrfTokenLength)
 
 		// 3. create cookie
 		cookie.Set(
@@ -213,12 +211,6 @@ func (s *store) set(csrfToken string) {
 func (s *store) reset() {
 	s.mu.Lock()
 	s.m = map[string]struct{}{}
-	s.mu.Unlock()
-}
-
-func (s *store) delete(csrfToken string) {
-	s.mu.Lock()
-	delete(s.m, csrfToken)
 	s.mu.Unlock()
 }
 
