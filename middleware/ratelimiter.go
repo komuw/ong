@@ -38,7 +38,8 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 }
 
 func percentile(N latencyQueue, pctl float64) time.Duration {
-	// This is taken from: https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/limit.py#L253-L280
+	// This is taken from:
+	// https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/limit.py#L253-L280
 	//
 	// todo: use something better like: https://github.com/influxdata/tdigest
 	//
