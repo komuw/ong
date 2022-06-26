@@ -83,6 +83,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	// The p99 latency(in milliSeconds) at which point we start dropping requests.
 	breachLatency := 66 * time.Millisecond
 
+	loadShedCheckStart := time.Now().UTC()
 	return func(w http.ResponseWriter, r *http.Request) {
 		startReq := time.Now().UTC()
 		defer func() {
@@ -91,6 +92,10 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			lq = append(lq, latency{duration: durReq, at: endReq})
 
 			// fmt.Println("\n\t lq: ", lq)
+			if endReq.Sub(loadShedCheckStart) > (4 * samplingPeriod) {
+				// lets reduce the size of latencyQueue
+				size := len(lq)
+			}
 		}()
 
 		// TODO: even if server is overloaded, we should actually let some requests through.

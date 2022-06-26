@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -54,6 +55,45 @@ func TestLoadShedder(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
 		}
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
+		wrappedHandler := LoadShedder(someLoadShedderHandler(msg))
+
+		runhandler := func(i int) {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.Header.Set(loadShedderTestHeader, fmt.Sprint(i))
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			// fmt.Println("\t i: ", i)
+			fmt.Println("res.StatusCode: ", res.StatusCode)
+			fmt.Println("gowebMiddlewareErrorHeader: ", res.Header.Get(gowebMiddlewareErrorHeader))
+			fmt.Println("retryAfterHeader: ", res.Header.Get(retryAfterHeader))
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				runhandler(i)
+			}(rN)
+		}
+		wg.Wait()
 	})
 
 	// t.Run("success", func(t *testing.T) {
