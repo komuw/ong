@@ -171,19 +171,20 @@ func TestPercentile(t *testing.T) {
 }
 
 func TestLatencyQueue(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
+	t.Run("all samples take at < samplingPeriod", func(t *testing.T) {
+		now := time.Now().UTC()
+		samplingPeriod := 10 * time.Millisecond
+		minSampleSize := 10
+
 		lq := latencyQueue{}
 		for i := 1; i <= 1000; i++ {
 			lq = append(
 				lq,
-				newLatency(time.Duration(i)*time.Second, time.Now().UTC()),
+				newLatency(time.Duration(i)*time.Second, now),
 			)
 		}
 
-		now := time.Now().UTC()
-		samplingPeriod := 10 * time.Millisecond
-		minSampleSize := 10
 		got := lq.getP99(now, samplingPeriod, minSampleSize)
-		fmt.Println("\n\t got: ", got)
+		attest.Zero(t, got)
 	})
 }
