@@ -14,7 +14,6 @@ import (
 
 const loadShedderTestHeader = "LoadShedderTestHeader"
 
-// TODO: rename this to loadShedder?
 func someLoadShedderHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lat := r.Header.Get(loadShedderTestHeader)
@@ -27,7 +26,6 @@ func someLoadShedderHandler(msg string) http.HandlerFunc {
 	}
 }
 
-// TODO: rename this to loadShedder?
 func TestLoadShedder(t *testing.T) {
 	t.Parallel()
 
