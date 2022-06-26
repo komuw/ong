@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"fmt"
+	"math"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -16,6 +18,49 @@ func (l latency) String() string {
 }
 
 type latencyQueue []latency
+
+func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
+	_hold := latencyQueue{}
+	for _, lat := range lq {
+		elapsed := now.Sub(lat.at)
+		if elapsed < samplingPeriod {
+			_hold = append(_hold, lat)
+		}
+	}
+
+	if len(_hold) < minSampleSize {
+		// the number of requests in the last `samplingPeriod` seconds is less than
+		// is neccessary to make a decision
+		return 0
+	}
+
+	return percentile(_hold, 0.99)
+}
+
+func percentile(N latencyQueue, percent float64) time.Duration {
+	// This is taken from: https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/limit.py#L253-L280
+	//
+	// todo: use something better like: https://github.com/influxdata/tdigest
+	sort.Slice(N, func(i, j int) bool {
+		return N[i].duration < N[j].duration
+	})
+
+	k := float64((len(N) - 1)) * percent
+	f := math.Floor(k)
+	c := math.Ceil(k)
+
+	if f == c {
+		return N[int(k)].duration
+	}
+
+	d0 := N[int(f)].duration.Seconds() * (c - k)
+	d1 := N[int(c)].duration.Seconds() * (k - f)
+	d2 := d0 + d1
+
+	fmt.Println("d2: ", d2)
+
+	return time.Duration(d2) * time.Second
+}
 
 // TODO: with the algorithm we are gong with; this looks like a loadShedder rather than a rateLimiter.
 
