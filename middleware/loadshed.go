@@ -177,7 +177,7 @@ func percentile(N []latency, pctl float64) time.Duration {
 	f := math.Floor(k)
 	c := math.Ceil(k)
 
-	if f == c {
+	if int(f) == int(c) { // golangci-lint complained about comparing floats.
 		return N[int(k)].duration
 	}
 
