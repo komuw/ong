@@ -64,22 +64,20 @@ func percentile(N latencyQueue, pctl float64) time.Duration {
 	return time.Duration(d2) * time.Nanosecond
 }
 
-// TODO: with the algorithm we are going with; this looks like a loadShedder rather than a rateLimiter.
-
 // TODO: checkout https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/
 
 const (
 	retryAfterHeader = "Retry-After"
 )
 
-// RateLimiter is a middleware that rate limits requests based on the IP address.
-func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+// LoadShedder is a middleware that sheds load based on response latencies.
+func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	lq := latencyQueue{} // TODO, we need to purge this queue regurlary
 
 	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency
 
 	// The minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
-	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without ratelimiting.
+	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without load shedding.
 	minSampleSize := 10
 	samplingPeriod := 2 * time.Second
 	// The p99 latency(in milliSeconds) at which point we start dropping requests.

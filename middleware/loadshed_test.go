@@ -15,7 +15,7 @@ import (
 const loadShedderTestHeader = "LoadShedderTestHeader"
 
 // TODO: rename this to loadShedder?
-func someRateLimiterHandler(msg string) http.HandlerFunc {
+func someLoadShedderHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lat := r.Header.Get(loadShedderTestHeader)
 		latency, err := strconv.Atoi(lat)
@@ -28,14 +28,14 @@ func someRateLimiterHandler(msg string) http.HandlerFunc {
 }
 
 // TODO: rename this to loadShedder?
-func TestRateLimiter(t *testing.T) {
+func TestLoadShedder(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+		wrappedHandler := LoadShedder(someLoadShedderHandler(msg))
 
 		for i := 0; i < 100; i++ {
 			rec := httptest.NewRecorder()
@@ -62,7 +62,7 @@ func TestRateLimiter(t *testing.T) {
 	// 	t.Parallel()
 
 	// 	msg := "hello"
-	// 	wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+	// 	wrappedHandler := LoadShedder(someLoadShedderHandler(msg))
 
 	// 	rec := httptest.NewRecorder()
 	// 	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -82,7 +82,7 @@ func TestRateLimiter(t *testing.T) {
 	// 	t.Parallel()
 
 	// 	msg := "hello"
-	// 	wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+	// 	wrappedHandler := LoadShedder(someLoadShedderHandler(msg))
 
 	// 	rec := httptest.NewRecorder()
 	// 	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
