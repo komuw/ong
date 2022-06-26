@@ -61,12 +61,18 @@ func percentile(N latencyQueue, pctl float64) time.Duration {
 	d1 := float64(N[int(c)].duration.Nanoseconds()) * (k - f)
 	d2 := d0 + d1
 
-	fmt.Println("d2: ", d2)
+	fmt.Println("d2: ", d2) // TODO: remove.
 
 	return time.Duration(d2) * time.Nanosecond
 }
 
-// TODO: with the algorithm we are gong with; this looks like a loadShedder rather than a rateLimiter.
+// TODO: with the algorithm we are going with; this looks like a loadShedder rather than a rateLimiter.
+
+// TODO: checkout https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/
+
+const (
+	retryAfterHeader = "Retry-After"
+)
 
 // RateLimiter is a middleware that rate limits requests based on the IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
@@ -92,6 +98,23 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 			fmt.Println("\n\t lq: ", lq)
 		}()
+
+		// TODO: even if server is overloaded, we should actually let some requests through.
+		// This is so that we can have requests that will update the latencyQueue and let us know when the servers are no longer overloaded.
+
+		if lq.getP99(startReq, samplingPeriod, minSampleSize) > breachLatency {
+			// drop request
+			retryAfter := 15 * time.Minute
+			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
+			w.Header().Set(gowebMiddlewareErrorHeader, err.Error())
+			w.Header().Set(retryAfterHeader, fmt.Sprintf("%f", retryAfter.Seconds())) // header should be in seconds(decimal-integer).
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusServiceUnavailable,
+			)
+			return
+		}
 
 		wrappedHandler(w, r)
 	}
