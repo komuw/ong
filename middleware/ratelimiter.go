@@ -78,16 +78,14 @@ const (
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	lq := latencyQueue{} // TODO, we need to purge this queue regurlary
 
+	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency
+
 	// The minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
 	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without ratelimiting.
 	minSampleSize := 10
 	samplingPeriod := 10 * time.Second
 	// The p99 latency(in milliSeconds) at which point we start dropping requests.
 	breachLatency := 3 * time.Second
-
-	_ = minSampleSize
-	_ = samplingPeriod
-	_ = breachLatency // TODO: remove this.
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		startReq := time.Now().UTC()
