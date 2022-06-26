@@ -18,3 +18,4 @@ Most recent version is listed first.
 - quality of life improvements: https://github.com/komuw/goweb/pull/45
 - add unique id generator: https://github.com/komuw/goweb/pull/50
 - try mitigate breach attack: https://github.com/komuw/goweb/pull/51
+- add load shedding: https://github.com/komuw/goweb/pull/52
