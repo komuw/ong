@@ -118,6 +118,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 					half := size / 2
 					lq = lq[half:] // retain the latest half.
 				}
+				loadShedCheckStart = endReq
 			}
 		}()
 
