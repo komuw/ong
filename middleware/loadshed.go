@@ -41,18 +41,21 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 	for _, lat := range lq {
 		at := time.Unix(lat.at, 0).UTC()
 		elapsed := now.Sub(at)
+		// fmt.Println(at, elapsed, samplingPeriod)
 		if elapsed <= samplingPeriod {
+			// is the elapsed time within the samplingPeriod?
 			_hold = append(_hold, lat)
 		}
 	}
 
+	// fmt.Println(len(_hold))
 	if len(_hold) < minSampleSize {
 		// the number of requests in the last `samplingPeriod` seconds is less than
 		// is neccessary to make a decision
 		return 0 * time.Millisecond
 	}
 
-	return percentile(_hold, 0.99)
+	return percentile(_hold, 99)
 }
 
 func percentile(N latencyQueue, pctl float64) time.Duration {
