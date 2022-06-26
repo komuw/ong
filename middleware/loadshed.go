@@ -46,7 +46,6 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 		}
 	}
 
-	now.Unix()
 	if len(_hold) < minSampleSize {
 		// the number of requests in the last `samplingPeriod` seconds is less than
 		// is neccessary to make a decision
