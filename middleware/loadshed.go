@@ -90,7 +90,7 @@ const (
 
 // LoadShedder is a middleware that sheds load based on response latencies.
 func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	mathRandFromTime := mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
+	mathRandFromTime := mathRand.New(mathRand.NewSource(time.Now().UTC().UnixNano()))
 	lq := latencyQueue{} // TODO, we need to purge this queue regurlary
 
 	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency

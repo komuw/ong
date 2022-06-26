@@ -169,3 +169,17 @@ func TestPercentile(t *testing.T) {
 		}
 	})
 }
+
+func TestLatencyQueue(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		lq := latencyQueue{}
+		for i := 1; i <= 1000; i++ {
+			lq = append(
+				lq,
+				newLatency(time.Duration(i)*time.Second, time.Now().UTC()),
+			)
+		}
+
+lq.getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int)
+	})
+}
