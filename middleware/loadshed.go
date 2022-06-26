@@ -110,7 +110,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			lq = append(lq, newLatency(durReq, endReq))
 
 			// fmt.Println("\n\t lq: ", lq)
-			if endReq.Sub(loadShedCheckStart) > (4 * samplingPeriod) {
+			if endReq.Sub(loadShedCheckStart) > (2 * samplingPeriod) {
 				// lets reduce the size of latencyQueue
 				size := len(lq)
 				if size > 5_000 {
