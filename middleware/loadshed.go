@@ -109,7 +109,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			durReq := endReq.Sub(startReq)
 			lq = append(lq, newLatency(durReq, endReq))
 
-			// fmt.Println("\n\t lq: ", lq)
+			// we do not want to reduce size of `lq` before atleast `samplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > (2 * samplingPeriod) {
 				// lets reduce the size of latencyQueue
 				size := len(lq)
