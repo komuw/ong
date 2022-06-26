@@ -30,7 +30,7 @@ func newLatency(d time.Duration, a time.Time) latency {
 }
 
 func (l latency) String() string {
-	return fmt.Sprintf("{dur: %s, at: %s}", l.duration, l.at)
+	return fmt.Sprintf("{dur: %s, at: %s}", l.duration, time.Unix(l.at, 0).UTC())
 }
 
 type latencyQueue []latency
@@ -113,18 +113,24 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			if endReq.Sub(loadShedCheckStart) > (4 * samplingPeriod) {
 				// lets reduce the size of latencyQueue
 				size := len(lq)
+				if size > 5_000 {
+					// Each `latency` struct is 16bytes. So we can afford to have 5_000 of them at 80KB
+					half := size / 2
+					lq = lq[half:] // retain the latest half.
+				}
 			}
 		}()
 
 		// TODO: even if server is overloaded, we should actually let some requests through.
 		// This is so that we can have requests that will update the latencyQueue and let us know when the servers are no longer overloaded.
 
-		fmt.Println("p99: ", lq.getP99(startReq, samplingPeriod, minSampleSize))
-		if lq.getP99(startReq, samplingPeriod, minSampleSize) > breachLatency {
+		p99 := lq.getP99(startReq, samplingPeriod, minSampleSize)
+		fmt.Println("p99: ", p99)
+		if p99 > breachLatency {
 			// drop request
 			retryAfter := 15 * time.Minute
 			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
-			w.Header().Set(gowebMiddlewareErrorHeader, err.Error())
+			w.Header().Set(gowebMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s", err.Error(), p99))
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(
 				w,
