@@ -139,20 +139,33 @@ func TestLoadShedder(t *testing.T) {
 }
 
 func TestPercentile(t *testing.T) {
-	t.Run("todo", func(t *testing.T) {
-		lq := latencyQueue{
-			latency{duration: 5 * time.Second},
-			latency{duration: 6 * time.Second},
-			latency{duration: 7 * time.Second},
-			latency{duration: 8 * time.Second},
-			latency{duration: 9 * time.Second},
-			latency{duration: 0 * time.Second},
-			latency{duration: 1 * time.Second},
-			latency{duration: 2 * time.Second},
-			latency{duration: 3 * time.Second},
-			latency{duration: 4 * time.Second},
+	t.Run("success", func(t *testing.T) {
+		{
+			lq := latencyQueue{
+				latency{duration: 5 * time.Second},
+				latency{duration: 6 * time.Second},
+				latency{duration: 7 * time.Second},
+				latency{duration: 8 * time.Second},
+				latency{duration: 9 * time.Second},
+				latency{duration: 0 * time.Second},
+				latency{duration: 1 * time.Second},
+				latency{duration: 2 * time.Second},
+				latency{duration: 3 * time.Second},
+				latency{duration: 4 * time.Second},
+			}
+			got := percentile(lq, 25)
+			attest.Equal(t, got, 2250*time.Millisecond) // ie, 2.25seconds
 		}
-		got := percentile(lq, 25)
-		attest.Equal(t, got, 2250*time.Millisecond) // ie, 2.25seconds
+		{
+			lq := latencyQueue{}
+			for i := 1; i <= 1000; i++ {
+				lq = append(
+					lq,
+					newLatency(time.Duration(i)*time.Second, time.Now().UTC()),
+				)
+			}
+			got := percentile(lq, 99)
+			attest.Equal(t, got.Seconds(), 990.01)
+		}
 	})
 }
