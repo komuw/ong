@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"math"
+	mathRand "math/rand"
 	"net/http"
 	"sort"
 	"time"
@@ -90,6 +91,7 @@ const (
 
 // LoadShedder is a middleware that sheds load based on response latencies.
 func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	mathRandFromTime := mathRand.New(mathRand.NewSource(time.Now().UnixNano()))
 	lq := latencyQueue{} // TODO, we need to purge this queue regurlary
 
 	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency
@@ -122,12 +124,14 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			}
 		}()
 
-		// TODO: even if server is overloaded, we should actually let some requests through.
-		// This is so that we can have requests that will update the latencyQueue and let us know when the servers are no longer overloaded.
+		// Even if the server is overloaded, we want to send 1% of the requests through.
+		// These requests act as a probe. If the server eventually recovers,
+		// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
+		sendProbe := mathRandFromTime.Intn(100) == 1
 
 		p99 := lq.getP99(startReq, samplingPeriod, minSampleSize)
 		fmt.Println("p99: ", p99)
-		if p99 > breachLatency {
+		if p99 > breachLatency && !sendProbe {
 			// drop request
 			retryAfter := 15 * time.Minute
 			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
@@ -144,35 +148,3 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		wrappedHandler(w, r)
 	}
 }
-
-// func fetchIP(remoteAddr string) string {
-// 	// the documentation of `http.Request.RemoteAddr` says:
-// 	// RemoteAddr is not filled in by ReadRequest and has no defined format.
-// 	// So we cant rely on it been present, or having a given format.
-// 	// Although, net/http makes a good effort of availing it & in a standard format.
-// 	//
-// 	ipAddr := strings.Split(remoteAddr, ":")
-// 	return ipAddr[0]
-// }
-
-// TODO:
-//
-// func LoadShed(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		start := time.Now()
-
-// 		// check latency from store over the past X minutes.
-// 		// if 99th percentile is greater than configured value,
-// 		// drop the request and set a `Retry-After` http header.
-// 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
-//
-// 		defer func() {
-//          Do not record latency into the store if this response is not coming from the actual target handler.
-//
-// 			latency := time.Since(start).Milliseconds()
-// 			// store latency in store.
-// 		}()
-
-// 		wrappedHandler(w, r)
-// 	}
-// }
