@@ -9,6 +9,72 @@ import (
 	"time"
 )
 
+// TODO: checkout https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/
+
+const (
+	retryAfterHeader = "Retry-After"
+)
+
+// LoadShedder is a middleware that sheds load based on response latencies.
+func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	mathRandFromTime := mathRand.New(mathRand.NewSource(time.Now().UTC().UnixNano()))
+	lq := latencyQueue{} // TODO, we need to purge this queue regurlary
+
+	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency
+
+	// The minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
+	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without load shedding.
+	minSampleSize := 10
+	samplingPeriod := 2 * time.Second
+	// The p99 latency(in milliSeconds) at which point we start dropping requests.
+	breachLatency := 66 * time.Millisecond
+
+	loadShedCheckStart := time.Now().UTC()
+	return func(w http.ResponseWriter, r *http.Request) {
+		startReq := time.Now().UTC()
+		defer func() {
+			endReq := time.Now().UTC()
+			durReq := endReq.Sub(startReq)
+			lq = append(lq, newLatency(durReq, endReq))
+
+			// we do not want to reduce size of `lq` before atleast `samplingPeriod` otherwise `lq.getP99()` will always return zero.
+			if endReq.Sub(loadShedCheckStart) > (2 * samplingPeriod) {
+				// lets reduce the size of latencyQueue
+				size := len(lq)
+				if size > 5_000 {
+					// Each `latency` struct is 16bytes. So we can afford to have 5_000 of them at 80KB
+					half := size / 2
+					lq = lq[half:] // retain the latest half.
+				}
+				loadShedCheckStart = endReq
+			}
+		}()
+
+		// Even if the server is overloaded, we want to send 1% of the requests through.
+		// These requests act as a probe. If the server eventually recovers,
+		// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
+		sendProbe := mathRandFromTime.Intn(100) == 1
+
+		p99 := lq.getP99(startReq, samplingPeriod, minSampleSize)
+		fmt.Println("p99: ", p99)
+		if p99 > breachLatency && !sendProbe {
+			// drop request
+			retryAfter := 15 * time.Minute
+			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
+			w.Header().Set(gowebMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s", err.Error(), p99))
+			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusServiceUnavailable,
+			)
+			return
+		}
+
+		wrappedHandler(w, r)
+	}
+}
+
 /*
 unsafe.Sizeof(latency{}) == 16bytes.
 
@@ -87,70 +153,4 @@ func percentile(N latencyQueue, pctl float64) time.Duration {
 	d2 := d0 + d1
 
 	return time.Duration(d2) * time.Nanosecond
-}
-
-// TODO: checkout https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/
-
-const (
-	retryAfterHeader = "Retry-After"
-)
-
-// LoadShedder is a middleware that sheds load based on response latencies.
-func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	mathRandFromTime := mathRand.New(mathRand.NewSource(time.Now().UTC().UnixNano()))
-	lq := latencyQueue{} // TODO, we need to purge this queue regurlary
-
-	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency
-
-	// The minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
-	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without load shedding.
-	minSampleSize := 10
-	samplingPeriod := 2 * time.Second
-	// The p99 latency(in milliSeconds) at which point we start dropping requests.
-	breachLatency := 66 * time.Millisecond
-
-	loadShedCheckStart := time.Now().UTC()
-	return func(w http.ResponseWriter, r *http.Request) {
-		startReq := time.Now().UTC()
-		defer func() {
-			endReq := time.Now().UTC()
-			durReq := endReq.Sub(startReq)
-			lq = append(lq, newLatency(durReq, endReq))
-
-			// we do not want to reduce size of `lq` before atleast `samplingPeriod` otherwise `lq.getP99()` will always return zero.
-			if endReq.Sub(loadShedCheckStart) > (2 * samplingPeriod) {
-				// lets reduce the size of latencyQueue
-				size := len(lq)
-				if size > 5_000 {
-					// Each `latency` struct is 16bytes. So we can afford to have 5_000 of them at 80KB
-					half := size / 2
-					lq = lq[half:] // retain the latest half.
-				}
-				loadShedCheckStart = endReq
-			}
-		}()
-
-		// Even if the server is overloaded, we want to send 1% of the requests through.
-		// These requests act as a probe. If the server eventually recovers,
-		// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
-		sendProbe := mathRandFromTime.Intn(100) == 1
-
-		p99 := lq.getP99(startReq, samplingPeriod, minSampleSize)
-		fmt.Println("p99: ", p99)
-		if p99 > breachLatency && !sendProbe {
-			// drop request
-			retryAfter := 15 * time.Minute
-			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
-			w.Header().Set(gowebMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s", err.Error(), p99))
-			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
-			http.Error(
-				w,
-				err.Error(),
-				http.StatusServiceUnavailable,
-			)
-			return
-		}
-
-		wrappedHandler(w, r)
-	}
 }
