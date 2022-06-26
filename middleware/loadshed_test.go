@@ -27,6 +27,8 @@ func someLoadShedderHandler(msg string) http.HandlerFunc {
 	}
 }
 
+// TODO: add a test for an actual case where load testing is triggered.
+
 func TestLoadShedder(t *testing.T) {
 	t.Parallel()
 
@@ -48,10 +50,6 @@ func TestLoadShedder(t *testing.T) {
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
 
-			// fmt.Println("\t i: ", i)
-			fmt.Println("res.StatusCode: ", res.StatusCode)
-			fmt.Println("gowebMiddlewareErrorHeader: ", res.Header.Get(gowebMiddlewareErrorHeader))
-			fmt.Println("retryAfterHeader: ", res.Header.Get(retryAfterHeader))
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
 		}
@@ -224,7 +222,8 @@ func TestLatencyQueue(t *testing.T) {
 
 				lq.add(1*time.Second, time.Now().UTC())
 				lq.reSize()
-				lq.size()
+				// we can't call lq.size() here since it is not synced.
+				// but it is only called by lq.reSize() so it is already tested.
 				lq.getP99(time.Now().UTC(), 1*time.Second, 3)
 			}()
 		}
