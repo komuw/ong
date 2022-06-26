@@ -6,6 +6,7 @@ import (
 	mathRand "math/rand"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -18,10 +19,10 @@ const (
 // LoadShedder is a middleware that sheds load based on response latencies.
 func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	mathRandFromTime := mathRand.New(mathRand.NewSource(time.Now().UTC().UnixNano()))
-	lq := latencyQueue{} // TODO, we need to purge this queue regurlary
+	lq := NewLatencyQueue()
 
 	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency
-
+	//
 	// The minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
 	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without load shedding.
 	minSampleSize := 10
@@ -35,17 +36,12 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		defer func() {
 			endReq := time.Now().UTC()
 			durReq := endReq.Sub(startReq)
-			lq = append(lq, newLatency(durReq, endReq))
+			lq.add(durReq, endReq)
 
 			// we do not want to reduce size of `lq` before atleast `samplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > (2 * samplingPeriod) {
 				// lets reduce the size of latencyQueue
-				size := len(lq)
-				if size > 5_000 {
-					// Each `latency` struct is 16bytes. So we can afford to have 5_000 of them at 80KB
-					half := size / 2
-					lq = lq[half:] // retain the latest half.
-				}
+				lq.reSize()
 				loadShedCheckStart = endReq
 			}
 		}()
@@ -100,11 +96,37 @@ func (l latency) String() string {
 	return fmt.Sprintf("{dur: %s, at: %s}", l.duration, time.Unix(l.at, 0).UTC())
 }
 
-type latencyQueue []latency
+type latencyQueue struct {
+	mu sync.Mutex // protects sl
+	sl []latency
+}
 
-func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
-	_hold := latencyQueue{}
-	for _, lat := range lq {
+func NewLatencyQueue() *latencyQueue {
+	return &latencyQueue{
+		sl: []latency{},
+	}
+}
+
+func (lq *latencyQueue) add(durReq time.Duration, endReq time.Time) {
+	lq.sl = append(lq.sl, newLatency(durReq, endReq))
+}
+
+func (lq *latencyQueue) reSize() {
+	size := lq.size()
+	if size > 5_000 {
+		// Each `latency` struct is 16bytes. So we can afford to have 5_000 of them at 80KB
+		half := size / 2
+		lq.sl = lq.sl[half:] // retain the latest half.
+	}
+}
+
+func (lq *latencyQueue) size() int {
+	return len(lq.sl)
+}
+
+func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
+	_hold := []latency{}
+	for _, lat := range lq.sl {
 		at := time.Unix(lat.at, 0).UTC()
 		elapsed := now.Sub(at)
 		// fmt.Println(at, elapsed, samplingPeriod)
@@ -128,7 +150,7 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 	return percentile(_hold, 99)
 }
 
-func percentile(N latencyQueue, pctl float64) time.Duration {
+func percentile(N []latency, pctl float64) time.Duration {
 	// This is taken from:
 	// https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/limit.py#L253-L280
 	//

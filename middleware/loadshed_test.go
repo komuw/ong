@@ -142,29 +142,31 @@ func TestPercentile(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		{
 			lq := latencyQueue{
-				latency{duration: 5 * time.Second},
-				latency{duration: 6 * time.Second},
-				latency{duration: 7 * time.Second},
-				latency{duration: 8 * time.Second},
-				latency{duration: 9 * time.Second},
-				latency{duration: 0 * time.Second},
-				latency{duration: 1 * time.Second},
-				latency{duration: 2 * time.Second},
-				latency{duration: 3 * time.Second},
-				latency{duration: 4 * time.Second},
+				sl: []latency{
+					{duration: 5 * time.Second},
+					{duration: 6 * time.Second},
+					{duration: 7 * time.Second},
+					{duration: 8 * time.Second},
+					{duration: 9 * time.Second},
+					{duration: 0 * time.Second},
+					{duration: 1 * time.Second},
+					{duration: 2 * time.Second},
+					{duration: 3 * time.Second},
+					{duration: 4 * time.Second},
+				},
 			}
-			got := percentile(lq, 25)
+			got := percentile(lq.sl, 25)
 			attest.Equal(t, got, 2250*time.Millisecond) // ie, 2.25seconds
 		}
 		{
 			lq := latencyQueue{}
 			for i := 1; i <= 1000; i++ {
-				lq = append(
-					lq,
+				lq.sl = append(
+					lq.sl,
 					newLatency(time.Duration(i)*time.Second, time.Now().UTC()),
 				)
 			}
-			got := percentile(lq, 99)
+			got := percentile(lq.sl, 99)
 			attest.Equal(t, got.Seconds(), 990.01)
 		}
 	})
@@ -178,8 +180,8 @@ func TestLatencyQueue(t *testing.T) {
 
 		lq := latencyQueue{}
 		for i := 1; i <= 1000; i++ {
-			lq = append(
-				lq,
+			lq.sl = append(
+				lq.sl,
 				newLatency(time.Duration(i)*time.Second, now),
 			)
 		}
@@ -195,8 +197,8 @@ func TestLatencyQueue(t *testing.T) {
 
 		lq := latencyQueue{}
 		for i := 1; i <= 1000; i++ {
-			lq = append(
-				lq,
+			lq.sl = append(
+				lq.sl,
 				newLatency(
 					time.Duration(i)*time.Second,
 					// negative so that it is in the past.
@@ -217,8 +219,8 @@ func TestLatencyQueue(t *testing.T) {
 
 		lq := latencyQueue{}
 		for i := 1; i <= (minSampleSize / 2); i++ {
-			lq = append(
-				lq,
+			lq.sl = append(
+				lq.sl,
 				newLatency(
 					time.Duration(i)*time.Second,
 					// negative so that it is in the past.
@@ -239,8 +241,8 @@ func TestLatencyQueue(t *testing.T) {
 
 		lq := latencyQueue{}
 		for i := 1; i <= 1000; i++ {
-			lq = append(
-				lq,
+			lq.sl = append(
+				lq.sl,
 				newLatency(
 					time.Duration(i)*time.Second,
 					// positive so that it is in the future.
