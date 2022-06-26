@@ -278,7 +278,6 @@ func TestLogger(t *testing.T) {
 		l := New(context.Background(), w, 2, true)
 		stdLogger := l.StdLogger()
 		stdLogger.Println(msg)
-		fmt.Println(w.String())
 		attest.True(t, strings.Contains(w.String(), msg))
 	})
 
