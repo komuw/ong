@@ -76,7 +76,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		default:
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
 			actualToken = getToken(r)
-			if actualToken == "" || !csrfStore.exists(actualToken) {
+			if !csrfStore.exists(actualToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
 				w.Header().Set(gowebMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
@@ -223,16 +223,19 @@ func newStore() *store {
 	}
 }
 
-func (s *store) exists(csrfToken string) bool {
+func (s *store) exists(actualToken string) bool {
+	if len(actualToken) < 1 {
+		return false
+	}
 	s.mu.RLock()
-	_, ok := s.m[csrfToken]
+	_, ok := s.m[actualToken]
 	s.mu.RUnlock()
 	return ok
 }
 
-func (s *store) set(csrfToken string) {
+func (s *store) set(actualToken string) {
 	s.mu.Lock()
-	s.m[csrfToken] = struct{}{}
+	s.m[actualToken] = struct{}{}
 	s.mu.Unlock()
 }
 
