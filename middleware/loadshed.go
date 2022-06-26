@@ -21,16 +21,19 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	mathRand.Seed(time.Now().UTC().UnixNano())
 	lq := NewLatencyQueue()
 
-	// TODO: make the following variables configurable(or have good deafult values.); minSampleSize, samplingPeriod, breachLatency
-	//
-	// The minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
-	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without load shedding.
-	minSampleSize := 10
-	samplingPeriod := 2 * time.Second
-	// The p99 latency(in milliSeconds) at which point we start dropping requests.
-	breachLatency := 66 * time.Millisecond
+	// samplingPeriod is the duration over which we will calculate the latency.
+	samplingPeriod := 15 * time.Minute
+	// minSampleSize is the minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
+	// If there were fewer requests(than `minSampleSize`) in the `samplingPeriod`, then we do decide to let things continue without load shedding.
+	minSampleSize := 100
+	// breachLatency is the p99 latency at which point we start dropping requests.
+	breachLatency := 2_000 * time.Millisecond // 2seconds
+
+	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
+	retryAfter := 15 * time.Minute
 
 	loadShedCheckStart := time.Now().UTC()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		startReq := time.Now().UTC()
 		defer func() {
@@ -38,7 +41,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			durReq := endReq.Sub(startReq)
 			lq.add(durReq, endReq)
 
-			// we do not want to reduce size of `lq` before atleast `samplingPeriod` otherwise `lq.getP99()` will always return zero.
+			// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > (2 * samplingPeriod) {
 				// lets reduce the size of latencyQueue
 				lq.reSize()
@@ -46,16 +49,17 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			}
 		}()
 
-		// Even if the server is overloaded, we want to send 1% of the requests through.
-		// These requests act as a probe. If the server eventually recovers,
-		// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
-		sendProbe := mathRand.Intn(100) == 1
+		sendProbe := false
+		{
+			// Even if the server is overloaded, we want to send a percentage of the requests through.
+			// These requests act as a probe. If the server eventually recovers,
+			// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
+			sendProbe = mathRand.Intn(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
+		}
 
 		p99 := lq.getP99(startReq, samplingPeriod, minSampleSize)
-		fmt.Println("p99: ", p99)
 		if p99 > breachLatency && !sendProbe {
 			// drop request
-			retryAfter := 15 * time.Minute
 			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
 			w.Header().Set(gowebMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s", err.Error(), p99))
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
@@ -74,7 +78,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 /*
 unsafe.Sizeof(latency{}) == 16bytes.
 
-Note that if `at`` was a `time.Time` `unsafe.Sizeof` would report 32bytes.
+Note that if `latency.at` was a `time.Time` `unsafe.Sizeof` would report 32bytes.
 However, this wouldn't be the true size since `unsafe.Sizeof` does not 'chase' pointers and time.Time has some.
 */
 type latency struct {
@@ -119,7 +123,7 @@ func (lq *latencyQueue) reSize() {
 
 	size := lq.size()
 	if size > 5_000 {
-		// Each `latency` struct is 16bytes. So we can afford to have 5_000 of them at 80KB
+		// Each `latency` struct is 16bytes. So we can afford to have 5_000(80KB)
 		half := size / 2
 		lq.sl = lq.sl[half:] // retain the latest half.
 	}
@@ -138,7 +142,6 @@ func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minS
 	for _, lat := range lq.sl {
 		at := time.Unix(lat.at, 0).UTC()
 		elapsed := now.Sub(at)
-		// fmt.Println(at, elapsed, samplingPeriod)
 		if elapsed < 0 {
 			// `at` is in the future. Ignore those values
 			break
@@ -149,7 +152,6 @@ func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minS
 		}
 	}
 
-	// fmt.Println(len(_hold))
 	if len(_hold) < minSampleSize {
 		// the number of requests in the last `samplingPeriod` seconds is less than
 		// is neccessary to make a decision
