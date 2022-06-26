@@ -42,6 +42,10 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 		at := time.Unix(lat.at, 0).UTC()
 		elapsed := now.Sub(at)
 		// fmt.Println(at, elapsed, samplingPeriod)
+		if elapsed < 0 {
+			// `at` is in the future. Ignore those values
+			break
+		}
 		if elapsed <= samplingPeriod {
 			// is the elapsed time within the samplingPeriod?
 			_hold = append(_hold, lat)
