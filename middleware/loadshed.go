@@ -108,10 +108,15 @@ func NewLatencyQueue() *latencyQueue {
 }
 
 func (lq *latencyQueue) add(durReq time.Duration, endReq time.Time) {
+	lq.mu.Lock()
 	lq.sl = append(lq.sl, newLatency(durReq, endReq))
+	lq.mu.Unlock()
 }
 
 func (lq *latencyQueue) reSize() {
+	lq.mu.Lock()
+	defer lq.mu.Unlock()
+
 	size := lq.size()
 	if size > 5_000 {
 		// Each `latency` struct is 16bytes. So we can afford to have 5_000 of them at 80KB
@@ -121,10 +126,14 @@ func (lq *latencyQueue) reSize() {
 }
 
 func (lq *latencyQueue) size() int {
+	// we dont need to lock here since all calls of this are in `reSize()`
 	return len(lq.sl)
 }
 
 func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
+	lq.mu.Lock()
+	defer lq.mu.Unlock()
+
 	_hold := []latency{}
 	for _, lat := range lq.sl {
 		at := time.Unix(lat.at, 0).UTC()
