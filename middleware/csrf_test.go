@@ -52,8 +52,8 @@ func TestStore(t *testing.T) {
 		for _, tok := range tokens {
 			wg.Add(1)
 			go func(t string) {
+				defer wg.Done()
 				store.set(t)
-				wg.Done()
 			}(tok)
 		}
 		wg.Wait()
@@ -77,8 +77,8 @@ func TestStore(t *testing.T) {
 		for _, tok := range tokens {
 			wg.Add(1)
 			go func(t string) {
+				defer wg.Done()
 				store.set(t)
-				wg.Done()
 			}(tok)
 		}
 		wg.Wait()
@@ -96,8 +96,8 @@ func TestStore(t *testing.T) {
 		for _, tok := range tokens {
 			wg.Add(1)
 			go func(t string) {
+				defer wg.Done()
 				store.set(t)
-				wg.Done()
 			}(tok)
 		}
 		wg.Wait()

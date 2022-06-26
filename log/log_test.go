@@ -355,8 +355,8 @@ func TestLogger(t *testing.T) {
 		for _, tok := range tokens {
 			wg.Add(1)
 			go func(t string) {
+				defer wg.Done()
 				l.Info(F{"four": "four" + t})
-				wg.Done()
 			}(tok)
 		}
 		wg.Wait()
