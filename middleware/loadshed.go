@@ -8,9 +8,25 @@ import (
 	"time"
 )
 
+/*
+unsafe.Sizeof(latency{}) == 16bytes.
+
+Note that if `at`` was a `time.Time` `unsafe.Sizeof` would report 32bytes.
+However, this wouldn't be the true size since `unsafe.Sizeof` does not 'chase' pointers and time.Time has some.
+*/
 type latency struct {
+	// duration is how long the operation took(ie latency)
 	duration time.Duration
-	at       time.Time
+	// at is the time at which this operation took place.
+	// We could have ideally used a `time.Time` as its type; but we wanted the latency struct to be minimal in size.
+	at int64
+}
+
+func newLatency(d time.Duration, a time.Time) latency {
+	return latency{
+		duration: d,
+		at:       a.Unix(),
+	}
 }
 
 func (l latency) String() string {
@@ -22,12 +38,14 @@ type latencyQueue []latency
 func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
 	_hold := latencyQueue{}
 	for _, lat := range lq {
-		elapsed := now.Sub(lat.at)
+		at := time.Unix(lat.at, 0).UTC()
+		elapsed := now.Sub(at)
 		if elapsed < samplingPeriod {
 			_hold = append(_hold, lat)
 		}
 	}
 
+	now.Unix()
 	if len(_hold) < minSampleSize {
 		// the number of requests in the last `samplingPeriod` seconds is less than
 		// is neccessary to make a decision
@@ -89,7 +107,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		defer func() {
 			endReq := time.Now().UTC()
 			durReq := endReq.Sub(startReq)
-			lq = append(lq, latency{duration: durReq, at: endReq})
+			lq = append(lq, newLatency(durReq, endReq))
 
 			// fmt.Println("\n\t lq: ", lq)
 			if endReq.Sub(loadShedCheckStart) > (4 * samplingPeriod) {
