@@ -21,8 +21,6 @@ const customEncodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz382
 // customEncoding is like `base64.RawURLEncoding` except that it uses customEncodeURL
 var customEncoding = base64.NewEncoding(customEncodeURL).WithPadding(base64.NoPadding) //nolint:gochecknoglobals
 
-var mathRandFromTime = mathRand.New(mathRand.NewSource(time.Now().UnixNano())) //nolint:gochecknoglobals
-
 // New returns a new random string
 func New() string {
 	return Random(16)
@@ -31,12 +29,13 @@ func New() string {
 // Random generates a random string made from bytes of size n.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
 func Random(n int) string {
-	// django appears to use 32 random characters for its csrf token.
-	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
-
 	b := make([]byte, n)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, n)
+		mathRandFromTime := mathRand.New(
+			// this codepath is rarely executed so we dont need to put `mathRandFromTime` as a global var.
+			mathRand.NewSource(time.Now().UnixNano()),
+		)
 		_, _ = mathRandFromTime.Read(b) // docs say that it always returns a nil error.
 	}
 

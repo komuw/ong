@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/komuw/goweb/cookie"
 	"github.com/komuw/goweb/id"
+
+	"github.com/komuw/goweb/cookie"
 )
 
 // Most of the code here is insipired by(or taken from):
@@ -45,7 +46,9 @@ const (
 
 	// django appears to use 32 random characters for its csrf token.
 	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
-	csrfTokenLength = 32
+	csrfBytesTokenLength = 32
+	// we call `id.Random()` with `csrfBytesTokenLength` and it returns a string of `csrfStringTokenlength`
+	csrfStringTokenlength = 43
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
@@ -58,23 +61,22 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		// - https://github.com/gofiber/fiber/blob/v2.34.1/middleware/csrf/csrf.go
 
 		// 1. check http method.
-		//     - if it is a 'safe' method like GET, try and get csrfToken from request.
-		//     - if it is not a 'safe' method, try and get csrfToken from header/cookies/httpForm
+		//     - if it is a 'safe' method like GET, try and get `actualToken` from request.
+		//     - if it is not a 'safe' method, try and get `actualToken` from header/cookies/httpForm
 		//        - take the found token and try to get it from memory store.
 		//            - if not found in memory store, delete the cookie & return an error.
 
 		ctx := r.Context()
 
-		csrfToken := ""
+		actualToken := ""
 		switch r.Method {
 		// safe methods under rfc7231: https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.1
 		case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
-			csrfToken = getToken(r)
+			actualToken = getToken(r)
 		default:
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
-			csrfToken = getToken(r)
-
-			if csrfToken == "" || !csrfStore.exists(csrfToken) {
+			actualToken = getToken(r)
+			if !csrfStore.exists(actualToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
 				w.Header().Set(gowebMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
@@ -87,16 +89,34 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			}
 		}
 
-		// 2. If csrfToken is still an empty string. generate it.
-		if csrfToken == "" {
-			csrfToken = id.Random(csrfTokenLength)
+		// 2. If actualToken is still an empty string. generate it.
+		if actualToken == "" {
+			actualToken = id.Random(csrfBytesTokenLength)
 		}
+
+		/*
+			We need to try and protect against BreachAttack[1]. See[2] for a refresher on how it works.
+			The mitigations against the attack in order of effectiveness are:
+			(a) Disabling HTTP compression
+			(b) Separating secrets from user input
+			(c) Randomizing secrets per request
+			(d) Masking secrets (effectively randomizing by XORing with a random secret per request)
+			(e) Protecting vulnerable pages with CSRF
+			(f) Length hiding (by adding random number of bytes to the responses)
+			(g) Rate-limiting the requests
+			Most csrf implementation use (d). Here, we'll use (c)
+
+			1. http://breachattack.com/
+			2. https://security.stackexchange.com/a/172646
+		*/
+		breachAttackToken := id.Random(csrfBytesTokenLength)
+		tokenToIssue := breachAttackToken + actualToken
 
 		// 3. create cookie
 		cookie.Set(
 			w,
 			csrfCookieName,
-			csrfToken,
+			tokenToIssue,
 			domain,
 			tokenMaxAge,
 			true, // accessible to javascript
@@ -105,17 +125,17 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		// 4. set cookie header
 		w.Header().Set(
 			csrfHeader,
-			csrfToken,
+			tokenToIssue,
 		)
 
 		// 5. update Vary header.
 		w.Header().Add(varyHeader, clientCookieHeader)
 
-		// 6. store csrfToken in context
-		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, csrfToken))
+		// 6. store tokenToIssue in context
+		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, tokenToIssue))
 
-		// 7. save csrfToken in memory store.
-		csrfStore.set(csrfToken)
+		// 7. save `actualToken` in memory store.
+		csrfStore.set(actualToken)
 
 		// 8. reset memory to decrease its size.
 		now := time.Now()
@@ -149,7 +169,7 @@ func GetCsrfToken(c context.Context) string {
 
 // getToken tries to fetch a csrf token from the incoming request r.
 // It tries to fetch from cookies, http-forms, headers in that order.
-func getToken(r *http.Request) string {
+func getToken(r *http.Request) (actualToken string) {
 	fromCookie := func() string {
 		c, err := r.Cookie(csrfCookieName)
 		if err != nil {
@@ -169,17 +189,26 @@ func getToken(r *http.Request) string {
 		return r.Form.Get(csrfCookieForm)
 	}
 
-	if tok := fromCookie(); tok != "" {
-		return tok
+	tok := fromCookie()
+	if tok == "" {
+		tok = fromForm()
 	}
-	if tok := fromForm(); tok != "" {
-		return tok
-	}
-	if tok := fromHeader(); tok != "" {
-		return tok
+	if tok == "" {
+		tok = fromHeader()
 	}
 
-	return ""
+	if len(tok) != (2 * csrfStringTokenlength) {
+		// Request has presented a token that we probably didn't generate coz this library issues
+		// a token that is of length (2 * csrfStringTokenlength).
+		// So, set it to empty string so that a proper token will get generated.
+		tok = ""
+	} else {
+		// In this lib, the token we issue to the user is `breachAttackToken + actualToken`
+		// So here we retrieve the actual token
+		tok = tok[csrfStringTokenlength:]
+	}
+
+	return tok
 }
 
 // store persists csrf tokens server-side, in-memory.
@@ -194,16 +223,19 @@ func newStore() *store {
 	}
 }
 
-func (s *store) exists(csrfToken string) bool {
+func (s *store) exists(actualToken string) bool {
+	if len(actualToken) < 1 {
+		return false
+	}
 	s.mu.RLock()
-	_, ok := s.m[csrfToken]
+	_, ok := s.m[actualToken]
 	s.mu.RUnlock()
 	return ok
 }
 
-func (s *store) set(csrfToken string) {
+func (s *store) set(actualToken string) {
 	s.mu.Lock()
-	s.m[csrfToken] = struct{}{}
+	s.m[actualToken] = struct{}{}
 	s.mu.Unlock()
 }
 

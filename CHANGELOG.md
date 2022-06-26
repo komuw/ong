@@ -17,3 +17,4 @@ Most recent version is listed first.
 - logging middleware: https://github.com/komuw/goweb/pull/41
 - quality of life improvements: https://github.com/komuw/goweb/pull/45
 - add unique id generator: https://github.com/komuw/goweb/pull/50
+- try mitigate breach attack: https://github.com/komuw/goweb/pull/51

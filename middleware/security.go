@@ -29,7 +29,7 @@ const (
 	referrerHeader = "Referrer-Policy"
 	stsHeader      = "Strict-Transport-Security"
 
-	cspTokenLength = csrfTokenLength
+	cspBytesTokenLength = csrfBytesTokenLength
 )
 
 // Security is a middleware that adds some important HTTP security headers and assigns them sensible default values.
@@ -55,7 +55,7 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		// <script nonce="2726c7f26c">
 		//   var inline = 1;
 		// </script>
-		nonce := id.Random(cspTokenLength)
+		nonce := id.Random(cspBytesTokenLength)
 		r = r.WithContext(context.WithValue(ctx, cspCtxKey, nonce))
 		w.Header().Set(
 			cspHeader,
