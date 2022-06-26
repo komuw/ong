@@ -278,7 +278,6 @@ func TestLogger(t *testing.T) {
 		l := New(context.Background(), w, 2, true)
 		stdLogger := l.StdLogger()
 		stdLogger.Println(msg)
-		fmt.Println(w.String())
 		attest.True(t, strings.Contains(w.String(), msg))
 	})
 
@@ -291,7 +290,7 @@ func TestLogger(t *testing.T) {
 			l := New(context.Background(), w, 2, true)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.True(t, strings.Contains(w.String(), msg))
-			attest.True(t, strings.Contains(w.String(), "goweb/log/log_test.go:292"))
+			attest.True(t, strings.Contains(w.String(), "goweb/log/log_test.go:291"))
 		}
 
 		{
@@ -355,8 +354,8 @@ func TestLogger(t *testing.T) {
 		for _, tok := range tokens {
 			wg.Add(1)
 			go func(t string) {
+				defer wg.Done()
 				l.Info(F{"four": "four" + t})
-				wg.Done()
 			}(tok)
 		}
 		wg.Wait()
