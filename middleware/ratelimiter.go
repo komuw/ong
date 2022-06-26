@@ -37,15 +37,18 @@ func (lq latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSa
 	return percentile(_hold, 0.99)
 }
 
-func percentile(N latencyQueue, percent float64) time.Duration {
+func percentile(N latencyQueue, pctl float64) time.Duration {
 	// This is taken from: https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/limit.py#L253-L280
 	//
 	// todo: use something better like: https://github.com/influxdata/tdigest
+	//
+	pctl = pctl / 100
+
 	sort.Slice(N, func(i, j int) bool {
 		return N[i].duration < N[j].duration
 	})
 
-	k := float64((len(N) - 1)) * percent
+	k := float64((len(N) - 1)) * pctl
 	f := math.Floor(k)
 	c := math.Ceil(k)
 
