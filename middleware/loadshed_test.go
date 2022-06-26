@@ -210,6 +210,28 @@ func TestLatencyQueue(t *testing.T) {
 		attest.Equal(t, got.Seconds(), 990.01)
 	})
 
+	t.Run("number of samples less than minSampleSize", func(t *testing.T) {
+		now := time.Now().UTC()
+		samplingPeriod := 10000 * time.Millisecond
+		minSampleSize := 10_000
+
+		lq := latencyQueue{}
+		for i := 1; i <= (minSampleSize / 2); i++ {
+			lq = append(
+				lq,
+				newLatency(
+					time.Duration(i)*time.Second,
+					// negative so that it is in the past.
+					// divide by two so that it is within the samplingPeriod
+					now.Add(-(samplingPeriod/2)),
+				),
+			)
+		}
+
+		got := lq.getP99(now, samplingPeriod, minSampleSize)
+		attest.Zero(t, got)
+	})
+
 	t.Run("all samples taken in the future", func(t *testing.T) {
 		now := time.Now().UTC()
 		samplingPeriod := 10000 * time.Millisecond
