@@ -61,8 +61,6 @@ func percentile(N latencyQueue, pctl float64) time.Duration {
 	d1 := float64(N[int(c)].duration.Nanoseconds()) * (k - f)
 	d2 := d0 + d1
 
-	fmt.Println("d2: ", d2) // TODO: remove.
-
 	return time.Duration(d2) * time.Nanosecond
 }
 
@@ -83,9 +81,9 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	// The minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
 	// If there were fewer requests in the `samplingPeriod`, then we do decide to let things continue without ratelimiting.
 	minSampleSize := 10
-	samplingPeriod := 10 * time.Second
+	samplingPeriod := 2 * time.Second
 	// The p99 latency(in milliSeconds) at which point we start dropping requests.
-	breachLatency := 3 * time.Second
+	breachLatency := 66 * time.Millisecond
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		startReq := time.Now().UTC()
@@ -94,18 +92,19 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			durReq := endReq.Sub(startReq)
 			lq = append(lq, latency{duration: durReq, at: endReq})
 
-			fmt.Println("\n\t lq: ", lq)
+			// fmt.Println("\n\t lq: ", lq)
 		}()
 
 		// TODO: even if server is overloaded, we should actually let some requests through.
 		// This is so that we can have requests that will update the latencyQueue and let us know when the servers are no longer overloaded.
 
+		fmt.Println("p99: ", lq.getP99(startReq, samplingPeriod, minSampleSize))
 		if lq.getP99(startReq, samplingPeriod, minSampleSize) > breachLatency {
 			// drop request
 			retryAfter := 15 * time.Minute
 			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
 			w.Header().Set(gowebMiddlewareErrorHeader, err.Error())
-			w.Header().Set(retryAfterHeader, fmt.Sprintf("%f", retryAfter.Seconds())) // header should be in seconds(decimal-integer).
+			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(
 				w,
 				err.Error(),

@@ -5,16 +5,24 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/akshayjshah/attest"
 )
 
+const loadShedderTestHeader = "LoadShedderTestHeader"
+
 // TODO: rename this to loadShedder?
 func someRateLimiterHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(200 * time.Millisecond)
+		lat := r.Header.Get(loadShedderTestHeader)
+		latency, err := strconv.Atoi(lat)
+		if err != nil {
+			panic(err)
+		}
+		time.Sleep(time.Duration(latency) * time.Millisecond)
 		fmt.Fprint(w, msg)
 	}
 }
@@ -29,18 +37,25 @@ func TestRateLimiter(t *testing.T) {
 		msg := "hello"
 		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, req)
+		for i := 0; i < 100; i++ {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.Header.Set(loadShedderTestHeader, fmt.Sprint(i))
+			wrappedHandler.ServeHTTP(rec, req)
 
-		res := rec.Result()
-		defer res.Body.Close()
+			res := rec.Result()
+			defer res.Body.Close()
 
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
+			// fmt.Println("\t i: ", i)
+			fmt.Println("res.StatusCode: ", res.StatusCode)
+			fmt.Println("gowebMiddlewareErrorHeader: ", res.Header.Get(gowebMiddlewareErrorHeader))
+			fmt.Println("retryAfterHeader: ", res.Header.Get(retryAfterHeader))
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
 	})
 
 	// t.Run("success", func(t *testing.T) {
