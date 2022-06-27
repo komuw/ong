@@ -62,8 +62,8 @@ func allDefaultMiddlewares(
 	allowedHeaders := o.allowedHeaders
 	logOutput := o.logOutput
 
-	// TODO: add load-shedding & ratelimiting.
-	//   Those will probably come in between log & security.
+	// TODO: add ratelimiting.
+	//   Those will probably come in between Log & LoadShedder.
 
 	// The way the middlewares are layered is:
 	// 1. panic on the outer since we want it to watch all other middlewares.
@@ -77,19 +77,21 @@ func allDefaultMiddlewares(
 
 	return Panic(
 		Log(
-			Security(
-				Cors(
-					Csrf(
-						Gzip(
-							wrappedHandler,
+			LoadShedder(
+				Security(
+					Cors(
+						Csrf(
+							Gzip(
+								wrappedHandler,
+							),
+							domain,
 						),
-						domain,
+						allowedOrigins,
+						allowedMethods,
+						allowedHeaders,
 					),
-					allowedOrigins,
-					allowedMethods,
-					allowedHeaders,
+					domain,
 				),
-				domain,
 			),
 			domain,
 			logOutput,

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	mathRand "math/rand"
 	"net"
 	"net/http"
 	"time"
@@ -31,6 +32,8 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 		// dont indent.
 		false,
 	)
+
+	mathRand.Seed(time.Now().UTC().UnixNano())
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -71,13 +74,20 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 				"code":        lrw.code,
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
-				"bytes":       lrw.sent,
 			}
-			if gowebErr := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebErr != "" {
-				flds["gowebErr"] = gowebErr
+			if gowebError := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebError != "" {
+				flds["gowebError"] = gowebError
 			}
+			lrw.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
 
-			if lrw.code >= http.StatusBadRequest {
+			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
+				// We are either in load shedding or rate-limiting.
+				// Only log 10% of the errors.
+				shouldLog := mathRand.Intn(100) > 90
+				if shouldLog {
+					logger.Error(nil, flds)
+				}
+			} else if lrw.code >= http.StatusBadRequest {
 				// both client and server errors.
 				logger.Error(nil, flds)
 			} else {
@@ -101,8 +111,6 @@ type logRW struct {
 	// http.StatusOK. To get the implicit value, use the Result
 	// method.
 	code int
-	// sent saves bytes sent
-	sent int
 }
 
 var (
@@ -120,7 +128,6 @@ func (lrw *logRW) Write(b []byte) (int, error) {
 	if lrw.code == 0 {
 		lrw.code = http.StatusOK
 	}
-	lrw.sent = len(b)
 	return lrw.ResponseWriter.Write(b)
 }
 

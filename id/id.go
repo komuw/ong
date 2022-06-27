@@ -32,11 +32,9 @@ func Random(n int) string {
 	b := make([]byte, n)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, n)
-		mathRandFromTime := mathRand.New(
-			// this codepath is rarely executed so we dont need to put `mathRandFromTime` as a global var.
-			mathRand.NewSource(time.Now().UnixNano()),
-		)
-		_, _ = mathRandFromTime.Read(b) // docs say that it always returns a nil error.
+		// this codepath is rarely executed so we can put all the code here instead of global var.
+		mathRand.Seed(time.Now().UTC().UnixNano())
+		_, _ = mathRand.Read(b) // docs say that it always returns a nil error.
 	}
 
 	return customEncoding.EncodeToString(b)
