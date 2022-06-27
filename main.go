@@ -5,6 +5,7 @@ package main
 // 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/komuw/goweb/log"
@@ -17,10 +18,10 @@ func main() {
 	api := NewMyApi("someDb")
 
 	mux := server.NewMux([]server.MuxOpts{
-		server.NewMuxOpts("api", api.handleAPI(), middleware.WithOpts("localhost")),
-		server.NewMuxOpts("greeting", middleware.BasicAuth(api.handleGreeting(202), "user", "passwd"), middleware.WithOpts("localhost")),
-		server.NewMuxOpts("serveDirectory", middleware.BasicAuth(api.handleFileServer(), "user", "passwd"), middleware.WithOpts("localhost")),
-		server.NewMuxOpts("check", api.handleGreeting(200), middleware.WithOpts("localhost")),
+		server.NewMuxOpts("api", server.MethodPost, api.handleAPI(), middleware.WithOpts("localhost")),
+		server.NewMuxOpts("greeting", server.MethodGet, middleware.BasicAuth(api.handleGreeting(202), "user", "passwd"), middleware.WithOpts("localhost")),
+		server.NewMuxOpts("serveDirectory", server.MethodAll, middleware.BasicAuth(api.handleFileServer(), "user", "passwd"), middleware.WithOpts("localhost")),
+		server.NewMuxOpts("check", server.MethodGet, api.handleGreeting(200), middleware.WithOpts("localhost")),
 	})
 
 	err := server.Run(mux, server.DefaultOpts())

@@ -10,18 +10,35 @@ import (
 	"github.com/komuw/goweb/middleware"
 )
 
+const (
+	MethodAll     = "ALL"
+	MethodGet     = http.MethodGet
+	MethodHead    = http.MethodHead
+	MethodPost    = http.MethodPost
+	MethodPut     = http.MethodPut
+	MethodPatch   = http.MethodPatch
+	MethodDelete  = http.MethodDelete
+	MethodConnect = http.MethodConnect
+	MethodOptions = http.MethodOptions
+	MethodTrace   = http.MethodTrace
+)
+
 type MuxOpts struct {
 	pattern string
+	method  string
 	handler http.HandlerFunc
 	opts    middleware.Opts
 }
 
-func NewMuxOpts(pattern string,
+func NewMuxOpts(
+	pattern string,
+	method string,
 	handler http.HandlerFunc,
 	opts middleware.Opts,
 ) MuxOpts {
 	return MuxOpts{
 		pattern: pattern,
+		method:  method,
 		handler: handler,
 		opts:    opts,
 	}
@@ -35,11 +52,31 @@ func NewMux(mo []MuxOpts) *mux {
 	m := &mux{
 		router: http.NewServeMux(),
 	}
+
 	for _, v := range mo {
+		mid := middleware.All
+		switch v.method {
+		case MethodAll:
+			mid = middleware.All
+		case MethodGet:
+			mid = middleware.Get
+		case MethodHead:
+			mid = middleware.Head
+		case MethodPost:
+			mid = middleware.Post
+		case MethodPut:
+			mid = middleware.Put
+		case MethodDelete:
+			mid = middleware.Delete
+		default:
+			mid = middleware.All
+		}
+
 		m.addPattern(v.pattern,
-			middleware.All(v.handler, v.opts),
+			mid(v.handler, v.opts),
 		)
 	}
+
 	return m
 }
 
