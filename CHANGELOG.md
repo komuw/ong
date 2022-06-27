@@ -19,3 +19,4 @@ Most recent version is listed first.
 - add unique id generator: https://github.com/komuw/goweb/pull/50
 - try mitigate breach attack: https://github.com/komuw/goweb/pull/51
 - add load shedding: https://github.com/komuw/goweb/pull/52
+- fix memory leak in tests: https://github.com/komuw/goweb/pull/53
