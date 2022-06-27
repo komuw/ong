@@ -139,6 +139,8 @@ func (lq *latencyQueue) reSize() {
 	}
 }
 
+// todo: refactor this and its dependents.
+// currently they consume 9.04MB and 80ms as measured by the `BenchmarkAllMiddlewares` benchmark.
 func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
