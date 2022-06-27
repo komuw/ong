@@ -36,21 +36,19 @@ func TestLoadShedder(t *testing.T) {
 		msg := "hello"
 		wrappedHandler := LoadShedder(someLoadShedderHandler(msg))
 
-		for i := 0; i < 100; i++ {
-			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.Header.Set(loadShedderTestHeader, fmt.Sprint(i))
-			wrappedHandler.ServeHTTP(rec, req)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Set(loadShedderTestHeader, "5")
+		wrappedHandler.ServeHTTP(rec, req)
 
-			res := rec.Result()
-			defer res.Body.Close()
+		res := rec.Result()
+		defer res.Body.Close()
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
 
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
-		}
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
