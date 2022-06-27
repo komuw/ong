@@ -55,7 +55,7 @@ func fetchIP(remoteAddr string) string {
 // tb is a simple implementation of the token bucket rate limiting algorithm
 // https://en.wikipedia.org/wiki/Token_bucket
 type tb struct {
-	mu sync.RWMutex // protects all the other fields.
+	mu sync.Mutex // protects all the other fields.
 
 	sendRate       float64 // In req/seconds
 	maxTokens      float64
@@ -81,22 +81,20 @@ func newTb(sendRate float64) *tb {
 }
 
 func (t *tb) allow() bool {
-	t.mu.RLock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	alw := true
 	if t.tokens < 1 {
 		alw = false
 	}
-	t.mu.RUnlock()
 
-	go t.limit()
+	t.limit()
 	return alw
 }
 
 // limit is a private api(thus needs no locking). It should only ever be called by `tb.allow`
 func (t *tb) limit() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
 	for t.tokens < 1 {
 		t.addNewTokens()
 		time.Sleep(t.delayForTokens)

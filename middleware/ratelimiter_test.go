@@ -120,7 +120,7 @@ func TestRl(t *testing.T) {
 			totalMsgsDelivered := len(msgsDelivered)
 			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 3)
 		}
 
 		{
@@ -137,7 +137,7 @@ func TestRl(t *testing.T) {
 			totalMsgsDelivered := len(msgsDelivered)
 			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 6)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 4)
 		}
 	})
 }
