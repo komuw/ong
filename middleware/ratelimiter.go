@@ -28,7 +28,7 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			rl = rl.reSize()
 		}
 
-		tb := rl.fetch(fetchIP(r.RemoteAddr), sendRate)
+		tb := rl.get(fetchIP(r.RemoteAddr), sendRate)
 
 		if !tb.allow() {
 			err := fmt.Errorf("rate limited, retry after %s", retryAfter)
@@ -67,7 +67,7 @@ func newRl() rl {
 	}
 }
 
-func (r rl) fetch(ip string, sendRate float64) *tb {
+func (r rl) get(ip string, sendRate float64) *tb {
 	tb, ok := r.mtb[ip]
 	if !ok {
 		tb = newTb(sendRate)
