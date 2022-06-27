@@ -16,16 +16,20 @@ import (
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	// TODO: use realistic number.
 	sendRate := 10.00 // 10req/sec
-	tb := newTb(sendRate)
-
+	rl := newRl()
 	retryAfter := 15 * time.Minute
+	reqs := 0
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := fetchIP(r.RemoteAddr)
-		_ = ip
-		// fmt.Println("ip: ", ip)
+		reqs := reqs + 1
+		if reqs > 5_000 {
+			// The size of `tb` is ~56bytes. Although `tb` embeds another struct(mutex),
+			// that only has two fileds which are ints. So for 5_000 requests the mem usage is 280KB
+			rl = rl.reSize()
+		}
 
-		// TODO, limit per IP/Hash(IP)
+		tb := rl.fetch(fetchIP(r.RemoteAddr), sendRate)
+
 		if !tb.allow() {
 			err := fmt.Errorf("rate limited, retry after %s", retryAfter)
 			w.Header().Set(gowebMiddlewareErrorHeader, err.Error())
@@ -50,6 +54,31 @@ func fetchIP(remoteAddr string) string {
 	//
 	ipAddr := strings.Split(remoteAddr, ":")
 	return ipAddr[0]
+}
+
+// rl is a ratelimiter per IP address.
+type rl struct {
+	mtb map[string]*tb
+}
+
+func newRl() rl {
+	return rl{
+		mtb: map[string]*tb{},
+	}
+}
+
+func (r rl) fetch(ip string, sendRate float64) *tb {
+	tb, ok := r.mtb[ip]
+	if !ok {
+		tb = newTb(sendRate)
+		r.mtb[ip] = tb
+	}
+
+	return tb
+}
+
+func (r rl) reSize() rl {
+	return newRl()
 }
 
 // tb is a simple implementation of the token bucket rate limiting algorithm
