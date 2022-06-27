@@ -26,7 +26,7 @@ func TestAllMiddleware(t *testing.T) {
 	errMsg := "not allowed. only allows http"
 	tests := []struct {
 		name               string
-		middleware         func(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc
+		middleware         func(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc
 		httpMethod         string
 		expectedStatusCode int
 		expectedMsg        string
