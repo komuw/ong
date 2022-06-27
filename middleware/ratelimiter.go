@@ -15,11 +15,13 @@ import (
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
 
 type rl struct {
-	sendRate          float64
-	maxTokens         float64
-	tokens            float64
-	delayForTokens    time.Duration
-	updatedAt         time.Time // change to int64 like in `latency.at`
+	sendRate       float64
+	maxTokens      float64
+	tokens         float64
+	delayForTokens time.Duration
+	// updatedAt is the time at which this operation took place.
+	// We could have ideally used a `time.Time` as its type; but we wanted the latency struct to be minimal in size.
+	updatedAt         int64
 	messagesDelivered float64
 	effectiveSendRate float64
 }
@@ -30,7 +32,7 @@ func newRl(sendRate float64) *rl {
 		maxTokens:         sendRate,
 		tokens:            sendRate,
 		delayForTokens:    1 * time.Second,
-		updatedAt:         time.Now().UTC(),
+		updatedAt:         time.Now().UTC().Unix(),
 		messagesDelivered: 0,
 		effectiveSendRate: 0.00,
 	}
@@ -38,13 +40,13 @@ func newRl(sendRate float64) *rl {
 
 func (r *rl) add_new_tokens() {
 	now := time.Now().UTC()
-	timeSinceUpdate := now.Sub(r.updatedAt)
+	timeSinceUpdate := now.Sub(time.Unix(r.updatedAt, 0).UTC())
 	r.effectiveSendRate = r.messagesDelivered / timeSinceUpdate.Seconds()
 	newTokens := timeSinceUpdate.Seconds() * r.sendRate
 
 	if newTokens > 1 {
 		r.tokens = math.Min((r.tokens + newTokens), r.maxTokens)
-		r.updatedAt = now
+		r.updatedAt = now.Unix()
 		r.messagesDelivered = 0
 	}
 }
