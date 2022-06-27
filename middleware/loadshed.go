@@ -10,7 +10,9 @@ import (
 	"time"
 )
 
-// TODO: checkout https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/
+// Most of the code here is insipired by:
+//   (a) https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/
+//   (b) https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/
 
 const (
 	retryAfterHeader = "Retry-After"
@@ -21,16 +23,24 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	mathRand.Seed(time.Now().UTC().UnixNano())
 	lq := NewLatencyQueue()
 
+	/*
+		The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
+		In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
+		and the p95 response times for http POST requests is ~900ms.
+
+		Thus, we'll use a `breachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
+	*/
+
 	// samplingPeriod is the duration over which we will calculate the latency.
-	samplingPeriod := 15 * time.Minute
+	samplingPeriod := 12 * time.Minute
 	// minSampleSize is the minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
 	// If there were fewer requests(than `minSampleSize`) in the `samplingPeriod`, then we do decide to let things continue without load shedding.
-	minSampleSize := 100
+	minSampleSize := 50
 	// breachLatency is the p99 latency at which point we start dropping requests.
-	breachLatency := 2_000 * time.Millisecond // 2seconds
+	breachLatency := 700 * time.Millisecond
 
 	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
-	retryAfter := 15 * time.Minute
+	retryAfter := samplingPeriod + (3 * time.Minute)
 
 	loadShedCheckStart := time.Now().UTC()
 
