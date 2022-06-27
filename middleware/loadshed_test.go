@@ -27,8 +27,6 @@ func someLoadShedderHandler(msg string) http.HandlerFunc {
 	}
 }
 
-// TODO: add a test for an actual case where load testing is triggered.
-
 func TestLoadShedder(t *testing.T) {
 	t.Parallel()
 
