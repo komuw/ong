@@ -38,6 +38,7 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			// The size of `tb` is ~56bytes. Although `tb` embeds another struct(mutex),
 			// that only has two fileds which are ints. So for 5_000 requests the mem usage is 280KB
 			rl.reSize()
+			reqs = 0
 		}
 
 		tb := rl.get(fetchIP(r.RemoteAddr), rateLimiterSendRate)
