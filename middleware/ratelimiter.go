@@ -55,7 +55,7 @@ type tb struct {
 	effectiveSendRate float64
 }
 
-func newRl(sendRate float64) *tb {
+func newTb(sendRate float64) *tb {
 	return &tb{
 		sendRate:          sendRate,
 		maxTokens:         sendRate,
@@ -67,24 +67,24 @@ func newRl(sendRate float64) *tb {
 	}
 }
 
-func (r *tb) add_new_tokens() {
+func (t *tb) add_new_tokens() {
 	now := time.Now().UTC()
-	timeSinceUpdate := now.Sub(time.Unix(r.updatedAt, 0).UTC())
-	r.effectiveSendRate = r.messagesDelivered / timeSinceUpdate.Seconds()
-	newTokens := timeSinceUpdate.Seconds() * r.sendRate
+	timeSinceUpdate := now.Sub(time.Unix(t.updatedAt, 0).UTC())
+	t.effectiveSendRate = t.messagesDelivered / timeSinceUpdate.Seconds()
+	newTokens := timeSinceUpdate.Seconds() * t.sendRate
 
 	if newTokens > 1 {
-		r.tokens = math.Min((r.tokens + newTokens), r.maxTokens)
-		r.updatedAt = now.Unix()
-		r.messagesDelivered = 0
+		t.tokens = math.Min((t.tokens + newTokens), t.maxTokens)
+		t.updatedAt = now.Unix()
+		t.messagesDelivered = 0
 	}
 }
 
-func (r *tb) limit() {
-	for r.tokens < 1 {
-		r.add_new_tokens()
-		time.Sleep(r.delayForTokens)
+func (t *tb) limit() {
+	for t.tokens < 1 {
+		t.add_new_tokens()
+		time.Sleep(t.delayForTokens)
 	}
-	r.messagesDelivered = r.messagesDelivered + 1
-	r.tokens = r.tokens - 1
+	t.messagesDelivered = t.messagesDelivered + 1
+	t.tokens = t.tokens - 1
 }

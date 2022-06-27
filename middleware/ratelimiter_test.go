@@ -69,7 +69,7 @@ func TestRl(t *testing.T) {
 		t.Parallel()
 
 		sendRate := 3.0
-		l := newRl(sendRate)
+		l := newTb(sendRate)
 
 		msgsDelivered := []int{}
 		start := time.Now().UTC()
