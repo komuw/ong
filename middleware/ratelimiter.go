@@ -14,6 +14,7 @@ import (
 
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	// TODO: use realistic number.
 	sendRate := 10.00 // 10req/sec
 	tb := newTb(sendRate)
 
