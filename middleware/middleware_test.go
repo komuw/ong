@@ -201,3 +201,35 @@ func TestServer(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 	})
 }
+
+var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
+
+func BenchmarkAllMiddlewares(b *testing.B) {
+	var r int
+	msg := "hello world"
+	o := WithOpts("example.com")
+	iterations := defaultMinSize * 2
+	wrappedHandler := All(someGzipHandler(msg, iterations), o)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// always record the result of Fib to prevent
+		// the compiler eliminating the function call.
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+
+		fmt.Println("headers: ")
+		fmt.Println("\n\t", res.Header)
+		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
+		attest.Equal(b, res.StatusCode, http.StatusOK)
+		r = res.StatusCode
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	resultBenchmarkAllMiddlewares = r
+}

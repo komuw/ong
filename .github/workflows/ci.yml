@@ -198,21 +198,24 @@ jobs:
           GOWEB_RUNNING_IN_TESTS: 'YES'
 
 
-  # run_stress_test:
-  #   name: run_stress_test
-  #   timeout-minutes: 2
-  #   strategy:
-  #     matrix:
-  #       go-version: [1.18]
-  #       platform: [ubuntu-22.04]
-  #   runs-on: ${{ matrix.platform }}
-  #   steps:
-  # - name: custom setupGo
-  #   uses: ./.github/actions/setup-go
-  #   with:
-  #     go-version: ${{ matrix.go-version }}
-  #     - name: stress test
-  #       run: |
-  #         go install golang.org/x/tools/cmd/stress@latest
-  #         go test -o goweb.test -c -race
-  #         /home/runner/go/bin/stress -timeout 10s ./goweb.test
+  run_stress_test:
+    name: run_stress_test
+    timeout-minutes: 2
+    strategy:
+      matrix:
+        go-version: [1.18]
+        platform: [ubuntu-22.04]
+    runs-on: ${{ matrix.platform }}
+    steps:
+  - name: custom setupGo
+    uses: ./.github/actions/setup-go
+    with:
+      go-version: ${{ matrix.go-version }}
+      - name: stress test
+        run: |
+          go install golang.org/x/tools/cmd/stress@latest
+          go test -o goweb.test -c -race
+          /home/runner/go/bin/stress -timeout 10s ./goweb.test
+
+          go test -timeout 1m -race -run=XXXX -bench=BenchmarkAllMiddlewares github.com/komuw/goweb/middleware -v -benchmem -memprofile mem.out -cpuprofile cpu.out
+
