@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"golang.org/x/exp/slices"
 )
 
 func someRateLimiterHandler(msg string) http.HandlerFunc {
@@ -40,7 +41,7 @@ func TestRateLimiter(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 	})
 
-	t.Run("todo", func(t *testing.T) {
+	t.Run("rate limiting happens", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
@@ -56,22 +57,25 @@ func TestRateLimiter(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+			msgsDelivered = append(msgsDelivered, res.StatusCode)
+		}
 
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
-
-			msgsDelivered = append(msgsDelivered, 1)
+		rateLimitedreqs := 0
+		for _, v := range msgsDelivered {
+			if v == http.StatusTooManyRequests {
+				rateLimitedreqs = rateLimitedreqs + 1
+			}
 		}
 
 		timeTakenToDeliver := time.Now().UTC().Sub(start)
 		totalMsgsDelivered := len(msgsDelivered)
 		effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
 
-		fmt.Println("\t effectiveMessageRate: ", effectiveMessageRate)
+		attest.True(t, slices.Contains(msgsDelivered, http.StatusTooManyRequests))
+		attest.True(t, slices.Contains(msgsDelivered, http.StatusOK))
+		attest.True(t, rateLimitedreqs > 10)
 		sendRate := 10.00 // gotten from the RateLimiter middleware.
-		fmt.Println("\t sendRate: ", sendRate)
+		attest.Approximately(t, effectiveMessageRate, int(sendRate), 4)
 	})
 
 	t.Run("bad remoteAddr", func(t *testing.T) {
@@ -109,14 +113,14 @@ func TestRl(t *testing.T) {
 			msgsDelivered := []int{}
 			start := time.Now().UTC()
 			for i := 0; i < int(sendRate*4); i++ {
-				l.limit()
+				l.allow()
 				msgsDelivered = append(msgsDelivered, 1)
 			}
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			totalMsgsDelivered := len(msgsDelivered)
 			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 2)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 3)
 		}
 
 		{
@@ -126,14 +130,14 @@ func TestRl(t *testing.T) {
 			msgsDelivered := []int{}
 			start := time.Now().UTC()
 			for i := 0; i < int(sendRate*4); i++ {
-				l.limit()
+				l.allow()
 				msgsDelivered = append(msgsDelivered, 1)
 			}
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			totalMsgsDelivered := len(msgsDelivered)
 			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 2)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 6)
 		}
 	})
 }

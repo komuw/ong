@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,15 +24,28 @@ func fetchIP(remoteAddr string) string {
 
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	sendRate := 100.00 // 10req/sec
+	sendRate := 10.00 // 10req/sec
 	tb := newTb(sendRate)
+
+	retryAfter := 15 * time.Minute
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := fetchIP(r.RemoteAddr)
-		fmt.Println("ip: ", ip)
+		_ = ip
+		// fmt.Println("ip: ", ip)
 
 		// TODO, limit per IP/Hash(IP)
-		tb.limit()
+		if !tb.allow() {
+			err := fmt.Errorf("rate limited, retry after %s", retryAfter)
+			w.Header().Set(gowebMiddlewareErrorHeader, err.Error())
+			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
+			http.Error(
+				w,
+				err.Error(),
+				http.StatusTooManyRequests,
+			)
+			return
+		}
 
 		// TODO: - add tooManyRequests header.
 		//       - add retry after header.
@@ -43,6 +57,8 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // tb is a simple implementation of the token bucket rate limiting algorithm
 // https://en.wikipedia.org/wiki/Token_bucket
 type tb struct {
+	mu sync.RWMutex // protects all the other fields.
+
 	sendRate       float64 // In req/seconds
 	maxTokens      float64
 	tokens         float64
@@ -66,7 +82,23 @@ func newTb(sendRate float64) *tb {
 	}
 }
 
+func (t *tb) allow() bool {
+	t.mu.RLock()
+	alw := true
+	if t.tokens < 1 {
+		alw = false
+	}
+	t.mu.RUnlock()
+
+	go t.limit()
+	return alw
+}
+
+// limit is a private api(thus needs no locking). It should only ever be called by `tb.allow`
 func (t *tb) limit() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	for t.tokens < 1 {
 		t.addNewTokens()
 		time.Sleep(t.delayForTokens)
@@ -75,7 +107,7 @@ func (t *tb) limit() {
 	t.tokens = t.tokens - 1
 }
 
-// addNewTokens is a private api. It should only ever be called by `tb.limit`
+// addNewTokens is a private api(thus needs no locking). It should only ever be called by `tb.limit`
 func (t *tb) addNewTokens() {
 	now := time.Now().UTC()
 	timeSinceUpdate := now.Sub(time.Unix(t.updatedAt, 0).UTC())
