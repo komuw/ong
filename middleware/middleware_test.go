@@ -231,8 +231,8 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		res := rec.Result()
 		defer res.Body.Close()
 
-		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(b, res.StatusCode, http.StatusOK)
+		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
 		r = res.StatusCode
 	}
 	// always store the result to a package level variable
