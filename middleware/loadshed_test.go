@@ -62,7 +62,7 @@ func TestLoadShedder(t *testing.T) {
 		runhandler := func() {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.Header.Set(loadShedderTestHeader, fmt.Sprint(20))
+			req.Header.Set(loadShedderTestHeader, "4")
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
