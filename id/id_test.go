@@ -13,14 +13,16 @@ func TestNew(t *testing.T) {
 	t.Run("succeds", func(t *testing.T) {
 		t.Parallel()
 
-		got := New()
-		attest.NotZero(t, got)
+		{
+			got := New()
+			attest.NotZero(t, got)
 
-		a := New()
-		b := New()
-		c := New()
-		attest.True(t, a != b)
-		attest.True(t, a != c)
+			a := New()
+			b := New()
+			c := New()
+			attest.True(t, a != b)
+			attest.True(t, a != c)
+		}
 
 		{
 			_len := 12
