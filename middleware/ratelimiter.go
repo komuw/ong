@@ -12,32 +12,25 @@ import (
 // Most of the code here is insipired by(or taken from):
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
 
-var (
-	/*
-		Github uses a rate limit of 5_000 reqs/hr(1req/sec)
-		Twitter uses 900 reqs/15mins(1req/sec)
-		Stripe uses 100req/sec.
+/*
+	Github uses a rate limit of 5_000 reqs/hr(1req/sec)
+	Twitter uses 900 reqs/15mins(1req/sec)
+	Stripe uses 100req/sec.
 
 
-		- https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
-		- https://developer.twitter.com/en/docs/twitter-api/rate-limits
-		- https://stripe.com/docs/rate-limits
-	*/
-	rateLimiterSendRate = 100.00 // requests/sec
-)
+	- https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
+	- https://developer.twitter.com/en/docs/twitter-api/rate-limits
+	- https://stripe.com/docs/rate-limits
+*/
+var rateLimiterSendRate = 100.00 // requests/sec
 
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	rl := newRl()
 	retryAfter := 15 * time.Minute
-	reqs := 0
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqs = reqs + 1
-		if reqs > 1_000 {
-			rl.reSize()
-			reqs = 0
-		}
+		rl.reSize()
 
 		tb := rl.get(fetchIP(r.RemoteAddr), rateLimiterSendRate)
 
@@ -69,7 +62,7 @@ func fetchIP(remoteAddr string) string {
 
 // rl is a ratelimiter per IP address.
 type rl struct {
-	mu  sync.Mutex // protects mtb
+	mu  sync.RWMutex // protects mtb
 	mtb map[string]*tb
 }
 
@@ -93,12 +86,18 @@ func (r *rl) get(ip string, sendRate float64) *tb {
 }
 
 func (r *rl) reSize() {
-	r.mu.Lock()
-	if len(r.mtb) > 2_000 {
-		// The size of `tb` is ~56bytes. Although `tb` embeds another struct(mutex),
-		// that only has two fileds which are ints. So for 2_000 unique IPs the mem usage is 112KB
-		r.mtb = map[string]*tb{}
+	r.mu.RLock()
+	_len := len(r.mtb)
+	r.mu.RUnlock()
+
+	if _len < 2_000 {
+		return
 	}
+
+	r.mu.Lock()
+	// The size of `tb` is ~56bytes. Although `tb` embeds another struct(mutex),
+	// that only has two fileds which are ints. So for 2_000 unique IPs the mem usage is 112KB
+	r.mtb = map[string]*tb{}
 	r.mu.Unlock()
 }
 
