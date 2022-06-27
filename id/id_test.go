@@ -16,12 +16,20 @@ func TestNew(t *testing.T) {
 		got := New()
 		attest.NotZero(t, got)
 
-		_len := 12
-		a := Random(_len)
-		b := Random(_len)
-		c := Random(_len)
-
+		a := New()
+		b := New()
+		c := New()
 		attest.True(t, a != b)
 		attest.True(t, a != c)
+
+		{
+			_len := 12
+			a := Random(_len)
+			b := Random(_len)
+			c := Random(_len)
+
+			attest.True(t, a != b)
+			attest.True(t, a != c)
+		}
 	})
 }
