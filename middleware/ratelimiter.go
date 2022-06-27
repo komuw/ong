@@ -52,7 +52,6 @@ type tb struct {
 	// We could have ideally used a `time.Time` as its type; but we wanted the latency struct to be minimal in size.
 	updatedAt         int64
 	messagesDelivered float64
-	effectiveSendRate float64
 }
 
 func newTb(sendRate float64) *tb {
@@ -65,7 +64,6 @@ func newTb(sendRate float64) *tb {
 		delayForTokens:    1 * time.Second,
 		updatedAt:         time.Now().UTC().Unix(),
 		messagesDelivered: 0,
-		effectiveSendRate: 0.00,
 	}
 }
 
@@ -82,7 +80,6 @@ func (t *tb) limit() {
 func (t *tb) addNewTokens() {
 	now := time.Now().UTC()
 	timeSinceUpdate := now.Sub(time.Unix(t.updatedAt, 0).UTC())
-	t.effectiveSendRate = t.messagesDelivered / timeSinceUpdate.Seconds()
 	newTokens := timeSinceUpdate.Seconds() * t.sendRate
 
 	if newTokens > 1 {
