@@ -44,7 +44,7 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // tb is a simple implementation of the token bucket rate limiting algorithm
 // https://en.wikipedia.org/wiki/Token_bucket
 type tb struct {
-	sendRate       float64
+	sendRate       float64 // In req/seconds
 	maxTokens      float64
 	tokens         float64
 	delayForTokens time.Duration
