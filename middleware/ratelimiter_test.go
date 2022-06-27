@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -76,6 +77,40 @@ func TestRateLimiter(t *testing.T) {
 		attest.True(t, rateLimitedreqs > 10)
 		sendRate := 10.00 // gotten from the RateLimiter middleware.
 		attest.Approximately(t, effectiveMessageRate, int(sendRate), 4)
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
+		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+
+		runhandler := func() {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
 	})
 
 	t.Run("bad remoteAddr", func(t *testing.T) {

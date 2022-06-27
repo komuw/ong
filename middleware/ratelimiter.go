@@ -14,8 +14,17 @@ import (
 
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	// TODO: use realistic number.
-	sendRate := 10.00 // 10req/sec
+	/*
+		Github uses a rate limit of 5_000 reqs/hr(1req/sec)
+		Twitter uses 900 reqs/15mins(1req/sec)
+		Stripe uses 100req/sec.
+
+
+		- https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
+		- https://developer.twitter.com/en/docs/twitter-api/rate-limits
+		- https://stripe.com/docs/rate-limits
+	*/
+	sendRate := 100.00 // requests/sec
 	rl := newRl()
 	retryAfter := 15 * time.Minute
 	reqs := 0
