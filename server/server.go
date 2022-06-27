@@ -96,7 +96,7 @@ func DefaultOpts() opts {
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
-// It sets up a server with the parameters provided by rc.
+// It sets up a server with the parameters provided by o.
 //
 // The server shuts down cleanly after receiving any terminating signal.
 func Run(eh extendedHandler, o opts) error {
@@ -229,7 +229,7 @@ func drainDuration(o opts) time.Duration {
 		dur = o.writeTimeout
 	}
 
-	// drainDuration should not take into account rc.idleTimeout
+	// drainDuration should not take into account o.idleTimeout
 	// because server.Shutdown() already closes all idle connections.
 
 	dur = dur + (10 * time.Second)
