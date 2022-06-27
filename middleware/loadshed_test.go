@@ -208,7 +208,7 @@ func TestLatencyQueue(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		lq := NewLatencyQueue()
+		lq := newLatencyQueue()
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 20; rN++ {

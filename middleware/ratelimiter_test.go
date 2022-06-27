@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/akshayjshah/attest"
 )
@@ -58,5 +59,32 @@ func TestRateLimiter(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
+}
+
+func TestRl(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		sendRate := 3.0
+		l := newRl(sendRate)
+
+		msgsDelivered := []int{}
+		start := time.Now().UTC()
+
+		for i := 0; i < int(sendRate*4); i++ {
+			l.limit()
+			msgsDelivered = append(msgsDelivered, 1)
+		}
+
+		timeTakenToDeliver := time.Now().UTC().Sub(start)
+		totalMsgsDelivered := len(msgsDelivered)
+		effectiveMessageRate := totalMsgsDelivered / int(timeTakenToDeliver.Seconds())
+
+		fmt.Println("\n\t sendRate: ", sendRate)
+		fmt.Println("\n\t effectiveMessageRate: ", effectiveMessageRate)
+		attest.Equal(t, effectiveMessageRate, int(sendRate))
 	})
 }
