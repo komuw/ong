@@ -33,7 +33,7 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	reqs := 0
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqs := reqs + 1
+		reqs = reqs + 1
 		if reqs > 1_000 {
 			rl.reSize()
 			reqs = 0
