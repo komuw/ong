@@ -20,3 +20,4 @@ Most recent version is listed first.
 - try mitigate breach attack: https://github.com/komuw/goweb/pull/51
 - add load shedding: https://github.com/komuw/goweb/pull/52
 - fix memory leak in tests: https://github.com/komuw/goweb/pull/53
+- add ratelimiter: https://github.com/komuw/goweb/pull/55
