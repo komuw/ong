@@ -40,8 +40,8 @@ type opts struct {
 
 // Equal compares two opts for equality.
 // It was added for testing purposes.
-func (rc opts) Equal(other opts) bool {
-	return rc == other
+func (o opts) Equal(other opts) bool {
+	return o == other
 }
 
 // NewOpts returns a new opts.
@@ -99,7 +99,7 @@ func DefaultOpts() opts {
 // It sets up a server with the parameters provided by rc.
 //
 // The server shuts down cleanly after receiving any terminating signal.
-func Run(eh extendedHandler, rc opts) error {
+func Run(eh extendedHandler, o opts) error {
 	setRlimit()
 	_, _ = maxprocs.Set()
 
@@ -108,7 +108,7 @@ func Run(eh extendedHandler, rc opts) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := eh.GetLogger().WithCtx(ctx).WithImmediate()
 
-	serverPort := fmt.Sprintf(":%s", rc.port)
+	serverPort := fmt.Sprintf(":%s", o.port)
 	server := &http.Server{
 		Addr: serverPort,
 
@@ -116,21 +116,21 @@ func Run(eh extendedHandler, rc opts) error {
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler:           http.TimeoutHandler(eh, rc.handlerTimeout, fmt.Sprintf("goweb: Handler timeout exceeded: %s", rc.handlerTimeout)),
-		ReadHeaderTimeout: rc.readHeaderTimeout,
-		ReadTimeout:       rc.readTimeout,
-		WriteTimeout:      rc.writeTimeout,
-		IdleTimeout:       rc.idleTimeout,
+		Handler:           http.TimeoutHandler(eh, o.handlerTimeout, fmt.Sprintf("goweb: Handler timeout exceeded: %s", o.handlerTimeout)),
+		ReadHeaderTimeout: o.readHeaderTimeout,
+		ReadTimeout:       o.readTimeout,
+		WriteTimeout:      o.writeTimeout,
+		IdleTimeout:       o.idleTimeout,
 		ErrorLog:          logger.StdLogger(),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
-	drainDur := drainDuration(rc)
+	drainDur := drainDuration(o)
 	sigHandler(server, ctx, cancel, logger, drainDur)
 
-	address := fmt.Sprintf("%s%s", rc.host, serverPort)
+	address := fmt.Sprintf("%s%s", o.host, serverPort)
 
-	err := serve(ctx, server, rc.network, address, logger)
+	err := serve(ctx, server, o.network, address, logger)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
@@ -213,20 +213,20 @@ func serve(ctx context.Context, srv *http.Server, network, address string, logge
 }
 
 // drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
-func drainDuration(rc opts) time.Duration {
+func drainDuration(o opts) time.Duration {
 	dur := 1 * time.Second
 
-	if rc.handlerTimeout > dur {
-		dur = rc.handlerTimeout
+	if o.handlerTimeout > dur {
+		dur = o.handlerTimeout
 	}
-	if rc.readHeaderTimeout > dur {
-		dur = rc.readHeaderTimeout
+	if o.readHeaderTimeout > dur {
+		dur = o.readHeaderTimeout
 	}
-	if rc.readTimeout > dur {
-		dur = rc.readTimeout
+	if o.readTimeout > dur {
+		dur = o.readTimeout
 	}
-	if rc.writeTimeout > dur {
-		dur = rc.writeTimeout
+	if o.writeTimeout > dur {
+		dur = o.writeTimeout
 	}
 
 	// drainDuration should not take into account rc.idleTimeout
