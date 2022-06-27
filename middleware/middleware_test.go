@@ -202,14 +202,22 @@ func TestServer(t *testing.T) {
 	})
 }
 
+func someBenchmarkAllMiddlewaresHandler() http.HandlerFunc {
+	// bound stack growth.
+	// see: https://github.com/komuw/goweb/issues/54
+	iterations := int(1.5 * defaultMinSize)
+	msg := strings.Repeat("hello world", iterations)
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, msg)
+	}
+}
+
 var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
-	msg := "hello world"
 	o := WithOpts("example.com")
-	iterations := defaultMinSize * 2
-	wrappedHandler := All(someGzipHandler(msg, iterations), o)
+	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -223,8 +231,6 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		res := rec.Result()
 		defer res.Body.Close()
 
-		fmt.Println("headers: ")
-		fmt.Println("\n\t", res.Header)
 		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(b, res.StatusCode, http.StatusOK)
 		r = res.StatusCode
