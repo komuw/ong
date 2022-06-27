@@ -29,7 +29,6 @@ func TestNew(t *testing.T) {
 			a := Random(_len)
 			b := Random(_len)
 			c := Random(_len)
-
 			attest.True(t, a != b)
 			attest.True(t, a != c)
 		}
