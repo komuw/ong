@@ -1,9 +1,12 @@
 package server
 
 import (
+	"context"
 	"net/http"
+	"os"
 	"strings"
 
+	"github.com/komuw/goweb/log"
 	"github.com/komuw/goweb/middleware"
 )
 
@@ -28,8 +31,8 @@ type mux struct {
 	router *http.ServeMux // some router
 }
 
-func NewMux(mo []MuxOpts) mux {
-	m := mux{
+func NewMux(mo []MuxOpts) *mux {
+	m := &mux{
 		router: http.NewServeMux(),
 	}
 	for _, v := range mo {
@@ -42,6 +45,10 @@ func NewMux(mo []MuxOpts) mux {
 
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.ServeHTTP(w, r)
+}
+
+func (m *mux) GetLogger() log.Logger {
+	return log.New(context.Background(), os.Stdout, 1000, false)
 }
 
 func (m *mux) addPattern(pattern string, handler func(http.ResponseWriter, *http.Request)) {
