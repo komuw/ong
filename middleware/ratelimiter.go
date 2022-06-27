@@ -22,7 +22,8 @@ import (
 	- https://developer.twitter.com/en/docs/twitter-api/rate-limits
 	- https://stripe.com/docs/rate-limits
 */
-var rateLimiterSendRate = 100.00 // requests/sec
+// rateLimiterSendRate is the rate limit in requests/sec.
+var rateLimiterSendRate = 100.00 //nolint:gochecknoglobals
 
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
