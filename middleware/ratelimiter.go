@@ -57,9 +57,11 @@ type tb struct {
 
 func newTb(sendRate float64) *tb {
 	return &tb{
-		sendRate:          sendRate,
-		maxTokens:         sendRate,
-		tokens:            sendRate,
+		sendRate:  sendRate,
+		maxTokens: sendRate,
+		tokens:    sendRate,
+		// if sendRate is in req/Sec, delayForTokens ought to be in seconds.
+		// if sendRate is in req/ms, delayForTokens ought to be in ms.
 		delayForTokens:    1 * time.Second,
 		updatedAt:         time.Now().UTC().Unix(),
 		messagesDelivered: 0,
@@ -67,7 +69,17 @@ func newTb(sendRate float64) *tb {
 	}
 }
 
-func (t *tb) add_new_tokens() {
+func (t *tb) limit() {
+	for t.tokens < 1 {
+		t.addNewTokens()
+		time.Sleep(t.delayForTokens)
+	}
+	t.messagesDelivered = t.messagesDelivered + 1
+	t.tokens = t.tokens - 1
+}
+
+// addNewTokens is a private api. It should only ever be called by `tb.limit`
+func (t *tb) addNewTokens() {
 	now := time.Now().UTC()
 	timeSinceUpdate := now.Sub(time.Unix(t.updatedAt, 0).UTC())
 	t.effectiveSendRate = t.messagesDelivered / timeSinceUpdate.Seconds()
@@ -78,13 +90,4 @@ func (t *tb) add_new_tokens() {
 		t.updatedAt = now.Unix()
 		t.messagesDelivered = 0
 	}
-}
-
-func (t *tb) limit() {
-	for t.tokens < 1 {
-		t.add_new_tokens()
-		time.Sleep(t.delayForTokens)
-	}
-	t.messagesDelivered = t.messagesDelivered + 1
-	t.tokens = t.tokens - 1
 }
