@@ -37,7 +37,7 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		if reqs > 5_000 {
 			// The size of `tb` is ~56bytes. Although `tb` embeds another struct(mutex),
 			// that only has two fileds which are ints. So for 5_000 requests the mem usage is 280KB
-			rl = rl.reSize()
+			rl.reSize()
 		}
 
 		tb := rl.get(fetchIP(r.RemoteAddr), rateLimiterSendRate)
@@ -70,16 +70,20 @@ func fetchIP(remoteAddr string) string {
 
 // rl is a ratelimiter per IP address.
 type rl struct {
+	mu  sync.Mutex // protects mtb
 	mtb map[string]*tb
 }
 
-func newRl() rl {
-	return rl{
+func newRl() *rl {
+	return &rl{
 		mtb: map[string]*tb{},
 	}
 }
 
-func (r rl) get(ip string, sendRate float64) *tb {
+func (r *rl) get(ip string, sendRate float64) *tb {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	tb, ok := r.mtb[ip]
 	if !ok {
 		tb = newTb(sendRate)
@@ -89,8 +93,10 @@ func (r rl) get(ip string, sendRate float64) *tb {
 	return tb
 }
 
-func (r rl) reSize() rl {
-	return newRl()
+func (r *rl) reSize() {
+	r.mu.Lock()
+	r.mtb = map[string]*tb{}
+	r.mu.Unlock()
 }
 
 // tb is a simple implementation of the token bucket rate limiting algorithm
