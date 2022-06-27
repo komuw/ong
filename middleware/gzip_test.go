@@ -19,6 +19,11 @@ import (
 
 func someGzipHandler(msg string, iterations int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if iterations > (3 * defaultMinSize) {
+			// bound stack growth.
+			// see: https://github.com/komuw/goweb/issues/54
+			iterations = 3 * defaultMinSize
+		}
 		msg = strings.Repeat(msg, iterations)
 		fmt.Fprint(w, msg)
 	}
