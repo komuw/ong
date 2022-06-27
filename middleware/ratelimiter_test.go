@@ -40,6 +40,40 @@ func TestRateLimiter(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 	})
 
+	t.Run("todo", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+
+		msgsDelivered := []int{}
+		start := time.Now().UTC()
+		for i := 0; i < 200; i++ {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+
+			msgsDelivered = append(msgsDelivered, 1)
+		}
+
+		timeTakenToDeliver := time.Now().UTC().Sub(start)
+		totalMsgsDelivered := len(msgsDelivered)
+		effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
+
+		fmt.Println("\t effectiveMessageRate: ", effectiveMessageRate)
+		sendRate := 10.00 // gotten from the RateLimiter middleware.
+		fmt.Println("\t sendRate: ", sendRate)
+	})
+
 	t.Run("bad remoteAddr", func(t *testing.T) {
 		t.Parallel()
 

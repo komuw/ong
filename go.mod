@@ -6,7 +6,6 @@ require (
 	go.uber.org/automaxprocs v1.5.1
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
 	golang.org/x/sys v0.0.0-20220624220833-87e55d714810
-	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
 )
 
 require (

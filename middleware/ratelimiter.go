@@ -1,14 +1,11 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"net/http"
 	"strings"
 	"time"
-
-	"golang.org/x/time/rate"
 )
 
 func fetchIP(remoteAddr string) string {
@@ -26,16 +23,18 @@ func fetchIP(remoteAddr string) string {
 
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	r := rate.Limit(10) // 10req/sec
-	burst := 2          // permit burst of 2 reqs
-	l := rate.NewLimiter(r, burst)
-	_ = l
+	sendRate := 100.00 // 10req/sec
+	tb := newTb(sendRate)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := fetchIP(r.RemoteAddr)
 		fmt.Println("ip: ", ip)
 
-		l.Wait(context.Background())
+		// TODO, limit per IP/Hash(IP)
+		tb.limit()
+
+		// TODO: - add tooManyRequests header.
+		//       - add retry after header.
 
 		wrappedHandler(w, r)
 	}
