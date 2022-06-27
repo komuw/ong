@@ -9,16 +9,6 @@ import (
 	"time"
 )
 
-func fetchIP(remoteAddr string) string {
-	// the documentation of `http.Request.RemoteAddr` says:
-	// RemoteAddr is not filled in by ReadRequest and has no defined format.
-	// So we cant rely on it been present, or having a given format.
-	// Although, net/http makes a good effort of availing it & in a standard format.
-	//
-	ipAddr := strings.Split(remoteAddr, ":")
-	return ipAddr[0]
-}
-
 // Most of the code here is insipired by(or taken from):
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
 
@@ -47,11 +37,18 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// TODO: - add tooManyRequests header.
-		//       - add retry after header.
-
 		wrappedHandler(w, r)
 	}
+}
+
+func fetchIP(remoteAddr string) string {
+	// the documentation of `http.Request.RemoteAddr` says:
+	// RemoteAddr is not filled in by ReadRequest and has no defined format.
+	// So we cant rely on it been present, or having a given format.
+	// Although, net/http makes a good effort of availing it & in a standard format.
+	//
+	ipAddr := strings.Split(remoteAddr, ":")
+	return ipAddr[0]
 }
 
 // tb is a simple implementation of the token bucket rate limiting algorithm
