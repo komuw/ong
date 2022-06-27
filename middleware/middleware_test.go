@@ -219,6 +219,13 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	o := WithOpts("example.com")
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
+	intialRateLimiterSendRate := rateLimiterSendRate
+	b.Cleanup(func() {
+		rateLimiterSendRate = intialRateLimiterSendRate
+	})
+	// need to increase this  for tests otherwise the benchmark fails with http.StatusTooManyRequests
+	rateLimiterSendRate = 500.0
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
