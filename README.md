@@ -12,7 +12,8 @@ If you need some extra bits, may I suggest the awesome [github.com/gorilla](http
 
 
 
-This library is made just for me, might be unsafe & I it does not generally accept code contributions.    
+This library is made just for me, it might be unsafe & it does not generally accept code contributions.       
+
 
 
 1. https://www.youtube.com/watch?v=rWBSMsLG8po     
