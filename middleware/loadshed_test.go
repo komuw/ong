@@ -222,8 +222,6 @@ func TestLatencyQueue(t *testing.T) {
 
 				lq.add(1*time.Second, time.Now().UTC())
 				lq.reSize()
-				// we can't call lq.size() here since it is not synced.
-				// but it is only called by lq.reSize() so it is already tested.
 				lq.getP99(time.Now().UTC(), 1*time.Second, 3)
 			}()
 		}

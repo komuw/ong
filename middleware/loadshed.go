@@ -121,17 +121,12 @@ func (lq *latencyQueue) reSize() {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
-	size := lq.size()
+	size := len(lq.sl)
 	if size > 5_000 {
 		// Each `latency` struct is 16bytes. So we can afford to have 5_000(80KB)
 		half := size / 2
 		lq.sl = lq.sl[half:] // retain the latest half.
 	}
-}
-
-func (lq *latencyQueue) size() int {
-	// we dont need to lock here since all calls of this are in `reSize()`
-	return len(lq.sl)
 }
 
 func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
