@@ -92,7 +92,6 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Equal(t, string(rb), errorMsg+"\n")
 
 		for _, v := range []string{
-			"bytes",
 			"code",
 			fmt.Sprint(res.StatusCode),
 			"durationMS",
@@ -197,7 +196,6 @@ func TestLogMiddleware(t *testing.T) {
 				fmt.Sprint(http.StatusInternalServerError),
 				// common
 				"durationMS",
-				"bytes",
 			} {
 				attest.True(t, strings.Contains(logOutput.String(), v))
 			}

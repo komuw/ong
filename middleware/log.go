@@ -71,7 +71,6 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 				"code":        lrw.code,
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
-				"bytes":       lrw.sent,
 			}
 			if gowebError := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebError != "" {
 				flds["gowebError"] = gowebError
@@ -103,8 +102,6 @@ type logRW struct {
 	// http.StatusOK. To get the implicit value, use the Result
 	// method.
 	code int
-	// sent saves bytes sent
-	sent int
 }
 
 var (
@@ -122,7 +119,6 @@ func (lrw *logRW) Write(b []byte) (int, error) {
 	if lrw.code == 0 {
 		lrw.code = http.StatusOK
 	}
-	lrw.sent = len(b)
 	return lrw.ResponseWriter.Write(b)
 }
 
