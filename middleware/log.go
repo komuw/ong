@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	mathRand "math/rand"
 	"net"
 	"net/http"
 	"time"
@@ -31,6 +32,8 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 		// dont indent.
 		false,
 	)
+
+	mathRand.Seed(time.Now().UTC().UnixNano())
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -75,15 +78,21 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 			if gowebError := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebError != "" {
 				flds["gowebError"] = gowebError
 			}
+			lrw.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
 
-			if lrw.code >= http.StatusBadRequest {
+			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
+				// We are either in load shedding or rate-limiting.
+				// Only log 10% of the errors.
+				shouldLog := mathRand.Intn(100) > 90
+				if shouldLog {
+					logger.Error(nil, flds)
+				}
+			} else if lrw.code >= http.StatusBadRequest {
 				// both client and server errors.
 				logger.Error(nil, flds)
 			} else {
 				logger.Info(flds)
 			}
-
-			lrw.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
 		}()
 
 		wrappedHandler(lrw, r)
