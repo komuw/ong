@@ -4,10 +4,17 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"golang.org/x/time/rate"
 )
 
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+	r := rate.Limit(10) // 10req/sec
+	burst := 2          // permit burst of 2 reqs
+	l := rate.NewLimiter(r, burst)
+	_ = l
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := fetchIP(r.RemoteAddr)
 		fmt.Println("ip: ", ip)
