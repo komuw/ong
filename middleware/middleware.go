@@ -17,7 +17,7 @@ import (
 // Or when the Csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
 const gowebMiddlewareErrorHeader = "Goweb-Middleware-Error"
 
-type opts struct {
+type Opts struct {
 	domain         string
 	allowedOrigins []string
 	allowedMethods []string
@@ -32,8 +32,8 @@ func NewOpts(
 	allowedMethods []string,
 	allowedHeaders []string,
 	logOutput io.Writer,
-) opts {
-	return opts{
+) Opts {
+	return Opts{
 		domain:         domain,
 		allowedOrigins: allowedOrigins,
 		allowedMethods: allowedMethods,
@@ -43,7 +43,7 @@ func NewOpts(
 }
 
 // WithOpts returns a new opts that has sensible defaults given domain.
-func WithOpts(domain string) opts {
+func WithOpts(domain string) Opts {
 	return NewOpts(domain, nil, nil, nil, os.Stdout)
 }
 
@@ -54,7 +54,7 @@ func WithOpts(domain string) opts {
 //
 func allDefaultMiddlewares(
 	wrappedHandler http.HandlerFunc,
-	o opts,
+	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
 	allowedOrigins := o.allowedOrigins
@@ -102,7 +102,7 @@ func allDefaultMiddlewares(
 }
 
 // All is a middleware that allows all http methods.
-func All(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
+func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
 		o,
@@ -116,7 +116,7 @@ func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
-func Get(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
+func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
 		o,
@@ -144,7 +144,7 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
-func Post(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
+func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
 		o,
@@ -170,7 +170,7 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
-func Head(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
+func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
@@ -196,7 +196,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
-func Put(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
+func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		put(wrappedHandler),
 		o,
@@ -222,7 +222,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
-func Delete(wrappedHandler http.HandlerFunc, o opts) http.HandlerFunc {
+func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		deleteH(wrappedHandler),
 		o,

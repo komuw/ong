@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/komuw/goweb/log"
+	"github.com/komuw/goweb/middleware"
 
 	"github.com/komuw/goweb/server"
 )
@@ -18,6 +19,13 @@ func main() {
 		db:     "someDb",
 		router: http.NewServeMux(),
 	}
+
+	mmmux := server.NewMux([]server.MuxOpts{
+		server.NewMuxOpts("api", api.handleAPI(), middleware.WithOpts("localhost")),
+		server.NewMuxOpts("greeting", middleware.BasicAuth(api.handleGreeting(202), "user", "passwd"), middleware.WithOpts("localhost")),
+		server.NewMuxOpts("serveDirectory", middleware.BasicAuth(api.handleFileServer(), "user", "passwd"), middleware.WithOpts("localhost")),
+		server.NewMuxOpts("check", api.handleGreeting(200), middleware.WithOpts("localhost")),
+	})
 
 	err := server.Run(api, server.DefaultOpts())
 	if err != nil {
