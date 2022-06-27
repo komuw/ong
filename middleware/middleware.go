@@ -62,35 +62,36 @@ func allDefaultMiddlewares(
 	allowedHeaders := o.allowedHeaders
 	logOutput := o.logOutput
 
-	// TODO: add ratelimiting.
-	//   Those will probably come in between Log & LoadShedder.
-
 	// The way the middlewares are layered is:
-	// 1. panic on the outer since we want it to watch all other middlewares.
-	// 2. log since we would like to get logs as early in the lifecycle as possible.
-	// 3. security since we want some minimum level of security.
-	// 4. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 5. csrf since this one is a bit more involved perf-wise.
-	// 6. gzip since it is very involved perf-wise.
+	// 1. Panic on the outer since we want it to watch all other middlewares.
+	// 2. Log since we would like to get logs as early in the lifecycle as possible.
+	// 3. RateLimiter since we want bad traffic to be filtered early.
+	// 4. LoadShedder for the same reason.
+	// 5. Security since we want some minimum level of security.
+	// 6. Cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 7. Csrf since this one is a bit more involved perf-wise.
+	// 8. Gzip since it is very involved perf-wise.
 	//
-	// user -> panic -> log -> security -> cors -> csrf -> gzip -> actual-handler
+	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> Security -> Cors -> Csrf -> Gzip -> actual-handler
 
 	return Panic(
 		Log(
-			LoadShedder(
-				Security(
-					Cors(
-						Csrf(
-							Gzip(
-								wrappedHandler,
+			RateLimiter(
+				LoadShedder(
+					Security(
+						Cors(
+							Csrf(
+								Gzip(
+									wrappedHandler,
+								),
+								domain,
 							),
-							domain,
+							allowedOrigins,
+							allowedMethods,
+							allowedHeaders,
 						),
-						allowedOrigins,
-						allowedMethods,
-						allowedHeaders,
+						domain,
 					),
-					domain,
 				),
 			),
 			domain,
