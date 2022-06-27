@@ -219,6 +219,13 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	o := WithOpts("example.com")
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
+	intialRateLimiterSendRate := rateLimiterSendRate
+	b.Cleanup(func() {
+		rateLimiterSendRate = intialRateLimiterSendRate
+	})
+	// need to increase this  for tests otherwise the benchmark fails with http.StatusTooManyRequests
+	rateLimiterSendRate = 500.0
+
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -231,8 +238,8 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		res := rec.Result()
 		defer res.Body.Close()
 
-		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(b, res.StatusCode, http.StatusOK)
+		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
 		r = res.StatusCode
 	}
 	// always store the result to a package level variable

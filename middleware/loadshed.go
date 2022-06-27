@@ -21,7 +21,7 @@ const (
 // LoadShedder is a middleware that sheds load based on response latencies.
 func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	mathRand.Seed(time.Now().UTC().UnixNano())
-	lq := NewLatencyQueue()
+	lq := newLatencyQueue()
 
 	/*
 		The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
@@ -115,7 +115,7 @@ type latencyQueue struct {
 	sl []latency
 }
 
-func NewLatencyQueue() *latencyQueue {
+func newLatencyQueue() *latencyQueue {
 	return &latencyQueue{
 		sl: []latency{},
 	}
