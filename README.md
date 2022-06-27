@@ -8,7 +8,8 @@ Taken mainly from the talk; `How I Write HTTP Web Services after Eight Years`[1]
 
 
 You really should not be using this code/library. The Go `net/http` package is more than enough.    
-If you need some extra bits, may I suggest the awesome [https://github.com/gorilla](github.com/gorilla) web toolkit.   
+If you need some extra bits, may I suggest the awesome [github.com/gorilla](https://github.com/gorilla) web toolkit.    
+
 
 
 This library is made just for me, might be unsafe & I it does not generally accept code contributions.    
