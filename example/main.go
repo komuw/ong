@@ -21,9 +21,24 @@ func main() {
 	api := NewMyApi("someDb")
 
 	mux := server.NewMux(server.Routes{
-		server.NewRoute("/api", server.MethodPost, api.handleAPI(), middleware.WithOpts("localhost")),
-		server.NewRoute("serveDirectory", server.MethodAll, middleware.BasicAuth(api.handleFileServer(), "user", "passwd"), middleware.WithOpts("localhost")),
-		server.NewRoute("check/", server.MethodGet, api.check(200), middleware.WithOpts("localhost")),
+		server.NewRoute(
+			"/api",
+			server.MethodPost,
+			api.handleAPI(),
+			middleware.WithOpts("localhost"),
+		),
+		server.NewRoute(
+			"serveDirectory",
+			server.MethodAll,
+			middleware.BasicAuth(api.handleFileServer(), "user", "passwd"),
+			middleware.WithOpts("localhost"),
+		),
+		server.NewRoute(
+			"check/",
+			server.MethodGet,
+			api.check(200),
+			middleware.WithOpts("localhost"),
+		),
 	})
 
 	err := server.Run(mux, server.DefaultOpts())
