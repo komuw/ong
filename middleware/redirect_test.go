@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +15,8 @@ func someHttpsRedirectorHandler(msg string) http.HandlerFunc {
 		fmt.Fprint(w, msg)
 	}
 }
+
+const locationHeader = "Location"
 
 func TestHttpsRedirector(t *testing.T) {
 	t.Parallel()
@@ -31,6 +34,7 @@ func TestHttpsRedirector(t *testing.T) {
 		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
+		attest.NotZero(t, res.Header.Get(locationHeader))
 	})
 
 	t.Run("post is redirected", func(t *testing.T) {
@@ -46,6 +50,7 @@ func TestHttpsRedirector(t *testing.T) {
 		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
+		attest.NotZero(t, res.Header.Get(locationHeader))
 	})
 
 	t.Run("uri combinations", func(t *testing.T) {
@@ -78,22 +83,31 @@ func TestHttpsRedirector(t *testing.T) {
 			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
-			attest.Equal(t, res.Header.Get("Location"), uri)
+			attest.NotZero(t, res.Header.Get(locationHeader))
+			attest.Equal(t, res.Header.Get(locationHeader), uri)
 		}
 	})
 
-	// t.Run("get with tls succeds", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("get with tls succeds", func(t *testing.T) {
+		t.Parallel()
 
-	// 	msg := "hello"
-	// 	wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
-	// 	rec := httptest.NewRecorder()
-	// 	req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
-	// 	wrappedHandler.ServeHTTP(rec, req)
+		msg := "hello world"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
+		ts := httptest.NewTLSServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
 
-	// 	res := rec.Result()
-	// 	defer res.Body.Close()
+		client := ts.Client()
+		res, err := client.Get(ts.URL)
+		attest.Ok(t, err)
 
-	// 	attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
-	// })
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Zero(t, res.Header.Get(locationHeader))
+		attest.Equal(t, string(rb), msg)
+	})
 }
