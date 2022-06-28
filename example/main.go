@@ -22,9 +22,8 @@ func main() {
 
 	mux := server.NewMux(server.Routes{
 		server.NewRoute("/api", server.MethodPost, api.handleAPI(), middleware.WithOpts("localhost")),
-		server.NewRoute("greeting", server.MethodGet, middleware.BasicAuth(api.handleGreeting(202), "user", "passwd"), middleware.WithOpts("localhost")),
 		server.NewRoute("serveDirectory", server.MethodAll, middleware.BasicAuth(api.handleFileServer(), "user", "passwd"), middleware.WithOpts("localhost")),
-		server.NewRoute("check/", server.MethodGet, api.handleGreeting(200), middleware.WithOpts("localhost")),
+		server.NewRoute("check/", server.MethodGet, api.check(200), middleware.WithOpts("localhost")),
 	})
 
 	err := server.Run(mux, server.DefaultOpts())
@@ -95,15 +94,13 @@ func (s myAPI) handleAPI() http.HandlerFunc {
 }
 
 // you can take arguments for handler specific dependencies
-func (s myAPI) handleGreeting(code int) http.HandlerFunc {
+func (s myAPI) check(code int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// use code, which is a dependency specific to this handler
-
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
+		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
-		s.l.Info(log.F{"msg": "handleGreeting", "cspNonce": cspNonce, "csrfToken": csrfToken})
-
+		// use code, which is a dependency specific to this handler
 		w.WriteHeader(code)
 	}
 }
