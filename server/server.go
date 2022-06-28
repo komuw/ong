@@ -172,6 +172,9 @@ func Run(eh extendedHandler, o opts) error {
 				//   (e) if one month is not over, always load certs/key from cache.
 				// see: https://github.com/caddyserver/certmagic
 				//
+
+				fmt.Println("\n GetCertificate called: ", info)
+
 				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
 				if err != nil {
 					err = gowebErrors.Wrap(err)
