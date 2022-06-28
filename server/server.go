@@ -16,7 +16,6 @@ import (
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
-	"github.com/komuw/kama"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -38,9 +37,12 @@ type opts struct {
 	writeTimeout      time.Duration
 	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
+	certFile          string
+	keyFile           string
 
-	certFile string
-	keyFile  string
+	// this ones are created automatically
+	serverPort    string
+	serverAddress string
 }
 
 // Equal compares two opts for equality.
@@ -62,6 +64,8 @@ func NewOpts(
 	certFile string,
 	keyFile string,
 ) opts {
+	serverPort := fmt.Sprintf(":%s", port)
+	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
 	return opts{
 		port:              port,
 		host:              host,
@@ -73,6 +77,9 @@ func NewOpts(
 		idleTimeout:       idleTimeout,
 		certFile:          certFile,
 		keyFile:           keyFile,
+		// this ones are created automatically
+		serverPort:    serverPort,
+		serverAddress: serverAddress,
 	}
 }
 
@@ -103,6 +110,10 @@ func WithOpts(port, host string) opts {
 
 // WithTlsOpts returns a new opts that has sensible defaults given host, certFile & keyFile.
 func WithTlsOpts(host, certFile, keyFile string) opts {
+	return withTlsOpts("443", host, certFile, keyFile)
+}
+
+func withTlsOpts(port, host, certFile, keyFile string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -113,7 +124,7 @@ func WithTlsOpts(host, certFile, keyFile string) opts {
 	idleTimeout := handlerTimeout + (100 * time.Second)
 
 	return NewOpts(
-		"443",
+		port,
 		host,
 		"tcp",
 		readHeaderTimeout,
@@ -129,6 +140,11 @@ func WithTlsOpts(host, certFile, keyFile string) opts {
 // DefaultOpts returns a new opts that has sensible defaults.
 func DefaultOpts() opts {
 	return WithOpts("8080", "127.0.0.1")
+}
+
+func DefaultTlsOpts() opts {
+	certFile, keyFile := certKeyPaths()
+	return withTlsOpts("8081", "127.0.0.1", certFile, keyFile)
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
@@ -147,9 +163,6 @@ func Run(eh extendedHandler, o opts) error {
 		tlsConf = &tls.Config{
 			// GetClientCertificate:
 			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
-				fmt.Println("\n\t GetCertificate called.")
-				kama.Dirp(info)
-
 				// todo: this is where we can renew our certificates if we want.
 				// plan;
 				//   (a) check if one month has passed.
@@ -170,9 +183,8 @@ func Run(eh extendedHandler, o opts) error {
 		}
 	}
 
-	serverPort := fmt.Sprintf(":%s", o.port)
 	server := &http.Server{
-		Addr:      serverPort,
+		Addr:      o.serverPort,
 		TLSConfig: tlsConf,
 
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
@@ -191,14 +203,12 @@ func Run(eh extendedHandler, o opts) error {
 	drainDur := drainDuration(o)
 	sigHandler(server, ctx, cancel, logger, drainDur)
 
-	address := fmt.Sprintf("%s%s", o.host, serverPort)
-
-	err := serve(ctx, server, o.network, address, logger)
+	err := serve(ctx, server, o, logger)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
 		//   Make sure the program doesn't exit and waits instead for Shutdown to return.
-
+		//
 		return err // already wrapped in the `serve` func.
 	}
 
@@ -240,7 +250,7 @@ func sigHandler(
 	}()
 }
 
-func serve(ctx context.Context, srv *http.Server, network, address string, logger log.Logger) error {
+func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
 	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
 		return conn.Control(func(descriptor uintptr) {
 			_ = unix.SetsockoptInt(
@@ -261,19 +271,23 @@ func serve(ctx context.Context, srv *http.Server, network, address string, logge
 			)
 		})
 	}}
-	l, err := cfg.Listen(ctx, network, address)
+	l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 	if err != nil {
 		return gowebErrors.Wrap(err)
 	}
 
 	logger.Info(log.F{
-		"msg": fmt.Sprintf("server listening at %s", address),
+		"msg": fmt.Sprintf("server listening at %s", o.serverAddress),
 	})
 
-	// TODO:
-	// srv.ServeTLS(l net.Listener, certFile string, keyFile string)
-	if errS := srv.Serve(l); errS != nil {
-		return gowebErrors.Wrap(errS)
+	if o.certFile != "" {
+		if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
+			return gowebErrors.Wrap(errS)
+		}
+	} else {
+		if errS := srv.Serve(l); errS != nil {
+			return gowebErrors.Wrap(errS)
+		}
 	}
 	return nil
 }

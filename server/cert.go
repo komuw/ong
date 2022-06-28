@@ -21,8 +21,7 @@ import (
 // CreateDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
 // This is only meant to be used for development/local settings. The certificate is self-signed.
 func CreateDevCertKey() (certFile, keyFile string) {
-	const certPath = "/tmp/goweb_dev_certificate.pem"
-	const keyPath = "/tmp/goweb_dev_key.pem"
+	certPath, keyPath := certKeyPaths()
 
 	generatePrivKey := func() (key crypto.PrivateKey) {
 		var err error
@@ -87,5 +86,11 @@ func CreateDevCertKey() (certFile, keyFile string) {
 		panic(err)
 	}
 
+	return certPath, keyPath
+}
+
+func certKeyPaths() (string, string) {
+	const certPath = "/tmp/goweb_dev_certificate.pem"
+	const keyPath = "/tmp/goweb_dev_key.pem"
 	return certPath, keyPath
 }
