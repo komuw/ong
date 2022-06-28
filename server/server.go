@@ -20,8 +20,8 @@ import (
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
+// extendedHandler is a http.Handler
 type extendedHandler interface {
-	Routes()
 	GetLogger() log.Logger
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
@@ -102,8 +102,6 @@ func DefaultOpts() opts {
 func Run(eh extendedHandler, o opts) error {
 	setRlimit()
 	_, _ = maxprocs.Set()
-
-	eh.Routes()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := eh.GetLogger().WithCtx(ctx).WithImmediate()

@@ -21,3 +21,4 @@ Most recent version is listed first.
 - add load shedding: https://github.com/komuw/goweb/pull/52
 - fix memory leak in tests: https://github.com/komuw/goweb/pull/53
 - add ratelimiter: https://github.com/komuw/goweb/pull/55
+- add naive mux: https://github.com/komuw/goweb/pull/57
