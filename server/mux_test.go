@@ -18,7 +18,11 @@ func someMuxHandler(msg string) http.HandlerFunc {
 }
 
 func TestMux(t *testing.T) {
+	t.Parallel()
+
 	t.Run("unknown uri", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello world"
 		mux := NewMux(
 			Routes{
@@ -42,6 +46,8 @@ func TestMux(t *testing.T) {
 	})
 
 	t.Run("unknown http method", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello world"
 		mux := NewMux(
 			Routes{
@@ -65,6 +71,8 @@ func TestMux(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		msg := "hello world"
 		mux := NewMux(
 			Routes{
