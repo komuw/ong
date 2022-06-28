@@ -31,6 +31,7 @@ type route struct {
 	opts    middleware.Opts
 }
 
+// NewRoute creates a new route.
 func NewRoute(
 	pattern string,
 	method string,
@@ -54,6 +55,7 @@ type mux struct {
 	router *http.ServeMux // some router
 }
 
+// NewMux creates a new mux.
 func NewMux(rts Routes) *mux {
 	m := &mux{
 		l:      log.New(context.Background(), os.Stdout, 1000, false),
