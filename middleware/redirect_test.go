@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -12,6 +13,15 @@ import (
 
 func someHttpsRedirectorHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			p := make([]byte, 16)
+			_, err := r.Body.Read(p)
+			if err == nil || err == io.EOF {
+				fmt.Fprint(w, string(p))
+				return
+			}
+		}
+
 		fmt.Fprint(w, msg)
 	}
 }
@@ -109,5 +119,31 @@ func TestHttpsRedirector(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Zero(t, res.Header.Get(locationHeader))
 		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("post with tls succeds", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
+		ts := httptest.NewTLSServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		client := ts.Client()
+		postMsg := "my name is John"
+		body := strings.NewReader(postMsg)
+		res, err := client.Post(ts.URL, "application/json", body)
+		attest.Ok(t, err)
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Zero(t, res.Header.Get(locationHeader))
+		attest.True(t, !strings.Contains(string(rb), msg))
+		attest.True(t, strings.Contains(string(rb), postMsg))
 	})
 }
