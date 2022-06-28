@@ -4,6 +4,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -36,6 +37,9 @@ type opts struct {
 	writeTimeout      time.Duration
 	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
+
+	certFile string
+	keyFile  string
 }
 
 // Equal compares two opts for equality.
@@ -54,6 +58,8 @@ func NewOpts(
 	writeTimeout time.Duration,
 	handlerTimeout time.Duration,
 	idleTimeout time.Duration,
+	certFile string,
+	keyFile string,
 ) opts {
 	return opts{
 		port:              port,
@@ -64,6 +70,8 @@ func NewOpts(
 		writeTimeout:      writeTimeout,
 		handlerTimeout:    handlerTimeout,
 		idleTimeout:       idleTimeout,
+		certFile:          certFile,
+		keyFile:           keyFile,
 	}
 }
 
@@ -87,6 +95,33 @@ func WithOpts(port, host string) opts {
 		writeTimeout,
 		handlerTimeout,
 		idleTimeout,
+		"",
+		"",
+	)
+}
+
+// WithTlsOpts returns a new opts that has sensible defaults given host, certFile & keyFile.
+func WithTlsOpts(host, certFile, keyFile string) opts {
+	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
+	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
+
+	readHeaderTimeout := 1 * time.Second
+	readTimeout := readHeaderTimeout + (1 * time.Second)
+	writeTimeout := readTimeout + (1 * time.Second)
+	handlerTimeout := writeTimeout + (10 * time.Second)
+	idleTimeout := handlerTimeout + (100 * time.Second)
+
+	return NewOpts(
+		"443",
+		host,
+		"tcp",
+		readHeaderTimeout,
+		readTimeout,
+		writeTimeout,
+		handlerTimeout,
+		idleTimeout,
+		certFile,
+		keyFile,
 	)
 }
 
@@ -106,9 +141,26 @@ func Run(eh extendedHandler, o opts) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := eh.GetLogger().WithCtx(ctx).WithImmediate()
 
+	var tlsConf *tls.Config = nil
+	if o.certFile != "" {
+		tlsConf = &tls.Config{
+			// GetClientCertificate:
+			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
+				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
+				if err != nil {
+					err = gowebErrors.Wrap(err)
+					logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
+					return nil, err
+				}
+				return &c, nil
+			},
+		}
+	}
+
 	serverPort := fmt.Sprintf(":%s", o.port)
 	server := &http.Server{
-		Addr: serverPort,
+		Addr:      serverPort,
+		TLSConfig: tlsConf,
 
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
