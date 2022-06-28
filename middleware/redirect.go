@@ -8,8 +8,7 @@ import (
 func HttpsRedirector(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.TLS == nil {
-			// http.RedirectHandler(url string, code int)
-			http.Redirect(w, r, r.URL.Host, http.StatusPermanentRedirect)
+			http.Redirect(w, r, r.URL.String(), http.StatusPermanentRedirect)
 			return
 		}
 
