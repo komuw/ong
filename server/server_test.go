@@ -65,6 +65,8 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
+			serverPort:        ":8080",
+			serverAddress:     "127.0.0.1:8080",
 		}
 		attest.Equal(t, got, want)
 	})
@@ -82,6 +84,8 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
+			serverPort:        ":80",
+			serverAddress:     "localhost:80",
 		}
 		attest.Equal(t, got, want)
 	})
