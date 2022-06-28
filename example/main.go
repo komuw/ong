@@ -20,6 +20,8 @@ import (
 func main() {
 	api := NewMyApi("someDb")
 
+	server.CreateCertKey()
+
 	mux := server.NewMux(
 		server.Routes{
 			server.NewRoute(
