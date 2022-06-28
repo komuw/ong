@@ -204,6 +204,9 @@ func serve(ctx context.Context, srv *http.Server, network, address string, logge
 	logger.Info(log.F{
 		"msg": fmt.Sprintf("server listening at %s", address),
 	})
+
+	// TODO:
+	// srv.ServeTLS(l net.Listener, certFile string, keyFile string)
 	if errS := srv.Serve(l); errS != nil {
 		return gowebErrors.Wrap(errS)
 	}
