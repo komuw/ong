@@ -156,7 +156,7 @@ func Run(eh extendedHandler, o opts) error {
 	_, _ = maxprocs.Set()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	logger := eh.GetLogger().WithCtx(ctx).WithImmediate()
+	logger := eh.GetLogger().WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
 
 	var tlsConf *tls.Config = nil
 	if o.certFile != "" {
