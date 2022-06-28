@@ -32,14 +32,15 @@ import (
 
 func main() {
 	api := myAPI{db:"someDb", l: someLogger}
-	mux := server.NewMux(server.Routes{
-		server.NewRoute(
-			"check/",
-			server.MethodGet,
-			api.check(200),
-			middleware.WithOpts("localhost"),
-		),
-	})
+	mux := server.NewMux(
+		server.Routes{
+		    server.NewRoute(
+			    "check/",
+			    server.MethodGet,
+			    api.check(200),
+			    middleware.WithOpts("localhost"),
+		   ),
+	    })
 
 	err := server.Run(mux, server.DefaultOpts())
 	if err != nil {
