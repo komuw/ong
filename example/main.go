@@ -10,10 +10,33 @@ import (
 
 	"github.com/komuw/goweb/log"
 	"github.com/komuw/goweb/middleware"
+	"github.com/komuw/goweb/server"
 )
 
-// myAPI rep component as struct
-// shared dependencies as fields
+// Taken mainly from the talk; "How I Write HTTP Web Services after Eight Years" by Mat Ryer
+// 1. https://www.youtube.com/watch?v=rWBSMsLG8po
+// 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
+
+func main() {
+	api := NewMyApi("someDb")
+
+	mux := server.NewMux(server.Routes{
+		server.NewRoute("/api", server.MethodPost, api.handleAPI(), middleware.WithOpts("localhost")),
+		server.NewRoute("greeting", server.MethodGet, middleware.BasicAuth(api.handleGreeting(202), "user", "passwd"), middleware.WithOpts("localhost")),
+		server.NewRoute("serveDirectory", server.MethodAll, middleware.BasicAuth(api.handleFileServer(), "user", "passwd"), middleware.WithOpts("localhost")),
+		server.NewRoute("check/", server.MethodGet, api.handleGreeting(200), middleware.WithOpts("localhost")),
+	})
+
+	err := server.Run(mux, server.DefaultOpts())
+	if err != nil {
+		mux.GetLogger().Error(err, log.F{
+			"msg": "server.Run error",
+		})
+		os.Exit(1)
+	}
+}
+
+// myAPI represents component as struct shared dependencies as fields
 // no global state
 type myAPI struct {
 	db string
@@ -52,12 +75,10 @@ func (s myAPI) handleAPI() http.HandlerFunc {
 	var once sync.Once
 	var serverStart time.Time
 
-	// return the handler
 	return func(w http.ResponseWriter, r *http.Request) {
 		// intialize somethings only once for perf
 		once.Do(func() {
 			s.l.Info(log.F{"msg": "called only once during the first request"})
-
 			serverStart = time.Now()
 		})
 
@@ -78,8 +99,10 @@ func (s myAPI) handleGreeting(code int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// use code, which is a dependency specific to this handler
 
-		nonce := middleware.GetCspNonce(r.Context())
-		s.l.Info(log.F{"msg": "handleGreeting", "nonce": nonce})
+		cspNonce := middleware.GetCspNonce(r.Context())
+		csrfToken := middleware.GetCsrfToken(r.Context())
+
+		s.l.Info(log.F{"msg": "handleGreeting", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
 		w.WriteHeader(code)
 	}
