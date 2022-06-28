@@ -124,6 +124,9 @@ func TestHttpsRedirector(t *testing.T) {
 	t.Run("post with tls succeds", func(t *testing.T) {
 		t.Parallel()
 
+		// this test also asserts that a http POST is not converted to a http GET
+		// as might happen if `HttpsRedirector` was using `http.StatusMovedPermanently`
+
 		msg := "hello world"
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
 		ts := httptest.NewTLSServer(
