@@ -60,8 +60,8 @@ func NewMux(rts Routes) *mux {
 		router: http.NewServeMux(),
 	}
 
+	mid := middleware.All
 	for _, rt := range rts {
-		mid := middleware.All
 		switch rt.method {
 		case MethodAll:
 			mid = middleware.All
