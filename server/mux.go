@@ -23,20 +23,21 @@ const (
 	MethodTrace   = http.MethodTrace
 )
 
-type MuxOpts struct {
+// route relates a uri to its http method and http Handler.
+type route struct {
 	pattern string
 	method  string
 	handler http.HandlerFunc
 	opts    middleware.Opts
 }
 
-func NewMuxOpts(
+func NewRoute(
 	pattern string,
 	method string,
 	handler http.HandlerFunc,
 	opts middleware.Opts,
-) MuxOpts {
-	return MuxOpts{
+) route {
+	return route{
 		pattern: pattern,
 		method:  method,
 		handler: handler,
@@ -44,29 +45,32 @@ func NewMuxOpts(
 	}
 }
 
+// Routes is a list of all the route for an application.
+type Routes []route
+
 // mux implements server.extendedHandler
 type mux struct {
 	l      log.Logger
 	router *http.ServeMux // some router
 }
 
-func NewMux(mo []MuxOpts) *mux {
+func NewMux(rts Routes) *mux {
 	m := &mux{
 		l:      log.New(context.Background(), os.Stdout, 1000, false),
 		router: http.NewServeMux(),
 	}
 
-	for _, v := range mo {
+	for _, rt := range rts {
 		mid := middleware.All
-		switch v.method {
+		switch rt.method {
 		case MethodAll:
 			mid = middleware.All
 		case MethodGet:
 			mid = middleware.Get
-		case MethodHead:
-			mid = middleware.Head
 		case MethodPost:
 			mid = middleware.Post
+		case MethodHead:
+			mid = middleware.Head
 		case MethodPut:
 			mid = middleware.Put
 		case MethodDelete:
@@ -75,14 +79,15 @@ func NewMux(mo []MuxOpts) *mux {
 			mid = middleware.All
 		}
 
-		m.addPattern(v.pattern,
-			mid(v.handler, v.opts),
+		m.addPattern(rt.pattern,
+			mid(rt.handler, rt.opts),
 		)
 	}
 
 	return m
 }
 
+// ServeHTTP implements a http.Handler
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.ServeHTTP(w, r)
 }
