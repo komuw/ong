@@ -18,7 +18,9 @@ import (
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:     https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 //   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here: https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
 
-func CreateCertKey() {
+// CreateDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
+// This is only meant to be used for development/local settings. The certificate is self-signed.
+func CreateDevCertKey() (certFile, keyFile string) {
 	const certPath = "/tmp/goweb_dev_certificate.pem"
 	const keyPath = "/tmp/goweb_dev_key.pem"
 
@@ -84,4 +86,6 @@ func CreateCertKey() {
 	if err := os.WriteFile(keyPath, pemKey, 0o600); err != nil {
 		panic(err)
 	}
+
+	return certPath, keyPath
 }

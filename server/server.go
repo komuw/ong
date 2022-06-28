@@ -16,6 +16,7 @@ import (
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
+	"github.com/komuw/kama"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -146,6 +147,18 @@ func Run(eh extendedHandler, o opts) error {
 		tlsConf = &tls.Config{
 			// GetClientCertificate:
 			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
+				fmt.Println("\n\t GetCertificate called.")
+				kama.Dirp(info)
+
+				// todo: this is where we can renew our certificates if we want.
+				// plan;
+				//   (a) check if one month has passed.
+				//   (b) if it has, call letsencrypt to fetch new certs; maybe in a goroutine.
+				//   (c) save that cert to file.
+				//   (d) also load it into cache/memory.
+				//   (e) if one month is not over, always load certs/key from cache.
+				// see: https://github.com/caddyserver/certmagic
+				//
 				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
 				if err != nil {
 					err = gowebErrors.Wrap(err)

@@ -20,8 +20,6 @@ import (
 func main() {
 	api := NewMyApi("someDb")
 
-	server.CreateCertKey()
-
 	mux := server.NewMux(
 		server.Routes{
 			server.NewRoute(
@@ -44,7 +42,8 @@ func main() {
 			),
 		})
 
-	err := server.Run(mux, server.DefaultOpts())
+	certFile, keyFile := server.CreateDevCertKey()
+	err := server.Run(mux, server.WithTlsOpts("127.0.0.1", certFile, keyFile))
 	if err != nil {
 		mux.GetLogger().Error(err, log.F{
 			"msg": "server.Run error",
