@@ -11,8 +11,8 @@ You really should not be using this code/library. The Go `net/http` package is m
 If you need some extra bits, may I suggest the awesome [github.com/gorilla](https://github.com/gorilla) web toolkit.    
 
 
-
 This library is made just for me, it might be unsafe & it does not generally accept code contributions.       
+
 
 ```go
 package main
