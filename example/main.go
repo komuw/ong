@@ -50,8 +50,7 @@ func main() {
 	}
 }
 
-// myAPI represents component as struct shared dependencies as fields
-// no global state
+// myAPI represents component as a struct, shared dependencies as fields, no global state
 type myAPI struct {
 	db string
 	l  log.Logger

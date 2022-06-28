@@ -14,6 +14,58 @@ If you need some extra bits, may I suggest the awesome [github.com/gorilla](http
 
 This library is made just for me, it might be unsafe & it does not generally accept code contributions.       
 
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/komuw/goweb/log"
+	"github.com/komuw/goweb/middleware"
+	"github.com/komuw/goweb/server"
+)
+
+func main() {
+	api := myAPI{db:"someDb", l: someLogger}
+	mux := server.NewMux(server.Routes{
+		server.NewRoute(
+			"check/",
+			server.MethodGet,
+			api.check(200),
+			middleware.WithOpts("localhost"),
+		),
+	})
+
+	err := server.Run(mux, server.DefaultOpts())
+	if err != nil {
+		mux.GetLogger().Error(err, log.F{
+			"msg": "server.Run error",
+		})
+		os.Exit(1)
+	}
+}
+
+type myAPI struct {
+	db string
+	l  log.Logger
+}
+
+func (s myAPI) check(code int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cspNonce := middleware.GetCspNonce(r.Context())
+		csrfToken := middleware.GetCsrfToken(r.Context())
+		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
+
+		// use code, which is a dependency specific to this handler
+		w.WriteHeader(code)
+	}
+}
+```
 
 
 1. https://www.youtube.com/watch?v=rWBSMsLG8po     
