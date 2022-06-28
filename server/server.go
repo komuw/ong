@@ -20,6 +20,7 @@ import (
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
+// extendedHandler is a http.Handler
 type extendedHandler interface {
 	GetLogger() log.Logger
 	ServeHTTP(http.ResponseWriter, *http.Request)

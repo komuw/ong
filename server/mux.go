@@ -44,12 +44,15 @@ func NewMuxOpts(
 	}
 }
 
+// mux implements server.extendedHandler
 type mux struct {
+	l      log.Logger
 	router *http.ServeMux // some router
 }
 
 func NewMux(mo []MuxOpts) *mux {
 	m := &mux{
+		l:      log.New(context.Background(), os.Stdout, 1000, false),
 		router: http.NewServeMux(),
 	}
 
@@ -85,7 +88,7 @@ func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *mux) GetLogger() log.Logger {
-	return log.New(context.Background(), os.Stdout, 1000, false)
+	return m.l
 }
 
 func (m *mux) addPattern(pattern string, handler func(http.ResponseWriter, *http.Request)) {

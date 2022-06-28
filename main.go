@@ -5,7 +5,6 @@ package main
 // 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
 
 import (
-	"net/http"
 	"os"
 
 	"github.com/komuw/goweb/log"
