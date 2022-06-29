@@ -12,7 +12,6 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"os/exec"
@@ -27,7 +26,7 @@ import (
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:     https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 //   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here: https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
 
-var certLogger = log.New(
+var certLogger = log.New( //nolint:gochecknoglobals
 	context.Background(),
 	os.Stdout,
 	100,
@@ -110,7 +109,7 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 	}
 
 	rootCACertName, _ := rootCAcertKeyPaths()
-	cert, err := ioutil.ReadFile(rootCACertName)
+	cert, err := os.ReadFile(rootCACertName)
 	if err != nil {
 		panic(err)
 	}
@@ -163,7 +162,7 @@ func loadCA() (caCert *x509.Certificate, caKey any) {
 		newCA()
 	}
 
-	certPEMBlock, err := ioutil.ReadFile(rootCACertName)
+	certPEMBlock, err := os.ReadFile(rootCACertName)
 	if err != nil {
 		panic(err)
 	}
@@ -178,7 +177,7 @@ func loadCA() (caCert *x509.Certificate, caKey any) {
 		panic(err)
 	}
 
-	keyPEMBlock, err := ioutil.ReadFile(rootCAKeyName)
+	keyPEMBlock, err := os.ReadFile(rootCAKeyName)
 	if err != nil {
 		panic(err)
 	}
@@ -245,7 +244,7 @@ func newCA() {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile(
+	err = os.WriteFile(
 		rootCACertName,
 		pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert}),
 		0o666,
@@ -254,7 +253,7 @@ func newCA() {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile(
+	err = os.WriteFile(
 		rootCAKeyName,
 		pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privDER}),
 		0o400,
