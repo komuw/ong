@@ -187,8 +187,6 @@ func Run(eh extendedHandler, o opts) error {
 		}
 	}
 
-	// mux = middleware.HttpsRedirector(mux())
-
 	server := &http.Server{
 		Addr:      o.serverPort,
 		TLSConfig: tlsConf,
