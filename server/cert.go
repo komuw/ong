@@ -133,9 +133,9 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 	installInNss := func() {
 		// certutil -V -d ~/.pki/nssdb -u L -n caUniqename # validate cert in NSS store.
 
-		u, err := user.Current()
-		if err != nil {
-			panic(err)
+		u, errC := user.Current()
+		if errC != nil {
+			panic(errC)
 		}
 		nssDb := filepath.Join(u.HomeDir, ".pki/nssdb")
 
@@ -284,9 +284,9 @@ func rootCAcertKeyPaths() (string, string) {
 	}
 	caRoot := getCArootpath()
 	if _, err := os.Stat(caRoot); err != nil {
-		err := os.MkdirAll(caRoot, 0o761)
-		if err != nil {
-			panic(err)
+		errMk := os.MkdirAll(caRoot, 0o761)
+		if errMk != nil {
+			panic(errMk)
 		}
 	}
 
