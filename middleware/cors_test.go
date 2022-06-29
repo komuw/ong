@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -465,6 +466,40 @@ func TestCorsActualRequest(t *testing.T) {
 				attest.Equal(t, gotSucess, tt.succeed)
 			})
 		}
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
+		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
+
+		runhandler := func() {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
 	})
 }
 
