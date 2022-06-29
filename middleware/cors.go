@@ -34,7 +34,7 @@ const (
 	acamHeader   = "Access-Control-Allow-Methods"
 	acahHeader   = "Access-Control-Allow-Headers"
 	// header that if set to true, allows client & server to include credentials in cross-origin-requests.
-	// credentials are cookies, authorization headers, or TLS client certificates
+	// credentials are cookies, authorization headers, or tls client certificates
 	// The only valid value of this header is `true`(`false` is not valid, omit the header entirely instead.)
 	acacHeader = "Access-Control-Allow-Credentials"
 	_          = acacHeader
