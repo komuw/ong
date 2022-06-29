@@ -2,6 +2,7 @@
 package id
 
 import (
+	"math"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -31,6 +32,23 @@ func TestNew(t *testing.T) {
 			c := Random(_len)
 			attest.True(t, a != b)
 			attest.True(t, a != c)
+		}
+
+		{
+			got := Random(-1)
+			attest.NotZero(t, got)
+
+			got = Random(-92)
+			attest.NotZero(t, got)
+
+			got = Random(0)
+			attest.NotZero(t, got)
+
+			got = Random(1)
+			attest.NotZero(t, got)
+
+			got = Random(math.MaxInt)
+			attest.NotZero(t, got)
 		}
 	})
 }
