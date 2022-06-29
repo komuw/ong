@@ -5,6 +5,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -131,6 +132,13 @@ func TestServer(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
+
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			// server.Run() calls setRlimit()
+			// and setRlimit() fails in github actions with error: `operation not permitted`
+			// specifically the call to `unix.Setrlimit()`
+			return
+		}
 
 		port := math.MaxUint16 - uint16(3)
 		uri := "/api"
