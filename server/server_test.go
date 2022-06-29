@@ -57,7 +57,7 @@ func TestDrainDuration(t *testing.T) {
 func TestOpts(t *testing.T) {
 	t.Parallel()
 
-	t.Run("sensible defaults", func(t *testing.T) {
+	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
 		got := DefaultOpts()
@@ -77,7 +77,7 @@ func TestOpts(t *testing.T) {
 		attest.Equal(t, got, want)
 	})
 
-	t.Run("sensible defaults", func(t *testing.T) {
+	t.Run("with opts", func(t *testing.T) {
 		t.Parallel()
 
 		got := WithOpts(80, "localhost")
@@ -93,6 +93,28 @@ func TestOpts(t *testing.T) {
 			serverPort:        ":80",
 			serverAddress:     "localhost:80",
 			httpPort:          ":80",
+		}
+		attest.Equal(t, got, want)
+	})
+
+	t.Run("default tls opts", func(t *testing.T) {
+		t.Parallel()
+
+		got := DefaultTlsOpts()
+		want := opts{
+			port:              8081,
+			host:              "127.0.0.1",
+			network:           "tcp",
+			readHeaderTimeout: 1 * time.Second,
+			readTimeout:       2 * time.Second,
+			writeTimeout:      3 * time.Second,
+			handlerTimeout:    13 * time.Second,
+			idleTimeout:       113 * time.Second,
+			certFile:          "/tmp/goweb_dev_certificate.pem",
+			keyFile:           "/tmp/goweb_dev_key.pem",
+			serverPort:        ":8081",
+			serverAddress:     "127.0.0.1:8081",
+			httpPort:          ":8080",
 		}
 		attest.Equal(t, got, want)
 	})
