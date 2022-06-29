@@ -221,6 +221,10 @@ func Run(eh extendedHandler, o opts) error {
 	drainDur := drainDuration(o)
 	sigHandler(server, ctx, cancel, logger, drainDur)
 
+	{
+		startPprofServer()
+	}
+
 	err := serve(ctx, server, o, logger)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:

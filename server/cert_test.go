@@ -10,6 +10,12 @@ import (
 func TestCreateDevCertKey(t *testing.T) {
 	t.Parallel()
 
+	if os.Getenv("GITHUB_ACTIONS") != "" {
+		// setRlimit() fails in github actions with error: `operation not permitted`
+		// specifically the call to `unix.Setrlimit()`
+		return
+	}
+
 	certPath, keyPath := certKeyPaths()
 
 	t.Run("success", func(t *testing.T) {

@@ -23,3 +23,4 @@ Most recent version is listed first.
 - add ratelimiter: https://github.com/komuw/goweb/pull/55
 - add naive mux: https://github.com/komuw/goweb/pull/57
 - handle tls: https://github.com/komuw/goweb/pull/58
+- expvar metrics: https://github.com/komuw/goweb/pull/64
