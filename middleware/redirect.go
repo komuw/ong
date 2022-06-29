@@ -24,7 +24,7 @@ func HttpsRedirector(httpsPort string) http.HandlerFunc {
 			host = net.JoinHostPort(host, httpsPort)
 			url.Host = host
 			path := url.String()
-			fmt.Println("\t HttpsRedirector: ", path)
+			fmt.Println("\t HttpsRedirector: ", path) // TODO: remove this.
 
 			http.Redirect(w, r, path, http.StatusPermanentRedirect)
 			return
