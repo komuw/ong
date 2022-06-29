@@ -1,4 +1,4 @@
-// Package id is a unique id generator
+// Package id generates unique random strings
 package id
 
 import (
