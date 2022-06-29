@@ -27,14 +27,22 @@ import (
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:     https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 //   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here: https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
 
-// TODO: unexport
-var logger = log.New(context.Background(), os.Stdout, 1000, false).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
+var certLogger = log.New(
+	context.Background(),
+	os.Stdout,
+	100,
+	false).
+	WithImmediate().
+	WithFields(
+		log.F{"pid": os.Getpid()},
+	)
 
 // CreateDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
-// This is only meant to be used for development/local settings. The certificate is self-signed.
+// This is only meant to be used for development/local settings.
+// The certificate is self-signed & a best effort is made to add its CA to the OS trust store.
 func CreateDevCertKey() (certFile, keyFile string) {
-	logger.Info(log.F{"msg": "creating dev tls cert and key"})
-	defer logger.Info(log.F{"msg": "done creating dev tls cert and key"})
+	certLogger.Info(log.F{"msg": "creating dev tls cert and key"})
+	defer certLogger.Info(log.F{"msg": "done creating dev tls cert and key"})
 
 	caCert, caKey := installCA()
 	certPath, keyPath := certKeyPaths()
@@ -81,8 +89,8 @@ func CreateDevCertKey() (certFile, keyFile string) {
 
 // installCA adds the dev root CA to the linux/ubuntu certificate trust store.
 func installCA() (caCert *x509.Certificate, caKey any) {
-	logger.Info(log.F{"msg": "installing dev root CA"})
-	defer logger.Info(log.F{"msg": "done installing dev root CA"})
+	certLogger.Info(log.F{"msg": "installing dev root CA"})
+	defer certLogger.Info(log.F{"msg": "done installing dev root CA"})
 
 	caCert, caKey = loadCA()
 
@@ -97,7 +105,7 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 	_, errVerify := caCert.Verify(x509.VerifyOptions{})
 	if errVerify == nil && errStat == nil {
 		// cert is already installed.
-		logger.Info(log.F{"msg": "root CA was already installed"})
+		certLogger.Info(log.F{"msg": "root CA was already installed"})
 		return caCert, caKey
 	}
 
@@ -117,7 +125,7 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 	sysTrustCmd := []string{"update-ca-certificates"}
 	cmd = commandWithSudo(sysTrustCmd...)
 	out, err = cmd.CombinedOutput()
-	logger.Info(log.F{"msg": string(out)})
+	certLogger.Info(log.F{"msg": string(out)})
 	if err != nil {
 		panic(err)
 	}
@@ -139,7 +147,7 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertName}
 		cmd = commandWithSudo(add...)
 		out, err = cmd.CombinedOutput()
-		logger.Info(log.F{"msg": string(out), "args": cmd.Args})
+		certLogger.Info(log.F{"msg": string(out), "args": cmd.Args})
 		if err != nil {
 			panic(err)
 		}
