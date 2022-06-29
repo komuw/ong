@@ -86,6 +86,13 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 
 	caCert, caKey = loadCA()
 
+	systemTrustFilename := func() string {
+		// https://ubuntu.com/server/docs/security-trust-store
+		uniqename := "goweb_development_CA"
+		sysTrustFname := "/usr/local/share/ca-certificates/%s.crt"
+		return fmt.Sprintf(sysTrustFname, uniqename)
+	}
+
 	_, errStat := os.Stat(systemTrustFilename())
 	_, errVerify := caCert.Verify(x509.VerifyOptions{})
 	if errVerify == nil && errStat == nil {
@@ -230,12 +237,6 @@ func commandWithSudo(cmd ...string) *exec.Cmd {
 		return exec.Command(cmd[0], cmd[1:]...)
 	}
 	return exec.Command("sudo", append([]string{"--prompt=Sudo password:", "--"}, cmd...)...)
-}
-
-func systemTrustFilename() string {
-	uniqename := "goweb_development_CA"
-	sysTrustFname := "/usr/local/share/ca-certificates/%s.crt"
-	return fmt.Sprintf(sysTrustFname, uniqename)
 }
 
 func rootCAcertKeyPaths() (string, string) {
