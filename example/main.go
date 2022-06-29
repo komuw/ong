@@ -42,7 +42,8 @@ func main() {
 			),
 		})
 
-	err := server.Run(mux, server.DefaultOpts())
+	_, _ = server.CreateDevCertKey()
+	err := server.Run(mux, server.DefaultTlsOpts())
 	if err != nil {
 		mux.GetLogger().Error(err, log.F{
 			"msg": "server.Run error",

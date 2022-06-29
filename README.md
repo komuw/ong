@@ -44,9 +44,7 @@ func main() {
 
 	err := server.Run(mux, server.DefaultOpts())
 	if err != nil {
-		mux.GetLogger().Error(err, log.F{
-			"msg": "server.Run error",
-		})
+		mux.GetLogger().Error(err, log.F{"msg": "server.Run error"})
 		os.Exit(1)
 	}
 }
