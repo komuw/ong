@@ -86,11 +86,11 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 
 	caCert, caKey = loadCA()
 
+	caUniqename := "goweb_development_CA"
 	systemTrustFilename := func() string {
 		// https://ubuntu.com/server/docs/security-trust-store
-		uniqename := "goweb_development_CA"
 		sysTrustFname := "/usr/local/share/ca-certificates/%s.crt"
-		return fmt.Sprintf(sysTrustFname, uniqename)
+		return fmt.Sprintf(sysTrustFname, caUniqename)
 	}
 
 	_, errStat := os.Stat(systemTrustFilename())
@@ -121,6 +121,30 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 	if err != nil {
 		panic(err)
 	}
+
+	installInNss := func() {
+		// certutil -V -d ~/.pki/nssdb -u L -n caUniqename # validate cert in NSS store.
+
+		u, err := user.Current()
+		if err != nil {
+			panic(err)
+		}
+		nssDb := filepath.Join(u.HomeDir, ".pki/nssdb")
+
+		delete := []string{"certutil", "-D", "-d", nssDb, "-n", caUniqename}
+		cmd = commandWithSudo(delete...)
+		out, err = cmd.CombinedOutput()
+		_ = err // ignore error
+
+		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertName}
+		cmd = commandWithSudo(add...)
+		out, err = cmd.CombinedOutput()
+		logger.Info(log.F{"msg": string(out), "args": cmd.Args})
+		if err != nil {
+			panic(err)
+		}
+	}
+	installInNss()
 
 	return caCert, caKey
 }
