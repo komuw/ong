@@ -32,7 +32,6 @@ type extendedHandler interface {
 type opts struct {
 	port              string
 	host              string
-	network           string
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
@@ -44,6 +43,7 @@ type opts struct {
 	// this ones are created automatically
 	serverPort    string
 	serverAddress string
+	network       string
 }
 
 // Equal compares two opts for equality.
@@ -56,7 +56,6 @@ func (o opts) Equal(other opts) bool {
 func NewOpts(
 	port string,
 	host string,
-	network string,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
@@ -67,10 +66,10 @@ func NewOpts(
 ) opts {
 	serverPort := fmt.Sprintf(":%s", port)
 	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
+
 	return opts{
 		port:              port,
 		host:              host,
-		network:           network,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
@@ -81,6 +80,7 @@ func NewOpts(
 		// this ones are created automatically
 		serverPort:    serverPort,
 		serverAddress: serverAddress,
+		network:       "tcp",
 	}
 }
 
@@ -98,7 +98,6 @@ func WithOpts(port, host string) opts {
 	return NewOpts(
 		port,
 		host,
-		"tcp",
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
@@ -127,7 +126,6 @@ func withTlsOpts(port, host, certFile, keyFile string) opts {
 	return NewOpts(
 		port,
 		host,
-		"tcp",
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
