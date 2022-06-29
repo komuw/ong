@@ -11,7 +11,6 @@ import (
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
-	"github.com/komuw/goweb/middleware"
 )
 
 /*
@@ -21,39 +20,12 @@ example usage:
 func startPprofServer() {
 	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
 	//
-	mux := NewMux(
-		Routes{
-			NewRoute(
-				"/debug/pprof/",
-				MethodGet,
-				pprof.Index,
-				middleware.WithOpts("localhost"),
-			),
-			NewRoute(
-				"/debug/pprof/cmdline",
-				MethodGet,
-				pprof.Cmdline,
-				middleware.WithOpts("localhost"),
-			),
-			NewRoute(
-				"/debug/pprof/profile",
-				MethodGet,
-				pprof.Profile,
-				middleware.WithOpts("localhost"),
-			),
-			NewRoute(
-				"/debug/pprof/symbol",
-				MethodGet,
-				pprof.Symbol,
-				middleware.WithOpts("localhost"),
-			),
-			NewRoute(
-				"/debug/pprof/trace",
-				MethodGet,
-				pprof.Trace,
-				middleware.WithOpts("localhost"),
-			),
-		})
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
