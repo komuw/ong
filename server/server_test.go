@@ -1,10 +1,15 @@
 package server
 
 import (
+	"fmt"
+	"io"
+	"math"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/goweb/middleware"
 )
 
 func TestDrainDuration(t *testing.T) {
@@ -93,37 +98,45 @@ func TestOpts(t *testing.T) {
 	})
 }
 
-// type myEH struct{ router *http.ServeMux }
+func someServerTestHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, msg)
+	}
+}
 
-// func (m *myEH) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	m.router.ServeHTTP(w, r)
-// }
+func TestServer(t *testing.T) {
+	t.Parallel()
 
-// func (m *myEH) GetLogger() *log.Logger {
-// 	return log.New(os.Stderr, "logger: ", log.Lshortfile)
-// }
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 
-// func (m *myEH) Routes() {
-// 	m.router.HandleFunc("/hello",
-// 		echoHandler("hello"),
-// 	)
-// }
+		port := math.MaxUint16 - uint16(3)
+		uri := "/api"
+		msg := "hello world"
+		mux := NewMux(
+			Routes{
+				NewRoute(
+					uri,
+					MethodGet,
+					someServerTestHandler(msg),
+					middleware.WithOpts("localhost"),
+				),
+			})
 
-// // echoHandler echos back in the response, the msg that was passed in.
-// func echoHandler(msg string) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		fmt.Fprint(w, msg)
-// 	}
-// }
+		go func() {
+			err := Run(mux, WithOpts(port, "127.0.0.1"))
+			attest.Ok(t, err)
+		}()
 
-// func TestRun(t *testing.T) {
-//  t.Parallel()
-//
-// 	t.Run("success", func(t *testing.T) {
-//      t.Parallel()
-//
-// 		eh := &myEH{router: http.NewServeMux()}
-// 		err := Run(eh, WithOpts("0", "localhost"))
-// 		attest.Ok(t, err)
-// 	})
-// }
+		// await for the server to start.
+		time.Sleep((1 * time.Second))
+
+		res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
+		attest.Ok(t, err)
+		defer res.Body.Close()
+		rb, err := io.ReadAll(res.Body)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
+}
