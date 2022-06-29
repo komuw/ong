@@ -66,7 +66,14 @@ func (s myAPI) check(code int) http.HandlerFunc {
 }
 ```
 
+`go run -race ./...`     
+
+To use tls:
+```go
+_, _ = server.CreateDevCertKey()
+err := server.Run(mux, server.DefaultTlsOpts())
+```
+
 
 1. https://www.youtube.com/watch?v=rWBSMsLG8po     
 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html     
-
