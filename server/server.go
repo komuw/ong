@@ -225,7 +225,7 @@ func Run(eh extendedHandler, o opts) error {
 	{
 		// wait for server.Shutdown() to return.
 		// cancel context incase drainDuration expires befure server.Shutdown() has completed.
-		// time.Sleep(drainDur)
+		time.Sleep(drainDur)
 		cancel()
 	}
 
@@ -289,8 +289,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 	if o.certFile != "" {
 		{ // HTTP LISTERNER:
 
-			// http.HandleFunc(pattern string, miidmiddleware.HttpsRedirector)
-			http.Handle("/", middleware.RedirectToHTTPSRouter())
+			http.HandleFunc("/", middleware.HttpsRedirector(o.port))
 			go func() {
 				logger.Info(log.F{
 					"msg": fmt.Sprintf("server listening at %s", ":8082"),
