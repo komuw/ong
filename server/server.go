@@ -30,7 +30,7 @@ type extendedHandler interface {
 
 // opts defines parameters for running an HTTP server.
 type opts struct {
-	port              string
+	port              uint16 // tcp port is a 16bit unsigned integer.
 	host              string
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
@@ -44,6 +44,7 @@ type opts struct {
 	serverPort    string
 	serverAddress string
 	network       string
+	httpPort      string
 }
 
 // Equal compares two opts for equality.
@@ -54,7 +55,7 @@ func (o opts) Equal(other opts) bool {
 
 // NewOpts returns a new opts.
 func NewOpts(
-	port string,
+	port uint16,
 	host string,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
@@ -64,8 +65,18 @@ func NewOpts(
 	certFile string,
 	keyFile string,
 ) opts {
-	serverPort := fmt.Sprintf(":%s", port)
+	serverPort := fmt.Sprintf(":%d", port)
 	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
+
+	httpPort := port
+	isTls := certFile != ""
+	if isTls {
+		if port == 443 {
+			httpPort = 80
+		} else {
+			httpPort = port - 1
+		}
+	}
 
 	return opts{
 		port:              port,
@@ -81,11 +92,12 @@ func NewOpts(
 		serverPort:    serverPort,
 		serverAddress: serverAddress,
 		network:       "tcp",
+		httpPort:      fmt.Sprintf(":%d", httpPort),
 	}
 }
 
 // WithOpts returns a new opts that has sensible defaults given port and host.
-func WithOpts(port, host string) opts {
+func WithOpts(port uint16, host string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -110,10 +122,10 @@ func WithOpts(port, host string) opts {
 
 // WithTlsOpts returns a new opts that has sensible defaults given host, certFile & keyFile.
 func WithTlsOpts(host, certFile, keyFile string) opts {
-	return withTlsOpts("443", host, certFile, keyFile)
+	return withTlsOpts(443, host, certFile, keyFile)
 }
 
-func withTlsOpts(port, host, certFile, keyFile string) opts {
+func withTlsOpts(port uint16, host, certFile, keyFile string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -138,12 +150,12 @@ func withTlsOpts(port, host, certFile, keyFile string) opts {
 
 // DefaultOpts returns a new opts that has sensible defaults.
 func DefaultOpts() opts {
-	return WithOpts("8080", "127.0.0.1")
+	return WithOpts(8080, "127.0.0.1")
 }
 
 func DefaultTlsOpts() opts {
 	certFile, keyFile := certKeyPaths()
-	return withTlsOpts("8081", "127.0.0.1", certFile, keyFile)
+	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile)
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
@@ -287,12 +299,25 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 	if o.certFile != "" {
 		{ // HTTP LISTERNER:
 
+			// httpSrv := &http.Server{
+			// 	Addr:              o.httpPort,
+			// 	Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
+			// 	ReadHeaderTimeout: o.readHeaderTimeout,
+			// 	ReadTimeout:       o.readTimeout,
+			// 	WriteTimeout:      o.writeTimeout,
+			// 	IdleTimeout:       o.idleTimeout,
+			// 	ErrorLog:          logger.StdLogger(),
+			// 	BaseContext:       func(net.Listener) context.Context { return ctx },
+			// }
+
+			// httpSrv.ListenAndServe()
+
 			http.HandleFunc("/", middleware.HttpsRedirector(srv.Handler, o.port))
 			go func() {
 				logger.Info(log.F{
-					"msg": fmt.Sprintf("server listening at %s", ":8082"),
+					"msg": fmt.Sprintf("http server listening at %s", o.httpPort),
 				})
-				err := http.ListenAndServe(":8082", nil)
+				err := http.ListenAndServe(o.httpPort, nil)
 				if err != nil {
 					err = gowebErrors.Wrap(err)
 					logger.Error(err, log.F{"msg": "unable to start http listener for redirects"})
@@ -304,7 +329,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			// HTTPS LISTERNER:
 
 			logger.Info(log.F{
-				"msg": fmt.Sprintf("server listening at %s", o.serverAddress),
+				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 			})
 			if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
 				return gowebErrors.Wrap(errS)
@@ -312,7 +337,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		}
 	} else {
 		logger.Info(log.F{
-			"msg": fmt.Sprintf("server listening at %s", o.serverAddress),
+			"msg": fmt.Sprintf("http server listening at %s", o.serverAddress),
 		})
 		if errS := srv.Serve(l); errS != nil {
 			return gowebErrors.Wrap(errS)
