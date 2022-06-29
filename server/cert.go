@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/komuw/goweb/id"
 	"github.com/komuw/goweb/log"
 )
 
@@ -87,8 +86,9 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 
 	caCert, caKey = loadCA()
 
-	_, err := caCert.Verify(x509.VerifyOptions{})
-	if err == nil {
+	_, errStat := os.Stat(systemTrustFilename())
+	_, errVerify := caCert.Verify(x509.VerifyOptions{})
+	if errVerify == nil && errStat == nil {
 		// cert is already installed.
 		logger.Info(log.F{"msg": "root CA was already installed"})
 		return caCert, caKey
@@ -233,7 +233,7 @@ func commandWithSudo(cmd ...string) *exec.Cmd {
 }
 
 func systemTrustFilename() string {
-	uniqename := "goweb_development_CA_" + id.New()
+	uniqename := "goweb_development_CA"
 	sysTrustFname := "/usr/local/share/ca-certificates/%s.crt"
 	return fmt.Sprintf(sysTrustFname, uniqename)
 }
