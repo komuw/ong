@@ -78,6 +78,27 @@ func TestRateLimiter(t *testing.T) {
 		attest.Approximately(t, effectiveMessageRate, int(rateLimiterSendRate), 4)
 	})
 
+	t.Run("bad remoteAddr", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.RemoteAddr = "BadRemoteAddr"
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
@@ -110,27 +131,6 @@ func TestRateLimiter(t *testing.T) {
 			}()
 		}
 		wg.Wait()
-	})
-
-	t.Run("bad remoteAddr", func(t *testing.T) {
-		t.Parallel()
-
-		msg := "hello"
-		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		req.RemoteAddr = "BadRemoteAddr"
-		wrappedHandler.ServeHTTP(rec, req)
-
-		res := rec.Result()
-		defer res.Body.Close()
-
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
-
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
 	})
 }
 
