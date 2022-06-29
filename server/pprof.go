@@ -11,6 +11,7 @@ import (
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
+	"github.com/komuw/goweb/middleware"
 )
 
 /*
@@ -18,12 +19,41 @@ example usage:
   go tool pprof  http://localhost:6060/debug/pprof/heap
 */
 func startPprofServer() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
+	//
+	mux := NewMux(
+		Routes{
+			NewRoute(
+				"/debug/pprof/",
+				MethodGet,
+				pprof.Index,
+				middleware.WithOpts("localhost"),
+			),
+			NewRoute(
+				"/debug/pprof/cmdline",
+				MethodGet,
+				pprof.Cmdline,
+				middleware.WithOpts("localhost"),
+			),
+			NewRoute(
+				"/debug/pprof/profile",
+				MethodGet,
+				pprof.Profile,
+				middleware.WithOpts("localhost"),
+			),
+			NewRoute(
+				"/debug/pprof/symbol",
+				MethodGet,
+				pprof.Symbol,
+				middleware.WithOpts("localhost"),
+			),
+			NewRoute(
+				"/debug/pprof/trace",
+				MethodGet,
+				pprof.Trace,
+				middleware.WithOpts("localhost"),
+			),
+		})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -36,14 +66,12 @@ func startPprofServer() {
 
 	port := 6060
 	addr := fmt.Sprintf("localhost:%d", port)
-	readHeader, read, write, handlerTime, idle := pprofTimeouts()
+	readHeader, read, write, idle := pprofTimeouts()
 	pprofSrv := &http.Server{
 		Addr: addr,
-		Handler: http.TimeoutHandler(
-			mux,
-			handlerTime,
-			fmt.Sprintf("goweb: Handler timeout exceeded: %s", handlerTime),
-		),
+		// the pprof muxer is failing to work with `http.TimeoutHandler`
+		// https://github.com/komuw/goweb/issues/62
+		Handler:           mux,
 		ReadHeaderTimeout: readHeader,
 		ReadTimeout:       read,
 		WriteTimeout:      write,
@@ -64,11 +92,10 @@ func startPprofServer() {
 	}()
 }
 
-func pprofTimeouts() (readHeader, read, write, handler, idle time.Duration) {
+func pprofTimeouts() (readHeader, read, write, idle time.Duration) {
 	readHeader = 5 * time.Second
 	read = readHeader + (20 * time.Second)
 	write = 5 * time.Minute
-	handler = write + (3 * time.Minute)
 	idle = 3 * time.Minute
-	return readHeader, read, write, handler, idle
+	return readHeader, read, write, idle
 }
