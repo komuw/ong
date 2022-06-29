@@ -294,8 +294,8 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 	}
 
 	if o.certFile != "" {
-		{ // HTTP LISTERNER:
-
+		{
+			// HTTP(non-tls) LISTERNER:
 			httpSrv := &http.Server{
 				Addr:              o.httpPort,
 				Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
@@ -319,8 +319,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		}
 
 		{
-			// HTTPS LISTERNER:
-
+			// HTTPS(tls) LISTERNER:
 			logger.Info(log.F{
 				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 			})
