@@ -289,7 +289,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 	if o.certFile != "" {
 		{ // HTTP LISTERNER:
 
-			http.HandleFunc("/", middleware.HttpsRedirector(o.port))
+			http.HandleFunc("/", middleware.HttpsRedirector(srv.Handler, o.port))
 			go func() {
 				logger.Info(log.F{
 					"msg": fmt.Sprintf("server listening at %s", ":8082"),

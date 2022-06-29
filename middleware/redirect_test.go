@@ -31,11 +31,29 @@ const locationHeader = "Location"
 func TestHttpsRedirector(t *testing.T) {
 	t.Parallel()
 
+	// t.Run("different port combinations", func(t *testing.T) {
+	// 	t.Parallel()
+
+	// 	msg := "hello world"
+	// 	port := "443" // "", "80", "78726", etc
+	// 	wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+	// 	rec := httptest.NewRecorder()
+	// 	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 	wrappedHandler.ServeHTTP(rec, req)
+
+	// 	res := rec.Result()
+	// 	defer res.Body.Close()
+
+	// 	attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
+	// 	attest.NotZero(t, res.Header.Get(locationHeader))
+	// })
+
 	t.Run("get is redirected", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
+		msg := "hello world"
+		port := "443"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -50,8 +68,9 @@ func TestHttpsRedirector(t *testing.T) {
 	t.Run("post is redirected", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
+		msg := "hello world"
+		port := "443"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -66,8 +85,9 @@ func TestHttpsRedirector(t *testing.T) {
 	t.Run("uri combinations", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
+		msg := "hello world"
+		port := "443"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 
 		for _, uri := range []string{
 			"/someUri",
@@ -94,7 +114,7 @@ func TestHttpsRedirector(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
 			attest.NotZero(t, res.Header.Get(locationHeader))
-			attest.Equal(t, res.Header.Get(locationHeader), uri)
+			attest.Equal(t, res.Header.Get(locationHeader), "https://example.com"+uri)
 		}
 	})
 
@@ -102,7 +122,8 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
+		port := "443"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
 		)
@@ -128,7 +149,8 @@ func TestHttpsRedirector(t *testing.T) {
 		// as might happen if `HttpsRedirector` was using `http.StatusMovedPermanently`
 
 		msg := "hello world"
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg))
+		port := "443"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
 		)
