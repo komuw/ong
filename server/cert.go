@@ -81,6 +81,9 @@ func CreateDevCertKey() (certFile, keyFile string) {
 	}
 
 	key, err := x509.MarshalPKCS8PrivateKey(privKey)
+	if err != nil {
+		panic(err)
+	}
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key})
 	if err = os.WriteFile(keyPath, pemKey, 0o600); err != nil {
 		panic(err)
