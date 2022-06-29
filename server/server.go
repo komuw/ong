@@ -162,6 +162,7 @@ func DefaultTlsOpts() opts {
 // It sets up a server with the parameters provided by o.
 //
 // The server shuts down cleanly after receiving any terminating signal.
+// If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
 func Run(eh extendedHandler, o opts) error {
 	setRlimit()
 	_, _ = maxprocs.Set()
