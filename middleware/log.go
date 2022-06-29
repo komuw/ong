@@ -37,7 +37,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		logger = logger.WithCtx(ctx)
+		logger := logger.WithCtx(ctx)
 
 		{
 			// set cookie/headers/ctx for logID.

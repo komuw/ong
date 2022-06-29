@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -242,6 +243,42 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
 		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		attest.Equal(t, logHeader, someLogID)
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		logOutput := &bytes.Buffer{}
+		successMsg := "hello"
+		domain := "example.com"
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
+		wrappedHandler := Log(someLogHandler(successMsg), domain, logOutput)
+
+		runhandler := func() {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), successMsg)
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
 	})
 }
 
