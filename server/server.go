@@ -160,8 +160,10 @@ func Run(eh extendedHandler, o opts) error {
 	var tlsConf *tls.Config = nil
 	if o.certFile != "" {
 		tlsConf = &tls.Config{
-			// GetClientCertificate:
 			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
+				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
+				// it is called if `tls.Config.Certificates` is empty.
+				//
 				// todo: this is where we can renew our certificates if we want.
 				// plan;
 				//   (a) check if one month has passed.
