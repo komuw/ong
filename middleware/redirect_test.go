@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -183,5 +184,37 @@ func TestHttpsRedirector(t *testing.T) {
 			}
 			attest.Equal(t, res.Header.Get(locationHeader), expectedLocation)
 		}
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		port := uint16(443)
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+
+		runhandler := func() {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
+			attest.NotZero(t, res.Header.Get(locationHeader))
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 14; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
 	})
 }
