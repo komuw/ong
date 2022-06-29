@@ -299,25 +299,21 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 	if o.certFile != "" {
 		{ // HTTP LISTERNER:
 
-			// httpSrv := &http.Server{
-			// 	Addr:              o.httpPort,
-			// 	Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
-			// 	ReadHeaderTimeout: o.readHeaderTimeout,
-			// 	ReadTimeout:       o.readTimeout,
-			// 	WriteTimeout:      o.writeTimeout,
-			// 	IdleTimeout:       o.idleTimeout,
-			// 	ErrorLog:          logger.StdLogger(),
-			// 	BaseContext:       func(net.Listener) context.Context { return ctx },
-			// }
-
-			// httpSrv.ListenAndServe()
-
-			http.HandleFunc("/", middleware.HttpsRedirector(srv.Handler, o.port))
+			httpSrv := &http.Server{
+				Addr:              o.httpPort,
+				Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
+				ReadHeaderTimeout: o.readHeaderTimeout,
+				ReadTimeout:       o.readTimeout,
+				WriteTimeout:      o.writeTimeout,
+				IdleTimeout:       o.idleTimeout,
+				ErrorLog:          logger.StdLogger(),
+				BaseContext:       func(net.Listener) context.Context { return ctx },
+			}
 			go func() {
 				logger.Info(log.F{
 					"msg": fmt.Sprintf("http server listening at %s", o.httpPort),
 				})
-				err := http.ListenAndServe(o.httpPort, nil)
+				err := httpSrv.ListenAndServe()
 				if err != nil {
 					err = gowebErrors.Wrap(err)
 					logger.Error(err, log.F{"msg": "unable to start http listener for redirects"})
