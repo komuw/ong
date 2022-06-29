@@ -27,8 +27,18 @@ func New() string {
 }
 
 // Random generates a random string made from bytes of size n.
+// If n < 1 or significantly large, it is set to reasonable bounds.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
 func Random(n int) string {
+	if n < 1 {
+		n = 1
+	}
+	if n > 100_000 {
+		// the upper limit of a slice is some significant fraction of the address space of a process.
+		// https://github.com/golang/go/issues/38673#issuecomment-643885108
+		n = 100_000
+	}
+
 	b := make([]byte, n)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, n)

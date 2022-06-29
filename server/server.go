@@ -4,6 +4,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -15,6 +16,7 @@ import (
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
+	"github.com/komuw/goweb/middleware"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -28,14 +30,21 @@ type extendedHandler interface {
 
 // opts defines parameters for running an HTTP server.
 type opts struct {
-	port              string
+	port              uint16 // tcp port is a 16bit unsigned integer.
 	host              string
-	network           string
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
 	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
+	certFile          string
+	keyFile           string
+
+	// this ones are created automatically
+	serverPort    string
+	serverAddress string
+	network       string
+	httpPort      string
 }
 
 // Equal compares two opts for equality.
@@ -46,29 +55,49 @@ func (o opts) Equal(other opts) bool {
 
 // NewOpts returns a new opts.
 func NewOpts(
-	port string,
+	port uint16,
 	host string,
-	network string,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
 	handlerTimeout time.Duration,
 	idleTimeout time.Duration,
+	certFile string,
+	keyFile string,
 ) opts {
+	serverPort := fmt.Sprintf(":%d", port)
+	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
+
+	httpPort := port
+	isTls := certFile != ""
+	if isTls {
+		if port == 443 {
+			httpPort = 80
+		} else {
+			httpPort = port - 1
+		}
+	}
+
 	return opts{
 		port:              port,
 		host:              host,
-		network:           network,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
 		handlerTimeout:    handlerTimeout,
 		idleTimeout:       idleTimeout,
+		certFile:          certFile,
+		keyFile:           keyFile,
+		// this ones are created automatically
+		serverPort:    serverPort,
+		serverAddress: serverAddress,
+		network:       "tcp",
+		httpPort:      fmt.Sprintf(":%d", httpPort),
 	}
 }
 
 // WithOpts returns a new opts that has sensible defaults given port and host.
-func WithOpts(port, host string) opts {
+func WithOpts(port uint16, host string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -81,40 +110,106 @@ func WithOpts(port, host string) opts {
 	return NewOpts(
 		port,
 		host,
-		"tcp",
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
 		handlerTimeout,
 		idleTimeout,
+		"",
+		"",
+	)
+}
+
+// WithTlsOpts returns a new opts that has sensible defaults given host, certFile & keyFile.
+func WithTlsOpts(host, certFile, keyFile string) opts {
+	return withTlsOpts(443, host, certFile, keyFile)
+}
+
+func withTlsOpts(port uint16, host, certFile, keyFile string) opts {
+	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
+	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
+
+	readHeaderTimeout := 1 * time.Second
+	readTimeout := readHeaderTimeout + (1 * time.Second)
+	writeTimeout := readTimeout + (1 * time.Second)
+	handlerTimeout := writeTimeout + (10 * time.Second)
+	idleTimeout := handlerTimeout + (100 * time.Second)
+
+	return NewOpts(
+		port,
+		host,
+		readHeaderTimeout,
+		readTimeout,
+		writeTimeout,
+		handlerTimeout,
+		idleTimeout,
+		certFile,
+		keyFile,
 	)
 }
 
 // DefaultOpts returns a new opts that has sensible defaults.
 func DefaultOpts() opts {
-	return WithOpts("8080", "127.0.0.1")
+	return WithOpts(8080, "127.0.0.1")
+}
+
+func DefaultTlsOpts() opts {
+	certFile, keyFile := certKeyPaths()
+	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile)
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
 // It sets up a server with the parameters provided by o.
 //
 // The server shuts down cleanly after receiving any terminating signal.
+// If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
 func Run(eh extendedHandler, o opts) error {
 	setRlimit()
 	_, _ = maxprocs.Set()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	logger := eh.GetLogger().WithCtx(ctx).WithImmediate()
+	logger := eh.GetLogger().WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
 
-	serverPort := fmt.Sprintf(":%s", o.port)
+	var tlsConf *tls.Config = nil
+	if o.certFile != "" {
+		tlsConf = &tls.Config{
+			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
+				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
+				// it is called if `tls.Config.Certificates` is empty.
+				//
+				// todo: this is where we can renew our certificates if we want.
+				// plan;
+				//   (a) check if one month has passed.
+				//   (b) if it has, call letsencrypt to fetch new certs; maybe in a goroutine.
+				//   (c) save that cert to file.
+				//   (d) also load it into cache/memory.
+				//   (e) if one month is not over, always load certs/key from cache.
+				// see: https://github.com/caddyserver/certmagic
+				//
+				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
+				if err != nil {
+					err = gowebErrors.Wrap(err)
+					logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
+					return nil, err
+				}
+				return &c, nil
+			},
+		}
+	}
+
 	server := &http.Server{
-		Addr: serverPort,
+		Addr:      o.serverPort,
+		TLSConfig: tlsConf,
 
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler:           http.TimeoutHandler(eh, o.handlerTimeout, fmt.Sprintf("goweb: Handler timeout exceeded: %s", o.handlerTimeout)),
+		Handler: http.TimeoutHandler(
+			eh,
+			o.handlerTimeout,
+			fmt.Sprintf("goweb: Handler timeout exceeded: %s", o.handlerTimeout),
+		),
 		ReadHeaderTimeout: o.readHeaderTimeout,
 		ReadTimeout:       o.readTimeout,
 		WriteTimeout:      o.writeTimeout,
@@ -126,14 +221,12 @@ func Run(eh extendedHandler, o opts) error {
 	drainDur := drainDuration(o)
 	sigHandler(server, ctx, cancel, logger, drainDur)
 
-	address := fmt.Sprintf("%s%s", o.host, serverPort)
-
-	err := serve(ctx, server, o.network, address, logger)
+	err := serve(ctx, server, o, logger)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
 		//   Make sure the program doesn't exit and waits instead for Shutdown to return.
-
+		//
 		return err // already wrapped in the `serve` func.
 	}
 
@@ -175,7 +268,7 @@ func sigHandler(
 	}()
 }
 
-func serve(ctx context.Context, srv *http.Server, network, address string, logger log.Logger) error {
+func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
 	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
 		return conn.Control(func(descriptor uintptr) {
 			_ = unix.SetsockoptInt(
@@ -196,16 +289,52 @@ func serve(ctx context.Context, srv *http.Server, network, address string, logge
 			)
 		})
 	}}
-	l, err := cfg.Listen(ctx, network, address)
+	l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 	if err != nil {
 		return gowebErrors.Wrap(err)
 	}
 
-	logger.Info(log.F{
-		"msg": fmt.Sprintf("server listening at %s", address),
-	})
-	if errS := srv.Serve(l); errS != nil {
-		return gowebErrors.Wrap(errS)
+	if o.certFile != "" {
+		{
+			// HTTP(non-tls) LISTERNER:
+			httpSrv := &http.Server{
+				Addr:              o.httpPort,
+				Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
+				ReadHeaderTimeout: o.readHeaderTimeout,
+				ReadTimeout:       o.readTimeout,
+				WriteTimeout:      o.writeTimeout,
+				IdleTimeout:       o.idleTimeout,
+				ErrorLog:          logger.StdLogger(),
+				BaseContext:       func(net.Listener) context.Context { return ctx },
+			}
+			go func() {
+				logger.Info(log.F{
+					"msg": fmt.Sprintf("http server listening at %s", o.httpPort),
+				})
+				errHttpSrv := httpSrv.ListenAndServe()
+				if errHttpSrv != nil {
+					errHttpSrv = gowebErrors.Wrap(errHttpSrv)
+					logger.Error(errHttpSrv, log.F{"msg": "unable to start http listener for redirects"})
+				}
+			}()
+		}
+
+		{
+			// HTTPS(tls) LISTERNER:
+			logger.Info(log.F{
+				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
+			})
+			if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
+				return gowebErrors.Wrap(errS)
+			}
+		}
+	} else {
+		logger.Info(log.F{
+			"msg": fmt.Sprintf("http server listening at %s", o.serverAddress),
+		})
+		if errS := srv.Serve(l); errS != nil {
+			return gowebErrors.Wrap(errS)
+		}
 	}
 	return nil
 }

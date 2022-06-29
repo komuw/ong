@@ -1,10 +1,16 @@
 package server
 
 import (
+	"fmt"
+	"io"
+	"math"
+	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/goweb/middleware"
 )
 
 func TestDrainDuration(t *testing.T) {
@@ -15,7 +21,7 @@ func TestDrainDuration(t *testing.T) {
 
 		handlerTimeout := 170 * time.Second
 		o := opts{
-			port:              "8080",
+			port:              8080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -34,7 +40,7 @@ func TestDrainDuration(t *testing.T) {
 
 		writeTimeout := 3 * time.Minute
 		o := opts{
-			port:              "8080",
+			port:              8080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Nanosecond,
@@ -52,12 +58,12 @@ func TestDrainDuration(t *testing.T) {
 func TestOpts(t *testing.T) {
 	t.Parallel()
 
-	t.Run("sensible defaults", func(t *testing.T) {
+	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
 		got := DefaultOpts()
 		want := opts{
-			port:              "8080",
+			port:              8080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -65,16 +71,19 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
+			serverPort:        ":8080",
+			serverAddress:     "127.0.0.1:8080",
+			httpPort:          ":8080",
 		}
 		attest.Equal(t, got, want)
 	})
 
-	t.Run("sensible defaults", func(t *testing.T) {
+	t.Run("with opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := WithOpts("80", "localhost")
+		got := WithOpts(80, "localhost")
 		want := opts{
-			port:              "80",
+			port:              80,
 			host:              "localhost",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -82,42 +91,84 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
+			serverPort:        ":80",
+			serverAddress:     "localhost:80",
+			httpPort:          ":80",
+		}
+		attest.Equal(t, got, want)
+	})
+
+	t.Run("default tls opts", func(t *testing.T) {
+		t.Parallel()
+
+		got := DefaultTlsOpts()
+		want := opts{
+			port:              8081,
+			host:              "127.0.0.1",
+			network:           "tcp",
+			readHeaderTimeout: 1 * time.Second,
+			readTimeout:       2 * time.Second,
+			writeTimeout:      3 * time.Second,
+			handlerTimeout:    13 * time.Second,
+			idleTimeout:       113 * time.Second,
+			certFile:          "/tmp/goweb_dev_certificate.pem",
+			keyFile:           "/tmp/goweb_dev_key.pem",
+			serverPort:        ":8081",
+			serverAddress:     "127.0.0.1:8081",
+			httpPort:          ":8080",
 		}
 		attest.Equal(t, got, want)
 	})
 }
 
-// type myEH struct{ router *http.ServeMux }
+func someServerTestHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, msg)
+	}
+}
 
-// func (m *myEH) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-// 	m.router.ServeHTTP(w, r)
-// }
+func TestServer(t *testing.T) {
+	t.Parallel()
 
-// func (m *myEH) GetLogger() *log.Logger {
-// 	return log.New(os.Stderr, "logger: ", log.Lshortfile)
-// }
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 
-// func (m *myEH) Routes() {
-// 	m.router.HandleFunc("/hello",
-// 		echoHandler("hello"),
-// 	)
-// }
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			// server.Run() calls setRlimit()
+			// and setRlimit() fails in github actions with error: `operation not permitted`
+			// specifically the call to `unix.Setrlimit()`
+			return
+		}
 
-// // echoHandler echos back in the response, the msg that was passed in.
-// func echoHandler(msg string) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		fmt.Fprint(w, msg)
-// 	}
-// }
+		port := math.MaxUint16 - uint16(3)
+		uri := "/api"
+		msg := "hello world"
+		mux := NewMux(
+			Routes{
+				NewRoute(
+					uri,
+					MethodGet,
+					someServerTestHandler(msg),
+					middleware.WithOpts("localhost"),
+				),
+			})
 
-// func TestRun(t *testing.T) {
-//  t.Parallel()
-//
-// 	t.Run("success", func(t *testing.T) {
-//      t.Parallel()
-//
-// 		eh := &myEH{router: http.NewServeMux()}
-// 		err := Run(eh, WithOpts("0", "localhost"))
-// 		attest.Ok(t, err)
-// 	})
-// }
+		go func() {
+			err := Run(mux, WithOpts(port, "127.0.0.1"))
+			attest.Ok(t, err)
+		}()
+
+		// await for the server to start.
+		time.Sleep((1 * time.Second))
+
+		res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
+		attest.Ok(t, err)
+
+		defer res.Body.Close()
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
+}
