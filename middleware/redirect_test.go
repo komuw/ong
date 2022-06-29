@@ -31,23 +31,6 @@ const locationHeader = "Location"
 func TestHttpsRedirector(t *testing.T) {
 	t.Parallel()
 
-	// t.Run("different port combinations", func(t *testing.T) {
-	// 	t.Parallel()
-
-	// 	msg := "hello world"
-	// 	port := "443" // "", "80", "78726", etc
-	// 	wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
-	// 	rec := httptest.NewRecorder()
-	// 	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-	// 	wrappedHandler.ServeHTTP(rec, req)
-
-	// 	res := rec.Result()
-	// 	defer res.Body.Close()
-
-	// 	attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
-	// 	attest.NotZero(t, res.Header.Get(locationHeader))
-	// })
-
 	t.Run("get is redirected", func(t *testing.T) {
 		t.Parallel()
 
@@ -170,5 +153,36 @@ func TestHttpsRedirector(t *testing.T) {
 		attest.Zero(t, res.Header.Get(locationHeader))
 		attest.True(t, !strings.Contains(string(rb), msg))
 		attest.True(t, strings.Contains(string(rb), postMsg))
+	})
+
+	t.Run("port combinations", func(t *testing.T) {
+		t.Parallel()
+
+		uri := "/someUri"
+		msg := "hello world"
+		for _, p := range []string{
+			"443",
+			"80",
+			"88",
+			"",
+			"78726",
+		} {
+			wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), p)
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, uri, nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
+			attest.NotZero(t, res.Header.Get(locationHeader))
+
+			expectedLocation := "https://example.com" + uri
+			if p == "88" || p == "78726" {
+				expectedLocation = "https://example.com" + ":" + p + uri
+			}
+			attest.Equal(t, res.Header.Get(locationHeader), expectedLocation)
+		}
 	})
 }
