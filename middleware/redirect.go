@@ -12,7 +12,6 @@ import (
 func HttpsRedirector(httpsPort string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
-
 		if !isTls {
 			url := r.URL
 			url.Scheme = "https"
