@@ -163,8 +163,10 @@ func TestServer(t *testing.T) {
 
 		res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
 		attest.Ok(t, err)
+
 		defer res.Body.Close()
 		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
