@@ -16,6 +16,7 @@ import (
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
+	"github.com/komuw/goweb/middleware"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -186,6 +187,8 @@ func Run(eh extendedHandler, o opts) error {
 		}
 	}
 
+	// mux = middleware.HttpsRedirector(mux())
+
 	server := &http.Server{
 		Addr:      o.serverPort,
 		TLSConfig: tlsConf,
@@ -222,7 +225,7 @@ func Run(eh extendedHandler, o opts) error {
 	{
 		// wait for server.Shutdown() to return.
 		// cancel context incase drainDuration expires befure server.Shutdown() has completed.
-		time.Sleep(drainDur)
+		// time.Sleep(drainDur)
 		cancel()
 	}
 
@@ -283,15 +286,37 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		return gowebErrors.Wrap(err)
 	}
 
-	logger.Info(log.F{
-		"msg": fmt.Sprintf("server listening at %s", o.serverAddress),
-	})
-
 	if o.certFile != "" {
-		if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
-			return gowebErrors.Wrap(errS)
+		{ // HTTP LISTERNER:
+
+			// http.HandleFunc(pattern string, miidmiddleware.HttpsRedirector)
+			http.Handle("/", middleware.RedirectToHTTPSRouter())
+			go func() {
+				logger.Info(log.F{
+					"msg": fmt.Sprintf("server listening at %s", ":8082"),
+				})
+				err := http.ListenAndServe(":8082", nil)
+				if err != nil {
+					err = gowebErrors.Wrap(err)
+					logger.Error(err, log.F{"msg": "unable to start http listener for redirects"})
+				}
+			}()
+		}
+
+		{
+			// HTTPS LISTERNER:
+
+			logger.Info(log.F{
+				"msg": fmt.Sprintf("server listening at %s", o.serverAddress),
+			})
+			if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
+				return gowebErrors.Wrap(errS)
+			}
 		}
 	} else {
+		logger.Info(log.F{
+			"msg": fmt.Sprintf("server listening at %s", o.serverAddress),
+		})
 		if errS := srv.Serve(l); errS != nil {
 			return gowebErrors.Wrap(errS)
 		}
