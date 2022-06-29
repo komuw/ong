@@ -15,7 +15,7 @@ func TestDrainDuration(t *testing.T) {
 
 		handlerTimeout := 170 * time.Second
 		o := opts{
-			port:              "8080",
+			port:              8080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -34,7 +34,7 @@ func TestDrainDuration(t *testing.T) {
 
 		writeTimeout := 3 * time.Minute
 		o := opts{
-			port:              "8080",
+			port:              8080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Nanosecond,
@@ -57,7 +57,7 @@ func TestOpts(t *testing.T) {
 
 		got := DefaultOpts()
 		want := opts{
-			port:              "8080",
+			port:              8080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -67,6 +67,7 @@ func TestOpts(t *testing.T) {
 			idleTimeout:       113 * time.Second,
 			serverPort:        ":8080",
 			serverAddress:     "127.0.0.1:8080",
+			httpPort:          ":8080",
 		}
 		attest.Equal(t, got, want)
 	})
@@ -74,9 +75,9 @@ func TestOpts(t *testing.T) {
 	t.Run("sensible defaults", func(t *testing.T) {
 		t.Parallel()
 
-		got := WithOpts("80", "localhost")
+		got := WithOpts(80, "localhost")
 		want := opts{
-			port:              "80",
+			port:              80,
 			host:              "localhost",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -86,6 +87,7 @@ func TestOpts(t *testing.T) {
 			idleTimeout:       113 * time.Second,
 			serverPort:        ":80",
 			serverAddress:     "localhost:80",
+			httpPort:          ":80",
 		}
 		attest.Equal(t, got, want)
 	})

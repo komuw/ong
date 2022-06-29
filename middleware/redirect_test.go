@@ -35,7 +35,7 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		port := "443"
+		port := uint16(443)
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -52,7 +52,7 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		port := "443"
+		port := uint16(443)
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
@@ -69,7 +69,7 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		port := "443"
+		port := uint16(443)
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 
 		for _, uri := range []string{
@@ -105,7 +105,7 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		port := "443"
+		port := uint16(443)
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
@@ -132,7 +132,7 @@ func TestHttpsRedirector(t *testing.T) {
 		// as might happen if `HttpsRedirector` was using `http.StatusMovedPermanently`
 
 		msg := "hello world"
-		port := "443"
+		port := uint16(443)
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
@@ -160,12 +160,11 @@ func TestHttpsRedirector(t *testing.T) {
 
 		uri := "/someUri"
 		msg := "hello world"
-		for _, p := range []string{
-			"443",
-			"80",
-			"88",
-			"",
-			"78726",
+		for _, p := range []uint16{
+			uint16(443),
+			uint16(80),
+			uint16(88),
+			uint16(65535),
 		} {
 			wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), p)
 			rec := httptest.NewRecorder()
@@ -179,8 +178,8 @@ func TestHttpsRedirector(t *testing.T) {
 			attest.NotZero(t, res.Header.Get(locationHeader))
 
 			expectedLocation := "https://example.com" + uri
-			if p == "88" || p == "78726" {
-				expectedLocation = "https://example.com" + ":" + p + uri
+			if p == uint16(88) || p == uint16(65535) {
+				expectedLocation = "https://example.com" + ":" + fmt.Sprint(p) + uri
 			}
 			attest.Equal(t, res.Header.Get(locationHeader), expectedLocation)
 		}
