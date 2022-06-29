@@ -76,13 +76,13 @@ func CreateDevCertKey() (certFile, keyFile string) {
 	}
 
 	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
-	if err := os.WriteFile(certPath, pemCert, 0o644); err != nil {
+	if err = os.WriteFile(certPath, pemCert, 0o644); err != nil {
 		panic(err)
 	}
 
 	key, err := x509.MarshalPKCS8PrivateKey(privKey)
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key})
-	if err := os.WriteFile(keyPath, pemKey, 0o600); err != nil {
+	if err = os.WriteFile(keyPath, pemKey, 0o600); err != nil {
 		panic(err)
 	}
 

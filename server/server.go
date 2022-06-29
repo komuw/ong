@@ -311,10 +311,10 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 				logger.Info(log.F{
 					"msg": fmt.Sprintf("http server listening at %s", o.httpPort),
 				})
-				err := httpSrv.ListenAndServe()
-				if err != nil {
-					err = gowebErrors.Wrap(err)
-					logger.Error(err, log.F{"msg": "unable to start http listener for redirects"})
+				errHttpSrv := httpSrv.ListenAndServe()
+				if errHttpSrv != nil {
+					errHttpSrv = gowebErrors.Wrap(errHttpSrv)
+					logger.Error(errHttpSrv, log.F{"msg": "unable to start http listener for redirects"})
 				}
 			}()
 		}
