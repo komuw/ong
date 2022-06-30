@@ -273,12 +273,6 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
-	cfg := listenerConfig()
-	l, err := cfg.Listen(ctx, o.network, o.serverAddress)
-	if err != nil {
-		return gowebErrors.Wrap(err)
-	}
-
 	if o.certFile != "" {
 		{
 			// HTTP(non-tls) LISTERNER:
@@ -314,6 +308,11 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 
 		{
 			// HTTPS(tls) LISTERNER:
+			cfg := listenerConfig()
+			l, err := cfg.Listen(ctx, o.network, o.serverAddress)
+			if err != nil {
+				return gowebErrors.Wrap(err)
+			}
 			logger.Info(log.F{
 				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 			})
@@ -322,6 +321,11 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			}
 		}
 	} else {
+		cfg := listenerConfig()
+		l, err := cfg.Listen(ctx, o.network, o.serverAddress)
+		if err != nil {
+			return gowebErrors.Wrap(err)
+		}
 		logger.Info(log.F{
 			"msg": fmt.Sprintf("http server listening at %s", o.serverAddress),
 		})
