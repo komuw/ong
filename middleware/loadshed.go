@@ -71,7 +71,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		if p99 > breachLatency && !sendProbe {
 			// drop request
 			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
-			w.Header().Set(gowebMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s", err.Error(), p99))
+			w.Header().Set(gowebMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. breachLatency: %s", err.Error(), p99, breachLatency))
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(
 				w,
