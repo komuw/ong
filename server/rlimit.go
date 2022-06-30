@@ -16,7 +16,7 @@ import (
 func setRlimit() {
 	var err error
 	defer func() {
-		if err != nil && os.Getenv("GOWEB_RUNNING_IN_TESTS") != "" {
+		if err != nil && os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 			panic(err)
 		}
 	}()

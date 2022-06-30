@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	gowebErrors "github.com/komuw/goweb/errors"
-	"github.com/komuw/goweb/log"
+	ongErrors "github.com/komuw/ong/errors"
+	"github.com/komuw/ong/log"
 )
 
 /*
@@ -42,7 +42,7 @@ func startPprofServer() {
 	pprofSrv := &http.Server{
 		Addr: addr,
 		// the pprof muxer is failing to work with `http.TimeoutHandler`
-		// https://github.com/komuw/goweb/issues/62
+		// https://github.com/komuw/ong/issues/62
 		Handler:           mux,
 		ReadHeaderTimeout: readHeader,
 		ReadTimeout:       read,
@@ -56,7 +56,7 @@ func startPprofServer() {
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
 		if err != nil {
-			err = gowebErrors.Wrap(err)
+			err = ongErrors.Wrap(err)
 			logger.Error(err, log.F{"msg": "pprof server, unable to create listener"})
 			return
 		}
@@ -66,7 +66,7 @@ func startPprofServer() {
 		})
 		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
-			errPprofSrv = gowebErrors.Wrap(errPprofSrv)
+			errPprofSrv = ongErrors.Wrap(errPprofSrv)
 			logger.Error(errPprofSrv, log.F{"msg": "unable to start pprof server"})
 		}
 	}()

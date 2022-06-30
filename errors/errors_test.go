@@ -66,10 +66,10 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"goweb/errors/errors_test.go:30",
-				"goweb/errors/errors_test.go:23",
-				"goweb/errors/errors_test.go:17",
-				"goweb/errors/errors_test.go:61",
+				"ong/errors/errors_test.go:30",
+				"ong/errors/errors_test.go:23",
+				"ong/errors/errors_test.go:17",
+				"ong/errors/errors_test.go:61",
 			} {
 				attest.True(
 					t,
@@ -90,9 +90,9 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"goweb/errors/errors_test.go:45",
-				"goweb/errors/errors_test.go:36",
-				"goweb/errors/errors_test.go:85",
+				"ong/errors/errors_test.go:45",
+				"ong/errors/errors_test.go:36",
+				"ong/errors/errors_test.go:85",
 			} {
 				attest.True(
 					t,
@@ -114,10 +114,10 @@ func TestStackError(t *testing.T) {
 
 		extendedFormatting := fmt.Sprintf("%+v", err)
 		for _, v := range []string{
-			"goweb/errors/errors_test.go:30",
-			"goweb/errors/errors_test.go:23",
-			"goweb/errors/errors_test.go:17",
-			"goweb/errors/errors_test.go:109",
+			"ong/errors/errors_test.go:30",
+			"ong/errors/errors_test.go:23",
+			"ong/errors/errors_test.go:17",
+			"ong/errors/errors_test.go:109",
 		} {
 			attest.True(
 				t,

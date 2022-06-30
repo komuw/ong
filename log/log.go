@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/komuw/goweb/errors"
-	"github.com/komuw/goweb/id"
+	"github.com/komuw/ong/errors"
+	"github.com/komuw/ong/id"
 	"golang.org/x/exp/maps"
 )
 
@@ -36,7 +36,7 @@ const (
 )
 
 // CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
-const CtxKey = logContextKeyType("Goweb-logID")
+const CtxKey = logContextKeyType("Ong-logID")
 
 type Logger struct {
 	w          io.Writer
@@ -226,13 +226,13 @@ func (l Logger) flush() {
 				continue
 			}
 			if err := encoder.Encode(v); err != nil {
-				if os.Getenv("GOWEB_RUNNING_IN_TESTS") != "" {
+				if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 					panic(err)
 				}
 				continue
 			}
 		}
-		if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("GOWEB_RUNNING_IN_TESTS") != "" {
+		if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 			panic(err)
 		}
 		l.cBuf.mu.Unlock()

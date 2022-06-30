@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/komuw/goweb/id"
+	"github.com/komuw/ong/id"
 )
 
 type cspContextKey string

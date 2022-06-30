@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/komuw/goweb/id"
+	"github.com/komuw/ong/id"
 
-	"github.com/komuw/goweb/cookie"
+	"github.com/komuw/ong/cookie"
 )
 
 // Most of the code here is insipired by(or taken from):
@@ -79,7 +79,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			if !csrfStore.exists(actualToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
-				w.Header().Set(gowebMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
+				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
 				http.Error(
 					w,
 					errCsrfTokenNotFound.Error(),

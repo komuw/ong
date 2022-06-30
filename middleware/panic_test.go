@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/komuw/goweb/errors"
+	"github.com/komuw/ong/errors"
 
 	"github.com/akshayjshah/attest"
 )

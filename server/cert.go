@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/komuw/goweb/log"
+	"github.com/komuw/ong/log"
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -52,7 +52,7 @@ func CreateDevCertKey() (certFile, keyFile string) {
 	certTemplate := &x509.Certificate{
 		SerialNumber: randomSerialNumber(),
 		Subject: pkix.Name{
-			Organization:       []string{"goweb development certificate"},
+			Organization:       []string{"ong development certificate"},
 			OrganizationalUnit: []string{getOrg()},
 		},
 		DNSNames:  []string{"localhost"},
@@ -93,7 +93,7 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 
 	caCert, caKey = loadCA()
 
-	caUniqename := "goweb_development_CA"
+	caUniqename := "ong_development_CA"
 	systemTrustFilename := func() string {
 		// https://ubuntu.com/server/docs/security-trust-store
 		sysTrustFname := "/usr/local/share/ca-certificates/%s.crt"
@@ -218,12 +218,12 @@ func newCA() {
 	tpl := &x509.Certificate{
 		SerialNumber: randomSerialNumber(),
 		Subject: pkix.Name{
-			Organization:       []string{"goweb development CA"},
+			Organization:       []string{"ong development CA"},
 			OrganizationalUnit: []string{getOrg()},
 			// The CommonName is required by iOS to show the certificate in the
 			// "Certificate Trust Settings" menu.
 			// https://github.com/FiloSottile/mkcert/issues/47
-			CommonName: "goweb " + getOrg(),
+			CommonName: "ong " + getOrg(),
 		},
 		SubjectKeyId:          skid[:],
 		NotAfter:              time.Now().AddDate(10, 0, 0), // 10years
@@ -277,9 +277,9 @@ func rootCAcertKeyPaths() (string, string) {
 	getCArootpath := func() string {
 		u, err := user.Current()
 		if err != nil {
-			return "/tmp/goweb"
+			return "/tmp/ong"
 		}
-		return filepath.Join(u.HomeDir, "goweb")
+		return filepath.Join(u.HomeDir, "ong")
 	}
 	caRoot := getCArootpath()
 	if _, err := os.Stat(caRoot); err != nil {
@@ -293,8 +293,8 @@ func rootCAcertKeyPaths() (string, string) {
 }
 
 func certKeyPaths() (string, string) {
-	const certPath = "/tmp/goweb_dev_certificate.pem"
-	const keyPath = "/tmp/goweb_dev_key.pem"
+	const certPath = "/tmp/ong_dev_certificate.pem"
+	const keyPath = "/tmp/ong_dev_key.pem"
 	return certPath, keyPath
 }
 
@@ -319,7 +319,7 @@ func randomSerialNumber() *big.Int {
 func getOrg() string {
 	name, err := os.Hostname()
 	if err == nil {
-		name = "goweb-org"
+		name = "ong-org"
 	}
 	return name
 }

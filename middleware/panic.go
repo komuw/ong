@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/komuw/goweb/log"
+	"github.com/komuw/ong/log"
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -36,10 +36,10 @@ func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFun
 					"code":        code,
 					"status":      status,
 				}
-				if gowebError := w.Header().Get(gowebMiddlewareErrorHeader); gowebError != "" {
-					flds["gowebError"] = gowebError
+				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
+					flds["ongError"] = ongError
 				}
-				w.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
+				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
 				if e, ok := err.(error); ok {
 					logger.Error(e, flds)

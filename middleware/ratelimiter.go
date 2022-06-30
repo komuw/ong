@@ -44,7 +44,7 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		if !tb.allow() {
 			err := fmt.Errorf("rate limited, retry after %s", retryAfter)
-			w.Header().Set(gowebMiddlewareErrorHeader, err.Error())
+			w.Header().Set(ongMiddlewareErrorHeader, err.Error())
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(
 				w,

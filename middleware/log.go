@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/komuw/goweb/cookie"
-	"github.com/komuw/goweb/log"
+	"github.com/komuw/ong/cookie"
+	"github.com/komuw/ong/log"
 )
 
 const logIDKey = string(log.CtxKey)
@@ -75,10 +75,10 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
 			}
-			if gowebError := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebError != "" {
-				flds["gowebError"] = gowebError
+			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
+				flds["ongError"] = ongError
 			}
-			lrw.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
+			lrw.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
 			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
 				// We are either in load shedding or rate-limiting.
@@ -115,7 +115,7 @@ type logRW struct {
 
 var (
 	// make sure we support http optional interfaces.
-	// https://github.com/komuw/goweb/issues/15
+	// https://github.com/komuw/ong/issues/15
 	// https://blog.merovius.de/2017/07/30/the-trouble-with-optional-interfaces.html
 	_ http.ResponseWriter = &logRW{}
 	_ http.Flusher        = &logRW{}
