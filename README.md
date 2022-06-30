@@ -4,6 +4,11 @@
 [![codecov](https://codecov.io/gh/komuw/goweb/branch/main/graph/badge.svg)](https://codecov.io/gh/komuw/goweb)
 
 
+Ong is a small web toolkit. 
+
+It's name is derived from Tanzanian artiste, [Remmy Ongala](https://en.wikipedia.org/wiki/Remmy_Ongala).
+
+
 Taken mainly from the talk; `How I Write HTTP Web Services after Eight Years`[1][2] by Mat Ryer.    
 
 
