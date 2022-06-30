@@ -477,11 +477,14 @@ func TestCsrf(t *testing.T) {
 		}
 	})
 
+	// concurrency safe
 	t.Run("POST requests with valid token from mutiple tabs", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
 		domain := "example.com"
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
 		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)

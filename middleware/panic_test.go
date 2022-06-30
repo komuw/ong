@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/komuw/goweb/errors"
@@ -105,5 +107,38 @@ func TestPanic(t *testing.T) {
 			attest.True(t, strings.Contains(logOutput.String(), v), attest.Sprintf("`%s` was not found", v))
 		}
 		attest.True(t, strings.Contains(logOutput.String(), "stack"))
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		// &bytes.Buffer{} is not concurrency safe, so we use os.Stderr instead.
+		logOutput := os.Stderr
+		msg := "hello"
+		err := errors.New(msg)
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
+		wrappedHandler := Panic(handlerThatPanics(msg, false, err), logOutput)
+
+		runhandler := func() {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
 	})
 }

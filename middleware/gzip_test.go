@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -24,8 +25,8 @@ func someGzipHandler(msg string, iterations int) http.HandlerFunc {
 			// see: https://github.com/komuw/goweb/issues/54
 			iterations = 3 * defaultMinSize
 		}
-		msg = strings.Repeat(msg, iterations)
-		fmt.Fprint(w, msg)
+		fMsg := strings.Repeat(msg, iterations)
+		fmt.Fprint(w, fMsg)
 	}
 }
 
@@ -187,6 +188,47 @@ func TestGzip(t *testing.T) {
 		attest.Zero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), strings.Repeat(msg, iterations))
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		iterations := defaultMinSize * 2
+		// for this concurrency test, we have to re-use the same wrappedHandler
+		// so that state is shared and thus we can see if there is any state which is not handled correctly.
+		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
+
+		runhandler := func() {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			reader, err := gzip.NewReader(res.Body)
+			attest.Ok(t, err)
+			defer reader.Close()
+
+			rb, err := io.ReadAll(reader)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.True(t, strings.Contains(string(rb), msg))
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
 	})
 }
 

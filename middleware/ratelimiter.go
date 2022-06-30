@@ -3,8 +3,8 @@ package middleware
 import (
 	"fmt"
 	"math"
+	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 )
@@ -33,7 +33,14 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
 
-		tb := rl.get(fetchIP(r.RemoteAddr), rateLimiterSendRate)
+		// if `SplitHostPort` returns an error, host will be empty string; which is okay with us.
+		host, _, _ := net.SplitHostPort(
+			// the documentation of `http.Request.RemoteAddr` says:
+			// RemoteAddr is not filled in by ReadRequest and has no defined format.
+			// So we cant rely on it been present, or having a given format.
+			r.RemoteAddr,
+		)
+		tb := rl.get(host, rateLimiterSendRate)
 
 		if !tb.allow() {
 			err := fmt.Errorf("rate limited, retry after %s", retryAfter)
@@ -49,16 +56,6 @@ func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		wrappedHandler(w, r)
 	}
-}
-
-func fetchIP(remoteAddr string) string {
-	// the documentation of `http.Request.RemoteAddr` says:
-	// RemoteAddr is not filled in by ReadRequest and has no defined format.
-	// So we cant rely on it been present, or having a given format.
-	// Although, net/http makes a good effort of availing it & in a standard format.
-	//
-	ipAddr := strings.Split(remoteAddr, ":")
-	return ipAddr[0]
 }
 
 // rl is a ratelimiter per IP address.
