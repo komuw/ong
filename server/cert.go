@@ -93,7 +93,7 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 
 	caCert, caKey = loadCA()
 
-	caUniqename := "goweb_development_CA"
+	caUniqename := "ong_development_CA"
 	systemTrustFilename := func() string {
 		// https://ubuntu.com/server/docs/security-trust-store
 		sysTrustFname := "/usr/local/share/ca-certificates/%s.crt"
@@ -293,8 +293,8 @@ func rootCAcertKeyPaths() (string, string) {
 }
 
 func certKeyPaths() (string, string) {
-	const certPath = "/tmp/goweb_dev_certificate.pem"
-	const keyPath = "/tmp/goweb_dev_key.pem"
+	const certPath = "/tmp/ong_dev_certificate.pem"
+	const keyPath = "/tmp/ong_dev_key.pem"
 	return certPath, keyPath
 }
 

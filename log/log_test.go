@@ -427,7 +427,7 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	))
 }
 
-func newGoWebLogger() Logger {
+func newOngLogger() Logger {
 	maxMsgs := 50_000
 	return New(
 		context.Background(),
@@ -501,7 +501,7 @@ func BenchmarkBestCase(b *testing.B) {
 	})
 
 	b.Run("ong/log", func(b *testing.B) {
-		l := newGoWebLogger()
+		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
@@ -556,7 +556,7 @@ func BenchmarkAverageCase(b *testing.B) {
 	})
 
 	b.Run("ong/log", func(b *testing.B) {
-		l := newGoWebLogger()
+		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
@@ -606,7 +606,7 @@ func BenchmarkWorstCase(b *testing.B) {
 	})
 
 	b.Run("ong/log", func(b *testing.B) {
-		l := newGoWebLogger()
+		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
