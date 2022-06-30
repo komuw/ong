@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -170,5 +171,59 @@ func TestServer(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
+
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			// server.Run() calls setRlimit()
+			// and setRlimit() fails in github actions with error: `operation not permitted`
+			// specifically the call to `unix.Setrlimit()`
+			return
+		}
+
+		port := math.MaxUint16 - uint16(3)
+		uri := "/api"
+		msg := "hello world"
+		mux := NewMux(
+			Routes{
+				NewRoute(
+					uri,
+					MethodGet,
+					someServerTestHandler(msg),
+					middleware.WithOpts("localhost"),
+				),
+			})
+
+		go func() {
+			err := Run(mux, WithOpts(port, "127.0.0.1"))
+			attest.Ok(t, err)
+		}()
+
+		// await for the server to start.
+		time.Sleep((1 * time.Second))
+
+		runhandler := func() {
+			res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
 	})
 }
