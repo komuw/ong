@@ -24,3 +24,4 @@ Most recent version is listed first.
 - add naive mux: https://github.com/komuw/goweb/pull/57
 - handle tls: https://github.com/komuw/goweb/pull/58
 - expvar metrics: https://github.com/komuw/goweb/pull/64
+- fix some races: https://github.com/komuw/goweb/pull/66
