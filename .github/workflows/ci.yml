@@ -86,7 +86,7 @@ jobs:
           go test -timeout 1m -race -run=XXXX -bench=. ./...
           go test -timeout 4m -v -race ./...
         env:
-          GOWEB_RUNNING_IN_TESTS: 'YES'
+          ONG_RUNNING_IN_TESTS: 'YES'
 
       - name: test coverage
         run: |
@@ -102,7 +102,7 @@ jobs:
           go tool cover -html=coverage.out -o coverage.html
           go tool cover -func=coverage.out
         env:
-          GOWEB_RUNNING_IN_TESTS: 'YES'
+          ONG_RUNNING_IN_TESTS: 'YES'
 
   run_analysis:
     name: run_analysis
@@ -195,7 +195,7 @@ jobs:
 
           # TODO: add https://github.com/system-pclub/GCatch
         env:
-          GOWEB_RUNNING_IN_TESTS: 'YES'
+          ONG_RUNNING_IN_TESTS: 'YES'
 
 
   # run_stress_test:

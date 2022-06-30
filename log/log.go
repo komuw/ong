@@ -226,13 +226,13 @@ func (l Logger) flush() {
 				continue
 			}
 			if err := encoder.Encode(v); err != nil {
-				if os.Getenv("GOWEB_RUNNING_IN_TESTS") != "" {
+				if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 					panic(err)
 				}
 				continue
 			}
 		}
-		if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("GOWEB_RUNNING_IN_TESTS") != "" {
+		if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 			panic(err)
 		}
 		l.cBuf.mu.Unlock()
