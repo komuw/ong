@@ -273,28 +273,7 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
-	cfg := &net.ListenConfig{
-		Control: func(network, address string, conn syscall.RawConn) error {
-			return conn.Control(func(descriptor uintptr) {
-				_ = unix.SetsockoptInt(
-					int(descriptor),
-					unix.SOL_SOCKET,
-					// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
-					// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
-					// so we use x/sys/unix
-					// see: https://github.com/golang/go/issues/26771
-					unix.SO_REUSEPORT,
-					1,
-				)
-				_ = unix.SetsockoptInt(
-					int(descriptor),
-					unix.SOL_SOCKET,
-					unix.SO_REUSEADDR,
-					1,
-				)
-			})
-		},
-	}
+	cfg := listenerConfig()
 	l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 	if err != nil {
 		return gowebErrors.Wrap(err)
@@ -314,39 +293,18 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 				BaseContext:       func(net.Listener) context.Context { return ctx },
 			}
 			go func() {
-				cfg := &net.ListenConfig{
-					Control: func(network, address string, conn syscall.RawConn) error {
-						return conn.Control(func(descriptor uintptr) {
-							_ = unix.SetsockoptInt(
-								int(descriptor),
-								unix.SOL_SOCKET,
-								// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
-								// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
-								// so we use x/sys/unix
-								// see: https://github.com/golang/go/issues/26771
-								unix.SO_REUSEPORT,
-								1,
-							)
-							_ = unix.SetsockoptInt(
-								int(descriptor),
-								unix.SOL_SOCKET,
-								unix.SO_REUSEADDR,
-								1,
-							)
-						})
-					},
-				}
-				l, err := cfg.Listen(ctx, "tcp", redirectSrv.Addr)
-				if err != nil {
-					err = gowebErrors.Wrap(err)
-					logger.Error(err, log.F{"msg": "redirect server, unable to create listener"})
+				redirectSrvCfg := listenerConfig()
+				redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
+				if errL != nil {
+					errL = gowebErrors.Wrap(errL)
+					logger.Error(errL, log.F{"msg": "redirect server, unable to create listener"})
 					return
 				}
 
 				logger.Info(log.F{
 					"msg": fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr),
 				})
-				errRedirectSrv := redirectSrv.Serve(l)
+				errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 				if errRedirectSrv != nil {
 					errRedirectSrv = gowebErrors.Wrap(errRedirectSrv)
 					logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
@@ -397,4 +355,31 @@ func drainDuration(o opts) time.Duration {
 	dur = dur + (10 * time.Second)
 
 	return dur
+}
+
+// listenerConfig creates a net listener config that reuses address and port.
+// This is essential in order to be able to carry out zero-downtime deploys.
+func listenerConfig() *net.ListenConfig {
+	return &net.ListenConfig{
+		Control: func(network, address string, conn syscall.RawConn) error {
+			return conn.Control(func(descriptor uintptr) {
+				_ = unix.SetsockoptInt(
+					int(descriptor),
+					unix.SOL_SOCKET,
+					// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
+					// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
+					// so we use x/sys/unix
+					// see: https://github.com/golang/go/issues/26771
+					unix.SO_REUSEPORT,
+					1,
+				)
+				_ = unix.SetsockoptInt(
+					int(descriptor),
+					unix.SOL_SOCKET,
+					unix.SO_REUSEADDR,
+					1,
+				)
+			})
+		},
+	}
 }

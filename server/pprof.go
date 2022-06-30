@@ -7,12 +7,11 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"syscall"
 	"time"
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
-	"golang.org/x/sys/unix" // syscall package is deprecated
+	// syscall package is deprecated
 )
 
 /*
@@ -55,28 +54,7 @@ func startPprofServer() {
 	}
 
 	go func() {
-		cfg := &net.ListenConfig{
-			Control: func(network, address string, conn syscall.RawConn) error {
-				return conn.Control(func(descriptor uintptr) {
-					_ = unix.SetsockoptInt(
-						int(descriptor),
-						unix.SOL_SOCKET,
-						// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
-						// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
-						// so we use x/sys/unix
-						// see: https://github.com/golang/go/issues/26771
-						unix.SO_REUSEPORT,
-						1,
-					)
-					_ = unix.SetsockoptInt(
-						int(descriptor),
-						unix.SOL_SOCKET,
-						unix.SO_REUSEADDR,
-						1,
-					)
-				})
-			},
-		}
+		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
 		if err != nil {
 			err = gowebErrors.Wrap(err)
