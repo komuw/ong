@@ -9,13 +9,13 @@ import (
 	"os"
 )
 
-// gowebMidllewareErrorHeader is a http header that is set by Goweb
+// gowebMidllewareErrorHeader is a http header that is set by Ong
 // whenever any of it's middlewares return an error.
 // The Log & Panic middleware will log the value of this header if it is set.
 //
 // An example, is when the Get middleware fails because it has been called with the wrong http method.
 // Or when the Csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
-const gowebMiddlewareErrorHeader = "Goweb-Middleware-Error"
+const gowebMiddlewareErrorHeader = "Ong-Middleware-Error"
 
 type Opts struct {
 	domain         string

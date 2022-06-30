@@ -36,7 +36,7 @@ const (
 )
 
 // CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
-const CtxKey = logContextKeyType("Goweb-logID")
+const CtxKey = logContextKeyType("Ong-logID")
 
 type Logger struct {
 	w          io.Writer
