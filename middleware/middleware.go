@@ -9,13 +9,13 @@ import (
 	"os"
 )
 
-// gowebMidllewareErrorHeader is a http header that is set by Ong
+// ongMiddlewareErrorHeader is a http header that is set by Ong
 // whenever any of it's middlewares return an error.
 // The Log & Panic middleware will log the value of this header if it is set.
 //
 // An example, is when the Get middleware fails because it has been called with the wrong http method.
 // Or when the Csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
-const gowebMiddlewareErrorHeader = "Ong-Middleware-Error"
+const ongMiddlewareErrorHeader = "Ong-Middleware-Error"
 
 type Opts struct {
 	domain         string
@@ -130,7 +130,7 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// This is coz, the Cors middleware has already handled that for us and it comes before the Get middleware.
 		if r.Method != http.MethodGet {
 			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(gowebMiddlewareErrorHeader, errMsg)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
 			http.Error(
 				w,
 				errMsg,
@@ -156,7 +156,7 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(gowebMiddlewareErrorHeader, errMsg)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
 			http.Error(
 				w,
 				errMsg,
@@ -182,7 +182,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodHead {
 			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(gowebMiddlewareErrorHeader, errMsg)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
 			http.Error(
 				w,
 				errMsg,
@@ -208,7 +208,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(gowebMiddlewareErrorHeader, errMsg)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
 			http.Error(
 				w,
 				errMsg,
@@ -235,7 +235,7 @@ func deleteH(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(gowebMiddlewareErrorHeader, errMsg)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
 			http.Error(
 				w,
 				errMsg,

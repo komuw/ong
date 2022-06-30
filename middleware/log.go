@@ -75,10 +75,10 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
 			}
-			if gowebError := lrw.Header().Get(gowebMiddlewareErrorHeader); gowebError != "" {
+			if gowebError := lrw.Header().Get(ongMiddlewareErrorHeader); gowebError != "" {
 				flds["gowebError"] = gowebError
 			}
-			lrw.Header().Del(gowebMiddlewareErrorHeader) // remove header so that users dont see it.
+			lrw.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
 			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
 				// We are either in load shedding or rate-limiting.
