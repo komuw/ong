@@ -11,7 +11,6 @@ import (
 
 	gowebErrors "github.com/komuw/goweb/errors"
 	"github.com/komuw/goweb/log"
-	// syscall package is deprecated
 )
 
 /*
