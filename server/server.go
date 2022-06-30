@@ -184,7 +184,9 @@ func Run(eh extendedHandler, o opts) error {
 				//   (c) save that cert to file.
 				//   (d) also load it into cache/memory.
 				//   (e) if one month is not over, always load certs/key from cache.
-				// see: https://github.com/caddyserver/certmagic
+				// see:
+				//   - golang.org/x/crypto/acme/autocert
+				//   - https://github.com/caddyserver/certmagic
 				//
 				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
 				if err != nil {
