@@ -36,8 +36,8 @@ func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFun
 					"code":        code,
 					"status":      status,
 				}
-				if gowebError := w.Header().Get(ongMiddlewareErrorHeader); gowebError != "" {
-					flds["gowebError"] = gowebError
+				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
+					flds["ongError"] = ongError
 				}
 				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 

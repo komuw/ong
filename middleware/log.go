@@ -75,8 +75,8 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
 			}
-			if gowebError := lrw.Header().Get(ongMiddlewareErrorHeader); gowebError != "" {
-				flds["gowebError"] = gowebError
+			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
+				flds["ongError"] = ongError
 			}
 			lrw.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 

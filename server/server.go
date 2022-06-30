@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	gowebErrors "github.com/komuw/ong/errors"
+	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 
@@ -190,7 +190,7 @@ func Run(eh extendedHandler, o opts) error {
 				//
 				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
 				if err != nil {
-					err = gowebErrors.Wrap(err)
+					err = ongErrors.Wrap(err)
 					logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
 					return nil, err
 				}
@@ -292,7 +292,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 				redirectSrvCfg := listenerConfig()
 				redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
 				if errL != nil {
-					errL = gowebErrors.Wrap(errL)
+					errL = ongErrors.Wrap(errL)
 					logger.Error(errL, log.F{"msg": "redirect server, unable to create listener"})
 					return
 				}
@@ -302,7 +302,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 				})
 				errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 				if errRedirectSrv != nil {
-					errRedirectSrv = gowebErrors.Wrap(errRedirectSrv)
+					errRedirectSrv = ongErrors.Wrap(errRedirectSrv)
 					logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
 				}
 			}()
@@ -313,26 +313,26 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			cfg := listenerConfig()
 			l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 			if err != nil {
-				return gowebErrors.Wrap(err)
+				return ongErrors.Wrap(err)
 			}
 			logger.Info(log.F{
 				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 			})
 			if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
-				return gowebErrors.Wrap(errS)
+				return ongErrors.Wrap(errS)
 			}
 		}
 	} else {
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 		if err != nil {
-			return gowebErrors.Wrap(err)
+			return ongErrors.Wrap(err)
 		}
 		logger.Info(log.F{
 			"msg": fmt.Sprintf("http server listening at %s", o.serverAddress),
 		})
 		if errS := srv.Serve(l); errS != nil {
-			return gowebErrors.Wrap(errS)
+			return ongErrors.Wrap(errS)
 		}
 	}
 	return nil
