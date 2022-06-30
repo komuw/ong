@@ -24,7 +24,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 	// Thus app developers can be able to correlate issues/logs in much better way.
 	//
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
-	logger := log.New(
+	mLogger := log.New(
 		context.Background(),
 		logOutput,
 		// enought to hold messages for 5reqs/sec for 15minutes.
@@ -37,7 +37,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		logger := logger.WithCtx(ctx)
+		logger := mLogger.WithCtx(ctx)
 
 		{
 			// set cookie/headers/ctx for logID.

@@ -79,19 +79,15 @@ func TestBasicAuth(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		user := "some-user"
-		passwd := "some-passwd"
-		// for this concurrency test, we have to re-use the same wrappedHandler
+		// for this concurrency test, we have to re-use the same newWrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-
-		wrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
+		newWrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			req.SetBasicAuth(user, passwd)
-			wrappedHandler.ServeHTTP(rec, req)
+			newWrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
 			defer res.Body.Close()
