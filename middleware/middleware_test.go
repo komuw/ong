@@ -242,7 +242,7 @@ func TestServer(t *testing.T) {
 
 func someBenchmarkAllMiddlewaresHandler() http.HandlerFunc {
 	// bound stack growth.
-	// see: https://github.com/komuw/goweb/issues/54
+	// see: https://github.com/komuw/ong/issues/54
 	iterations := int(1.5 * defaultMinSize)
 	msg := strings.Repeat("hello world", iterations)
 	return func(w http.ResponseWriter, r *http.Request) {

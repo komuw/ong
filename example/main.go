@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/komuw/goweb/log"
-	"github.com/komuw/goweb/middleware"
-	"github.com/komuw/goweb/server"
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/server"
 )
 
 // Taken mainly from the talk; "How I Write HTTP Web Services after Eight Years" by Mat Ryer

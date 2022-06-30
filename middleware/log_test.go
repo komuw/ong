@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
-	"github.com/komuw/goweb/id"
-	"github.com/komuw/goweb/log"
+	"github.com/komuw/ong/id"
+	"github.com/komuw/ong/log"
 )
 
 const someLogHandlerHeader = "SomeLogHandlerHeader"

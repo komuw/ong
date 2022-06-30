@@ -1,7 +1,7 @@
-# goweb
+# ong
 
-[![ci](https://github.com/komuw/goweb/workflows/goweb%20ci/badge.svg)](https://github.com/komuw/goweb/actions)
-[![codecov](https://codecov.io/gh/komuw/goweb/branch/main/graph/badge.svg)](https://codecov.io/gh/komuw/goweb)
+[![ci](https://github.com/komuw/ong/workflows/ong%20ci/badge.svg)](https://github.com/komuw/ong/actions)
+[![codecov](https://codecov.io/gh/komuw/ong/branch/main/graph/badge.svg)](https://codecov.io/gh/komuw/ong)
 
 
 Ong is a small web toolkit. 
@@ -30,9 +30,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/komuw/goweb/log"
-	"github.com/komuw/goweb/middleware"
-	"github.com/komuw/goweb/server"
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/server"
 )
 
 func main() {

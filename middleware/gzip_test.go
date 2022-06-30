@@ -22,7 +22,7 @@ func someGzipHandler(msg string, iterations int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if iterations > (3 * defaultMinSize) {
 			// bound stack growth.
-			// see: https://github.com/komuw/goweb/issues/54
+			// see: https://github.com/komuw/ong/issues/54
 			iterations = 3 * defaultMinSize
 		}
 		fMsg := strings.Repeat(msg, iterations)
@@ -238,7 +238,7 @@ func TestGzip(t *testing.T) {
 /*
 goos: linux
 goarch: amd64
-pkg: github.com/komuw/goweb/middleware
+pkg: github.com/komuw/ong/middleware
 cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
 
 BenchmarkNoGzip-8          	      19	  56_144_904 ns/op	 3_038_712 B/op	      77 allocs/op

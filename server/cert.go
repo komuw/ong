@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/komuw/goweb/log"
+	"github.com/komuw/ong/log"
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -52,7 +52,7 @@ func CreateDevCertKey() (certFile, keyFile string) {
 	certTemplate := &x509.Certificate{
 		SerialNumber: randomSerialNumber(),
 		Subject: pkix.Name{
-			Organization:       []string{"goweb development certificate"},
+			Organization:       []string{"ong development certificate"},
 			OrganizationalUnit: []string{getOrg()},
 		},
 		DNSNames:  []string{"localhost"},
@@ -218,12 +218,12 @@ func newCA() {
 	tpl := &x509.Certificate{
 		SerialNumber: randomSerialNumber(),
 		Subject: pkix.Name{
-			Organization:       []string{"goweb development CA"},
+			Organization:       []string{"ong development CA"},
 			OrganizationalUnit: []string{getOrg()},
 			// The CommonName is required by iOS to show the certificate in the
 			// "Certificate Trust Settings" menu.
 			// https://github.com/FiloSottile/mkcert/issues/47
-			CommonName: "goweb " + getOrg(),
+			CommonName: "ong " + getOrg(),
 		},
 		SubjectKeyId:          skid[:],
 		NotAfter:              time.Now().AddDate(10, 0, 0), // 10years
@@ -277,9 +277,9 @@ func rootCAcertKeyPaths() (string, string) {
 	getCArootpath := func() string {
 		u, err := user.Current()
 		if err != nil {
-			return "/tmp/goweb"
+			return "/tmp/ong"
 		}
-		return filepath.Join(u.HomeDir, "goweb")
+		return filepath.Join(u.HomeDir, "ong")
 	}
 	caRoot := getCArootpath()
 	if _, err := os.Stat(caRoot); err != nil {
@@ -319,7 +319,7 @@ func randomSerialNumber() *big.Int {
 func getOrg() string {
 	name, err := os.Hostname()
 	if err == nil {
-		name = "goweb-org"
+		name = "ong-org"
 	}
 	return name
 }

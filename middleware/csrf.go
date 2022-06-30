@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/komuw/goweb/id"
+	"github.com/komuw/ong/id"
 
-	"github.com/komuw/goweb/cookie"
+	"github.com/komuw/ong/cookie"
 )
 
 // Most of the code here is insipired by(or taken from):

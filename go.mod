@@ -1,4 +1,4 @@
-module github.com/komuw/goweb
+module github.com/komuw/ong
 
 go 1.18
 

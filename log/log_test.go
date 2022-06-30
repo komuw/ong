@@ -14,7 +14,7 @@ import (
 	stdlibErrors "errors"
 	stdLog "log"
 
-	"github.com/komuw/goweb/errors"
+	"github.com/komuw/ong/errors"
 
 	"github.com/akshayjshah/attest"
 	"github.com/rs/zerolog"
@@ -290,18 +290,18 @@ func TestLogger(t *testing.T) {
 			l := New(context.Background(), w, 2, true)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.True(t, strings.Contains(w.String(), msg))
-			attest.True(t, strings.Contains(w.String(), "goweb/log/log_test.go:291"))
+			attest.True(t, strings.Contains(w.String(), "ong/log/log_test.go:291"))
 		}
 
 		{
 			// for stdlib we disable caller info, since it would otherwise
-			// point to `goweb/log/log.go` as the caller.
+			// point to `ong/log/log.go` as the caller.
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
 			l := New(context.Background(), w, 2, true)
 			l.WithCaller().StdLogger().Println(msg)
 			attest.True(t, strings.Contains(w.String(), msg))
-			attest.False(t, strings.Contains(w.String(), "goweb/log/log_test.go"))
+			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
 		}
 
 		{
@@ -311,7 +311,7 @@ func TestLogger(t *testing.T) {
 			stdLogger := stdLog.New(l, "stdlib", 0)
 			stdLogger.Println(msg)
 			attest.True(t, strings.Contains(w.String(), msg))
-			attest.False(t, strings.Contains(w.String(), "goweb/log/log_test.go"))
+			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
 		}
 	})
 
@@ -370,30 +370,30 @@ func TestLogger(t *testing.T) {
 /*
 goos: linux
 goarch: amd64
-pkg: github.com/komuw/goweb/log
+pkg: github.com/komuw/ong/log
 cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
 
-BenchmarkBestCase/goweb/log-8            889.8 ns/op	      41 B/op	       2 allocs/op
+BenchmarkBestCase/ong/log-8            889.8 ns/op	      41 B/op	       2 allocs/op
 BenchmarkBestCase/rs/zerolog-8           11_360 ns/op	     153 B/op	       0 allocs/op
 BenchmarkBestCase/Zap-8                  22_620 ns/op	     343 B/op	       1 allocs/op
 BenchmarkBestCase/sirupsen/logrus-8      32_635 ns/op	    2112 B/op	      26 allocs/op
 */
-// The above benchmark is unfair to the others since goweb/log is not logging to a io.writer when all its logging are Info logs.
+// The above benchmark is unfair to the others since ong/log is not logging to a io.writer when all its logging are Info logs.
 
 /*
 BenchmarkAverageCase/rs/zerolog-8        12_513 ns/op	     153 B/op	       0 allocs/op
 BenchmarkAverageCase/Zap-8               21_818 ns/op	     348 B/op	       1 allocs/op
 BenchmarkAverageCase/sirupsen/logrus-8   33_401 ns/op	    1961 B/op	      26 allocs/op
-BenchmarkAverageCase/goweb/log-8         172_514 ns/op	    3571 B/op	      42 allocs/op
+BenchmarkAverageCase/ong/log-8         172_514 ns/op	    3571 B/op	      42 allocs/op
 */
 
 /*
 BenchmarkWorstCase/rs/zerolog-8          17_867 ns/op	     303 B/op	       0 allocs/op
 BenchmarkWorstCase/Zap-8                 26_665 ns/op	     688 B/op	       2 allocs/op
 BenchmarkWorstCase/sirupsen/logrus-8     57_033 ns/op	    3663 B/op	      53 allocs/op
-BenchmarkWorstCase/goweb/log-8           333_297 ns/op	   10025 B/op	     103 allocs/op
+BenchmarkWorstCase/ong/log-8           333_297 ns/op	   10025 B/op	     103 allocs/op
 */
-// The above benchmark is 'more representative' since this time round, goweb/log is writing to io.writer for every invocation.
+// The above benchmark is 'more representative' since this time round, ong/log is writing to io.writer for every invocation.
 
 func newZerolog() zerolog.Logger {
 	return zerolog.New(io.Discard).With().Timestamp().Logger()
@@ -471,7 +471,7 @@ func getMessage() (F, []string) {
 func BenchmarkBestCase(b *testing.B) {
 	f, sl := getMessage()
 	str := fmt.Sprintf("%s", sl)
-	b.Logf("best case") // best-case because goweb/log does not log if it is not error level
+	b.Logf("best case") // best-case because ong/log does not log if it is not error level
 
 	b.Run("Zap", func(b *testing.B) {
 		l := newZapLogger(zap.DebugLevel)
@@ -500,7 +500,7 @@ func BenchmarkBestCase(b *testing.B) {
 		}
 	})
 
-	b.Run("goweb/log", func(b *testing.B) {
+	b.Run("ong/log", func(b *testing.B) {
 		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -555,7 +555,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		}
 	})
 
-	b.Run("goweb/log", func(b *testing.B) {
+	b.Run("ong/log", func(b *testing.B) {
 		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -605,7 +605,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		}
 	})
 
-	b.Run("goweb/log", func(b *testing.B) {
+	b.Run("ong/log", func(b *testing.B) {
 		l := newGoWebLogger()
 		b.ReportAllocs()
 		b.ResetTimer()

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
-	"github.com/komuw/goweb/middleware"
+	"github.com/komuw/ong/middleware"
 )
 
 func TestDrainDuration(t *testing.T) {

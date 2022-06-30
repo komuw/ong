@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/komuw/goweb/errors"
-	"github.com/komuw/goweb/id"
+	"github.com/komuw/ong/errors"
+	"github.com/komuw/ong/id"
 	"golang.org/x/exp/maps"
 )
 

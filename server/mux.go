@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/komuw/goweb/log"
-	"github.com/komuw/goweb/middleware"
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
 )
 
 const (

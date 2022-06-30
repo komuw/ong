@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
-	"github.com/komuw/goweb/middleware"
+	"github.com/komuw/ong/middleware"
 )
 
 func someMuxHandler(msg string) http.HandlerFunc {

@@ -13,10 +13,10 @@ coverage.out
 /dist/
 
 # binary
-goweb
+ong
 
 # debug stuff
 debug.test
-goweb.test
-goweb.prof
-goweb.prof
+ong.test
+ong.prof
+ong.prof

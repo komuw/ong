@@ -9,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	gowebErrors "github.com/komuw/goweb/errors"
-	"github.com/komuw/goweb/log"
+	gowebErrors "github.com/komuw/ong/errors"
+	"github.com/komuw/ong/log"
 )
 
 /*
@@ -42,7 +42,7 @@ func startPprofServer() {
 	pprofSrv := &http.Server{
 		Addr: addr,
 		// the pprof muxer is failing to work with `http.TimeoutHandler`
-		// https://github.com/komuw/goweb/issues/62
+		// https://github.com/komuw/ong/issues/62
 		Handler:           mux,
 		ReadHeaderTimeout: readHeader,
 		ReadTimeout:       read,

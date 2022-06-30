@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	gowebErrors "github.com/komuw/goweb/errors"
-	"github.com/komuw/goweb/log"
-	"github.com/komuw/goweb/middleware"
+	gowebErrors "github.com/komuw/ong/errors"
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -210,7 +210,7 @@ func Run(eh extendedHandler, o opts) error {
 		Handler: http.TimeoutHandler(
 			eh,
 			o.handlerTimeout,
-			fmt.Sprintf("goweb: Handler timeout exceeded: %s", o.handlerTimeout),
+			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
 		),
 		ReadHeaderTimeout: o.readHeaderTimeout,
 		ReadTimeout:       o.readTimeout,

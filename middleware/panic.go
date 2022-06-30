@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/komuw/goweb/log"
+	"github.com/komuw/ong/log"
 )
 
 // Most of the code here is insipired(or taken from) by:

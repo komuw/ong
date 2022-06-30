@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
-	"github.com/komuw/goweb/id"
+	"github.com/komuw/ong/id"
 )
 
 func TestStore(t *testing.T) {
