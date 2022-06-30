@@ -273,26 +273,28 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
-	cfg := &net.ListenConfig{Control: func(network, address string, conn syscall.RawConn) error {
-		return conn.Control(func(descriptor uintptr) {
-			_ = unix.SetsockoptInt(
-				int(descriptor),
-				unix.SOL_SOCKET,
-				// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
-				// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
-				// so we use x/sys/unix
-				// see: https://github.com/golang/go/issues/26771
-				unix.SO_REUSEPORT,
-				1,
-			)
-			_ = unix.SetsockoptInt(
-				int(descriptor),
-				unix.SOL_SOCKET,
-				unix.SO_REUSEADDR,
-				1,
-			)
-		})
-	}}
+	cfg := &net.ListenConfig{
+		Control: func(network, address string, conn syscall.RawConn) error {
+			return conn.Control(func(descriptor uintptr) {
+				_ = unix.SetsockoptInt(
+					int(descriptor),
+					unix.SOL_SOCKET,
+					// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
+					// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
+					// so we use x/sys/unix
+					// see: https://github.com/golang/go/issues/26771
+					unix.SO_REUSEPORT,
+					1,
+				)
+				_ = unix.SetsockoptInt(
+					int(descriptor),
+					unix.SOL_SOCKET,
+					unix.SO_REUSEADDR,
+					1,
+				)
+			})
+		},
+	}
 	l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 	if err != nil {
 		return gowebErrors.Wrap(err)
