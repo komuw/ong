@@ -26,3 +26,4 @@ Most recent version is listed first.
 - expvar metrics: https://github.com/komuw/ong/pull/64
 - fix some races: https://github.com/komuw/ong/pull/66
 - resuse address/port for pprof and redirect servers: https://github.com/komuw/ong/pull/67
+- rename: https://github.com/komuw/ong/pull/68
