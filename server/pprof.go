@@ -65,9 +65,18 @@ func startPprofServer() {
 }
 
 func pprofTimeouts() (readHeader, read, write, idle time.Duration) {
-	readHeader = 5 * time.Second
+	/*
+		The pprof tool supports fetching profles by duration.
+		eg; fetch cpu profile for the last 5mins(300sec):
+			go tool pprof http://localhost:6060/debug/pprof/profile?seconds=300
+		This may fail with an error like:
+			http://localhost:6060/debug/pprof/profile?seconds=300: server response: 400 Bad Request - profile duration exceeds server's WriteTimeout
+		So we need to be generous with our timeouts. Which is okay since pprof runs in a mux that is not exposed to the internet(localhost)
+	*/
+	readHeader = 7 * time.Second
 	read = readHeader + (20 * time.Second)
-	write = 5 * time.Minute
-	idle = 3 * time.Minute
+	write = 20 * time.Minute
+	idle = write + (3 * time.Minute)
+
 	return readHeader, read, write, idle
 }
