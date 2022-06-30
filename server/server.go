@@ -303,8 +303,8 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 	if o.certFile != "" {
 		{
 			// HTTP(non-tls) LISTERNER:
-			httpSrv := &http.Server{
-				Addr:              fmt.Sprintf("localhost%s", o.httpPort),
+			redirectSrv := &http.Server{
+				Addr:              fmt.Sprintf("127.0.0.1%s", o.httpPort),
 				Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
 				ReadHeaderTimeout: o.readHeaderTimeout,
 				ReadTimeout:       o.readTimeout,
@@ -314,13 +314,42 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 				BaseContext:       func(net.Listener) context.Context { return ctx },
 			}
 			go func() {
+				cfg := &net.ListenConfig{
+					Control: func(network, address string, conn syscall.RawConn) error {
+						return conn.Control(func(descriptor uintptr) {
+							_ = unix.SetsockoptInt(
+								int(descriptor),
+								unix.SOL_SOCKET,
+								// go vet will complain if we used syscall.SO_REUSEPORT, even though it would work.
+								// this is because Go considers syscall pkg to be frozen. The same goes for syscall.SetsockoptInt
+								// so we use x/sys/unix
+								// see: https://github.com/golang/go/issues/26771
+								unix.SO_REUSEPORT,
+								1,
+							)
+							_ = unix.SetsockoptInt(
+								int(descriptor),
+								unix.SOL_SOCKET,
+								unix.SO_REUSEADDR,
+								1,
+							)
+						})
+					},
+				}
+				l, err := cfg.Listen(ctx, "tcp", redirectSrv.Addr)
+				if err != nil {
+					err = gowebErrors.Wrap(err)
+					logger.Error(err, log.F{"msg": "redirect server, unable to create listener"})
+					return
+				}
+
 				logger.Info(log.F{
-					"msg": fmt.Sprintf("http server listening at %s", o.httpPort),
+					"msg": fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr),
 				})
-				errHttpSrv := httpSrv.ListenAndServe()
-				if errHttpSrv != nil {
-					errHttpSrv = gowebErrors.Wrap(errHttpSrv)
-					logger.Error(errHttpSrv, log.F{"msg": "unable to start http listener for redirects"})
+				errRedirectSrv := redirectSrv.Serve(l)
+				if errRedirectSrv != nil {
+					errRedirectSrv = gowebErrors.Wrap(errRedirectSrv)
+					logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
 				}
 			}()
 		}
