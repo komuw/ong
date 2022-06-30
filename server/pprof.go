@@ -37,7 +37,7 @@ func startPprofServer() {
 		WithFields(log.F{"pid": os.Getpid()})
 
 	port := 6060
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	readHeader, read, write, idle := pprofTimeouts()
 	pprofSrv := &http.Server{
 		Addr: addr,
@@ -53,10 +53,18 @@ func startPprofServer() {
 	}
 
 	go func() {
+		cfg := listenerConfig()
+		l, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
+		if err != nil {
+			err = gowebErrors.Wrap(err)
+			logger.Error(err, log.F{"msg": "pprof server, unable to create listener"})
+			return
+		}
+
 		logger.Info(log.F{
 			"msg": fmt.Sprintf("pprof server listening at %s", pprofSrv.Addr),
 		})
-		errPprofSrv := pprofSrv.ListenAndServe()
+		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
 			errPprofSrv = gowebErrors.Wrap(errPprofSrv)
 			logger.Error(errPprofSrv, log.F{"msg": "unable to start pprof server"})

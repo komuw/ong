@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"math"
@@ -160,7 +161,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		time.Sleep((1 * time.Second))
+		time.Sleep(1 * time.Second)
 
 		res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
 		attest.Ok(t, err)
@@ -171,6 +172,77 @@ func TestServer(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("tls", func(t *testing.T) {
+		t.Parallel()
+
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			// server.Run() calls setRlimit()
+			// and setRlimit() fails in github actions with error: `operation not permitted`
+			// specifically the call to `unix.Setrlimit()`
+			return
+		}
+
+		port := 8081
+		uri := "/api"
+		msg := "hello world"
+		mux := NewMux(
+			Routes{
+				NewRoute(
+					uri,
+					MethodGet,
+					someServerTestHandler(msg),
+					middleware.WithOpts("localhost"),
+				),
+			})
+
+		go func() {
+			_, _ = CreateDevCertKey()
+			time.Sleep(1 * time.Second)
+			err := Run(mux, DefaultTlsOpts())
+			attest.Ok(t, err)
+		}()
+
+		// await for the server to start.
+		time.Sleep(7 * time.Second)
+
+		tr := &http.Transport{
+			// since we are using self-signed certificates, we need to skip verification.
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+
+		{
+			// https server.
+			res, err := client.Get(fmt.Sprintf(
+				// note: the https scheme.
+				"https://127.0.0.1:%d%s",
+				port,
+				uri,
+			))
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		{
+			// redirect server
+			res, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port-1, uri))
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -202,7 +274,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		time.Sleep((1 * time.Second))
+		time.Sleep(1 * time.Second)
 
 		runhandler := func() {
 			res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
