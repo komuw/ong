@@ -302,7 +302,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		{
 			// HTTP(non-tls) LISTERNER:
 			httpSrv := &http.Server{
-				Addr:              o.httpPort,
+				Addr:              fmt.Sprintf("localhost%s", o.httpPort),
 				Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
 				ReadHeaderTimeout: o.readHeaderTimeout,
 				ReadTimeout:       o.readTimeout,
