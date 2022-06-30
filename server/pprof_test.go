@@ -19,7 +19,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer()
 
 		// await for the server to start.
-		time.Sleep((1 * time.Second))
+		time.Sleep(1 * time.Second)
 
 		uri := "/debug/pprof/heap"
 		port := 6060
@@ -35,7 +35,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer()
 
 		// await for the server to start.
-		time.Sleep((1 * time.Second))
+		time.Sleep(1 * time.Second)
 
 		runhandler := func() {
 			uri := "/debug/pprof/heap"

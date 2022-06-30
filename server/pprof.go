@@ -39,7 +39,7 @@ func startPprofServer() {
 		WithFields(log.F{"pid": os.Getpid()})
 
 	port := 6060
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	readHeader, read, write, idle := pprofTimeouts()
 	pprofSrv := &http.Server{
 		Addr: addr,
