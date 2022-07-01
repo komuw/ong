@@ -3,26 +3,42 @@ package log
 import (
 	"bytes"
 	"context"
+	stdlibErrors "errors"
 	"fmt"
 	"io"
+	stdLog "log"
 	"math/rand"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	stdlibErrors "errors"
-	stdLog "log"
-
-	"github.com/komuw/ong/errors"
-
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/errors"
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
-
 	"go.uber.org/zap/zapcore"
 )
+
+func TestCircleBuf(t *testing.T) {
+	t.Parallel()
+
+	t.Run("does not exceed maxsize", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 8
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (13 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(F{x: x})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
+	})
+}
 
 func TestLogger(t *testing.T) {
 	t.Parallel()

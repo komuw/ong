@@ -255,10 +255,9 @@ func GetId(ctx context.Context) string {
 
 // circleBuf implements a very simple & naive circular buffer.
 type circleBuf struct {
-	mu          sync.Mutex // protects buf
-	buf         []F
-	maxSize     int
-	currentSize int
+	mu      sync.Mutex // protects buf
+	buf     []F
+	maxSize int
 }
 
 func newCirleBuf(maxSize int) *circleBuf {
@@ -266,10 +265,29 @@ func newCirleBuf(maxSize int) *circleBuf {
 		maxSize = 10
 	}
 	return &circleBuf{
-		buf:         make([]F, maxSize),
-		maxSize:     maxSize,
-		currentSize: 0,
+		buf:     make([]F, maxSize),
+		maxSize: maxSize,
 	}
+}
+
+func (c *circleBuf) store(f F) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	availableSpace := c.maxSize - len(c.buf)
+	if availableSpace <= 0 {
+		// clear space.
+		upto := c.maxSize / 4
+		c.buf = c.buf[:upto]
+	}
+
+	c.buf = append(c.buf, f)
+}
+
+func (c *circleBuf) reset() {
+	c.mu.Lock()
+	c.buf = c.buf[:0]
+	c.mu.Unlock()
 }
 
 func (c *circleBuf) String() string {
@@ -281,26 +299,4 @@ func (c *circleBuf) String() string {
 	s.WriteString("\n}")
 
 	return s.String()
-}
-
-func (c *circleBuf) store(f F) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	availableSpace := c.maxSize - c.currentSize
-	if availableSpace <= 0 {
-		// clear space.
-		upto := c.maxSize / 4
-		c.buf = c.buf[:upto]
-		c.currentSize = c.currentSize / 4
-	}
-
-	c.buf = append(c.buf, f)
-	c.currentSize = c.currentSize + 1
-}
-
-func (c *circleBuf) reset() {
-	c.mu.Lock()
-	c.buf = c.buf[:0]
-	c.mu.Unlock()
 }
