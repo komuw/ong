@@ -210,8 +210,6 @@ func Run(eh extendedHandler, o opts) error {
 
 	var tlsConf *tls.Config = nil
 	if o.certFile != "" {
-		// autocert.NewListener
-		// DefaultACMEDirectory is the default ACME Directory URL used when the Manager's Client is nil.
 		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
 		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 
