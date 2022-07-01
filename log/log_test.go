@@ -24,6 +24,26 @@ import (
 func TestCircleBuf(t *testing.T) {
 	t.Parallel()
 
+	t.Run("it stores", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 4
+		c := newCirleBuf(maxSize)
+		c.store(F{"msg": "one"})
+		c.store(F{"msg": "two"})
+
+		val1, ok := c.buf[0]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val1, "one")
+
+		val2, ok := c.buf[1]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val2, "two")
+
+		attest.Equal(t, len(c.buf), 2)
+		attest.Equal(t, cap(c.buf), 2)
+	})
+
 	t.Run("does not exceed maxsize", func(t *testing.T) {
 		t.Parallel()
 
