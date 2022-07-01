@@ -42,7 +42,6 @@ type Logger struct {
 	w          io.Writer
 	cBuf       *circleBuf
 	ctx        context.Context
-	indent     bool
 	addCallers bool
 	flds       F
 	immediate  bool // log without buffering. important especially when using logger as an output for the stdlib logger.
@@ -55,7 +54,6 @@ func New(
 	ctx context.Context,
 	w io.Writer,
 	maxMsgs int,
-	indent bool,
 ) Logger {
 	logID := GetId(ctx)
 	ctx = context.WithValue(ctx, CtxKey, logID)
@@ -66,7 +64,6 @@ func New(
 		w:          w,
 		cBuf:       newCirleBuf(maxMsgs),
 		ctx:        ctx,
-		indent:     indent,
 		addCallers: false,
 		flds:       nil,
 		immediate:  false,
@@ -82,7 +79,6 @@ func (l Logger) WithCtx(ctx context.Context) Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        ctx,
-		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -99,7 +95,6 @@ func (l Logger) withcaller(add bool) Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
-		indent:     l.indent,
 		addCallers: add,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -112,7 +107,6 @@ func (l Logger) WithFields(f F) Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
-		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       f,
 		immediate:  l.immediate,
@@ -125,7 +119,6 @@ func (l Logger) WithImmediate() Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
-		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  true,
@@ -215,9 +208,6 @@ func (l Logger) log(lvl level, f F) {
 func (l Logger) flush() {
 	b := &bytes.Buffer{}
 	encoder := json.NewEncoder(b)
-	if l.indent {
-		encoder.SetIndent("", "  ")
-	}
 
 	{
 		l.cBuf.mu.Lock()
@@ -255,21 +245,47 @@ func GetId(ctx context.Context) string {
 
 // circleBuf implements a very simple & naive circular buffer.
 type circleBuf struct {
-	mu          sync.Mutex // protects buf
-	buf         []F
-	maxSize     int
-	currentSize int
+	mu      sync.Mutex // protects buf
+	buf     []F
+	maxSize int
 }
 
 func newCirleBuf(maxSize int) *circleBuf {
 	if maxSize <= 0 {
 		maxSize = 10
 	}
-	return &circleBuf{
-		buf:         make([]F, maxSize),
-		maxSize:     maxSize,
-		currentSize: 0,
+	c := &circleBuf{
+		buf:     make([]F, maxSize),
+		maxSize: maxSize,
 	}
+	c.reset() // remove the nils from `make()`
+	return c
+}
+
+func (c *circleBuf) store(f F) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	availableSpace := c.maxSize - len(c.buf)
+	if availableSpace <= 0 {
+		// clear space.
+		//
+		// Here, we clear a quarter of the slice. This means also some of the earlier items may never be cleared.
+		// If maxSize==7, when we get to this part of code upto == (7/4 == 1)
+		// so resulting buf == c.buf[:1], which will retain the first element.
+		// This first element will never be cleared unless `.reset` is called.
+		// see: https://go.dev/play/p/u7qWWt1C7oc
+		upto := c.maxSize / 4
+		c.buf = c.buf[:upto]
+	}
+
+	c.buf = append(c.buf, f)
+}
+
+func (c *circleBuf) reset() {
+	c.mu.Lock()
+	c.buf = c.buf[:0]
+	c.mu.Unlock()
 }
 
 func (c *circleBuf) String() string {
@@ -281,26 +297,4 @@ func (c *circleBuf) String() string {
 	s.WriteString("\n}")
 
 	return s.String()
-}
-
-func (c *circleBuf) store(f F) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	availableSpace := c.maxSize - c.currentSize
-	if availableSpace <= 0 {
-		// clear space.
-		upto := c.maxSize / 4
-		c.buf = c.buf[:upto]
-		c.currentSize = c.currentSize / 4
-	}
-
-	c.buf = append(c.buf, f)
-	c.currentSize = c.currentSize + 1
-}
-
-func (c *circleBuf) reset() {
-	c.mu.Lock()
-	c.buf = c.buf[:0]
-	c.mu.Unlock()
 }

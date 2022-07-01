@@ -3,26 +3,104 @@ package log
 import (
 	"bytes"
 	"context"
+	stdlibErrors "errors"
 	"fmt"
 	"io"
+	stdLog "log"
 	"math/rand"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	stdlibErrors "errors"
-	stdLog "log"
-
-	"github.com/komuw/ong/errors"
-
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/errors"
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
-
 	"go.uber.org/zap/zapcore"
 )
+
+func TestCircleBuf(t *testing.T) {
+	t.Parallel()
+
+	t.Run("it stores", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 4
+		c := newCirleBuf(maxSize)
+		c.store(F{"msg": "one"})
+		c.store(F{"msg": "two"})
+
+		val1, ok := c.buf[0]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val1, "one")
+
+		val2, ok := c.buf[1]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val2, "two")
+
+		attest.Equal(t, len(c.buf), 2)
+		attest.Equal(t, cap(c.buf), 4)
+	})
+
+	t.Run("does not exceed maxsize", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 8
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (13 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(F{x: x})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
+	})
+
+	t.Run("clears oldest first", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 5
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (6 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(F{"msg": x})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
+
+		val1, ok := c.buf[1]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val1, "29")
+		val2, ok := c.buf[2]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val2, "30")
+	})
+
+	t.Run("reset", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 80
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (13 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(F{x: x})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
+
+		c.reset()
+
+		attest.Equal(t, len(c.buf), 0)
+		attest.Equal(t, cap(c.buf), maxSize)
+	})
+}
 
 func TestLogger(t *testing.T) {
 	t.Parallel()
@@ -32,7 +110,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 		l.Info(F{"one": "one"})
 
 		attest.Zero(t, w.String())
@@ -43,7 +121,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
 		l.Error(errors.New(msg))
 
@@ -55,7 +133,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 
 		infoMsg := "hello world"
 		l.Info(F{"what": infoMsg})
@@ -71,7 +149,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 
 		{
 			infoMsg := "hello world"
@@ -106,7 +184,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 
 		for i := 0; i <= (maxMsgs + 4); i++ {
 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -128,7 +206,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 		msg := "some-error"
 		err := errors.New(msg)
 
@@ -150,7 +228,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 		{
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -180,7 +258,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 		{
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -210,7 +288,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 		flds := F{"version": "v0.1.2", "env": "prod", "service": "web-commerce"}
 		l = l.WithFields(flds)
 
@@ -252,7 +330,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		msg := "hello world"
-		l := New(context.Background(), w, 2, true).WithImmediate()
+		l := New(context.Background(), w, 2).WithImmediate()
 		l.Info(F{"msg": msg})
 
 		attest.True(t, strings.Contains(w.String(), msg))
@@ -263,7 +341,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		msg := "hello world"
-		l := New(context.Background(), w, 2, true)
+		l := New(context.Background(), w, 2)
 		stdLogger := stdLog.New(l, "stdlib", stdLog.Lshortfile)
 		stdLogger.Println(msg)
 
@@ -275,7 +353,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		msg := "hey what up?"
-		l := New(context.Background(), w, 2, true)
+		l := New(context.Background(), w, 2)
 		stdLogger := l.StdLogger()
 		stdLogger.Println(msg)
 		attest.True(t, strings.Contains(w.String(), msg))
@@ -287,10 +365,10 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(context.Background(), w, 2, true)
+			l := New(context.Background(), w, 2)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.True(t, strings.Contains(w.String(), msg))
-			attest.True(t, strings.Contains(w.String(), "ong/log/log_test.go:291"))
+			attest.True(t, strings.Contains(w.String(), "ong/log/log_test.go:369"))
 		}
 
 		{
@@ -298,7 +376,7 @@ func TestLogger(t *testing.T) {
 			// point to `ong/log/log.go` as the caller.
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(context.Background(), w, 2, true)
+			l := New(context.Background(), w, 2)
 			l.WithCaller().StdLogger().Println(msg)
 			attest.True(t, strings.Contains(w.String(), msg))
 			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
@@ -307,7 +385,7 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(context.Background(), w, 2, true).WithCaller()
+			l := New(context.Background(), w, 2).WithCaller()
 			stdLogger := stdLog.New(l, "stdlib", 0)
 			stdLogger.Println(msg)
 			attest.True(t, strings.Contains(w.String(), msg))
@@ -320,7 +398,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs, true)
+		l := New(context.Background(), w, maxMsgs)
 
 		tokens := []string{
 			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
@@ -433,7 +511,6 @@ func newOngLogger() Logger {
 		context.Background(),
 		io.Discard,
 		maxMsgs,
-		true,
 	)
 }
 

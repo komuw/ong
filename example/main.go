@@ -61,7 +61,7 @@ type myAPI struct {
 func NewMyApi(db string) myAPI {
 	return myAPI{
 		db: "someDb",
-		l:  log.New(context.Background(), os.Stdout, 1000, false),
+		l:  log.New(context.Background(), os.Stdout, 1000),
 	}
 }
 

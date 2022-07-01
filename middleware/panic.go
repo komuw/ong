@@ -18,7 +18,7 @@ func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFun
 		defer func() {
 			err := recover()
 			if err != nil {
-				logger := log.New(r.Context(), logOutput, 5*60*15, false).WithCaller()
+				logger := log.New(r.Context(), logOutput, 5*60*15).WithCaller()
 
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)
