@@ -7,16 +7,17 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	ongErrors "github.com/komuw/ong/errors"
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/crypto/acme/autocert"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	ongErrors "github.com/komuw/ong/errors"
-	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/middleware"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -158,6 +159,43 @@ func DefaultTlsOpts() opts {
 	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile)
 }
 
+// type cert struct {
+// 	c      *tls.Certificate
+// 	expiry time.Time
+// }
+
+// func newCert(certFile, keyFile string) (*cert, error) {
+// 	c, err := tls.LoadX509KeyPair(certFile, keyFile)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	leaf, err := x509.ParseCertificate(c.Certificate[0])
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	c.Leaf = leaf
+
+// 	return &cert{c: &c, expiry: leaf.NotAfter}, nil
+// }
+
+// func (c *cert) getCert() *tls.Certificate {
+// 	now := time.Now().UTC()
+// 	dur := now.Sub(c.expiry)
+
+// 	if dur < 14*(24*time.Hour) {
+// 		// we consider any certificate that is within 14days as due for renewal(ie, 'expired')
+// 		go c.renew()
+// 	}
+
+// 	return c.c
+// }
+
+// func (c *cert) renew() {
+// 	// 1. call letsencrypt and renew cert.
+// 	// 2. persist on disk.
+// 	// 3. update `c.c` and `c.expiry`
+// }
+
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
 // It sets up a server with the parameters provided by o.
 //
@@ -172,7 +210,32 @@ func Run(eh extendedHandler, o opts) error {
 
 	var tlsConf *tls.Config = nil
 	if o.certFile != "" {
+		// autocert.NewListener
+		// DefaultACMEDirectory is the default ACME Directory URL used when the Manager's Client is nil.
+		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+		m := &autocert.Manager{
+			Client: &acme.Client{DirectoryURL: letsEncryptStagingUrl},
+			Cache:  autocert.DirCache("ong-certifiate-dir"),
+			Prompt: autocert.AcceptTOS,
+			Email:  "example@example.org",
+			HostPolicy: autocert.HostWhitelist(
+				// todo: replace this with our own function.
+				// note: the func(`autocert.HostWhitelist`) does only exact matches. Subdomains, regexp or wildcard will not match.
+				//       we should change that.
+				"example.org",
+				"www.example.org",
+			),
+		}
+
 		tlsConf = &tls.Config{
+			// taken from:
+			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
+			NextProtos: []string{
+				"h2", "http/1.1", // enable HTTP/2
+				acme.ALPNProto, // enable tls-alpn ACME challenges
+			},
 			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
@@ -188,13 +251,15 @@ func Run(eh extendedHandler, o opts) error {
 				//   - golang.org/x/crypto/acme/autocert
 				//   - https://github.com/caddyserver/certmagic
 				//
-				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
-				if err != nil {
-					err = ongErrors.Wrap(err)
-					logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
-					return nil, err
-				}
-				return &c, nil
+
+				return m.GetCertificate(info)
+				// c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
+				// if err != nil {
+				// 	err = ongErrors.Wrap(err)
+				// 	logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
+				// 	return nil, err
+				// }
+				// return &c, nil
 			},
 		}
 	}
