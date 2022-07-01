@@ -58,7 +58,7 @@ type mux struct {
 // NewMux creates a new mux.
 func NewMux(rts Routes) *mux {
 	m := &mux{
-		l:      log.New(context.Background(), os.Stdout, 1000, false),
+		l:      log.New(context.Background(), os.Stdout, 1000),
 		router: http.NewServeMux(),
 	}
 

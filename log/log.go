@@ -42,7 +42,6 @@ type Logger struct {
 	w          io.Writer
 	cBuf       *circleBuf
 	ctx        context.Context
-	indent     bool
 	addCallers bool
 	flds       F
 	immediate  bool // log without buffering. important especially when using logger as an output for the stdlib logger.
@@ -55,7 +54,6 @@ func New(
 	ctx context.Context,
 	w io.Writer,
 	maxMsgs int,
-	indent bool,
 ) Logger {
 	logID := GetId(ctx)
 	ctx = context.WithValue(ctx, CtxKey, logID)
@@ -66,7 +64,6 @@ func New(
 		w:          w,
 		cBuf:       newCirleBuf(maxMsgs),
 		ctx:        ctx,
-		indent:     indent,
 		addCallers: false,
 		flds:       nil,
 		immediate:  false,
@@ -82,7 +79,6 @@ func (l Logger) WithCtx(ctx context.Context) Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        ctx,
-		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -99,7 +95,6 @@ func (l Logger) withcaller(add bool) Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
-		indent:     l.indent,
 		addCallers: add,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -112,7 +107,6 @@ func (l Logger) WithFields(f F) Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
-		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       f,
 		immediate:  l.immediate,
@@ -125,7 +119,6 @@ func (l Logger) WithImmediate() Logger {
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
 		ctx:        l.ctx,
-		indent:     l.indent,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  true,
@@ -215,9 +208,6 @@ func (l Logger) log(lvl level, f F) {
 func (l Logger) flush() {
 	b := &bytes.Buffer{}
 	encoder := json.NewEncoder(b)
-	if l.indent {
-		encoder.SetIndent("", "  ")
-	}
 
 	{
 		l.cBuf.mu.Lock()
