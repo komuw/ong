@@ -29,8 +29,6 @@ func Log(wrappedHandler http.HandlerFunc, domain string, logOutput io.Writer) ht
 		logOutput,
 		// enought to hold messages for 5reqs/sec for 15minutes.
 		5*60*15,
-		// dont indent.
-		false,
 	)
 
 	mathRand.Seed(time.Now().UTC().UnixNano())

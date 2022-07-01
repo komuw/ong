@@ -31,7 +31,8 @@ func startPprofServer() {
 	defer cancel()
 	logger := log.New(
 		context.Background(),
-		os.Stdout, 1000, false).
+		os.Stdout,
+		1000).
 		WithCtx(ctx).
 		WithImmediate().
 		WithFields(log.F{"pid": os.Getpid()})

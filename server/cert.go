@@ -98,8 +98,7 @@ func getTlsConfig(o opts, logger log.Logger) *tls.Config {
 var certLogger = log.New( //nolint:gochecknoglobals
 	context.Background(),
 	os.Stdout,
-	100,
-	false).
+	100).
 	WithImmediate().
 	WithFields(
 		log.F{"pid": os.Getpid()},
