@@ -27,9 +27,12 @@ import (
 )
 
 // Most of the code here is insipired(or taken from) by:
-//   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:     https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
-//   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here: https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
+//   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:                                   https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
+//   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here:                               https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
+//   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
 
+// getTlsConfig returns a proper tls configuration given the options passed in.
+// The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
 func getTlsConfig(o opts, logger log.Logger) *tls.Config {
 	const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
 	const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
