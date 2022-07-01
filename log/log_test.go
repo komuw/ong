@@ -82,6 +82,26 @@ func TestCircleBuf(t *testing.T) {
 		attest.True(t, ok)
 		attest.Equal(t, val2, "29")
 	})
+
+	t.Run("reset", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 80
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (13 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(F{x: x})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
+
+		c.reset()
+
+		attest.Equal(t, len(c.buf), 0)
+		attest.Equal(t, cap(c.buf), maxSize)
+	})
 }
 
 func TestLogger(t *testing.T) {
