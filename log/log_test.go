@@ -368,7 +368,7 @@ func TestLogger(t *testing.T) {
 			l := New(context.Background(), w, 2, true)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.True(t, strings.Contains(w.String(), msg))
-			attest.True(t, strings.Contains(w.String(), "ong/log/log_test.go:291"))
+			attest.True(t, strings.Contains(w.String(), "ong/log/log_test.go:369"))
 		}
 
 		{
