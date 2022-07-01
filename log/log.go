@@ -264,10 +264,12 @@ func newCirleBuf(maxSize int) *circleBuf {
 	if maxSize <= 0 {
 		maxSize = 10
 	}
-	return &circleBuf{
+	c := &circleBuf{
 		buf:     make([]F, maxSize),
 		maxSize: maxSize,
 	}
+	c.reset() // remove the nils from `make()`
+	return c
 }
 
 func (c *circleBuf) store(f F) {

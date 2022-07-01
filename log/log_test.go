@@ -32,17 +32,15 @@ func TestCircleBuf(t *testing.T) {
 		c.store(F{"msg": "one"})
 		c.store(F{"msg": "two"})
 
-		// c.buf[0] is nil because in newCirleBuf we use `make([]F, maxSize, maxSize)`
-
-		val1, ok := c.buf[1]["msg"].(string)
+		val1, ok := c.buf[0]["msg"].(string)
 		attest.True(t, ok)
 		attest.Equal(t, val1, "one")
 
-		val2, ok := c.buf[2]["msg"].(string)
+		val2, ok := c.buf[1]["msg"].(string)
 		attest.True(t, ok)
 		attest.Equal(t, val2, "two")
 
-		attest.Equal(t, len(c.buf), 3)
+		attest.Equal(t, len(c.buf), 2)
 		attest.Equal(t, cap(c.buf), 4)
 	})
 
@@ -77,10 +75,10 @@ func TestCircleBuf(t *testing.T) {
 
 		val1, ok := c.buf[1]["msg"].(string)
 		attest.True(t, ok)
-		attest.Equal(t, val1, "28")
+		attest.Equal(t, val1, "29")
 		val2, ok := c.buf[2]["msg"].(string)
 		attest.True(t, ok)
-		attest.Equal(t, val2, "29")
+		attest.Equal(t, val2, "30")
 	})
 
 	t.Run("reset", func(t *testing.T) {
