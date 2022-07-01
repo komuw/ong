@@ -279,6 +279,12 @@ func (c *circleBuf) store(f F) {
 	availableSpace := c.maxSize - len(c.buf)
 	if availableSpace <= 0 {
 		// clear space.
+		//
+		// Here, we clear a quarter of the slice. This means also some of the earlier items may never be cleared.
+		// If maxSize==7, when we get to this part of code upto == (7/4 == 1)
+		// so resulting buf == c.buf[:1], which will retain the first element.
+		// This first element will never be cleared unless `.reset` is called.
+		// see: https://go.dev/play/p/u7qWWt1C7oc
 		upto := c.maxSize / 4
 		c.buf = c.buf[:upto]
 	}
