@@ -311,7 +311,12 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			logger.Info(log.F{
 				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 			})
-			if errS := srv.Serve(l); errS != nil {
+			if errS := srv.ServeTLS(
+				l,
+				// use empty cert & key. they will be picked from `srv.TLSConfig`
+				"",
+				"",
+			); errS != nil {
 				return ongErrors.Wrap(errS)
 			}
 		}
