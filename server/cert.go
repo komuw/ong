@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -19,12 +20,77 @@ import (
 	"path/filepath"
 	"time"
 
+	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
+	"golang.org/x/crypto/acme"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // Most of the code here is insipired(or taken from) by:
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:     https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 //   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here: https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
+
+func getTlsConfig(o opts, logger log.Logger) *tls.Config {
+	const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+	const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+	var tlsConf *tls.Config = nil
+	if o.tls.email != "" {
+		// 1.letsencrypt
+		m := &autocert.Manager{
+			Client: &acme.Client{DirectoryURL: letsEncryptStagingUrl},
+			Cache:  autocert.DirCache("ong-certifiate-dir"),
+			Prompt: autocert.AcceptTOS,
+			Email:  "example@example.org",
+			HostPolicy: autocert.HostWhitelist(
+				// todo: replace this with our own function.
+				// note: the func(`autocert.HostWhitelist`) does only exact matches. Subdomains, regexp or wildcard will not match.
+				//       we should change that.
+				"example.org",
+				"www.example.org",
+			),
+		}
+
+		tlsConf = &tls.Config{
+			// taken from:
+			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
+			NextProtos: []string{
+				"h2", // enable HTTP/2
+				"http/1.1",
+				acme.ALPNProto, // enable tls-alpn ACME challenges
+			},
+			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
+				return m.GetCertificate(info)
+			},
+		}
+	}
+	if o.tls.certFile != "" {
+		// 2. get from disk.
+		tlsConf = &tls.Config{
+			NextProtos: []string{
+				"h2", // enable HTTP/2
+				"http/1.1",
+				acme.ALPNProto, // enable tls-alpn ACME challenges
+			},
+			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
+				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
+				// it is called if `tls.Config.Certificates` is empty.
+				//
+				// todo: cache this certifiates
+				//
+				c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
+				if err != nil {
+					err = ongErrors.Wrap(err)
+					logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
+					return nil, err
+				}
+				return &c, nil
+			},
+		}
+	}
+
+	return tlsConf
+}
 
 var certLogger = log.New( //nolint:gochecknoglobals
 	context.Background(),

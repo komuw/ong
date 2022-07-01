@@ -4,20 +4,18 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
-	ongErrors "github.com/komuw/ong/errors"
-	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/middleware"
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	ongErrors "github.com/komuw/ong/errors"
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -29,6 +27,15 @@ type extendedHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
+type tlsOpts struct {
+	certFile string // if present, tls will be served from certificates on disk.
+	keyFile  string
+	email    string // if present, tls will be served from letsencrypt certifiates.
+	domain   string // can be a wildcard
+	// this ones are created automatically
+	enabled bool
+}
+
 // opts defines parameters for running an HTTP server.
 type opts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
@@ -38,9 +45,7 @@ type opts struct {
 	writeTimeout      time.Duration
 	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
-	certFile          string
-	keyFile           string
-
+	tls               tlsOpts
 	// this ones are created automatically
 	serverPort    string
 	serverAddress string
@@ -65,6 +70,8 @@ func NewOpts(
 	idleTimeout time.Duration,
 	certFile string,
 	keyFile string,
+	email string, // if present, tls will be served from letsencrypt certifiates.
+	domain string,
 ) opts {
 	serverPort := fmt.Sprintf(":%d", port)
 	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
@@ -87,8 +94,13 @@ func NewOpts(
 		writeTimeout:      writeTimeout,
 		handlerTimeout:    handlerTimeout,
 		idleTimeout:       idleTimeout,
-		certFile:          certFile,
-		keyFile:           keyFile,
+		tls: tlsOpts{
+			certFile: certFile,
+			keyFile:  keyFile,
+			email:    email,
+			domain:   domain,
+			enabled:  certFile != "" || email != "",
+		},
 		// this ones are created automatically
 		serverPort:    serverPort,
 		serverAddress: serverAddress,
@@ -118,15 +130,22 @@ func WithOpts(port uint16, host string) opts {
 		idleTimeout,
 		"",
 		"",
+		"",
+		"",
 	)
 }
 
 // WithTlsOpts returns a new opts that has sensible defaults given host, certFile & keyFile.
 func WithTlsOpts(host, certFile, keyFile string) opts {
-	return withTlsOpts(443, host, certFile, keyFile)
+	return withTlsOpts(443, host, certFile, keyFile, "", "")
 }
 
-func withTlsOpts(port uint16, host, certFile, keyFile string) opts {
+// WithLetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
+func WithLetsEncryptOpts(host, email, domain string) opts {
+	return withTlsOpts(443, host, "", "", email, domain)
+}
+
+func withTlsOpts(port uint16, host, certFile, keyFile, email, domain string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -146,6 +165,8 @@ func withTlsOpts(port uint16, host, certFile, keyFile string) opts {
 		idleTimeout,
 		certFile,
 		keyFile,
+		email,
+		domain,
 	)
 }
 
@@ -156,45 +177,8 @@ func DefaultOpts() opts {
 
 func DefaultTlsOpts() opts {
 	certFile, keyFile := certKeyPaths()
-	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile)
+	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile, "", "")
 }
-
-// type cert struct {
-// 	c      *tls.Certificate
-// 	expiry time.Time
-// }
-
-// func newCert(certFile, keyFile string) (*cert, error) {
-// 	c, err := tls.LoadX509KeyPair(certFile, keyFile)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	leaf, err := x509.ParseCertificate(c.Certificate[0])
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	c.Leaf = leaf
-
-// 	return &cert{c: &c, expiry: leaf.NotAfter}, nil
-// }
-
-// func (c *cert) getCert() *tls.Certificate {
-// 	now := time.Now().UTC()
-// 	dur := now.Sub(c.expiry)
-
-// 	if dur < 14*(24*time.Hour) {
-// 		// we consider any certificate that is within 14days as due for renewal(ie, 'expired')
-// 		go c.renew()
-// 	}
-
-// 	return c.c
-// }
-
-// func (c *cert) renew() {
-// 	// 1. call letsencrypt and renew cert.
-// 	// 2. persist on disk.
-// 	// 3. update `c.c` and `c.expiry`
-// }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
 // It sets up a server with the parameters provided by o.
@@ -208,63 +192,9 @@ func Run(eh extendedHandler, o opts) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := eh.GetLogger().WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
 
-	var tlsConf *tls.Config = nil
-	if o.certFile != "" {
-		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
-		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
-
-		m := &autocert.Manager{
-			Client: &acme.Client{DirectoryURL: letsEncryptStagingUrl},
-			Cache:  autocert.DirCache("ong-certifiate-dir"),
-			Prompt: autocert.AcceptTOS,
-			Email:  "example@example.org",
-			HostPolicy: autocert.HostWhitelist(
-				// todo: replace this with our own function.
-				// note: the func(`autocert.HostWhitelist`) does only exact matches. Subdomains, regexp or wildcard will not match.
-				//       we should change that.
-				"example.org",
-				"www.example.org",
-			),
-		}
-
-		tlsConf = &tls.Config{
-			// taken from:
-			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
-			NextProtos: []string{
-				"h2", "http/1.1", // enable HTTP/2
-				acme.ALPNProto, // enable tls-alpn ACME challenges
-			},
-			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
-				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
-				// it is called if `tls.Config.Certificates` is empty.
-				//
-				// todo: this is where we can renew our certificates if we want.
-				// plan;
-				//   (a) check if one month has passed.
-				//   (b) if it has, call letsencrypt to fetch new certs; maybe in a goroutine.
-				//   (c) save that cert to file.
-				//   (d) also load it into cache/memory.
-				//   (e) if one month is not over, always load certs/key from cache.
-				// see:
-				//   - golang.org/x/crypto/acme/autocert
-				//   - https://github.com/caddyserver/certmagic
-				//
-
-				return m.GetCertificate(info)
-				// c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
-				// if err != nil {
-				// 	err = ongErrors.Wrap(err)
-				// 	logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
-				// 	return nil, err
-				// }
-				// return &c, nil
-			},
-		}
-	}
-
 	server := &http.Server{
 		Addr:      o.serverPort,
-		TLSConfig: tlsConf,
+		TLSConfig: getTlsConfig(o, logger),
 
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
@@ -338,7 +268,7 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
-	if o.certFile != "" {
+	if o.tls.enabled {
 		{
 			// HTTP(non-tls) LISTERNER:
 			redirectSrv := &http.Server{
@@ -381,7 +311,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			logger.Info(log.F{
 				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 			})
-			if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
+			if errS := srv.Serve(l); errS != nil {
 				return ongErrors.Wrap(errS)
 			}
 		}
