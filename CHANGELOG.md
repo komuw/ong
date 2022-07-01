@@ -27,3 +27,4 @@ Most recent version is listed first.
 - fix some races: https://github.com/komuw/ong/pull/66
 - resuse address/port for pprof and redirect servers: https://github.com/komuw/ong/pull/67
 - rename: https://github.com/komuw/ong/pull/68
+- make some updates to circular buffer: https://github.com/komuw/ong/pull/71
