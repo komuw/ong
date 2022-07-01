@@ -32,16 +32,18 @@ func TestCircleBuf(t *testing.T) {
 		c.store(F{"msg": "one"})
 		c.store(F{"msg": "two"})
 
-		val1, ok := c.buf[0]["msg"].(string)
+		// c.buf[0] is nil because in newCirleBuf we use `make([]F, maxSize, maxSize)`
+
+		val1, ok := c.buf[1]["msg"].(string)
 		attest.True(t, ok)
 		attest.Equal(t, val1, "one")
 
-		val2, ok := c.buf[1]["msg"].(string)
+		val2, ok := c.buf[2]["msg"].(string)
 		attest.True(t, ok)
 		attest.Equal(t, val2, "two")
 
-		attest.Equal(t, len(c.buf), 2)
-		attest.Equal(t, cap(c.buf), 2)
+		attest.Equal(t, len(c.buf), 3)
+		attest.Equal(t, cap(c.buf), 4)
 	})
 
 	t.Run("does not exceed maxsize", func(t *testing.T) {
@@ -57,6 +59,28 @@ func TestCircleBuf(t *testing.T) {
 		}
 		attest.True(t, len(c.buf) <= maxSize)
 		attest.True(t, cap(c.buf) <= maxSize)
+	})
+
+	t.Run("clears oldest first", func(t *testing.T) {
+		t.Parallel()
+
+		maxSize := 5
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (6 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(F{"msg": x})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
+
+		val1, ok := c.buf[1]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val1, "28")
+		val2, ok := c.buf[2]["msg"].(string)
+		attest.True(t, ok)
+		attest.Equal(t, val2, "29")
 	})
 }
 
