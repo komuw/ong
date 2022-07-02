@@ -33,13 +33,12 @@ import (
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
-func getTlsConfig(o opts, logger log.Logger) *tls.Config {
-	const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
-	const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
-
-	var tlsConf *tls.Config = nil
+func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 	if o.tls.email != "" {
-		// 1.letsencrypt
+		// 1. use letsencrypt.
+		//
+		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 		m := &autocert.Manager{
 			Client: &acme.Client{DirectoryURL: letsEncryptStagingUrl},
 			Cache:  autocert.DirCache("ong-certifiate-dir"),
@@ -53,8 +52,7 @@ func getTlsConfig(o opts, logger log.Logger) *tls.Config {
 				"www.example.org",
 			),
 		}
-
-		tlsConf = &tls.Config{
+		tlsConf := &tls.Config{
 			// taken from:
 			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
 			NextProtos: []string{
@@ -66,10 +64,18 @@ func getTlsConfig(o opts, logger log.Logger) *tls.Config {
 				return m.GetCertificate(info)
 			},
 		}
+		return tlsConf, nil
 	}
 	if o.tls.certFile != "" {
 		// 2. get from disk.
-		tlsConf = &tls.Config{
+		//
+		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
+		if err != nil {
+			err = ongErrors.Wrap(err)
+			return nil, err
+		}
+
+		tlsConf := &tls.Config{
 			NextProtos: []string{
 				"h2", // enable HTTP/2
 				"http/1.1",
@@ -79,20 +85,14 @@ func getTlsConfig(o opts, logger log.Logger) *tls.Config {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
 				//
-				// todo: cache this certifiates
-				//
-				c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
-				if err != nil {
-					err = ongErrors.Wrap(err)
-					logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
-					return nil, err
-				}
 				return &c, nil
 			},
 		}
+		return tlsConf, nil
 	}
 
-	return tlsConf
+	// 3. non-tls traffic.
+	return nil, nil
 }
 
 var certLogger = log.New( //nolint:gochecknoglobals

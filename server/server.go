@@ -60,6 +60,9 @@ func (o opts) Equal(other opts) bool {
 }
 
 // NewOpts returns a new opts.
+// If certFile is a non-empty string, this will enable tls from certificates found on disk.
+// If email is a non-empty string, this will enable tls from certificates procured from letsencrypt.
+// domain can be a single domain or a wildcard.
 func NewOpts(
 	port uint16,
 	host string,
@@ -190,11 +193,16 @@ func Run(eh extendedHandler, o opts) error {
 	_, _ = maxprocs.Set()
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	logger := eh.GetLogger().WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
 
+	tlsConf, errTc := getTlsConfig(o, logger)
+	if errTc != nil {
+		return errTc
+	}
 	server := &http.Server{
 		Addr:      o.serverPort,
-		TLSConfig: getTlsConfig(o, logger),
+		TLSConfig: tlsConf,
 
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
