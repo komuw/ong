@@ -83,7 +83,7 @@ To use tls with certificates from letsencrypt:
 ```go
 host := "0.0.0.0"
 email := "admin@example.com"
-domain := "example.com"
+domain := "*.example.com"
 err := server.Run(mux, server.WithLetsEncryptOpts(host, email, domain))
 ```
 

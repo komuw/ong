@@ -35,16 +35,15 @@ import (
 //   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 
-// customHostWhitelist is modeled after `autocert.HostWhitelist``
+// customHostWhitelist is modeled after `autocert.HostWhitelist` except that it allows wildcards.
 //
 // HostWhitelist returns a policy where only the specified domain names are allowed.
-// Only exact matches are currently supported. Subdomains, regexp or wildcard
-// will not match.
 //
 // Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
 // Invalid domain will be silently ignored.
 func customHostWhitelist(domain string) autocert.HostPolicy {
+	// wildcard validation has already happened in `validateDomain`
 	exactMatch := ""
 	wildcard := ""
 	if !strings.Contains(domain, "*") {
@@ -90,6 +89,20 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 	}
 }
 
+func validateDomain(domain string) error {
+	if len(domain) < 1 {
+		return ongErrors.New("domain cannot be empty if email is also specified")
+	}
+	if strings.Count(domain, "*") > 1 {
+		return ongErrors.New("domain can only contain one wildcard character")
+	}
+	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
+		return ongErrors.New("wildcard character should be a prefix")
+	}
+
+	return nil
+}
+
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
 func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
@@ -97,11 +110,8 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 		// 1. use letsencrypt.
 		//
 
-		if strings.Count(o.tls.domain, "*") > 1 {
-			return nil, ongErrors.New("domain can only contain one wildcard character")
-		}
-		if strings.Contains(o.tls.domain, "*") && !strings.HasPrefix(o.tls.domain, "*") {
-			return nil, ongErrors.New("wildcard character should be a prefix")
+		if err := validateDomain(o.tls.domain); err != nil {
+			return nil, err
 		}
 
 		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"

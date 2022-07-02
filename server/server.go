@@ -33,7 +33,9 @@ type tlsOpts struct {
 	keyFile  string
 	// if email is present, tls will be served from letsencrypt certifiates.
 	email string
-	// domain cant be a wildcard, since letsencrypt only issues wildcard certs via DNS-01 challenge
+	// domain can be a wildcard.
+	// However, the certificate issued wont be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
+	// Instead, we'll get a certifiate per subdomain.
 	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 	domain string
 	//
@@ -67,6 +69,7 @@ func (o opts) Equal(other opts) bool {
 // NewOpts returns a new opts.
 // If certFile is a non-empty string, this will enable tls from certificates found on disk.
 // If email is a non-empty string, this will enable tls from certificates procured from letsencrypt.
+// domain can be an exact domain, subdomain or wildcard.
 func NewOpts(
 	port uint16,
 	host string,
