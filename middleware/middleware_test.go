@@ -176,7 +176,7 @@ func TestAllMiddleware(t *testing.T) {
 	}
 }
 
-func TestServer(t *testing.T) {
+func TestMiddlewareServer(t *testing.T) {
 	t.Parallel()
 
 	t.Run("integration with server succeds", func(t *testing.T) {
