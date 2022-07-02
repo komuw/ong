@@ -28,10 +28,15 @@ type extendedHandler interface {
 }
 
 type tlsOpts struct {
-	certFile string // if present, tls will be served from certificates on disk.
+	// if certFile is present, tls will be served from certificates on disk.
+	certFile string
 	keyFile  string
-	email    string // if present, tls will be served from letsencrypt certifiates.
-	domain   string // can be a wildcard
+	// if email is present, tls will be served from letsencrypt certifiates.
+	email string
+	// domain cant be a wildcard, since letsencrypt only issues wildcard certs via DNS-01 challenge
+	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
+	domain string
+	//
 	// this ones are created automatically
 	enabled bool
 }
@@ -62,7 +67,6 @@ func (o opts) Equal(other opts) bool {
 // NewOpts returns a new opts.
 // If certFile is a non-empty string, this will enable tls from certificates found on disk.
 // If email is a non-empty string, this will enable tls from certificates procured from letsencrypt.
-// domain can be a single domain or a wildcard.
 func NewOpts(
 	port uint16,
 	host string,
