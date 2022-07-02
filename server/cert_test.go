@@ -151,7 +151,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			host  string
 			allow bool
 		}{
-			// {"example.com", true},  // TODO: fix
+			{"example.com", true},
 			{"example.org", false},
 			{"xn--9caa.com", false}, // éé.com
 			{"one.example.com", true},

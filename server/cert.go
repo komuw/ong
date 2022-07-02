@@ -61,6 +61,14 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 	} else {
 		// wildcard
 		wildcard = domain
+		{
+			// if wildcard is `*.example.com` we should also match `example.com`
+			exactMatch = strings.ReplaceAll(domain, "*", "")
+			exactMatch = strings.TrimLeft(exactMatch, ".")
+			if h, err := idna.Lookup.ToASCII(exactMatch); err == nil {
+				exactMatch = h
+			}
+		}
 	}
 
 	return func(_ context.Context, host string) error {
