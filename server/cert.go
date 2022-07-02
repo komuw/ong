@@ -61,6 +61,7 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 	} else {
 		// wildcard
 		wildcard = domain
+		wildcard = strings.ToLower(strings.TrimSpace(wildcard))
 		{
 			// if wildcard is `*.example.com` we should also match `example.com`
 			exactMatch = strings.ReplaceAll(domain, "*", "")
