@@ -36,6 +36,9 @@ import (
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 
 // customHostWhitelist is modeled after `autocert.HostWhitelist` except that it allows wildcards.
+// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
+// Instead, we'll get a certifiate per subdomain.
+// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 //
 // HostWhitelist returns a policy where only the specified domain names are allowed.
 //

@@ -34,7 +34,7 @@ type tlsOpts struct {
 	// if email is present, tls will be served from letsencrypt certifiates.
 	email string
 	// domain can be a wildcard.
-	// However, the certificate issued wont be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
+	// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
 	// Instead, we'll get a certifiate per subdomain.
 	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 	domain string
