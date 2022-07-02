@@ -58,6 +58,9 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 	if o.tls.certFile != "" {
 		// 2. get from disk.
 		//
+		if len(o.tls.keyFile) < 1 {
+			return nil, ongErrors.New("keyFile cannot be empty if certFile is also specified")
+		}
 		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
 		if err != nil {
 			err = ongErrors.Wrap(err)
