@@ -152,6 +152,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			allow bool
 		}{
 			{"example.com", true},
+			{"www.example.com", true},
 			{"example.org", false},
 			{"xn--9caa.com", false}, // éé.com
 			{"one.example.com", true},
