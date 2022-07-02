@@ -72,6 +72,8 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 	}
 
 	return func(_ context.Context, host string) error {
+		host = strings.ToLower(strings.TrimSpace(host))
+
 		if exactMatch != "" && exactMatch == host {
 			// good match
 			return nil
