@@ -124,17 +124,11 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
 		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 		m := &autocert.Manager{
-			Client: &acme.Client{DirectoryURL: letsEncryptStagingUrl},
-			Cache:  autocert.DirCache("ong-certifiate-dir"),
-			Prompt: autocert.AcceptTOS,
-			Email:  o.tls.email,
-			HostPolicy: autocert.HostWhitelist(
-				// todo: replace this with our own function.
-				// note: the func(`autocert.HostWhitelist`) does only exact matches. Subdomains, regexp or wildcard will not match.
-				//       we should change that.
-				"example.org",
-				"www.example.org",
-			),
+			Client:     &acme.Client{DirectoryURL: letsEncryptStagingUrl},
+			Cache:      autocert.DirCache("ong-certifiate-dir"),
+			Prompt:     autocert.AcceptTOS,
+			Email:      o.tls.email,
+			HostPolicy: customHostWhitelist(o.tls.domain),
 		}
 		tlsConf := &tls.Config{
 			// taken from:
