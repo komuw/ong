@@ -156,11 +156,16 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"www.example.com", true},
 			{"WWW.EXAMPLE.COM", true},
 			{"WWW.example.COM", true},
+			//
 			{"example.org", false},
 			{"xn--9caa.com", false}, // éé.com
+			//
 			{"one.example.com", true},
 			{"alas.example.com", true},
-			{"abc.def.example.com", false}, // TODO: fix
+			{"alas.EXAMPLE.com", true},
+			{"ALAS.EXAMPLE.COM", true},
+			{"abc.def.example.com", false},
+			//
 			{"two.example.org", false},
 			{"three.example.net", false},
 			{"dummy", false},
