@@ -6,6 +6,7 @@ require (
 	go.uber.org/automaxprocs v1.5.1
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
+	golang.org/x/net v0.0.0-20220630215102-69896b714898
 	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b
 )
 
@@ -16,7 +17,6 @@ require (
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20220630215102-69896b714898 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 	golang.org/x/text v0.3.7 // indirect
 )

@@ -18,7 +18,10 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"golang.org/x/net/idna"
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
@@ -30,6 +33,57 @@ import (
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:                                   https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 //   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here:                               https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
 //   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
+//   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
+
+// customHostWhitelist is modeled after `autocert.HostWhitelist``
+//
+// HostWhitelist returns a policy where only the specified domain names are allowed.
+// Only exact matches are currently supported. Subdomains, regexp or wildcard
+// will not match.
+//
+// Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
+// Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
+// Invalid domain will be silently ignored.
+func customHostWhitelist(domain string) autocert.HostPolicy {
+	// whitelist := make(map[string]bool, len(hosts))
+	// for _, h := range hosts {
+	// 	if h, err := idna.Lookup.ToASCII(h); err == nil {
+	// 		whitelist[h] = true
+	// 	}
+	// }
+	exactMatch := ""
+	wildcard := ""
+	if !strings.Contains(domain, "*") {
+		// not wildcard
+		if h, err := idna.Lookup.ToASCII(domain); err == nil {
+			exactMatch = h
+		}
+	} else {
+		// wildcard
+		wildcard = domain
+	}
+
+	return func(_ context.Context, host string) error {
+		if exactMatch != "" && exactMatch == host {
+			// good match
+			return nil
+		}
+
+		// try replacing labels in the name with
+		// wildcards until we get a match
+		labels := strings.Split(host, ".")
+		for i := range labels {
+			labels[i] = "*"
+			candidate := strings.Join(labels, ".")
+			if wildcard == candidate {
+				// good match
+				return nil
+			}
+		}
+
+		return ongErrors.New(fmt.Sprintf("ong/acert: host %q not configured in HostWhitelist", host))
+	}
+}
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
@@ -43,7 +97,7 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 			Client: &acme.Client{DirectoryURL: letsEncryptStagingUrl},
 			Cache:  autocert.DirCache("ong-certifiate-dir"),
 			Prompt: autocert.AcceptTOS,
-			Email:  "example@example.org",
+			Email:  o.tls.email,
 			HostPolicy: autocert.HostWhitelist(
 				// todo: replace this with our own function.
 				// note: the func(`autocert.HostWhitelist`) does only exact matches. Subdomains, regexp or wildcard will not match.
