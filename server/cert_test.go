@@ -38,30 +38,6 @@ func TestCreateDevCertKey(t *testing.T) {
 func TestCustomHostWhitelist(t *testing.T) {
 	t.Parallel()
 
-	// policy := customHostWhitelist("example.com", "EXAMPLE.ORG", "*.example.net", "éÉ.com")
-	// tt := []struct {
-	// 	host  string
-	// 	allow bool
-	// }{
-	// 	{"example.com", true},
-	// 	{"example.org", true},
-	// 	{"xn--9caa.com", true}, // éé.com
-	// 	{"one.example.com", false},
-	// 	{"two.example.org", false},
-	// 	{"three.example.net", false},
-	// 	{"dummy", false},
-	// }
-	// for i, test := range tt {
-	// 	err := policy(nil, test.host)
-	// 	if err != nil && test.allow {
-	// 		t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
-	// 	}
-	// 	if err == nil && !test.allow {
-	// 		t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
-	// 	}
-	// }
-	//
-
 	t.Run("one domain", func(t *testing.T) {
 		t.Parallel()
 
@@ -74,6 +50,39 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"example.org", false},
 			{"xn--9caa.com", false}, // éé.com
 			{"one.example.com", false},
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(nil, test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
+
+	t.Run("sub-domain", func(t *testing.T) {
+		t.Parallel()
+
+		policy := customHostWhitelist("api.example.com")
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"api.example.com", true},
+			{"api.EXAMPLE.com", true},
+			{"API.EXAMPLE.COM", true},
+			//
+			{"example.com", false},
+			{"one.example.com", false},
+			{"one.abcd.example.com", false},
+			//
+			{"example.org", false},
+			{"xn--9caa.com", false}, // éé.com
 			{"two.example.org", false},
 			{"three.example.net", false},
 			{"dummy", false},
