@@ -45,12 +45,6 @@ import (
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
 // Invalid domain will be silently ignored.
 func customHostWhitelist(domain string) autocert.HostPolicy {
-	// whitelist := make(map[string]bool, len(hosts))
-	// for _, h := range hosts {
-	// 	if h, err := idna.Lookup.ToASCII(h); err == nil {
-	// 		whitelist[h] = true
-	// 	}
-	// }
 	exactMatch := ""
 	wildcard := ""
 	if !strings.Contains(domain, "*") {
@@ -92,7 +86,7 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 			}
 		}
 
-		return ongErrors.New(fmt.Sprintf("ong/acert: host %q not configured in HostWhitelist", host))
+		return ongErrors.New(fmt.Sprintf("ong/acme: host %q not configured in HostWhitelist", host))
 	}
 }
 
@@ -102,6 +96,14 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 	if o.tls.email != "" {
 		// 1. use letsencrypt.
 		//
+
+		if strings.Count(o.tls.domain, "*") > 1 {
+			return nil, ongErrors.New("domain can only contain one wildcard character")
+		}
+		if strings.Contains(o.tls.domain, "*") && !strings.HasPrefix(o.tls.domain, "*") {
+			return nil, ongErrors.New("wildcard character should be a prefix")
+		}
+
 		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
 		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 		m := &autocert.Manager{
