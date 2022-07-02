@@ -100,6 +100,13 @@ func validateDomain(domain string) error {
 		return ongErrors.New("wildcard character should be a prefix")
 	}
 
+	if !strings.Contains(domain, "*") {
+		// not wildcard
+		if _, err := idna.Lookup.ToASCII(domain); err != nil {
+			return ongErrors.Wrap(err)
+		}
+	}
+
 	return nil
 }
 
