@@ -219,3 +219,38 @@ func TestCustomHostWhitelist(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateDomain(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		tt := []struct {
+			domain       string
+			shouldSucced bool
+		}{
+			{"example.com", true},
+			{"example.org", true},
+			{"xn--9caa.com", true}, // éé.com
+			{"one.example.com", true},
+			//
+			{"*.example.org", true},
+			{"*.example.*", false},
+			{"example.*org", false},
+			//
+			{"", false},
+			{"exampl_e.com", false}, // underscore(rune U+005F) is disallowed in domain names.
+			//
+			{"dummy", true},
+		}
+		for _, test := range tt {
+			err := validateDomain(test.domain)
+			if test.shouldSucced {
+				attest.Ok(t, err, attest.Sprintf("failed: %s ", test.domain))
+			} else {
+				attest.NotZero(t, err, attest.Sprintf("failed: %s ", test.domain))
+			}
+		}
+	})
+}
