@@ -33,6 +33,7 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 		}
 
 		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+		_ = letsEncryptProductionUrl
 		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 		m := &autocert.Manager{
 			Client:     &acme.Client{DirectoryURL: letsEncryptStagingUrl},
