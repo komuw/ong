@@ -16,6 +16,17 @@ import (
 
 func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			b, e := io.ReadAll(r.Body)
+			if e != nil {
+				panic(e)
+			}
+			if len(b) > 1 {
+				fmt.Fprint(w, string(b))
+				return
+			}
+		}
+
 		fmt.Fprint(w, msg)
 	}
 }
@@ -176,7 +187,7 @@ func TestAllMiddleware(t *testing.T) {
 	}
 }
 
-func TestServer(t *testing.T) {
+func TestMiddlewareServer(t *testing.T) {
 	t.Parallel()
 
 	t.Run("integration with server succeds", func(t *testing.T) {
@@ -200,6 +211,50 @@ func TestServer(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("http POST succeds", func(t *testing.T) {
+		t.Parallel()
+
+		csrfToken := ""
+		{
+			// non-safe http methods(like POST) require a server-known csrf token;
+			// otherwise it fails with http 403
+			// so here we make a http GET so that we can have a csrf token.
+			o := WithOpts("example.com")
+			wrappedHandler := All(someMiddlewareTestHandler("hey"), o)
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
+			res := rec.Result()
+			defer res.Body.Close()
+			csrfToken = res.Header.Get(csrfHeader)
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.NotZero(t, csrfToken)
+		}
+
+		msg := "hello world"
+		o := WithOpts("example.com")
+		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
+
+		ts := httptest.NewServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		postMsg := "This is a post message"
+		req, err := http.NewRequest(http.MethodPost, ts.URL, strings.NewReader(postMsg))
+		attest.Ok(t, err)
+		req.Header.Set(csrfHeader, csrfToken)
+		res, err := http.DefaultClient.Do(req)
+		attest.Ok(t, err)
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), postMsg)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

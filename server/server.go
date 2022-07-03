@@ -4,7 +4,6 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -28,6 +27,22 @@ type extendedHandler interface {
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
+type tlsOpts struct {
+	// if certFile is present, tls will be served from certificates on disk.
+	certFile string
+	keyFile  string
+	// if email is present, tls will be served from letsencrypt certifiates.
+	email string
+	// domain can be a wildcard.
+	// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
+	// Instead, we'll get a certifiate per subdomain.
+	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
+	domain string
+	//
+	// this ones are created automatically
+	enabled bool
+}
+
 // opts defines parameters for running an HTTP server.
 type opts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
@@ -37,9 +52,7 @@ type opts struct {
 	writeTimeout      time.Duration
 	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
-	certFile          string
-	keyFile           string
-
+	tls               tlsOpts
 	// this ones are created automatically
 	serverPort    string
 	serverAddress string
@@ -54,6 +67,9 @@ func (o opts) Equal(other opts) bool {
 }
 
 // NewOpts returns a new opts.
+// If certFile is a non-empty string, this will enable tls from certificates found on disk.
+// If email is a non-empty string, this will enable tls from certificates procured from letsencrypt.
+// domain can be an exact domain, subdomain or wildcard.
 func NewOpts(
 	port uint16,
 	host string,
@@ -64,13 +80,15 @@ func NewOpts(
 	idleTimeout time.Duration,
 	certFile string,
 	keyFile string,
+	email string, // if present, tls will be served from letsencrypt certifiates.
+	domain string,
 ) opts {
 	serverPort := fmt.Sprintf(":%d", port)
 	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
 
 	httpPort := port
-	isTls := certFile != ""
-	if isTls {
+	tlsEnabled := certFile != "" || email != ""
+	if tlsEnabled {
 		if port == 443 {
 			httpPort = 80
 		} else {
@@ -86,8 +104,13 @@ func NewOpts(
 		writeTimeout:      writeTimeout,
 		handlerTimeout:    handlerTimeout,
 		idleTimeout:       idleTimeout,
-		certFile:          certFile,
-		keyFile:           keyFile,
+		tls: tlsOpts{
+			certFile: certFile,
+			keyFile:  keyFile,
+			email:    email,
+			domain:   domain,
+			enabled:  tlsEnabled,
+		},
 		// this ones are created automatically
 		serverPort:    serverPort,
 		serverAddress: serverAddress,
@@ -117,15 +140,22 @@ func WithOpts(port uint16, host string) opts {
 		idleTimeout,
 		"",
 		"",
+		"",
+		"",
 	)
 }
 
 // WithTlsOpts returns a new opts that has sensible defaults given host, certFile & keyFile.
 func WithTlsOpts(host, certFile, keyFile string) opts {
-	return withTlsOpts(443, host, certFile, keyFile)
+	return withTlsOpts(443, host, certFile, keyFile, "", "")
 }
 
-func withTlsOpts(port uint16, host, certFile, keyFile string) opts {
+// WithLetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
+func WithLetsEncryptOpts(host, email, domain string) opts {
+	return withTlsOpts(443, host, "", "", email, domain)
+}
+
+func withTlsOpts(port uint16, host, certFile, keyFile, email, domain string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -145,6 +175,8 @@ func withTlsOpts(port uint16, host, certFile, keyFile string) opts {
 		idleTimeout,
 		certFile,
 		keyFile,
+		email,
+		domain,
 	)
 }
 
@@ -155,7 +187,7 @@ func DefaultOpts() opts {
 
 func DefaultTlsOpts() opts {
 	certFile, keyFile := certKeyPaths()
-	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile)
+	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile, "", "")
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
@@ -168,37 +200,13 @@ func Run(eh extendedHandler, o opts) error {
 	_, _ = maxprocs.Set()
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	logger := eh.GetLogger().WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
 
-	var tlsConf *tls.Config = nil
-	if o.certFile != "" {
-		tlsConf = &tls.Config{
-			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
-				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
-				// it is called if `tls.Config.Certificates` is empty.
-				//
-				// todo: this is where we can renew our certificates if we want.
-				// plan;
-				//   (a) check if one month has passed.
-				//   (b) if it has, call letsencrypt to fetch new certs; maybe in a goroutine.
-				//   (c) save that cert to file.
-				//   (d) also load it into cache/memory.
-				//   (e) if one month is not over, always load certs/key from cache.
-				// see:
-				//   - golang.org/x/crypto/acme/autocert
-				//   - https://github.com/caddyserver/certmagic
-				//
-				c, err := tls.LoadX509KeyPair(o.certFile, o.keyFile)
-				if err != nil {
-					err = ongErrors.Wrap(err)
-					logger.Error(err, log.F{"msg": "error loading tls certificate and key."})
-					return nil, err
-				}
-				return &c, nil
-			},
-		}
+	tlsConf, errTc := getTlsConfig(o, logger)
+	if errTc != nil {
+		return errTc
 	}
-
 	server := &http.Server{
 		Addr:      o.serverPort,
 		TLSConfig: tlsConf,
@@ -275,7 +283,7 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
-	if o.certFile != "" {
+	if o.tls.enabled {
 		{
 			// HTTP(non-tls) LISTERNER:
 			redirectSrv := &http.Server{
@@ -318,7 +326,12 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			logger.Info(log.F{
 				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 			})
-			if errS := srv.ServeTLS(l, o.certFile, o.keyFile); errS != nil {
+			if errS := srv.ServeTLS(
+				l,
+				// use empty cert & key. they will be picked from `srv.TLSConfig`
+				"",
+				"",
+			); errS != nil {
 				return ongErrors.Wrap(errS)
 			}
 		}

@@ -42,7 +42,7 @@ func main() {
 		    server.NewRoute(
 			    "check/",
 			    server.MethodGet,
-			    api.check(200),
+			    api.check("hello world"),
 			    middleware.WithOpts("localhost"),
 		   ),
 	    })
@@ -59,14 +59,14 @@ type myAPI struct {
 	l  log.Logger
 }
 
-func (s myAPI) check(code int) http.HandlerFunc {
+func (s myAPI) check(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
 		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
-		// use code, which is a dependency specific to this handler
-		w.WriteHeader(code)
+		// use msg, which is a dependency specific to this handler
+		fmt.Fprint(w, msg)
 	}
 }
 ```
@@ -77,6 +77,14 @@ To use tls:
 ```go
 _, _ = server.CreateDevCertKey()
 err := server.Run(mux, server.DefaultTlsOpts())
+```
+
+To use tls with certificates from letsencrypt:
+```go
+host := "0.0.0.0"
+email := "admin@example.com"
+domain := "*.example.com"
+err := server.Run(mux, server.WithLetsEncryptOpts(host, email, domain))
 ```
 
 

@@ -113,11 +113,14 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
-			certFile:          "/tmp/ong_dev_certificate.pem",
-			keyFile:           "/tmp/ong_dev_key.pem",
-			serverPort:        ":8081",
-			serverAddress:     "127.0.0.1:8081",
-			httpPort:          ":8080",
+			tls: tlsOpts{
+				certFile: "/tmp/ong_dev_certificate.pem",
+				keyFile:  "/tmp/ong_dev_key.pem",
+				enabled:  true,
+			},
+			serverPort:    ":8081",
+			serverAddress: "127.0.0.1:8081",
+			httpPort:      ":8080",
 		}
 		attest.Equal(t, got, want)
 	})
