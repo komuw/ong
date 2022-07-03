@@ -155,6 +155,16 @@ func WithTlsOpts(certFile, keyFile string) opts {
 	return withTlsOpts(443, certFile, keyFile, "", "")
 }
 
+// DefaultOpts returns a new opts that has sensible defaults.
+func DefaultOpts() opts {
+	return WithOpts(8080)
+}
+
+func DefaultTlsOpts() opts {
+	certFile, keyFile := certKeyPaths()
+	return withTlsOpts(8081, certFile, keyFile, "", "")
+}
+
 // WithLetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
 func WithLetsEncryptOpts(email, domain string) opts {
 	return withTlsOpts(443, "", "", email, domain)
@@ -182,16 +192,6 @@ func withTlsOpts(port uint16, certFile, keyFile, email, domain string) opts {
 		email,
 		domain,
 	)
-}
-
-// DefaultOpts returns a new opts that has sensible defaults.
-func DefaultOpts() opts {
-	return WithOpts(8080)
-}
-
-func DefaultTlsOpts() opts {
-	certFile, keyFile := certKeyPaths()
-	return withTlsOpts(8081, certFile, keyFile, "", "")
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
