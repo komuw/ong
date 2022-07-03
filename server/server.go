@@ -87,8 +87,8 @@ func NewOpts(
 	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
 
 	httpPort := port
-	isTls := certFile != ""
-	if isTls {
+	tlsEnabled := certFile != "" || email != ""
+	if tlsEnabled {
 		if port == 443 {
 			httpPort = 80
 		} else {
@@ -109,7 +109,7 @@ func NewOpts(
 			keyFile:  keyFile,
 			email:    email,
 			domain:   domain,
-			enabled:  certFile != "" || email != "",
+			enabled:  tlsEnabled,
 		},
 		// this ones are created automatically
 		serverPort:    serverPort,
