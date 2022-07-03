@@ -46,7 +46,6 @@ type tlsOpts struct {
 // opts defines parameters for running an HTTP server.
 type opts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
-	host              string
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
@@ -54,6 +53,7 @@ type opts struct {
 	idleTimeout       time.Duration
 	tls               tlsOpts
 	// this ones are created automatically
+	host          string
 	serverPort    string
 	serverAddress string
 	network       string
@@ -72,7 +72,6 @@ func (o opts) Equal(other opts) bool {
 // domain can be an exact domain, subdomain or wildcard.
 func NewOpts(
 	port uint16,
-	host string,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
@@ -84,7 +83,6 @@ func NewOpts(
 	domain string,
 ) opts {
 	serverPort := fmt.Sprintf(":%d", port)
-	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
 
 	httpPort := port
 	tlsEnabled := certFile != "" || email != ""
@@ -96,9 +94,16 @@ func NewOpts(
 		}
 	}
 
+	host := "127.0.0.1"
+	if port == 80 || port == 443 {
+		// bind to both tcp4 and tcp6
+		// https://github.com/golang/go/issues/48723
+		host = "0.0.0.0"
+	}
+	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
+
 	return opts{
 		port:              port,
-		host:              host,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
@@ -112,6 +117,7 @@ func NewOpts(
 			enabled:  tlsEnabled,
 		},
 		// this ones are created automatically
+		host:          host,
 		serverPort:    serverPort,
 		serverAddress: serverAddress,
 		network:       "tcp",
@@ -119,8 +125,8 @@ func NewOpts(
 	}
 }
 
-// WithOpts returns a new opts that has sensible defaults given port and host.
-func WithOpts(port uint16, host string) opts {
+// WithOpts returns a new opts that has sensible defaults given port.
+func WithOpts(port uint16) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -132,7 +138,6 @@ func WithOpts(port uint16, host string) opts {
 
 	return NewOpts(
 		port,
-		host,
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
@@ -145,17 +150,17 @@ func WithOpts(port uint16, host string) opts {
 	)
 }
 
-// WithTlsOpts returns a new opts that has sensible defaults given host, certFile & keyFile.
-func WithTlsOpts(host, certFile, keyFile string) opts {
-	return withTlsOpts(443, host, certFile, keyFile, "", "")
+// WithTlsOpts returns a new opts that has sensible defaults given certFile & keyFile.
+func WithTlsOpts(certFile, keyFile string) opts {
+	return withTlsOpts(443, certFile, keyFile, "", "")
 }
 
 // WithLetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
-func WithLetsEncryptOpts(host, email, domain string) opts {
-	return withTlsOpts(443, host, "", "", email, domain)
+func WithLetsEncryptOpts(email, domain string) opts {
+	return withTlsOpts(443, "", "", email, domain)
 }
 
-func withTlsOpts(port uint16, host, certFile, keyFile, email, domain string) opts {
+func withTlsOpts(port uint16, certFile, keyFile, email, domain string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -167,7 +172,6 @@ func withTlsOpts(port uint16, host, certFile, keyFile, email, domain string) opt
 
 	return NewOpts(
 		port,
-		host,
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
@@ -182,12 +186,12 @@ func withTlsOpts(port uint16, host, certFile, keyFile, email, domain string) opt
 
 // DefaultOpts returns a new opts that has sensible defaults.
 func DefaultOpts() opts {
-	return WithOpts(8080, "127.0.0.1")
+	return WithOpts(8080)
 }
 
 func DefaultTlsOpts() opts {
 	certFile, keyFile := certKeyPaths()
-	return withTlsOpts(8081, "127.0.0.1", certFile, keyFile, "", "")
+	return withTlsOpts(8081, certFile, keyFile, "", "")
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.

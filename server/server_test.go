@@ -83,10 +83,10 @@ func TestOpts(t *testing.T) {
 	t.Run("with opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := WithOpts(80, "localhost")
+		got := WithOpts(80)
 		want := opts{
 			port:              80,
-			host:              "localhost",
+			host:              "0.0.0.0",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
 			readTimeout:       2 * time.Second,
@@ -94,7 +94,7 @@ func TestOpts(t *testing.T) {
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
 			serverPort:        ":80",
-			serverAddress:     "localhost:80",
+			serverAddress:     "0.0.0.0:80",
 			httpPort:          ":80",
 		}
 		attest.Equal(t, got, want)
@@ -159,7 +159,7 @@ func TestServer(t *testing.T) {
 			})
 
 		go func() {
-			err := Run(mux, WithOpts(port, "127.0.0.1"))
+			err := Run(mux, WithOpts(port))
 			attest.Ok(t, err)
 		}()
 
@@ -272,7 +272,7 @@ func TestServer(t *testing.T) {
 			})
 
 		go func() {
-			err := Run(mux, WithOpts(port, "127.0.0.1"))
+			err := Run(mux, WithOpts(port))
 			attest.Ok(t, err)
 		}()
 
