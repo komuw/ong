@@ -291,7 +291,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		{
 			// HTTP(non-tls) LISTERNER:
 			redirectSrv := &http.Server{
-				Addr:              fmt.Sprintf("127.0.0.1%s", o.httpPort),
+				Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
 				Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
 				ReadHeaderTimeout: o.readHeaderTimeout,
 				ReadTimeout:       o.readTimeout,
