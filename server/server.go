@@ -155,12 +155,13 @@ func WithTlsOpts(certFile, keyFile string) opts {
 	return withTlsOpts(443, certFile, keyFile, "", "")
 }
 
-// DefaultOpts returns a new opts that has sensible defaults.
-func DefaultOpts() opts {
+// DefaultDevOpts returns a new opts that has sensible defaults especially for dev environments.
+func DefaultDevOpts() opts {
 	return WithOpts(8080)
 }
 
-func DefaultTlsOpts() opts {
+// DefaultDevTlsOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
+func DefaultDevTlsOpts() opts {
 	certFile, keyFile := certKeyPaths()
 	return withTlsOpts(8081, certFile, keyFile, "", "")
 }

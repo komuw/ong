@@ -47,7 +47,7 @@ func main() {
 		   ),
 	    })
 
-	err := server.Run(mux, server.DefaultOpts())
+	err := server.Run(mux, server.DefaultDevOpts())
 	if err != nil {
 		mux.GetLogger().Error(err, log.F{"msg": "server.Run error"})
 		os.Exit(1)
@@ -76,7 +76,7 @@ func (s myAPI) check(msg string) http.HandlerFunc {
 To use tls:
 ```go
 _, _ = server.CreateDevCertKey()
-err := server.Run(mux, server.DefaultTlsOpts())
+err := server.Run(mux, server.DefaultDevTlsOpts())
 ```
 
 To use tls with certificates from letsencrypt:
