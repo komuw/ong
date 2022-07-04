@@ -134,8 +134,7 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 		wildcard = strings.ToLower(strings.TrimSpace(wildcard))
 		{
 			// if wildcard is `*.example.com` we should also match `example.com`
-			exactMatch = strings.ReplaceAll(domain, "*", "")
-			exactMatch = strings.TrimLeft(exactMatch, ".")
+			exactMatch = cleanDomain(domain)
 			if h, err := idna.Lookup.ToASCII(exactMatch); err == nil {
 				exactMatch = h
 			}
@@ -164,4 +163,10 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 
 		return ongErrors.New(fmt.Sprintf("ong/acme: host %q not configured in HostWhitelist", host))
 	}
+}
+
+func cleanDomain(domain string) string {
+	d := strings.ReplaceAll(domain, "*", "")
+	d = strings.TrimLeft(d, ".")
+	return d
 }

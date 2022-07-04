@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,12 +33,18 @@ const locationHeader = "Location"
 func TestHttpsRedirector(t *testing.T) {
 	t.Parallel()
 
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
 	t.Run("get is redirected", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
 		port := uint16(443)
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -54,7 +61,7 @@ func TestHttpsRedirector(t *testing.T) {
 
 		msg := "hello world"
 		port := uint16(443)
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -71,7 +78,7 @@ func TestHttpsRedirector(t *testing.T) {
 
 		msg := "hello world"
 		port := uint16(443)
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 
 		for _, uri := range []string{
 			"/someUri",
@@ -98,7 +105,7 @@ func TestHttpsRedirector(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
 			attest.NotZero(t, res.Header.Get(locationHeader))
-			attest.Equal(t, res.Header.Get(locationHeader), "https://example.com"+uri)
+			attest.Equal(t, res.Header.Get(locationHeader), "https://localhost"+uri)
 		}
 	})
 
@@ -107,13 +114,12 @@ func TestHttpsRedirector(t *testing.T) {
 
 		msg := "hello world"
 		port := uint16(443)
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
 		)
 		defer ts.Close()
 
-		client := ts.Client()
 		res, err := client.Get(ts.URL)
 		attest.Ok(t, err)
 
@@ -134,13 +140,12 @@ func TestHttpsRedirector(t *testing.T) {
 
 		msg := "hello world"
 		port := uint16(443)
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
 		)
 		defer ts.Close()
 
-		client := ts.Client()
 		postMsg := "my name is John"
 		body := strings.NewReader(postMsg)
 		res, err := client.Post(ts.URL, "application/json", body)
@@ -161,13 +166,14 @@ func TestHttpsRedirector(t *testing.T) {
 
 		uri := "/someUri"
 		msg := "hello world"
+		domain := "localhost"
 		for _, p := range []uint16{
 			uint16(443),
 			uint16(80),
 			uint16(88),
 			uint16(65535),
 		} {
-			wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), p)
+			wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), p, domain)
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, uri, nil)
 			wrappedHandler.ServeHTTP(rec, req)
@@ -178,11 +184,56 @@ func TestHttpsRedirector(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
 			attest.NotZero(t, res.Header.Get(locationHeader))
 
-			expectedLocation := "https://example.com" + uri
+			expectedLocation := "https://localhost" + uri
 			if p == uint16(88) || p == uint16(65535) {
-				expectedLocation = "https://example.com" + ":" + fmt.Sprint(p) + uri
+				expectedLocation = "https://localhost" + ":" + fmt.Sprint(p) + uri
 			}
 			attest.Equal(t, res.Header.Get(locationHeader), expectedLocation)
+		}
+	})
+
+	t.Run("IP is redirected to domain", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		port := uint16(443)
+		domain := "localhost"
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, domain)
+		ts := httptest.NewTLSServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		{
+			// use IP address(ie, `127.0.0.1"`)
+			url := ts.URL
+			url = strings.ReplaceAll(url, "localhost", "127.0.0.1")
+			res, err := client.Get(url)
+			attest.Ok(t, err)
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+			defer res.Body.Close()
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Zero(t, res.Header.Get(locationHeader))
+			attest.Equal(t, string(rb), msg)
+		}
+
+		{
+			// use domain name(ie, `localhost`)
+			url := ts.URL
+			url = strings.ReplaceAll(url, "127.0.0.1", "localhost")
+			res, err := client.Get(url)
+			attest.Ok(t, err)
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+			defer res.Body.Close()
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Zero(t, res.Header.Get(locationHeader))
+			attest.Equal(t, string(rb), msg)
 		}
 	})
 
@@ -193,7 +244,7 @@ func TestHttpsRedirector(t *testing.T) {
 		port := uint16(443)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port)
+		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
