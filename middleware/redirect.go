@@ -22,6 +22,9 @@ func HttpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			return
 		}
 
+		// A Host header field must be sent in all HTTP/1.1 request messages.
+		// Thus we expect `r.Host[0]` to always have a value.
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host
 		isHostBareIP := unicode.IsDigit(rune(r.Host[0]))
 		if isHostBareIP {
 			/*

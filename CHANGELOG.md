@@ -30,3 +30,4 @@ Most recent version is listed first.
 - make some updates to circular buffer: https://github.com/komuw/ong/pull/71
 - use acme for certificates: https://github.com/komuw/ong/pull/69
 - issues/73: bind on 0.0.0.0 or localhost conditionally: https://github.com/komuw/ong/pull/74
+- redirect IP to domain: https://github.com/komuw/ong/pull/75
