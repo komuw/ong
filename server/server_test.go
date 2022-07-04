@@ -117,6 +117,7 @@ func TestOpts(t *testing.T) {
 				certFile: "/tmp/ong_dev_certificate.pem",
 				keyFile:  "/tmp/ong_dev_key.pem",
 				enabled:  true,
+				domain:   "localhost",
 			},
 			serverPort:    ":8081",
 			serverAddress: "127.0.0.1:8081",
