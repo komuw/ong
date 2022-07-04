@@ -24,14 +24,15 @@ import (
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
 func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
-	if o.tls.email != "" {
-		// 1. use letsencrypt.
-		//
-
+	if o.tls.enabled {
 		if err := validateDomain(o.tls.domain); err != nil {
 			return nil, err
 		}
+	}
 
+	if o.tls.email != "" {
+		// 1. use letsencrypt.
+		//
 		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
 		_ = letsEncryptProductionUrl
 		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
@@ -90,13 +91,16 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 
 func validateDomain(domain string) error {
 	if len(domain) < 1 {
-		return ongErrors.New("domain cannot be empty if email is also specified")
+		return ongErrors.New("domain cannot be empty if email/certFile is also specified")
 	}
 	if strings.Count(domain, "*") > 1 {
 		return ongErrors.New("domain can only contain one wildcard character")
 	}
 	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
 		return ongErrors.New("wildcard character should be a prefix")
+	}
+	if strings.Contains(domain, "*") && domain[1] != '.' {
+		return ongErrors.New("wildcard character should be followed by a `.` character")
 	}
 
 	if !strings.Contains(domain, "*") {

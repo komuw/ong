@@ -217,6 +217,7 @@ func TestValidateDomain(t *testing.T) {
 			{"one.example.com", true},
 			//
 			{"*.example.org", true},
+			{"*example.org", false}, // wildcard character should be followed by a `.` character
 			{"*.example.*", false},
 			{"example.*org", false},
 			//
