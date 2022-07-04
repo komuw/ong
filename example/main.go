@@ -36,7 +36,7 @@ func main() {
 			),
 			server.NewRoute(
 				"check/",
-				server.MethodGet,
+				server.MethodAll,
 				api.check(200),
 				middleware.WithOpts("localhost"),
 			),
