@@ -91,6 +91,7 @@ func NewOpts(
 			httpPort = 80
 		} else {
 			httpPort = port - 1
+			domain = "localhost"
 		}
 	}
 
@@ -293,7 +294,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			// HTTP(non-tls) LISTERNER:
 			redirectSrv := &http.Server{
 				Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
-				Handler:           middleware.HttpsRedirector(srv.Handler, o.port),
+				Handler:           middleware.HttpsRedirector(srv.Handler, o.port, cleanDomain(o.tls.domain)),
 				ReadHeaderTimeout: o.readHeaderTimeout,
 				ReadTimeout:       o.readTimeout,
 				WriteTimeout:      o.writeTimeout,
