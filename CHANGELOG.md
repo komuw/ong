@@ -31,3 +31,4 @@ Most recent version is listed first.
 - use acme for certificates: https://github.com/komuw/ong/pull/69
 - issues/73: bind on 0.0.0.0 or localhost conditionally: https://github.com/komuw/ong/pull/74
 - redirect IP to domain: https://github.com/komuw/ong/pull/75
+- dont require csrf for POST requests that have no cookies and arent http auth: https://github.com/komuw/ong/pull/77
