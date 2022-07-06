@@ -35,6 +35,12 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 func TestAllMiddleware(t *testing.T) {
 	t.Parallel()
 
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
 	msg := "hello world"
 	errMsg := "not allowed. only allows http"
 	tests := []struct {
@@ -98,7 +104,7 @@ func TestAllMiddleware(t *testing.T) {
 			middleware:         Head,
 			httpMethod:         http.MethodHead,
 			expectedStatusCode: http.StatusOK,
-			expectedMsg:        msg,
+			expectedMsg:        "", // the golang http-client does not return the body for HEAD requests.
 		},
 		{
 			name:               "Head middleware http TRACE",
@@ -146,16 +152,24 @@ func TestAllMiddleware(t *testing.T) {
 		// non-safe http methods(like POST) require a server-known csrf token;
 		// otherwise it fails with http 403
 		// so here we make a http GET so that we can have a csrf token.
-		o := WithOpts("example.com", 443)
-		wrappedHandler := All(someMiddlewareTestHandler("hey"), o)
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, req)
-		res := rec.Result()
+		o := WithOpts("localhost", 443)
+		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
+		ts := httptest.NewTLSServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		res, err := client.Get(ts.URL)
+		attest.Ok(t, err)
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
 		defer res.Body.Close()
+
 		csrfToken = res.Header.Get(csrfHeader)
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.NotZero(t, csrfToken)
+		attest.Equal(t, string(rb), msg)
 	}
 
 	for _, tt := range tests {
@@ -164,23 +178,30 @@ func TestAllMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			o := WithOpts("example.com", 443)
+			o := WithOpts("localhost", 443)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
-			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(tt.httpMethod, "/someUri", nil)
+			ts := httptest.NewTLSServer(
+				wrappedHandler,
+			)
+			defer ts.Close()
+
+			req, err := http.NewRequest(tt.httpMethod, ts.URL, nil)
+			attest.Ok(t, err)
 			req.AddCookie(
 				&http.Cookie{
-					Name:  csrfCookieName,
-					Value: csrfToken,
-				})
-			wrappedHandler.ServeHTTP(rec, req)
-
-			res := rec.Result()
-			defer res.Body.Close()
+					Name:   csrfCookieName,
+					Value:  csrfToken,
+					Domain: "localhost",
+				},
+			)
+			req.Header.Set(csrfHeader, csrfToken) // setting the cookie appears not to work, so set the header.
+			res, err := client.Do(req)
+			attest.Ok(t, err)
 
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, tt.expectedStatusCode)
 			attest.True(t, strings.Contains(string(rb), tt.expectedMsg))
