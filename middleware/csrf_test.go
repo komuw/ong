@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -475,6 +476,32 @@ func TestCsrf(t *testing.T) {
 			attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
 			attest.True(t, csrfStore._len() > 0)
 		}
+	})
+
+	t.Run("POST requests with no cookies dont need csrf", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		domain := "example.com"
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+
+		rec := httptest.NewRecorder()
+		postMsg := "my name is John"
+		body := strings.NewReader(postMsg)
+		req := httptest.NewRequest(http.MethodPost, "/someUri", body)
+		req.Header.Add(ctHeader, "application/json")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+		attest.NotZero(t, res.Header.Get(tokenHeader))
+		attest.Equal(t, len(res.Cookies()), 1)
 	})
 
 	// concurrency safe

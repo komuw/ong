@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"mime"
 	"net/http"
 	"sync"
 	"time"
@@ -38,6 +39,9 @@ const (
 	varyHeader               = "Vary"
 	authorizationHeader      = "Authorization"
 	proxyAuthorizationHeader = "Proxy-Authorization"
+	ctHeader                 = "Content-Type"
+	formUrlEncoded           = "application/x-www-form-urlencoded"
+	multiformData            = "multipart/form-data"
 
 	// gorilla/csrf; 12hrs
 	// django: 1yr??
@@ -79,11 +83,22 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
 			actualToken = getToken(r)
 
-			// if r.Header.Get(clientCookieHeader) == "" &&
-			// 	r.Header.Get(authorizationHeader) == "" &&
-			// 	r.Header.Get(proxyAuthorizationHeader) == "" {
-			// 	break
-			// }
+			ct, _, err := mime.ParseMediaType(r.Header.Get(ctHeader))
+			if err == nil &&
+				ct != formUrlEncoded &&
+				ct != multiformData &&
+				r.Header.Get(clientCookieHeader) == "" &&
+				r.Header.Get(authorizationHeader) == "" &&
+				r.Header.Get(proxyAuthorizationHeader) == "" {
+				// For POST requests that;
+				// - are not form data.
+				// - have no cookies.
+				// - are not using http authentication.
+				// then it is okay to not validate csrf for them.
+				// This is especially useful for REST API endpoints.
+				// see: https://github.com/komuw/ong/issues/76
+				break
+			}
 
 			if !csrfStore.exists(actualToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
@@ -188,6 +203,8 @@ func getToken(r *http.Request) (actualToken string) {
 	}
 
 	fromForm := func() string {
+		// TODO: test that this does not remove the form.
+		// It should still be available in the final wrappedHandler.
 		return r.FormValue(csrfCookieForm) // calls ParseMultipartForm and ParseForm if necessary
 	}
 
