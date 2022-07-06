@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"mime"
 	"net/http"
 	"sync"
 	"time"
@@ -29,13 +30,19 @@ var (
 type csrfContextKey string
 
 const (
-	csrfCtxKey         = csrfContextKey("csrfContextKey")
-	csrfDefaultToken   = ""
-	csrfCookieName     = "csrftoken"    // named after what django uses.
-	csrfHeader         = "X-Csrf-Token" // named after what fiber uses.
-	csrfCookieForm     = csrfCookieName
-	clientCookieHeader = "Cookie"
-	varyHeader         = "Vary"
+	// CsrfTokenFormName is the name of the html form name attribute for csrf token.
+	CsrfTokenFormName        = "csrftoken" // named after what django uses.
+	csrfCtxKey               = csrfContextKey("csrfContextKey")
+	csrfDefaultToken         = ""
+	csrfCookieName           = CsrfTokenFormName
+	csrfHeader               = "X-Csrf-Token" // named after what fiber uses.
+	clientCookieHeader       = "Cookie"
+	varyHeader               = "Vary"
+	authorizationHeader      = "Authorization"
+	proxyAuthorizationHeader = "Proxy-Authorization"
+	ctHeader                 = "Content-Type"
+	formUrlEncoded           = "application/x-www-form-urlencoded"
+	multiformData            = "multipart/form-data"
 
 	// gorilla/csrf; 12hrs
 	// django: 1yr??
@@ -76,6 +83,24 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		default:
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
 			actualToken = getToken(r)
+
+			ct, _, err := mime.ParseMediaType(r.Header.Get(ctHeader))
+			if err == nil &&
+				ct != formUrlEncoded &&
+				ct != multiformData &&
+				r.Header.Get(clientCookieHeader) == "" &&
+				r.Header.Get(authorizationHeader) == "" &&
+				r.Header.Get(proxyAuthorizationHeader) == "" {
+				// For POST requests that;
+				// - are not form data.
+				// - have no cookies.
+				// - are not using http authentication.
+				// then it is okay to not validate csrf for them.
+				// This is especially useful for REST API endpoints.
+				// see: https://github.com/komuw/ong/issues/76
+				break
+			}
+
 			if !csrfStore.exists(actualToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
@@ -179,10 +204,7 @@ func getToken(r *http.Request) (actualToken string) {
 	}
 
 	fromForm := func() string {
-		if err := r.ParseForm(); err != nil {
-			return ""
-		}
-		return r.Form.Get(csrfCookieForm)
+		return r.FormValue(CsrfTokenFormName) // calls ParseMultipartForm and ParseForm if necessary
 	}
 
 	fromHeader := func() string {
