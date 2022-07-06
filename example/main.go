@@ -123,7 +123,7 @@ func (s myAPI) check(code int) http.HandlerFunc {
 		csrfToken := middleware.GetCsrfToken(r.Context())
 		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
-		fmt.Fprint(w, "hello from check/ endpoint")
+		_, _ = fmt.Fprint(w, "hello from check/ endpoint")
 		// use code, which is a dependency specific to this handler
 		w.WriteHeader(code)
 	}
@@ -181,6 +181,6 @@ func (s myAPI) login() http.HandlerFunc {
 		for k, v := range r.Form {
 			fmt.Println("k, v: ", k, v)
 		}
-		fmt.Fprint(w, fmt.Sprintf("you have submitted: %s", r.Form))
+		_, _ = fmt.Fprint(w, fmt.Sprintf("you have submitted: %s", r.Form))
 	}
 }
