@@ -187,7 +187,7 @@ func TestGetToken(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		err := req.ParseForm()
 		attest.Ok(t, err)
-		req.Form.Add(csrfCookieForm, want)
+		req.Form.Add(CsrfTokenFormName, want)
 		got := getToken(req)
 		attest.Equal(t, got, want[csrfStringTokenlength:])
 	})
@@ -210,7 +210,7 @@ func TestGetToken(t *testing.T) {
 		req.Header.Set(csrfHeader, headerToken)
 		err := req.ParseForm()
 		attest.Ok(t, err)
-		req.Form.Add(csrfCookieForm, formToken)
+		req.Form.Add(CsrfTokenFormName, formToken)
 
 		got := getToken(req)
 		attest.Equal(t, got, cookieToken[csrfStringTokenlength:])

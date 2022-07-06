@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"sync"
@@ -38,6 +39,12 @@ func main() {
 				"check/",
 				server.MethodAll,
 				api.check(200),
+				middleware.WithOpts("localhost"),
+			),
+			server.NewRoute(
+				"login",
+				server.MethodAll,
+				api.login(),
 				middleware.WithOpts("localhost"),
 			),
 		})
@@ -116,7 +123,64 @@ func (s myAPI) check(code int) http.HandlerFunc {
 		csrfToken := middleware.GetCsrfToken(r.Context())
 		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
+		fmt.Fprint(w, "hello from check/ endpoint")
 		// use code, which is a dependency specific to this handler
 		w.WriteHeader(code)
+	}
+}
+
+func (s myAPI) login() http.HandlerFunc {
+	tmpl, err := template.New("myTpl").Parse(`
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Welcome to awesome website.</h2>
+	<form method="POST">
+        <label>Email:</label><br>
+          <input type="text" id="email" name="email"><br>
+        <label>First Name:</label><br>
+          <input type="text" id="firstName" name="firstName"><br>
+
+		<input type="hidden" id="{{.CsrfTokenName}}" name="{{.CsrfTokenName}}" value="{{.CsrfTokenValue}}"><br>
+        <input type="submit">
+    </form>
+
+	<script nonce="{{.CspNonceValue}}">
+        console.log("hello world");
+	</script>
+
+</body>
+</html>`)
+	if err != nil {
+		panic(err)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		csrfTokenValue := middleware.GetCsrfToken(r.Context())
+		CspNonceValue := middleware.GetCspNonce(r.Context())
+		if r.Method != http.MethodPost {
+			data := struct {
+				CsrfTokenName  string
+				CsrfTokenValue string
+				CspNonceValue  string
+			}{
+				CsrfTokenName:  middleware.CsrfTokenFormName,
+				CsrfTokenValue: csrfTokenValue,
+				CspNonceValue:  CspNonceValue,
+			}
+			if err := tmpl.Execute(w, data); err != nil {
+				panic(err)
+			}
+			return
+		}
+
+		if err := r.ParseForm(); err != nil {
+			panic(err)
+		}
+
+		fmt.Println("r.Form: ", r.Form)
+		for k, v := range r.Form {
+			fmt.Println("k, v: ", k, v)
+		}
 	}
 }

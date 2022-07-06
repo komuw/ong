@@ -30,11 +30,12 @@ var (
 type csrfContextKey string
 
 const (
+	// CsrfTokenFormName is the name of the html form name attribute for csrf token.
+	CsrfTokenFormName        = "csrftoken" // named after what django uses.
 	csrfCtxKey               = csrfContextKey("csrfContextKey")
 	csrfDefaultToken         = ""
-	csrfCookieName           = "csrftoken"    // named after what django uses.
+	csrfCookieName           = CsrfTokenFormName
 	csrfHeader               = "X-Csrf-Token" // named after what fiber uses.
-	csrfCookieForm           = csrfCookieName
 	clientCookieHeader       = "Cookie"
 	varyHeader               = "Vary"
 	authorizationHeader      = "Authorization"
@@ -203,9 +204,7 @@ func getToken(r *http.Request) (actualToken string) {
 	}
 
 	fromForm := func() string {
-		// TODO: test that this does not remove the form.
-		// It should still be available in the final wrappedHandler.
-		return r.FormValue(csrfCookieForm) // calls ParseMultipartForm and ParseForm if necessary
+		return r.FormValue(CsrfTokenFormName) // calls ParseMultipartForm and ParseForm if necessary
 	}
 
 	fromHeader := func() string {
