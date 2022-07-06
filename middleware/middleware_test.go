@@ -347,8 +347,18 @@ var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
-	o := WithOpts("example.com", 443)
+	o := WithOpts("localhost", 443)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
+	ts := httptest.NewTLSServer(
+		wrappedHandler,
+	)
+	defer ts.Close()
+
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 
 	intialRateLimiterSendRate := rateLimiterSendRate
 	b.Cleanup(func() {
@@ -362,12 +372,10 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		// always record the result of Fib to prevent
 		// the compiler eliminating the function call.
-		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
-		wrappedHandler.ServeHTTP(rec, req)
-		res := rec.Result()
-		defer res.Body.Close()
+		res, err := client.Get(ts.URL)
+		attest.Ok(b, err)
 
 		attest.Equal(b, res.StatusCode, http.StatusOK)
 		attest.Equal(b, res.Header.Get(contentEncodingHeader), "gzip")
