@@ -178,15 +178,15 @@ func getToken(r *http.Request) (actualToken string) {
 		return c.Value
 	}
 
-	fromHeader := func() string {
-		return r.Header.Get(csrfHeader)
-	}
-
 	fromForm := func() string {
 		if err := r.ParseForm(); err != nil {
 			return ""
 		}
 		return r.Form.Get(csrfCookieForm)
+	}
+
+	fromHeader := func() string {
+		return r.Header.Get(csrfHeader)
 	}
 
 	tok := fromCookie()
