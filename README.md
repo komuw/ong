@@ -38,12 +38,12 @@ import (
 func main() {
 	api := myAPI{db:"someDb", l: someLogger}
 	mux := server.NewMux(
+		middleware.WithOpts("localhost"),
 		server.Routes{
 		    server.NewRoute(
 			    "check/",
 			    server.MethodGet,
 			    api.check("hello world"),
-			    middleware.WithOpts("localhost"),
 		   ),
 	    })
 
