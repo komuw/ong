@@ -3,6 +3,7 @@
 package middleware
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -190,6 +191,12 @@ func TestAllMiddleware(t *testing.T) {
 func TestMiddlewareServer(t *testing.T) {
 	t.Parallel()
 
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
 	t.Run("integration with server succeds", func(t *testing.T) {
 		t.Parallel()
 
@@ -221,23 +228,33 @@ func TestMiddlewareServer(t *testing.T) {
 			// non-safe http methods(like POST) require a server-known csrf token;
 			// otherwise it fails with http 403
 			// so here we make a http GET so that we can have a csrf token.
-			o := WithOpts("example.com", 443)
-			wrappedHandler := All(someMiddlewareTestHandler("hey"), o)
-			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			wrappedHandler.ServeHTTP(rec, req)
-			res := rec.Result()
+			o := WithOpts("localhost", 443)
+			msg := "hey"
+			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
+
+			ts := httptest.NewTLSServer(
+				wrappedHandler,
+			)
+			defer ts.Close()
+
+			res, err := client.Get(ts.URL)
+			attest.Ok(t, err)
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
 			defer res.Body.Close()
+
 			csrfToken = res.Header.Get(csrfHeader)
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.NotZero(t, csrfToken)
+			attest.Equal(t, string(rb), msg)
 		}
 
 		msg := "hello world"
-		o := WithOpts("example.com", 443)
+		o := WithOpts("localhost", 443)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := httptest.NewServer(
+		ts := httptest.NewTLSServer(
 			wrappedHandler,
 		)
 		defer ts.Close()
@@ -246,7 +263,7 @@ func TestMiddlewareServer(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPost, ts.URL, strings.NewReader(postMsg))
 		attest.Ok(t, err)
 		req.Header.Set(csrfHeader, csrfToken)
-		res, err := http.DefaultClient.Do(req)
+		res, err := client.Do(req)
 		attest.Ok(t, err)
 
 		rb, err := io.ReadAll(res.Body)
