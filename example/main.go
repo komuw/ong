@@ -131,6 +131,10 @@ func (s myAPI) login() http.HandlerFunc {
 <html>
 
 <body>
+    <script nonce="{{.CspNonceValue}}">
+	    console.log("hello world");
+	</script>
+
 	<h2>Welcome to awesome website.</h2>
 	<form method="POST">
 	<label>Email:</label><br>
@@ -142,12 +146,7 @@ func (s myAPI) login() http.HandlerFunc {
 	<input type="submit">
 	</form>
 
-	<script nonce="{{.CspNonceValue}}">
-	console.log("hello world");
-	</script>
-
 </body>
-
 </html>`)
 	if err != nil {
 		panic(err)
@@ -164,6 +163,7 @@ func (s myAPI) login() http.HandlerFunc {
 				CsrfTokenValue: middleware.GetCsrfToken(r.Context()),
 				CspNonceValue:  middleware.GetCspNonce(r.Context()),
 			}
+
 			if err = tmpl.Execute(w, data); err != nil {
 				panic(err)
 			}
