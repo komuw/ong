@@ -38,9 +38,6 @@ type tlsOpts struct {
 	// Instead, we'll get a certifiate per subdomain.
 	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 	domain string
-	//
-	// this ones are created automatically
-	enabled bool
 }
 
 // opts defines parameters for running an HTTP server.
@@ -83,18 +80,6 @@ func NewOpts(
 	domain string,
 ) opts {
 	serverPort := fmt.Sprintf(":%d", port)
-
-	httpPort := port
-	tlsEnabled := certFile != "" || email != ""
-	if tlsEnabled {
-		if port == 443 {
-			httpPort = 80
-		} else {
-			httpPort = port - 1
-			domain = "localhost"
-		}
-	}
-
 	host := "127.0.0.1"
 	if port == 80 || port == 443 {
 		// bind to both tcp4 and tcp6
@@ -102,6 +87,11 @@ func NewOpts(
 		host = "0.0.0.0"
 	}
 	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
+
+	httpPort := uint16(80)
+	if port != 443 {
+		httpPort = port - 1
+	}
 
 	return opts{
 		port:              port,
@@ -115,7 +105,6 @@ func NewOpts(
 			keyFile:  keyFile,
 			email:    email,
 			domain:   domain,
-			enabled:  tlsEnabled,
 		},
 		// this ones are created automatically
 		host:          host,
@@ -126,53 +115,24 @@ func NewOpts(
 	}
 }
 
-// WithOpts returns a new opts that has sensible defaults given port.
-func WithOpts(port uint16) opts {
-	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
-	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
-
-	readHeaderTimeout := 1 * time.Second
-	readTimeout := readHeaderTimeout + (1 * time.Second)
-	writeTimeout := readTimeout + (1 * time.Second)
-	handlerTimeout := writeTimeout + (10 * time.Second)
-	idleTimeout := handlerTimeout + (100 * time.Second)
-
-	return NewOpts(
-		port,
-		readHeaderTimeout,
-		readTimeout,
-		writeTimeout,
-		handlerTimeout,
-		idleTimeout,
-		"",
-		"",
-		"",
-		"",
-	)
-}
-
-// WithTlsOpts returns a new opts that has sensible defaults given certFile & keyFile.
-func WithTlsOpts(certFile, keyFile string) opts {
-	return withTlsOpts(443, certFile, keyFile, "", "")
-}
-
-// DefaultDevOpts returns a new opts that has sensible defaults especially for dev environments.
-func DefaultDevOpts() opts {
-	return WithOpts(8080)
-}
-
-// DefaultDevTlsOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
-func DefaultDevTlsOpts() opts {
+// DevOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
+func DevOpts() opts {
 	certFile, keyFile := certKeyPaths()
-	return withTlsOpts(8081, certFile, keyFile, "", "")
+	return withOpts(8081, certFile, keyFile, "", "localhost")
 }
 
-// WithLetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
-func WithLetsEncryptOpts(email, domain string) opts {
-	return withTlsOpts(443, "", "", email, domain)
+// CertOpts returns a new opts that has sensible defaults given certFile & keyFile.
+func CertOpts(certFile, keyFile, domain string) opts {
+	return withOpts(443, certFile, keyFile, "", domain)
 }
 
-func withTlsOpts(port uint16, certFile, keyFile, email, domain string) opts {
+// LetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
+func LetsEncryptOpts(email, domain string) opts {
+	return withOpts(443, "", "", email, domain)
+}
+
+// withOpts returns a new opts that has sensible defaults given port.
+func withOpts(port uint16, certFile, keyFile, email, domain string) opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -289,71 +249,58 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
-	if o.tls.enabled {
-		{
-			// HTTP(non-tls) LISTERNER:
-			redirectSrv := &http.Server{
-				Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
-				Handler:           middleware.HttpsRedirector(srv.Handler, o.port, cleanDomain(o.tls.domain)),
-				ReadHeaderTimeout: o.readHeaderTimeout,
-				ReadTimeout:       o.readTimeout,
-				WriteTimeout:      o.writeTimeout,
-				IdleTimeout:       o.idleTimeout,
-				ErrorLog:          logger.StdLogger(),
-				BaseContext:       func(net.Listener) context.Context { return ctx },
-			}
-			go func() {
-				redirectSrvCfg := listenerConfig()
-				redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
-				if errL != nil {
-					errL = ongErrors.Wrap(errL)
-					logger.Error(errL, log.F{"msg": "redirect server, unable to create listener"})
-					return
-				}
-
-				logger.Info(log.F{
-					"msg": fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr),
-				})
-				errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
-				if errRedirectSrv != nil {
-					errRedirectSrv = ongErrors.Wrap(errRedirectSrv)
-					logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
-				}
-			}()
+	{
+		// HTTP(non-tls) LISTERNER:
+		redirectSrv := &http.Server{
+			Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
+			Handler:           middleware.HttpsRedirector(srv.Handler, o.port, cleanDomain(o.tls.domain)),
+			ReadHeaderTimeout: o.readHeaderTimeout,
+			ReadTimeout:       o.readTimeout,
+			WriteTimeout:      o.writeTimeout,
+			IdleTimeout:       o.idleTimeout,
+			ErrorLog:          logger.StdLogger(),
+			BaseContext:       func(net.Listener) context.Context { return ctx },
 		}
-
-		{
-			// HTTPS(tls) LISTERNER:
-			cfg := listenerConfig()
-			l, err := cfg.Listen(ctx, o.network, o.serverAddress)
-			if err != nil {
-				return ongErrors.Wrap(err)
+		go func() {
+			redirectSrvCfg := listenerConfig()
+			redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
+			if errL != nil {
+				errL = ongErrors.Wrap(errL)
+				logger.Error(errL, log.F{"msg": "redirect server, unable to create listener"})
+				return
 			}
+
 			logger.Info(log.F{
-				"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
+				"msg": fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr),
 			})
-			if errS := srv.ServeTLS(
-				l,
-				// use empty cert & key. they will be picked from `srv.TLSConfig`
-				"",
-				"",
-			); errS != nil {
-				return ongErrors.Wrap(errS)
+			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
+			if errRedirectSrv != nil {
+				errRedirectSrv = ongErrors.Wrap(errRedirectSrv)
+				logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
 			}
-		}
-	} else {
+		}()
+	}
+
+	{
+		// HTTPS(tls) LISTERNER:
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 		if err != nil {
 			return ongErrors.Wrap(err)
 		}
 		logger.Info(log.F{
-			"msg": fmt.Sprintf("http server listening at %s", o.serverAddress),
+			"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 		})
-		if errS := srv.Serve(l); errS != nil {
+		if errS := srv.ServeTLS(
+			l,
+			// use empty cert & key. they will be picked from `srv.TLSConfig`
+			"",
+			"",
+		); errS != nil {
 			return ongErrors.Wrap(errS)
 		}
 	}
+
 	return nil
 }
 
