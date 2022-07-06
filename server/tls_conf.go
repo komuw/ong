@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"os"
 	"strings"
 
 	"golang.org/x/net/idna"
@@ -32,10 +33,14 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 		// 1. use letsencrypt.
 		//
 		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
-		_ = letsEncryptProductionUrl
 		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+		url := letsEncryptProductionUrl
+		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
+			url = letsEncryptStagingUrl
+		}
 		m := &autocert.Manager{
-			Client:     &acme.Client{DirectoryURL: letsEncryptStagingUrl},
+			Client:     &acme.Client{DirectoryURL: url},
 			Cache:      autocert.DirCache("ong-certifiate-dir"),
 			Prompt:     autocert.AcceptTOS,
 			Email:      o.tls.email,
