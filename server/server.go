@@ -16,8 +16,6 @@ import (
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
 
-	// "github.com/komuw/ong/middleware"
-
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
