@@ -174,10 +174,6 @@ func (s myAPI) login() http.HandlerFunc {
 			panic(err)
 		}
 
-		fmt.Println("r.Form: ", r.Form)
-		for k, v := range r.Form {
-			fmt.Println("k, v: ", k, v)
-		}
 		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
 	}
 }

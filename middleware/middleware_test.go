@@ -166,7 +166,7 @@ func TestAllMiddleware(t *testing.T) {
 		attest.Ok(t, err)
 		defer res.Body.Close()
 
-		csrfToken = res.Header.Get(csrfHeader)
+		csrfToken = res.Header.Get(CsrfHeader)
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.NotZero(t, csrfToken)
 		attest.Equal(t, string(rb), msg)
@@ -195,7 +195,7 @@ func TestAllMiddleware(t *testing.T) {
 					Domain: "localhost",
 				},
 			)
-			req.Header.Set(csrfHeader, csrfToken) // setting the cookie appears not to work, so set the header.
+			req.Header.Set(CsrfHeader, csrfToken) // setting the cookie appears not to work, so set the header.
 			res, err := client.Do(req)
 			attest.Ok(t, err)
 
@@ -265,7 +265,7 @@ func TestMiddlewareServer(t *testing.T) {
 			attest.Ok(t, err)
 			defer res.Body.Close()
 
-			csrfToken = res.Header.Get(csrfHeader)
+			csrfToken = res.Header.Get(CsrfHeader)
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.NotZero(t, csrfToken)
 			attest.Equal(t, string(rb), msg)
@@ -283,7 +283,7 @@ func TestMiddlewareServer(t *testing.T) {
 		postMsg := "This is a post message"
 		req, err := http.NewRequest(http.MethodPost, ts.URL, strings.NewReader(postMsg))
 		attest.Ok(t, err)
-		req.Header.Set(csrfHeader, csrfToken)
+		req.Header.Set(CsrfHeader, csrfToken)
 		res, err := client.Do(req)
 		attest.Ok(t, err)
 
