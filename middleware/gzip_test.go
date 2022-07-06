@@ -19,19 +19,17 @@ import (
 	tmthrgd "github.com/tmthrgd/gziphandler"
 )
 
-func someGzipHandler(msg string, iterations int) http.HandlerFunc {
+func someGzipHandler(msg string) http.HandlerFunc {
+	// bound stack growth.
+	// see: https://github.com/komuw/ong/issues/54
+	fMsg := strings.Repeat(msg, 3)
 	return func(w http.ResponseWriter, r *http.Request) {
-		if iterations > (3 * defaultMinSize) {
-			// bound stack growth.
-			// see: https://github.com/komuw/ong/issues/54
-			iterations = 3 * defaultMinSize
-		}
-		fMsg := strings.Repeat(msg, iterations)
 		fmt.Fprint(w, fMsg)
 	}
 }
 
-func handlerImplementingFlush(msg string, iterations int) http.HandlerFunc {
+func handlerImplementingFlush(msg string) http.HandlerFunc {
+	iterations := 3
 	return func(w http.ResponseWriter, r *http.Request) {
 		if f, ok := w.(http.Flusher); ok {
 			msg = "FlusherCalled::" + strings.Repeat(msg, iterations)
@@ -104,7 +102,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(someGzipHandler(msg, 1))
+		wrappedHandler := Gzip(someGzipHandler(msg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -118,37 +116,14 @@ func TestGzip(t *testing.T) {
 		attest.Ok(t, err)
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
-	})
-
-	t.Run("small responses are not gzipped", func(t *testing.T) {
-		t.Parallel()
-
-		msg := "hello"
-		iterations := (defaultMinSize / 100)
-		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
-		wrappedHandler.ServeHTTP(rec, req)
-
-		res := rec.Result()
-		defer res.Body.Close()
-
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
-
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
-		attest.Zero(t, res.Header.Get(contentEncodingHeader))
+		attest.True(t, strings.Contains(string(rb), msg))
 	})
 
 	t.Run("middleware succeds", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		iterations := defaultMinSize * 2
-		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
+		wrappedHandler := Gzip(someGzipHandler(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -173,8 +148,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		iterations := defaultMinSize * 2
-		wrappedHandler := Gzip(handlerImplementingFlush(msg, iterations))
+		wrappedHandler := Gzip(handlerImplementingFlush(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -201,8 +175,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		iterations := 1
-		wrappedHandler := Gzip(handlerImplementingFlush(msg, iterations))
+		wrappedHandler := Gzip(handlerImplementingFlush(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -215,7 +188,7 @@ func TestGzip(t *testing.T) {
 		attest.Ok(t, err)
 
 		attest.True(t, rec.Flushed)
-		attest.Zero(t, res.Header.Get(contentEncodingHeader))
+		attest.NotZero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.True(t, strings.Contains(string(rb), msg))
 		attest.True(t, strings.Contains(string(rb), "FlusherCalled"))
@@ -225,8 +198,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		iterations := defaultMinSize * 2
-		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
+		wrappedHandler := Gzip(someGzipHandler(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, compress;q=0.8, *;q=0.1")
@@ -240,7 +212,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Zero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), strings.Repeat(msg, iterations))
+		attest.True(t, strings.Contains(string(rb), msg))
 	})
 
 	t.Run("issues/81", func(t *testing.T) {
@@ -273,10 +245,9 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		iterations := defaultMinSize * 2
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Gzip(someGzipHandler(msg, iterations))
+		wrappedHandler := Gzip(someGzipHandler(msg))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

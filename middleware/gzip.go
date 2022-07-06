@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -25,7 +24,7 @@ const (
 	// In the past, google recommended 150 bytes and akamai 860 bytes, but both of these recommendations seem to have disappeared from their current documentation.
 	// klauspost/compress recommends 1024; based on the fact that the MTU size is 1500 bytes;
 	//  (even if you compress something from 1300bytes to 800bytes, it still gets transmitted in 1500bytes MTU; so u have done zero work.)
-	defaultMinSize = 150
+	// defaultMinSize = 150
 
 	acceptEncodingHeader   = "Accept-Encoding"
 	contentEncodingHeader  = "Content-Encoding"
@@ -52,8 +51,8 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			ResponseWriter: w,
 			// Bytes written during ServeHTTP are redirected to this gzip writer
 			// before being written to the underlying response.
-			gw:      gzipWriter,
-			minSize: defaultMinSize,
+			gw: gzipWriter,
+			// minSize: defaultMinSize,
 		}
 		defer func() { _ = grw.Close() }() // errcheck made me do this.
 
@@ -80,8 +79,8 @@ type gzipRW struct {
 
 	code int // Saves the WriteHeader value.
 
-	minSize int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
-	buf     []byte // Holds the first part of the write before reaching the minSize or the end of the write.
+	// minSize int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
+	buf []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 
 	handledZip bool // whether this has yet to handle a zipped response.
 }
@@ -120,15 +119,15 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		return nonGzipped()
 	}
 
-	cl := 0
-	if clStr := grw.Header().Get(contentLengthHeader); clStr != "" {
-		cl, _ = strconv.Atoi(clStr)
-	}
-	if cl < grw.minSize && cl > 0 {
-		// if content-length == 0, it means that the header was not set.
-		// for those, we actually want to call `handleGzipped`; so we exempt them from this branch.
-		return nonGzipped()
-	}
+	// cl := 0
+	// if clStr := grw.Header().Get(contentLengthHeader); clStr != "" {
+	// 	cl, _ = strconv.Atoi(clStr)
+	// }
+	// if cl < grw.minSize && cl > 0 {
+	// 	// if content-length == 0, it means that the header was not set.
+	// 	// for those, we actually want to call `handleGzipped`; so we exempt them from this branch.
+	// 	return nonGzipped()
+	// }
 
 	ct := ""
 	if ct = grw.Header().Get(contentTypeHeader); ct == "" {
@@ -139,10 +138,10 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		return nonGzipped()
 	}
 
-	// If the current buffer is less than minSize, then wait until we have more data.
-	if len(grw.buf) < grw.minSize {
-		return len(b), nil
-	}
+	// // If the current buffer is less than minSize, then wait until we have more data.
+	// if len(grw.buf) < grw.minSize {
+	// 	return len(b), nil
+	// }
 
 	// The current buffer is larger than minSize, continue.
 	//
