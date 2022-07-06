@@ -29,13 +29,15 @@ var (
 type csrfContextKey string
 
 const (
-	csrfCtxKey         = csrfContextKey("csrfContextKey")
-	csrfDefaultToken   = ""
-	csrfCookieName     = "csrftoken"    // named after what django uses.
-	csrfHeader         = "X-Csrf-Token" // named after what fiber uses.
-	csrfCookieForm     = csrfCookieName
-	clientCookieHeader = "Cookie"
-	varyHeader         = "Vary"
+	csrfCtxKey               = csrfContextKey("csrfContextKey")
+	csrfDefaultToken         = ""
+	csrfCookieName           = "csrftoken"    // named after what django uses.
+	csrfHeader               = "X-Csrf-Token" // named after what fiber uses.
+	csrfCookieForm           = csrfCookieName
+	clientCookieHeader       = "Cookie"
+	varyHeader               = "Vary"
+	authorizationHeader      = "Authorization"
+	proxyAuthorizationHeader = "Proxy-Authorization"
 
 	// gorilla/csrf; 12hrs
 	// django: 1yr??
@@ -76,6 +78,13 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		default:
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
 			actualToken = getToken(r)
+
+			// if r.Header.Get(clientCookieHeader) == "" &&
+			// 	r.Header.Get(authorizationHeader) == "" &&
+			// 	r.Header.Get(proxyAuthorizationHeader) == "" {
+			// 	break
+			// }
+
 			if !csrfStore.exists(actualToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
@@ -179,10 +188,7 @@ func getToken(r *http.Request) (actualToken string) {
 	}
 
 	fromForm := func() string {
-		if err := r.ParseForm(); err != nil {
-			return ""
-		}
-		return r.Form.Get(csrfCookieForm)
+		return r.FormValue(csrfCookieForm) // calls ParseMultipartForm and ParseForm if necessary
 	}
 
 	fromHeader := func() string {
