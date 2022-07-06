@@ -168,13 +168,13 @@ func (s myAPI) login() http.HandlerFunc {
 				CsrfTokenValue: csrfTokenValue,
 				CspNonceValue:  CspNonceValue,
 			}
-			if err := tmpl.Execute(w, data); err != nil {
+			if err = tmpl.Execute(w, data); err != nil {
 				panic(err)
 			}
 			return
 		}
 
-		if err := r.ParseForm(); err != nil {
+		if err = r.ParseForm(); err != nil {
 			panic(err)
 		}
 
