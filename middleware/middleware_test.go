@@ -201,15 +201,15 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("example.com", 443)
+		o := WithOpts("localhost", 443)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := httptest.NewServer(
+		ts := httptest.NewTLSServer(
 			wrappedHandler,
 		)
 		defer ts.Close()
 
-		res, err := http.Get(ts.URL)
+		res, err := client.Get(ts.URL)
 		attest.Ok(t, err)
 
 		rb, err := io.ReadAll(res.Body)
