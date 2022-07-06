@@ -28,7 +28,6 @@ type route struct {
 	pattern string
 	method  string
 	handler http.HandlerFunc
-	opts    middleware.Opts
 }
 
 // NewRoute creates a new route.
@@ -36,13 +35,11 @@ func NewRoute(
 	pattern string,
 	method string,
 	handler http.HandlerFunc,
-	opts middleware.Opts,
 ) route {
 	return route{
 		pattern: pattern,
 		method:  method,
 		handler: handler,
-		opts:    opts,
 	}
 }
 
@@ -56,7 +53,7 @@ type mux struct {
 }
 
 // NewMux creates a new mux.
-func NewMux(rts Routes) *mux {
+func NewMux(opt middleware.Opts, rts Routes) *mux {
 	m := &mux{
 		l:      log.New(context.Background(), os.Stdout, 1000),
 		router: http.NewServeMux(),
@@ -82,7 +79,7 @@ func NewMux(rts Routes) *mux {
 		}
 
 		m.addPattern(rt.pattern,
-			mid(rt.handler, rt.opts),
+			mid(rt.handler, opt),
 		)
 	}
 

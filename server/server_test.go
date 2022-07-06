@@ -167,12 +167,12 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := NewMux(
+			middleware.WithOpts("localhost", port),
 			Routes{
 				NewRoute(
 					uri,
 					MethodGet,
 					someServerTestHandler(msg),
-					middleware.WithOpts("localhost", port),
 				),
 			})
 
@@ -232,12 +232,12 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := NewMux(
+			middleware.WithOpts("localhost", port),
 			Routes{
 				NewRoute(
 					uri,
 					MethodGet,
 					someServerTestHandler(msg),
-					middleware.WithOpts("localhost", port),
 				),
 			})
 

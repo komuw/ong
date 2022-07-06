@@ -25,12 +25,12 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		mux := NewMux(
+			middleware.WithOpts("localhost", 443),
 			Routes{
 				NewRoute(
 					"/api",
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost", 443),
 				),
 			},
 		)
@@ -50,12 +50,12 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		mux := NewMux(
+			middleware.WithOpts("localhost", 443),
 			Routes{
 				NewRoute(
 					"/api",
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost", 443),
 				),
 			},
 		)
@@ -75,12 +75,12 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		mux := NewMux(
+			middleware.WithOpts("localhost", 443),
 			Routes{
 				NewRoute(
 					"/api",
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost", 443),
 				),
 			},
 		)
@@ -95,6 +95,7 @@ func TestMux(t *testing.T) {
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
 
+		fmt.Println(string(rb))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
 	})
