@@ -19,6 +19,7 @@ const ongMiddlewareErrorHeader = "Ong-Middleware-Error"
 
 type Opts struct {
 	domain         string
+	httpsPort      uint16
 	allowedOrigins []string
 	allowedMethods []string
 	allowedHeaders []string
@@ -28,6 +29,7 @@ type Opts struct {
 // NewOpts returns a new opts.
 func NewOpts(
 	domain string,
+	httpsPort uint16,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
@@ -35,6 +37,7 @@ func NewOpts(
 ) Opts {
 	return Opts{
 		domain:         domain,
+		httpsPort:      httpsPort,
 		allowedOrigins: allowedOrigins,
 		allowedMethods: allowedMethods,
 		allowedHeaders: allowedHeaders,
@@ -42,9 +45,9 @@ func NewOpts(
 	}
 }
 
-// WithOpts returns a new opts that has sensible defaults given domain.
-func WithOpts(domain string) Opts {
-	return NewOpts(domain, nil, nil, nil, os.Stdout)
+// WithOpts returns a new opts that has sensible defaults.
+func WithOpts(domain string, httpsPort uint16) Opts {
+	return NewOpts(domain, httpsPort, nil, nil, nil, os.Stdout)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -57,6 +60,7 @@ func allDefaultMiddlewares(
 	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
+	httpsPort := o.httpsPort
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
@@ -67,29 +71,34 @@ func allDefaultMiddlewares(
 	// 2. Log since we would like to get logs as early in the lifecycle as possible.
 	// 3. RateLimiter since we want bad traffic to be filtered early.
 	// 4. LoadShedder for the same reason.
-	// 5. Security since we want some minimum level of security.
-	// 6. Cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 7. Csrf since this one is a bit more involved perf-wise.
-	// 8. Gzip since it is very involved perf-wise.
+	// 5. HttpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
+	// 6. Security since we want some minimum level of security.
+	// 7. Cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 8. Csrf since this one is a bit more involved perf-wise.
+	// 9. Gzip since it is very involved perf-wise.
 	//
-	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> Security -> Cors -> Csrf -> Gzip -> actual-handler
+	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> HttpsRedirector -> Security -> Cors -> Csrf -> Gzip -> actual-handler
 
 	return Panic(
 		Log(
 			RateLimiter(
 				LoadShedder(
-					Security(
-						Cors(
-							Csrf(
-								Gzip(
-									wrappedHandler,
+					HttpsRedirector(
+						Security(
+							Cors(
+								Csrf(
+									Gzip(
+										wrappedHandler,
+									),
+									domain,
 								),
-								domain,
+								allowedOrigins,
+								allowedMethods,
+								allowedHeaders,
 							),
-							allowedOrigins,
-							allowedMethods,
-							allowedHeaders,
+							domain,
 						),
+						httpsPort,
 						domain,
 					),
 				),

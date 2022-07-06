@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,17 +21,23 @@ func someMuxHandler(msg string) http.HandlerFunc {
 func TestMux(t *testing.T) {
 	t.Parallel()
 
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
 	t.Run("unknown uri", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
 		mux := NewMux(
+			middleware.WithOpts("localhost", 443),
 			Routes{
 				NewRoute(
 					"/api",
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost"),
 				),
 			},
 		)
@@ -48,24 +55,42 @@ func TestMux(t *testing.T) {
 	t.Run("unknown http method", func(t *testing.T) {
 		t.Parallel()
 
+		uri := "/api/" // forward slash at suffix is important.
 		msg := "hello world"
 		mux := NewMux(
+			middleware.WithOpts("localhost", 443),
 			Routes{
 				NewRoute(
-					"/api",
+					uri,
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost"),
 				),
 			},
 		)
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodTrace, "/api/", nil)
-		mux.ServeHTTP(rec, req)
+		ts := httptest.NewTLSServer(
+			mux,
+		)
+		defer ts.Close()
 
-		res := rec.Result()
-		defer res.Body.Close()
+		csrfToken := ""
+		{
+			// non-safe http methods(like POST) require a server-known csrf token;
+			// otherwise it fails with http 403
+			// so here we make a http GET so that we can have a csrf token.
+			res, err := client.Get(ts.URL + uri)
+			attest.Ok(t, err)
+
+			csrfToken = res.Header.Get(middleware.CsrfHeader)
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.NotZero(t, csrfToken)
+		}
+
+		req, err := http.NewRequest(http.MethodPost, ts.URL+uri, nil)
+		attest.Ok(t, err)
+		req.Header.Set(middleware.CsrfHeader, csrfToken)
+		res, err := client.Do(req)
+		attest.Ok(t, err)
 
 		attest.Equal(t, res.StatusCode, http.StatusMethodNotAllowed)
 	})
@@ -74,26 +99,29 @@ func TestMux(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
+		uri := "/api"
 		mux := NewMux(
+			middleware.WithOpts("localhost", 443),
 			Routes{
 				NewRoute(
-					"/api",
+					uri,
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost"),
 				),
 			},
 		)
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/api/", nil)
-		mux.ServeHTTP(rec, req)
+		ts := httptest.NewTLSServer(
+			mux,
+		)
+		defer ts.Close()
 
-		res := rec.Result()
-		defer res.Body.Close()
+		res, err := client.Get(ts.URL + uri)
+		attest.Ok(t, err)
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
+		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)

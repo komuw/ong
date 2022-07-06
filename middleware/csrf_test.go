@@ -175,7 +175,7 @@ func TestGetToken(t *testing.T) {
 
 		want := id.Random(2 * csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		req.Header.Set(csrfHeader, want)
+		req.Header.Set(CsrfHeader, want)
 		got := getToken(req)
 		attest.Equal(t, got, want[csrfStringTokenlength:])
 	})
@@ -207,7 +207,7 @@ func TestGetToken(t *testing.T) {
 			Secure:   true,  // https only.
 			SameSite: http.SameSiteStrictMode,
 		})
-		req.Header.Set(csrfHeader, headerToken)
+		req.Header.Set(CsrfHeader, headerToken)
 		err := req.ParseForm()
 		attest.Ok(t, err)
 		req.Form.Add(CsrfTokenFormName, formToken)
@@ -291,7 +291,7 @@ func TestCsrf(t *testing.T) {
 		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
-		req.Header.Set(csrfHeader, reqCsrfTok)
+		req.Header.Set(CsrfHeader, reqCsrfTok)
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -360,7 +360,7 @@ func TestCsrf(t *testing.T) {
 		attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
 
 		// (b)
-		attest.Equal(t, res.Header.Get(csrfHeader), res.Header.Get(tokenHeader))
+		attest.Equal(t, res.Header.Get(CsrfHeader), res.Header.Get(tokenHeader))
 
 		// (c)
 		attest.Equal(t, res.Header.Get(varyHeader), clientCookieHeader)
@@ -418,7 +418,7 @@ func TestCsrf(t *testing.T) {
 			// make GET request
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.Header.Set(csrfHeader, reqCsrfTok)
+			req.Header.Set(CsrfHeader, reqCsrfTok)
 			wrappedHandler.ServeHTTP(rec, req)
 			res := rec.Result()
 			defer res.Body.Close()
@@ -464,7 +464,7 @@ func TestCsrf(t *testing.T) {
 			attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
 
 			// (b)
-			attest.Equal(t, res.Header.Get(csrfHeader), res.Header.Get(tokenHeader))
+			attest.Equal(t, res.Header.Get(CsrfHeader), res.Header.Get(tokenHeader))
 
 			// (c)
 			attest.Equal(t, res.Header.Get(varyHeader), clientCookieHeader)
@@ -520,7 +520,7 @@ func TestCsrf(t *testing.T) {
 			// make GET request
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.Header.Set(csrfHeader, reqCsrfTok)
+			req.Header.Set(CsrfHeader, reqCsrfTok)
 			wrappedHandler.ServeHTTP(rec, req)
 			res := rec.Result()
 			defer res.Body.Close()
@@ -567,7 +567,7 @@ func TestCsrf(t *testing.T) {
 				attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
 
 				// (b)
-				attest.Equal(t, res.Header.Get(csrfHeader), res.Header.Get(tokenHeader))
+				attest.Equal(t, res.Header.Get(CsrfHeader), res.Header.Get(tokenHeader))
 
 				// (c)
 				attest.Equal(t, res.Header.Get(varyHeader), clientCookieHeader)

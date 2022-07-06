@@ -33,3 +33,4 @@ Most recent version is listed first.
 - redirect IP to domain: https://github.com/komuw/ong/pull/75
 - dont require csrf for POST requests that have no cookies and arent http auth: https://github.com/komuw/ong/pull/77
 - remove http: https://github.com/komuw/ong/pull/79
+- make the redirector a proper middleware: https://github.com/komuw/ong/pull/80

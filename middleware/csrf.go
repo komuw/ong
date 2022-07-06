@@ -31,11 +31,12 @@ type csrfContextKey string
 
 const (
 	// CsrfTokenFormName is the name of the html form name attribute for csrf token.
-	CsrfTokenFormName        = "csrftoken" // named after what django uses.
+	CsrfTokenFormName = "csrftoken" // named after what django uses.
+	// CsrfHeader is the name of the http header that Ong uses to store csrf token.
+	CsrfHeader               = "X-Csrf-Token" // named after what fiber uses.
 	csrfCtxKey               = csrfContextKey("csrfContextKey")
 	csrfDefaultToken         = ""
 	csrfCookieName           = CsrfTokenFormName
-	csrfHeader               = "X-Csrf-Token" // named after what fiber uses.
 	clientCookieHeader       = "Cookie"
 	varyHeader               = "Vary"
 	authorizationHeader      = "Authorization"
@@ -149,7 +150,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 
 		// 4. set cookie header
 		w.Header().Set(
-			csrfHeader,
+			CsrfHeader,
 			tokenToIssue,
 		)
 
@@ -208,7 +209,7 @@ func getToken(r *http.Request) (actualToken string) {
 	}
 
 	fromHeader := func() string {
-		return r.Header.Get(csrfHeader)
+		return r.Header.Get(CsrfHeader)
 	}
 
 	tok := fromCookie()

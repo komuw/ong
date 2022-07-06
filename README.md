@@ -38,15 +38,16 @@ import (
 func main() {
 	api := myAPI{db:"someDb", l: someLogger}
 	mux := server.NewMux(
+		middleware.WithOpts("localhost", 8081),
 		server.Routes{
 		    server.NewRoute(
 			    "check/",
 			    server.MethodGet,
 			    api.check("hello world"),
-			    middleware.WithOpts("localhost"),
 		   ),
 	    })
 
+    _, _ = server.CreateDevCertKey()
 	err := server.Run(mux, server.DevOpts())
 	if err != nil {
 		mux.GetLogger().Error(err, log.F{"msg": "server.Run error"})

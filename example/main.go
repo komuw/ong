@@ -22,30 +22,27 @@ func main() {
 	api := NewMyApi("someDb")
 
 	mux := server.NewMux(
+		middleware.WithOpts("localhost", 8081),
 		server.Routes{
 			server.NewRoute(
 				"/api",
 				server.MethodPost,
 				api.handleAPI(),
-				middleware.WithOpts("localhost"),
 			),
 			server.NewRoute(
 				"serveDirectory",
 				server.MethodAll,
 				middleware.BasicAuth(api.handleFileServer(), "user", "passwd"),
-				middleware.WithOpts("localhost"),
 			),
 			server.NewRoute(
 				"check/",
 				server.MethodAll,
 				api.check(200),
-				middleware.WithOpts("localhost"),
 			),
 			server.NewRoute(
 				"login",
 				server.MethodAll,
 				api.login(),
-				middleware.WithOpts("localhost"),
 			),
 		})
 
@@ -177,10 +174,6 @@ func (s myAPI) login() http.HandlerFunc {
 			panic(err)
 		}
 
-		fmt.Println("r.Form: ", r.Form)
-		for k, v := range r.Form {
-			fmt.Println("k, v: ", k, v)
-		}
 		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
 	}
 }
