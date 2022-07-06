@@ -130,26 +130,27 @@ func (s myAPI) check(code int) http.HandlerFunc {
 }
 
 func (s myAPI) login() http.HandlerFunc {
-	tmpl, err := template.New("myTpl").Parse(`
-<!DOCTYPE html>
+	tmpl, err := template.New("myTpl").Parse(`<!DOCTYPE html>
 <html>
-<body>
-<h2>Welcome to awesome website.</h2>
-	<form method="POST">
-        <label>Email:</label><br>
-          <input type="text" id="email" name="email"><br>
-        <label>First Name:</label><br>
-          <input type="text" id="firstName" name="firstName"><br>
 
-		<input type="hidden" id="{{.CsrfTokenName}}" name="{{.CsrfTokenName}}" value="{{.CsrfTokenValue}}"><br>
-        <input type="submit">
-    </form>
+<body>
+	<h2>Welcome to awesome website.</h2>
+	<form method="POST">
+	<label>Email:</label><br>
+	<input type="text" id="email" name="email"><br>
+	<label>First Name:</label><br>
+	<input type="text" id="firstName" name="firstName"><br>
+
+	<input type="hidden" id="{{.CsrfTokenName}}" name="{{.CsrfTokenName}}" value="{{.CsrfTokenValue}}"><br>
+	<input type="submit">
+	</form>
 
 	<script nonce="{{.CspNonceValue}}">
-        console.log("hello world");
+	console.log("hello world");
 	</script>
 
 </body>
+
 </html>`)
 	if err != nil {
 		panic(err)
@@ -180,5 +181,6 @@ func (s myAPI) login() http.HandlerFunc {
 		for k, v := range r.Form {
 			fmt.Println("k, v: ", k, v)
 		}
+		fmt.Fprint(w, fmt.Sprintf("you have submitted: %s", r.Form))
 	}
 }
