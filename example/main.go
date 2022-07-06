@@ -156,8 +156,6 @@ func (s myAPI) login() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		csrfTokenValue := middleware.GetCsrfToken(r.Context())
-		CspNonceValue := middleware.GetCspNonce(r.Context())
 		if r.Method != http.MethodPost {
 			data := struct {
 				CsrfTokenName  string
@@ -165,8 +163,8 @@ func (s myAPI) login() http.HandlerFunc {
 				CspNonceValue  string
 			}{
 				CsrfTokenName:  middleware.CsrfTokenFormName,
-				CsrfTokenValue: csrfTokenValue,
-				CspNonceValue:  CspNonceValue,
+				CsrfTokenValue: middleware.GetCsrfToken(r.Context()),
+				CspNonceValue:  middleware.GetCspNonce(r.Context()),
 			}
 			if err = tmpl.Execute(w, data); err != nil {
 				panic(err)
