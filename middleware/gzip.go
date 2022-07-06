@@ -113,9 +113,9 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	// Only continue if they didn't already choose an encoding .
-	if grw.Header().Get(contentEncodingHeader) != "" || grw.Header().Get(contentRangeHeader) != "" {
-		return nonGzipped()
-	}
+	// if grw.Header().Get(contentEncodingHeader) != "" || grw.Header().Get(contentRangeHeader) != "" {
+	// 	return nonGzipped()
+	// }
 
 	cl := 0
 	if clStr := grw.Header().Get(contentLengthHeader); clStr != "" {
