@@ -16,16 +16,8 @@ import (
 //   (c) https://github.com/CAFxX/httpcompression whose license(Apache License, Version 2.0) can be found here:                 https://github.com/CAFxX/httpcompression/blob/9d30d0704fe304b4586ae1585a54ee6eec47675f/LICENSE
 
 const (
-	// defaultMinSize is the default minimum size for which we enable gzip compression.
-	// - compressing very small payloads may actually increase their size.
-	// - compressing small payloads may actually decrease end-to-end performance.
-	//
-	// nginx recommends 20 bytes; apache/mod_gzip, 500 bytes; apache/pagespeed, 0 bytes.
-	// In the past, google recommended 150 bytes and akamai 860 bytes, but both of these recommendations seem to have disappeared from their current documentation.
-	// klauspost/compress recommends 1024; based on the fact that the MTU size is 1500 bytes;
-	//  (even if you compress something from 1300bytes to 800bytes, it still gets transmitted in 1500bytes MTU; so u have done zero work.)
-	// defaultMinSize = 150
-
+	// This middleware unlike others does not have a minimum size below which it does not compress.
+	// It compresses all sizes.
 	acceptEncodingHeader   = "Accept-Encoding"
 	contentEncodingHeader  = "Content-Encoding"
 	contentRangeHeader     = "Content-Range"
@@ -52,7 +44,6 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			// Bytes written during ServeHTTP are redirected to this gzip writer
 			// before being written to the underlying response.
 			gw: gzipWriter,
-			// minSize: defaultMinSize,
 		}
 		defer func() { _ = grw.Close() }() // errcheck made me do this.
 
@@ -72,14 +63,12 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // gzipRW provides an http.ResponseWriter interface, which gzips
 // bytes before writing them to the underlying response. This doesn't close the
 // writers, so don't forget to do that.
-// It can be configured to skip response smaller than minSize.
 type gzipRW struct {
 	http.ResponseWriter
 	gw *gzip.Writer
 
 	code int // Saves the WriteHeader value.
 
-	// minSize int    // Specifies the minimum response size to gzip. If the response length is bigger than this value, it is compressed.
 	buf []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 
 	handledZip bool // whether this has yet to handle a zipped response.
@@ -128,8 +117,6 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		return nonGzipped()
 	}
 
-	// The current buffer is larger than minSize, continue.
-	//
 	// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
 	if _, ok := grw.Header()[contentTypeHeader]; !ok && ct != "" {
 		grw.Header().Set(contentTypeHeader, ct)
@@ -224,9 +211,6 @@ func (grw *gzipRW) Flush() {
 		//  Only flush once startGzip or
 		//  startPassThrough has been called.
 		//
-		// Flush is thus a no-op until the written
-		// body exceeds minSize, or we've decided
-		// not to compress.
 		return
 	}
 
