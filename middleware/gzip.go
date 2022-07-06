@@ -119,16 +119,6 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		return nonGzipped()
 	}
 
-	// cl := 0
-	// if clStr := grw.Header().Get(contentLengthHeader); clStr != "" {
-	// 	cl, _ = strconv.Atoi(clStr)
-	// }
-	// if cl < grw.minSize && cl > 0 {
-	// 	// if content-length == 0, it means that the header was not set.
-	// 	// for those, we actually want to call `handleGzipped`; so we exempt them from this branch.
-	// 	return nonGzipped()
-	// }
-
 	ct := ""
 	if ct = grw.Header().Get(contentTypeHeader); ct == "" {
 		// If a Content-Type wasn't specified, infer it from the current buffer.
@@ -137,11 +127,6 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	if !shouldGzipCt(ct) {
 		return nonGzipped()
 	}
-
-	// // If the current buffer is less than minSize, then wait until we have more data.
-	// if len(grw.buf) < grw.minSize {
-	// 	return len(b), nil
-	// }
 
 	// The current buffer is larger than minSize, continue.
 	//
