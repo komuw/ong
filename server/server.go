@@ -115,19 +115,19 @@ func NewOpts(
 	}
 }
 
-// DefaultDevOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
-func DefaultDevOpts() opts {
+// DevOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
+func DevOpts() opts {
 	certFile, keyFile := certKeyPaths()
 	return withOpts(8081, certFile, keyFile, "", "localhost")
 }
 
-// WithCertOpts returns a new opts that has sensible defaults given certFile & keyFile.
-func WithCertOpts(certFile, keyFile, domain string) opts {
+// CertOpts returns a new opts that has sensible defaults given certFile & keyFile.
+func CertOpts(certFile, keyFile, domain string) opts {
 	return withOpts(443, certFile, keyFile, "", domain)
 }
 
-// WithLetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
-func WithLetsEncryptOpts(email, domain string) opts {
+// LetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
+func LetsEncryptOpts(email, domain string) opts {
 	return withOpts(443, "", "", email, domain)
 }
 

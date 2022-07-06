@@ -47,7 +47,7 @@ func main() {
 		   ),
 	    })
 
-	err := server.Run(mux, server.DefaultDevOpts())
+	err := server.Run(mux, server.DevOpts())
 	if err != nil {
 		mux.GetLogger().Error(err, log.F{"msg": "server.Run error"})
 		os.Exit(1)
@@ -78,7 +78,7 @@ To use tls with certificates from letsencrypt:
 ```go
 email := "admin@example.com"
 domain := "*.example.com"
-err := server.Run(mux, server.WithLetsEncryptOpts(email, domain))
+err := server.Run(mux, server.LetsEncryptOpts(email, domain))
 ```
 
 
