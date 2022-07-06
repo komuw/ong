@@ -246,7 +246,6 @@ func TestGzip(t *testing.T) {
 	t.Run("issues/81", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
 		wrappedHandler := Gzip(login())
 
 		rec := httptest.NewRecorder()
@@ -267,7 +266,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), msg))
+		attest.True(t, strings.Contains(string(rb), "Welcome to awesome website."))
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
