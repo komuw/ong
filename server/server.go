@@ -80,14 +80,6 @@ func NewOpts(
 	domain string,
 ) opts {
 	serverPort := fmt.Sprintf(":%d", port)
-
-	httpPort := port
-	if port == 443 {
-		httpPort = 80
-	} else {
-		httpPort = port - 1
-	}
-
 	host := "127.0.0.1"
 	if port == 80 || port == 443 {
 		// bind to both tcp4 and tcp6
@@ -95,6 +87,11 @@ func NewOpts(
 		host = "0.0.0.0"
 	}
 	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
+
+	httpPort := uint16(80)
+	if port != 443 {
+		httpPort = port - 1
+	}
 
 	return opts{
 		port:              port,

@@ -73,18 +73,12 @@ func (s myAPI) check(msg string) http.HandlerFunc {
 
 `go run -race ./...`     
 
-To use tls:
-```go
-_, _ = server.CreateDevCertKey()
-err := server.Run(mux, server.DefaultDevTlsOpts())
-```
 
 To use tls with certificates from letsencrypt:
 ```go
-host := "0.0.0.0"
 email := "admin@example.com"
 domain := "*.example.com"
-err := server.Run(mux, server.WithLetsEncryptOpts(host, email, domain))
+err := server.Run(mux, server.WithLetsEncryptOpts(email, domain))
 ```
 
 
