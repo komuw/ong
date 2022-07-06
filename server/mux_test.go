@@ -30,7 +30,7 @@ func TestMux(t *testing.T) {
 					"/api",
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost"),
+					middleware.WithOpts("localhost", 443),
 				),
 			},
 		)
@@ -55,7 +55,7 @@ func TestMux(t *testing.T) {
 					"/api",
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost"),
+					middleware.WithOpts("localhost", 443),
 				),
 			},
 		)
@@ -80,7 +80,7 @@ func TestMux(t *testing.T) {
 					"/api",
 					MethodGet,
 					someMuxHandler(msg),
-					middleware.WithOpts("localhost"),
+					middleware.WithOpts("localhost", 443),
 				),
 			},
 		)

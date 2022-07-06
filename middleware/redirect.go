@@ -9,7 +9,7 @@ import (
 )
 
 // HttpsRedirector is a middleware that redirects http requests to https.
-func HttpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain string) http.HandlerFunc {
+func HttpsRedirector(wrappedHandler http.HandlerFunc, httpsPort uint16, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
 		if !isTls {
@@ -50,7 +50,7 @@ func HttpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			return
 		}
 
-		wrappedHandler.ServeHTTP(w, r)
+		wrappedHandler(w, r)
 	}
 }
 

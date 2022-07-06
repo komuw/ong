@@ -27,25 +27,25 @@ func main() {
 				"/api",
 				server.MethodPost,
 				api.handleAPI(),
-				middleware.WithOpts("localhost"),
+				middleware.WithOpts("localhost", 8081),
 			),
 			server.NewRoute(
 				"serveDirectory",
 				server.MethodAll,
 				middleware.BasicAuth(api.handleFileServer(), "user", "passwd"),
-				middleware.WithOpts("localhost"),
+				middleware.WithOpts("localhost", 8081),
 			),
 			server.NewRoute(
 				"check/",
 				server.MethodAll,
 				api.check(200),
-				middleware.WithOpts("localhost"),
+				middleware.WithOpts("localhost", 8081),
 			),
 			server.NewRoute(
 				"login",
 				server.MethodAll,
 				api.login(),
-				middleware.WithOpts("localhost"),
+				middleware.WithOpts("localhost", 8081),
 			),
 		})
 

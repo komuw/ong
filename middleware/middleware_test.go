@@ -145,7 +145,7 @@ func TestAllMiddleware(t *testing.T) {
 		// non-safe http methods(like POST) require a server-known csrf token;
 		// otherwise it fails with http 403
 		// so here we make a http GET so that we can have a csrf token.
-		o := WithOpts("example.com")
+		o := WithOpts("example.com", 443)
 		wrappedHandler := All(someMiddlewareTestHandler("hey"), o)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -163,7 +163,7 @@ func TestAllMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			o := WithOpts("example.com")
+			o := WithOpts("example.com", 443)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
 			rec := httptest.NewRecorder()
@@ -194,7 +194,7 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("example.com")
+		o := WithOpts("example.com", 443)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts := httptest.NewServer(
@@ -221,7 +221,7 @@ func TestMiddlewareServer(t *testing.T) {
 			// non-safe http methods(like POST) require a server-known csrf token;
 			// otherwise it fails with http 403
 			// so here we make a http GET so that we can have a csrf token.
-			o := WithOpts("example.com")
+			o := WithOpts("example.com", 443)
 			wrappedHandler := All(someMiddlewareTestHandler("hey"), o)
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -234,7 +234,7 @@ func TestMiddlewareServer(t *testing.T) {
 		}
 
 		msg := "hello world"
-		o := WithOpts("example.com")
+		o := WithOpts("example.com", 443)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts := httptest.NewServer(
@@ -261,7 +261,7 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("example.com")
+		o := WithOpts("example.com", 443)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
@@ -309,7 +309,7 @@ var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
-	o := WithOpts("example.com")
+	o := WithOpts("example.com", 443)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
 	intialRateLimiterSendRate := rateLimiterSendRate

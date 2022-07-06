@@ -19,6 +19,7 @@ const ongMiddlewareErrorHeader = "Ong-Middleware-Error"
 
 type Opts struct {
 	domain         string
+	httpsPort      uint16
 	allowedOrigins []string
 	allowedMethods []string
 	allowedHeaders []string
@@ -28,6 +29,7 @@ type Opts struct {
 // NewOpts returns a new opts.
 func NewOpts(
 	domain string,
+	httpsPort uint16,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
@@ -35,6 +37,7 @@ func NewOpts(
 ) Opts {
 	return Opts{
 		domain:         domain,
+		httpsPort:      httpsPort,
 		allowedOrigins: allowedOrigins,
 		allowedMethods: allowedMethods,
 		allowedHeaders: allowedHeaders,
@@ -42,9 +45,9 @@ func NewOpts(
 	}
 }
 
-// WithOpts returns a new opts that has sensible defaults given domain.
-func WithOpts(domain string) Opts {
-	return NewOpts(domain, nil, nil, nil, os.Stdout)
+// WithOpts returns a new opts that has sensible defaults.
+func WithOpts(domain string, httpsPort uint16) Opts {
+	return NewOpts(domain, httpsPort, nil, nil, nil, os.Stdout)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -57,6 +60,7 @@ func allDefaultMiddlewares(
 	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
+	httpsPort := o.httpsPort
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
@@ -74,22 +78,28 @@ func allDefaultMiddlewares(
 	//
 	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> Security -> Cors -> Csrf -> Gzip -> actual-handler
 
+	// TODO: explain why HttpsRedirector is at that point.
+
 	return Panic(
 		Log(
 			RateLimiter(
 				LoadShedder(
-					Security(
-						Cors(
-							Csrf(
-								Gzip(
-									wrappedHandler,
+					HttpsRedirector(
+						Security(
+							Cors(
+								Csrf(
+									Gzip(
+										wrappedHandler,
+									),
+									domain,
 								),
-								domain,
+								allowedOrigins,
+								allowedMethods,
+								allowedHeaders,
 							),
-							allowedOrigins,
-							allowedMethods,
-							allowedHeaders,
+							domain,
 						),
+						httpsPort,
 						domain,
 					),
 				),

@@ -15,7 +15,8 @@ import (
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/middleware"
+
+	// "github.com/komuw/ong/middleware"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -253,7 +254,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		// HTTP(non-tls) LISTERNER:
 		redirectSrv := &http.Server{
 			Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
-			Handler:           middleware.HttpsRedirector(srv.Handler, o.port, cleanDomain(o.tls.domain)),
+			Handler:           srv.Handler,
 			ReadHeaderTimeout: o.readHeaderTimeout,
 			ReadTimeout:       o.readTimeout,
 			WriteTimeout:      o.writeTimeout,
