@@ -71,14 +71,13 @@ func allDefaultMiddlewares(
 	// 2. Log since we would like to get logs as early in the lifecycle as possible.
 	// 3. RateLimiter since we want bad traffic to be filtered early.
 	// 4. LoadShedder for the same reason.
-	// 5. Security since we want some minimum level of security.
-	// 6. Cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 7. Csrf since this one is a bit more involved perf-wise.
-	// 8. Gzip since it is very involved perf-wise.
+	// 5. HttpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
+	// 6. Security since we want some minimum level of security.
+	// 7. Cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 8. Csrf since this one is a bit more involved perf-wise.
+	// 9. Gzip since it is very involved perf-wise.
 	//
-	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> Security -> Cors -> Csrf -> Gzip -> actual-handler
-
-	// TODO: explain why HttpsRedirector is at that point.
+	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> HttpsRedirector -> Security -> Cors -> Csrf -> Gzip -> actual-handler
 
 	return Panic(
 		Log(
