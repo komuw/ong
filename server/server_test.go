@@ -65,7 +65,7 @@ func TestOpts(t *testing.T) {
 
 		got := DefaultDevOpts()
 		want := opts{
-			port:              8080,
+			port:              8081,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -73,9 +73,14 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
-			serverPort:        ":8080",
-			serverAddress:     "127.0.0.1:8080",
+			serverPort:        ":8081",
+			serverAddress:     "127.0.0.1:8081",
 			httpPort:          ":8080",
+			tls: tlsOpts{
+				certFile: "/tmp/ong_dev_certificate.pem",
+				keyFile:  "/tmp/ong_dev_key.pem",
+				domain:   "localhost",
+			},
 		}
 		attest.Equal(t, got, want)
 	})
@@ -83,7 +88,9 @@ func TestOpts(t *testing.T) {
 	t.Run("with opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := WithOpts(80)
+		certFile, keyFile := certKeyPaths()
+		got := withOpts(80, certFile, keyFile, "", "*.example.com")
+
 		want := opts{
 			port:              80,
 			host:              "0.0.0.0",
@@ -95,7 +102,12 @@ func TestOpts(t *testing.T) {
 			idleTimeout:       113 * time.Second,
 			serverPort:        ":80",
 			serverAddress:     "0.0.0.0:80",
-			httpPort:          ":80",
+			httpPort:          ":79",
+			tls: tlsOpts{
+				certFile: "/tmp/ong_dev_certificate.pem",
+				keyFile:  "/tmp/ong_dev_key.pem",
+				domain:   "*.example.com",
+			},
 		}
 		attest.Equal(t, got, want)
 	})
@@ -103,7 +115,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default tls opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := DefaultDevTlsOpts()
+		got := DefaultDevOpts()
 		want := opts{
 			port:              8081,
 			host:              "127.0.0.1",
@@ -116,7 +128,6 @@ func TestOpts(t *testing.T) {
 			tls: tlsOpts{
 				certFile: "/tmp/ong_dev_certificate.pem",
 				keyFile:  "/tmp/ong_dev_key.pem",
-				enabled:  true,
 				domain:   "localhost",
 			},
 			serverPort:    ":8081",
@@ -136,47 +147,11 @@ func someServerTestHandler(msg string) http.HandlerFunc {
 func TestServer(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-
-		if os.Getenv("GITHUB_ACTIONS") != "" {
-			// server.Run() calls setRlimit()
-			// and setRlimit() fails in github actions with error: `operation not permitted`
-			// specifically the call to `unix.Setrlimit()`
-			return
-		}
-
-		port := math.MaxUint16 - uint16(3)
-		uri := "/api"
-		msg := "hello world"
-		mux := NewMux(
-			Routes{
-				NewRoute(
-					uri,
-					MethodGet,
-					someServerTestHandler(msg),
-					middleware.WithOpts("localhost"),
-				),
-			})
-
-		go func() {
-			err := Run(mux, WithOpts(port))
-			attest.Ok(t, err)
-		}()
-
-		// await for the server to start.
-		time.Sleep(1 * time.Second)
-
-		res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
-		attest.Ok(t, err)
-
-		defer res.Body.Close()
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
-
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
-	})
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
@@ -204,18 +179,12 @@ func TestServer(t *testing.T) {
 		go func() {
 			_, _ = CreateDevCertKey()
 			time.Sleep(1 * time.Second)
-			err := Run(mux, DefaultDevTlsOpts())
+			err := Run(mux, DefaultDevOpts())
 			attest.Ok(t, err)
 		}()
 
 		// await for the server to start.
 		time.Sleep(7 * time.Second)
-
-		tr := &http.Transport{
-			// since we are using self-signed certificates, we need to skip verification.
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-		client := &http.Client{Transport: tr}
 
 		{
 			// https server.
@@ -273,15 +242,16 @@ func TestServer(t *testing.T) {
 			})
 
 		go func() {
-			err := Run(mux, WithOpts(port))
+			certFile, keyFile := CreateDevCertKey()
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"))
 			attest.Ok(t, err)
 		}()
 
 		// await for the server to start.
-		time.Sleep(1 * time.Second)
+		time.Sleep(7 * time.Second)
 
 		runhandler := func() {
-			res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port, uri))
+			res, err := client.Get(fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)) // note: the https scheme.
 			attest.Ok(t, err)
 
 			defer res.Body.Close()

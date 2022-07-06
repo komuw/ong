@@ -24,10 +24,8 @@ import (
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
 func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
-	if o.tls.enabled {
-		if err := validateDomain(o.tls.domain); err != nil {
-			return nil, err
-		}
+	if err := validateDomain(o.tls.domain); err != nil {
+		return nil, err
 	}
 
 	if o.tls.email != "" {
@@ -86,12 +84,12 @@ func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
 	}
 
 	// 3. non-tls traffic.
-	return nil, nil
+	return nil, ongErrors.New("ong only serves https")
 }
 
 func validateDomain(domain string) error {
 	if len(domain) < 1 {
-		return ongErrors.New("domain cannot be empty if email/certFile is also specified")
+		return ongErrors.New("domain cannot be empty")
 	}
 	if strings.Count(domain, "*") > 1 {
 		return ongErrors.New("domain can only contain one wildcard character")
