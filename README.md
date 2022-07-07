@@ -36,35 +36,31 @@ import (
 )
 
 func main() {
-	api := myAPI{db:"someDb", l: someLogger}
+	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := server.NewMux(
-		middleware.WithOpts("localhost", 8081),
+		l,
+		middleware.WithOpts("localhost", 8081, l),
 		server.Routes{
 		    server.NewRoute(
-			    "check/",
+			    "hello/",
 			    server.MethodGet,
-			    api.check("hello world"),
+			    hello("hello world"),
 		   ),
 	    })
 
     _, _ = server.CreateDevCertKey()
 	err := server.Run(mux, server.DevOpts())
 	if err != nil {
-		mux.GetLogger().Error(err, log.F{"msg": "server.Run error"})
+		fmt.Prinln(err)
 		os.Exit(1)
 	}
 }
 
-type myAPI struct {
-	db string
-	l  log.Logger
-}
-
-func (s myAPI) check(msg string) http.HandlerFunc {
+func hello(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
-		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
+		fmt.Printf("hello called cspNonce: %s, csrfToken: %s", cspNonce, csrfToken)
 
 		// use msg, which is a dependency specific to this handler
 		fmt.Fprint(w, msg)
