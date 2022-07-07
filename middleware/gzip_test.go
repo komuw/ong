@@ -95,6 +95,30 @@ func login() http.HandlerFunc {
 	}
 }
 
+func readBody(t *testing.T, res *http.Response) (strBody string) {
+	t.Helper()
+
+	defer res.Body.Close()
+	body := res.Body
+
+	if res.Header.Get(contentEncodingHeader) == "gzip" {
+		// the body is gzipped.
+		reader, err := gzip.NewReader(body)
+		attest.Ok(t, err)
+		defer reader.Close()
+		rb, err := io.ReadAll(reader)
+		attest.Ok(t, err)
+		strBody = string(rb)
+	} else {
+		// body is gzipped
+		rb, err := io.ReadAll(body)
+		attest.Ok(t, err)
+		strBody = string(rb)
+	}
+
+	return strBody
+}
+
 func TestGzip(t *testing.T) {
 	t.Parallel()
 
@@ -110,13 +134,10 @@ func TestGzip(t *testing.T) {
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
-		defer res.Body.Close()
-
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
+		strBody := readBody(t, res)
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), msg))
+		attest.True(t, strings.Contains(strBody, msg))
 	})
 
 	t.Run("middleware succeds", func(t *testing.T) {
@@ -130,18 +151,11 @@ func TestGzip(t *testing.T) {
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
-		defer res.Body.Close()
-
-		reader, err := gzip.NewReader(res.Body)
-		attest.Ok(t, err)
-		defer reader.Close()
-
-		rb, err := io.ReadAll(reader)
-		attest.Ok(t, err)
+		strBody := readBody(t, res)
 
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), msg))
+		attest.True(t, strings.Contains(strBody, msg))
 	})
 
 	t.Run("http.Flusher is supported and zipped", func(t *testing.T) {
@@ -155,20 +169,13 @@ func TestGzip(t *testing.T) {
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
-		defer res.Body.Close()
-
-		reader, err := gzip.NewReader(res.Body)
-		attest.Ok(t, err)
-		defer reader.Close()
-
-		rb, err := io.ReadAll(reader)
-		attest.Ok(t, err)
+		strBody := readBody(t, res)
 
 		attest.True(t, rec.Flushed)
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), msg))
-		attest.True(t, strings.Contains(string(rb), "FlusherCalled"))
+		attest.True(t, strings.Contains(strBody, msg))
+		attest.True(t, strings.Contains(strBody, "FlusherCalled"))
 	})
 
 	t.Run("http.Flusher is supported and small is not zipped", func(t *testing.T) {
@@ -182,16 +189,13 @@ func TestGzip(t *testing.T) {
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
-		defer res.Body.Close()
-
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
+		strBody := readBody(t, res)
 
 		attest.True(t, rec.Flushed)
 		attest.NotZero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), msg))
-		attest.True(t, strings.Contains(string(rb), "FlusherCalled"))
+		attest.True(t, strings.Contains(strBody, msg))
+		attest.True(t, strings.Contains(strBody, "FlusherCalled"))
 	})
 
 	t.Run("without gzip acceptEncoding not zipped", func(t *testing.T) {
@@ -205,14 +209,11 @@ func TestGzip(t *testing.T) {
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
-		defer res.Body.Close()
-
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
+		strBody := readBody(t, res)
 
 		attest.Zero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), msg))
+		attest.True(t, strings.Contains(strBody, msg))
 	})
 
 	t.Run("issues/81", func(t *testing.T) {
@@ -226,19 +227,11 @@ func TestGzip(t *testing.T) {
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
-		defer res.Body.Close()
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-
-		reader, err := gzip.NewReader(res.Body)
-		attest.Ok(t, err)
-		defer reader.Close()
-
-		rb, err := io.ReadAll(reader)
-		attest.Ok(t, err)
+		strBody := readBody(t, res)
 
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), "Welcome to awesome website."))
+		attest.True(t, strings.Contains(strBody, "Welcome to awesome website."))
 	})
 
 	t.Run("issues/81", func(t *testing.T) {
@@ -252,19 +245,11 @@ func TestGzip(t *testing.T) {
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
-		defer res.Body.Close()
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-
-		reader, err := gzip.NewReader(res.Body)
-		attest.Ok(t, err)
-		defer reader.Close()
-
-		rb, err := io.ReadAll(reader)
-		attest.Ok(t, err)
+		strBody := readBody(t, res)
 
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(string(rb), "Welcome to awesome website."))
+		attest.True(t, strings.Contains(strBody, "Welcome to awesome website."))
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -282,18 +267,11 @@ func TestGzip(t *testing.T) {
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
-			defer res.Body.Close()
-
-			reader, err := gzip.NewReader(res.Body)
-			attest.Ok(t, err)
-			defer reader.Close()
-
-			rb, err := io.ReadAll(reader)
-			attest.Ok(t, err)
+			strBody := readBody(t, res)
 
 			attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.True(t, strings.Contains(string(rb), msg))
+			attest.True(t, strings.Contains(strBody, msg))
 		}
 
 		wg := &sync.WaitGroup{}
