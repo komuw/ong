@@ -120,6 +120,11 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		grw.Header().Set(contentTypeHeader, ct)
 	}
 
+	// TODO: add this after benchmarking.
+	// if len(grw.buf) < 1000 {
+	// 	return len(b), nil
+	// }
+
 	// gzip response.
 	if err := grw.handleGzipped(); err != nil {
 		return 0, err
