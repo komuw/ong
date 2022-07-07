@@ -67,8 +67,6 @@ type gzipRW struct {
 	http.ResponseWriter
 	gw *gzip.Writer
 
-	code int // Saves the WriteHeader value.
-
 	buf []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 
 	handledZip bool // whether this has yet to handle a zipped response.
@@ -135,12 +133,6 @@ func (grw *gzipRW) handleNonGzipped() error {
 	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
 	grw.Header().Del(acceptRangesHeader)
 
-	if grw.code != 0 {
-		grw.ResponseWriter.WriteHeader(grw.code)
-		// Ensure that no other WriteHeader's happen
-		grw.code = 0
-	}
-
 	// If Write was never called then don't call Write on the underlying ResponseWriter.
 	if len(grw.buf) == 0 {
 		return nil
@@ -167,13 +159,6 @@ func (grw *gzipRW) handleGzipped() error {
 	// see: https://github.com/nytimes/gziphandler/issues/83
 	grw.Header().Del(acceptRangesHeader)
 
-	// Write the header to gzip response.
-	if grw.code != 0 {
-		grw.ResponseWriter.WriteHeader(grw.code)
-		// Ensure that no other WriteHeader's happen
-		grw.code = 0
-	}
-
 	// Flush the buffer into the gzip response if there are any bytes.
 	// If there aren't any, we shouldn't initialize it yet because on Close it will
 	// write the gzip header even if nothing was ever written.
@@ -183,13 +168,6 @@ func (grw *gzipRW) handleGzipped() error {
 		return err
 	}
 	return nil
-}
-
-// WriteHeader just saves the response code until close or GZIP effective writes.
-func (grw *gzipRW) WriteHeader(statusCode int) {
-	if grw.code == 0 {
-		grw.code = statusCode
-	}
 }
 
 // Close will close the gzip.Writer.
