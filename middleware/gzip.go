@@ -94,13 +94,6 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 
 	ct := ""
 	{
-		nonGzipped := func() (int, error) {
-			if err := grw.handleNonGzipped(); err != nil {
-				return 0, err
-			}
-			return len(b), nil
-		}
-
 		// Only continue if they didn't already choose an encoding.
 		var shouldNotUseGzip bool = !grw.handledZip && grw.Header().Get(contentEncodingHeader) != "" || grw.Header().Get(contentRangeHeader) != ""
 		// this is expensive, so we should probably just check shouldNotUseGzip and return
@@ -109,9 +102,8 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 			ct = http.DetectContentType(grw.buf)
 		}
 		shouldNotUseGzip = !shouldGzipCt(ct) || shouldNotUseGzip
-
 		if shouldNotUseGzip {
-			return nonGzipped()
+			return grw.handleNonGzipped(len(b))
 		}
 	}
 
@@ -127,31 +119,30 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 		// }
 
 		// gzip response.
-		if err := grw.handleGzipped(); err != nil {
-			return 0, err
-		}
-		return len(b), nil
+		return grw.handleGzipped(len(b))
 	}
 }
 
 // handleNonGzipped writes to the underlying ResponseWriter without gzip.
-func (grw *gzipRW) handleNonGzipped() error {
+func (grw *gzipRW) handleNonGzipped(lenB int) (int, error) {
 	grw.handledZip = false
 	// We need to do it even in this case because the Gzip handler has already stripped the range header anyway.
 	grw.Header().Del(acceptRangesHeader)
 
 	// If Write was never called then don't call Write on the underlying ResponseWriter.
 	if len(grw.buf) == 0 {
-		return nil
+		return lenB, nil
 	}
 	_, err := grw.ResponseWriter.Write(grw.buf)
-
 	grw.buf = grw.buf[:0]
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return lenB, nil
 }
 
 // handleGzipped initializes a GZIP writer and writes the buffer.
-func (grw *gzipRW) handleGzipped() error {
+func (grw *gzipRW) handleGzipped(lenB int) (int, error) {
 	grw.handledZip = true
 
 	// Set the GZIP header.
@@ -172,16 +163,19 @@ func (grw *gzipRW) handleGzipped() error {
 	if len(grw.buf) > 0 {
 		_, err := grw.gw.Write(grw.buf)
 		grw.buf = grw.buf[:0]
-		return err
+		if err != nil {
+			return 0, err
+		}
 	}
-	return nil
+	return lenB, nil
 }
 
 // Close will close the gzip.Writer.
 func (grw *gzipRW) Close() error {
 	if !grw.handledZip {
 		// GZIP not triggered yet, write out regular response.
-		return grw.handleNonGzipped()
+		_, err := grw.handleNonGzipped(len(grw.buf))
+		return err
 	}
 
 	return grw.gw.Close()
