@@ -108,18 +108,13 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	{
-		// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
-		if _, ok := grw.Header()[contentTypeHeader]; !ok && ct != "" {
-			grw.Header().Set(contentTypeHeader, ct)
-		}
-
 		// TODO: add this after benchmarking.
 		// if len(grw.buf) < 1000 {
 		// 	return len(b), nil
 		// }
 
 		// gzip response.
-		return grw.handleGzipped(len(b))
+		return grw.handleGzipped(ct, len(b))
 	}
 }
 
@@ -142,8 +137,13 @@ func (grw *gzipRW) handleNonGzipped(lenB int) (int, error) {
 }
 
 // handleGzipped initializes a GZIP writer and writes the buffer.
-func (grw *gzipRW) handleGzipped(lenB int) (int, error) {
+func (grw *gzipRW) handleGzipped(ct string, lenB int) (int, error) {
 	grw.handledZip = true
+
+	// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
+	if _, ok := grw.Header()[contentTypeHeader]; !ok && ct != "" {
+		grw.Header().Set(contentTypeHeader, ct)
+	}
 
 	// Set the GZIP header.
 	grw.Header().Set(contentEncodingHeader, thisMiddlewareEncoding)
