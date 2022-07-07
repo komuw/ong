@@ -40,13 +40,17 @@ func someLogHandler(successMsg string) http.HandlerFunc {
 func TestLogMiddleware(t *testing.T) {
 	t.Parallel()
 
+	getLogger := func(w io.Writer) log.Logger {
+		return log.New(context.Background(), w, 500)
+	}
+
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, logOutput)
+		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -76,7 +80,7 @@ func TestLogMiddleware(t *testing.T) {
 		errorMsg := "someLogHandler failed"
 		successMsg := "hello"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, logOutput)
+		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -117,7 +121,7 @@ func TestLogMiddleware(t *testing.T) {
 		successMsg := "hello"
 		errorMsg := "someLogHandler failed"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, logOutput)
+		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		{
 			// first request that succeds
@@ -215,7 +219,7 @@ func TestLogMiddleware(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, logOutput)
+		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		someLogID := "hey-some-log-id:" + id.New()
 
@@ -253,7 +257,7 @@ func TestLogMiddleware(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Log(someLogHandler(successMsg), domain, logOutput)
+		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

@@ -1,9 +1,7 @@
 package server
 
 import (
-	"context"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/komuw/ong/log"
@@ -53,9 +51,9 @@ type mux struct {
 }
 
 // NewMux creates a new mux.
-func NewMux(opt middleware.Opts, rts Routes) *mux {
+func NewMux(l log.Logger, opt middleware.Opts, rts Routes) *mux {
 	m := &mux{
-		l:      log.New(context.Background(), os.Stdout, 1000),
+		l:      l,
 		router: http.NewServeMux(),
 	}
 

@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 )
 
@@ -153,6 +156,8 @@ func TestServer(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
@@ -167,7 +172,8 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := NewMux(
-			middleware.WithOpts("localhost", port),
+			l,
+			middleware.WithOpts("localhost", port, l),
 			Routes{
 				NewRoute(
 					uri,
@@ -232,7 +238,8 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := NewMux(
-			middleware.WithOpts("localhost", port),
+			l,
+			middleware.WithOpts("localhost", port, l),
 			Routes{
 				NewRoute(
 					uri,

@@ -20,9 +20,10 @@ import (
 
 func main() {
 	api := NewMyApi("someDb")
-
+	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := server.NewMux(
-		middleware.WithOpts("localhost", 8081),
+		l,
+		middleware.WithOpts("localhost", 8081, l),
 		server.Routes{
 			server.NewRoute(
 				"/api",
