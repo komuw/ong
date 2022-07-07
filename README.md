@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/komuw/ong/branch/main/graph/badge.svg)](https://codecov.io/gh/komuw/ong)
 
 
-Ong is a small web toolkit. 
+Ong is a small http toolkit. 
 
 It's name is derived from Tanzanian artiste, [Remmy Ongala](https://en.wikipedia.org/wiki/Remmy_Ongala).
 
