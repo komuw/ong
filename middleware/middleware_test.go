@@ -336,8 +336,7 @@ func TestMiddlewareServer(t *testing.T) {
 func someBenchmarkAllMiddlewaresHandler() http.HandlerFunc {
 	// bound stack growth.
 	// see: https://github.com/komuw/ong/issues/54
-	iterations := int(1.5 * defaultMinSize)
-	msg := strings.Repeat("hello world", iterations)
+	msg := strings.Repeat("hello world", 2)
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, msg)
 	}
