@@ -35,3 +35,4 @@ Most recent version is listed first.
 - remove http: https://github.com/komuw/ong/pull/79
 - make the redirector a proper middleware: https://github.com/komuw/ong/pull/80
 - bugfix, gzip error: https://github.com/komuw/ong/pull/82
+- gzip almost everthing: https://github.com/komuw/ong/pull/83
