@@ -92,44 +92,46 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	// On the first write, w.buf changes from nil to a valid slice
 	grw.buf = append(grw.buf, b...)
 
-	nonGzipped := func() (int, error) {
-		if err := grw.handleNonGzipped(); err != nil {
+	ct := ""
+	{
+		nonGzipped := func() (int, error) {
+			if err := grw.handleNonGzipped(); err != nil {
+				return 0, err
+			}
+			return len(b), nil
+		}
+
+		// Only continue if they didn't already choose an encoding.
+		var shouldNotUseGzip bool = !grw.handledZip && grw.Header().Get(contentEncodingHeader) != "" || grw.Header().Get(contentRangeHeader) != ""
+		// this is expensive, so we should probably just check shouldNotUseGzip and return
+		if ct = grw.Header().Get(contentTypeHeader); ct == "" {
+			// If a Content-Type wasn't specified, infer it from the current buffer.
+			ct = http.DetectContentType(grw.buf)
+		}
+		shouldNotUseGzip = !shouldGzipCt(ct) || shouldNotUseGzip
+
+		if shouldNotUseGzip {
+			return nonGzipped()
+		}
+	}
+
+	{
+		// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
+		if _, ok := grw.Header()[contentTypeHeader]; !ok && ct != "" {
+			grw.Header().Set(contentTypeHeader, ct)
+		}
+
+		// TODO: add this after benchmarking.
+		// if len(grw.buf) < 1000 {
+		// 	return len(b), nil
+		// }
+
+		// gzip response.
+		if err := grw.handleGzipped(); err != nil {
 			return 0, err
 		}
 		return len(b), nil
 	}
-
-	// Only continue if they didn't already choose an encoding .
-	if !grw.handledZip &&
-		grw.Header().Get(contentEncodingHeader) != "" ||
-		grw.Header().Get(contentRangeHeader) != "" {
-		return nonGzipped()
-	}
-
-	ct := ""
-	if ct = grw.Header().Get(contentTypeHeader); ct == "" {
-		// If a Content-Type wasn't specified, infer it from the current buffer.
-		ct = http.DetectContentType(grw.buf)
-	}
-	if !shouldGzipCt(ct) {
-		return nonGzipped()
-	}
-
-	// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
-	if _, ok := grw.Header()[contentTypeHeader]; !ok && ct != "" {
-		grw.Header().Set(contentTypeHeader, ct)
-	}
-
-	// TODO: add this after benchmarking.
-	// if len(grw.buf) < 1000 {
-	// 	return len(b), nil
-	// }
-
-	// gzip response.
-	if err := grw.handleGzipped(); err != nil {
-		return 0, err
-	}
-	return len(b), nil
 }
 
 // handleNonGzipped writes to the underlying ResponseWriter without gzip.
