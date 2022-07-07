@@ -36,3 +36,4 @@ Most recent version is listed first.
 - make the redirector a proper middleware: https://github.com/komuw/ong/pull/80
 - bugfix, gzip error: https://github.com/komuw/ong/pull/82
 - gzip almost everthing: https://github.com/komuw/ong/pull/83
+- pass logger as an arg to the middlewares: https://github.com/komuw/ong/pull/84

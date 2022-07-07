@@ -4,9 +4,9 @@ package middleware
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"os"
+
+	"github.com/komuw/ong/log"
 )
 
 // ongMiddlewareErrorHeader is a http header that is set by Ong
@@ -23,7 +23,7 @@ type Opts struct {
 	allowedOrigins []string
 	allowedMethods []string
 	allowedHeaders []string
-	logOutput      io.Writer
+	l              log.Logger
 }
 
 // NewOpts returns a new opts.
@@ -33,7 +33,7 @@ func NewOpts(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
-	logOutput io.Writer,
+	l log.Logger,
 ) Opts {
 	return Opts{
 		domain:         domain,
@@ -41,13 +41,13 @@ func NewOpts(
 		allowedOrigins: allowedOrigins,
 		allowedMethods: allowedMethods,
 		allowedHeaders: allowedHeaders,
-		logOutput:      logOutput,
+		l:              l,
 	}
 }
 
 // WithOpts returns a new opts that has sensible defaults.
-func WithOpts(domain string, httpsPort uint16) Opts {
-	return NewOpts(domain, httpsPort, nil, nil, nil, os.Stdout)
+func WithOpts(domain string, httpsPort uint16, l log.Logger) Opts {
+	return NewOpts(domain, httpsPort, nil, nil, nil, l)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -64,7 +64,7 @@ func allDefaultMiddlewares(
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
-	logOutput := o.logOutput
+	logger := o.l
 
 	// The way the middlewares are layered is:
 	// 1. Panic on the outer since we want it to watch all other middlewares.
@@ -104,9 +104,9 @@ func allDefaultMiddlewares(
 				),
 			),
 			domain,
-			logOutput,
+			logger,
 		),
-		logOutput,
+		logger,
 	)
 }
 

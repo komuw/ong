@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/komuw/ong/log"
@@ -13,12 +12,12 @@ import (
 
 // Panic is a middleware that recovers from panics in wrappedHandler.
 // It logs the stack trace and returns an InternalServerError response.
-func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFunc {
+func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			err := recover()
 			if err != nil {
-				logger := log.New(r.Context(), logOutput, 5*60*15).WithCaller()
+				reqL := l.WithCtx(r.Context()).WithCaller()
 
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)
@@ -42,9 +41,9 @@ func Panic(wrappedHandler http.HandlerFunc, logOutput io.Writer) http.HandlerFun
 				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
 				if e, ok := err.(error); ok {
-					logger.Error(e, flds)
+					reqL.Error(e, flds)
 				} else {
-					logger.Error(nil, flds)
+					reqL.Error(nil, flds)
 				}
 			}
 		}()

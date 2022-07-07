@@ -27,8 +27,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"sync"
-	"time"
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -36,35 +34,31 @@ import (
 )
 
 func main() {
-	api := myAPI{db:"someDb", l: someLogger}
+	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := server.NewMux(
-		middleware.WithOpts("localhost", 8081),
+		l,
+		middleware.WithOpts("localhost", 8081, l),
 		server.Routes{
-		    server.NewRoute(
-			    "check/",
-			    server.MethodGet,
-			    api.check("hello world"),
-		   ),
-	    })
+			server.NewRoute(
+				"hello/",
+				server.MethodGet,
+				hello("hello world"),
+			),
+		})
 
-    _, _ = server.CreateDevCertKey()
-	err := server.Run(mux, server.DevOpts())
+	_, _ = server.CreateDevCertKey()
+	err := server.Run(mux, server.DevOpts(), l)
 	if err != nil {
-		mux.GetLogger().Error(err, log.F{"msg": "server.Run error"})
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-type myAPI struct {
-	db string
-	l  log.Logger
-}
-
-func (s myAPI) check(msg string) http.HandlerFunc {
+func hello(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
-		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
+		fmt.Printf("hello called cspNonce: %s, csrfToken: %s", cspNonce, csrfToken)
 
 		// use msg, which is a dependency specific to this handler
 		fmt.Fprint(w, msg)
@@ -79,7 +73,7 @@ To use tls with certificates from letsencrypt:
 ```go
 email := "admin@example.com"
 domain := "*.example.com"
-err := server.Run(mux, server.LetsEncryptOpts(email, domain))
+err := server.Run(mux, server.LetsEncryptOpts(email, domain), l)
 ```
 
 

@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -9,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 )
 
@@ -26,13 +29,15 @@ func TestMux(t *testing.T) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
 	t.Run("unknown uri", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
 		mux := NewMux(
-			middleware.WithOpts("localhost", 443),
+			l,
+			middleware.WithOpts("localhost", 443, l),
 			Routes{
 				NewRoute(
 					"/api",
@@ -58,7 +63,8 @@ func TestMux(t *testing.T) {
 		uri := "/api/" // forward slash at suffix is important.
 		msg := "hello world"
 		mux := NewMux(
-			middleware.WithOpts("localhost", 443),
+			l,
+			middleware.WithOpts("localhost", 443, l),
 			Routes{
 				NewRoute(
 					uri,
@@ -101,7 +107,8 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		uri := "/api"
 		mux := NewMux(
-			middleware.WithOpts("localhost", 443),
+			l,
+			middleware.WithOpts("localhost", 443, l),
 			Routes{
 				NewRoute(
 					uri,

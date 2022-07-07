@@ -20,9 +20,10 @@ import (
 
 func main() {
 	api := NewMyApi("someDb")
-
+	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := server.NewMux(
-		middleware.WithOpts("localhost", 8081),
+		l,
+		middleware.WithOpts("localhost", 8081, l),
 		server.Routes{
 			server.NewRoute(
 				"/api",
@@ -47,11 +48,9 @@ func main() {
 		})
 
 	_, _ = server.CreateDevCertKey()
-	err := server.Run(mux, server.DevOpts())
+	err := server.Run(mux, server.DevOpts(), l)
 	if err != nil {
-		mux.GetLogger().Error(err, log.F{
-			"msg": "server.Run error",
-		})
+		l.Error(err, log.F{"msg": "server.Run error"})
 		os.Exit(1)
 	}
 }
