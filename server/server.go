@@ -20,12 +20,6 @@ import (
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
-// extendedHandler is a http.Handler
-type extendedHandler interface {
-	GetLogger() log.Logger
-	ServeHTTP(http.ResponseWriter, *http.Request)
-}
-
 type tlsOpts struct {
 	// if certFile is present, tls will be served from certificates on disk.
 	certFile string
@@ -160,13 +154,13 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) opts {
 //
 // The server shuts down cleanly after receiving any terminating signal.
 // If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
-func Run(eh extendedHandler, o opts) error {
+func Run(h http.Handler, o opts, l log.Logger) error {
 	setRlimit()
 	_, _ = maxprocs.Set()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	logger := eh.GetLogger().WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
+	logger := l.WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
 
 	tlsConf, errTc := getTlsConfig(o, logger)
 	if errTc != nil {
@@ -181,7 +175,7 @@ func Run(eh extendedHandler, o opts) error {
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
 		Handler: http.TimeoutHandler(
-			eh,
+			h,
 			o.handlerTimeout,
 			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
 		),

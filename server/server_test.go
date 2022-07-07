@@ -185,7 +185,7 @@ func TestServer(t *testing.T) {
 		go func() {
 			_, _ = CreateDevCertKey()
 			time.Sleep(1 * time.Second)
-			err := Run(mux, DevOpts())
+			err := Run(mux, DevOpts(), l)
 			attest.Ok(t, err)
 		}()
 
@@ -250,7 +250,7 @@ func TestServer(t *testing.T) {
 
 		go func() {
 			certFile, keyFile := CreateDevCertKey()
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"))
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
 			attest.Ok(t, err)
 		}()
 

@@ -48,11 +48,9 @@ func main() {
 		})
 
 	_, _ = server.CreateDevCertKey()
-	err := server.Run(mux, server.DevOpts())
+	err := server.Run(mux, server.DevOpts(), l)
 	if err != nil {
-		mux.GetLogger().Error(err, log.F{
-			"msg": "server.Run error",
-		})
+		l.Error(err, log.F{"msg": "server.Run error"})
 		os.Exit(1)
 	}
 }

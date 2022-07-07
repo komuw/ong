@@ -44,7 +44,7 @@ func NewRoute(
 // Routes is a list of all the route for an application.
 type Routes []route
 
-// mux implements server.extendedHandler
+// mux implements http.Handler
 type mux struct {
 	l      log.Logger
 	router *http.ServeMux // some router
@@ -87,10 +87,6 @@ func NewMux(l log.Logger, opt middleware.Opts, rts Routes) *mux {
 // ServeHTTP implements a http.Handler
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.ServeHTTP(w, r)
-}
-
-func (m *mux) GetLogger() log.Logger {
-	return m.l
 }
 
 func (m *mux) addPattern(pattern string, handler func(http.ResponseWriter, *http.Request)) {
