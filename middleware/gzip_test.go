@@ -241,6 +241,32 @@ func TestGzip(t *testing.T) {
 		attest.True(t, strings.Contains(string(rb), "Welcome to awesome website."))
 	})
 
+	t.Run("issues/81", func(t *testing.T) {
+		t.Parallel()
+
+		wrappedHandler := Gzip(login())
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+
+		reader, err := gzip.NewReader(res.Body)
+		attest.Ok(t, err)
+		defer reader.Close()
+
+		rb, err := io.ReadAll(reader)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.True(t, strings.Contains(string(rb), "Welcome to awesome website."))
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
