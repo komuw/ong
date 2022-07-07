@@ -140,7 +140,8 @@ func (grw *gzipRW) handleNonGzipped(lenB int) (int, error) {
 func (grw *gzipRW) handleGzipped(ct string, lenB int) (int, error) {
 	grw.handledZip = true
 
-	// Set the header only if the key does not exist. There are some cases where a nil content-type is set intentionally(eg some http/fs)
+	// Set the header only if the key does not exist.
+	// There are some cases where a nil content-type is set intentionally(eg some http/fs)
 	if _, ok := grw.Header()[contentTypeHeader]; !ok && ct != "" {
 		grw.Header().Set(contentTypeHeader, ct)
 	}
