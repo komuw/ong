@@ -34,3 +34,4 @@ Most recent version is listed first.
 - dont require csrf for POST requests that have no cookies and arent http auth: https://github.com/komuw/ong/pull/77
 - remove http: https://github.com/komuw/ong/pull/79
 - make the redirector a proper middleware: https://github.com/komuw/ong/pull/80
+- bugfix, gzip error: https://github.com/komuw/ong/pull/82

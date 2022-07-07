@@ -3,6 +3,7 @@ package middleware
 import (
 	"compress/gzip"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -41,6 +42,58 @@ func handlerImplementingFlush(msg string, iterations int) http.HandlerFunc {
 			msg = strings.Repeat(msg, iterations)
 			fmt.Fprint(w, msg)
 		}
+	}
+}
+
+func login() http.HandlerFunc {
+	tmpl, err := template.New("myTpl").Parse(`<!DOCTYPE html>
+<html>
+
+<body>
+	<h2>Welcome to awesome website.</h2>
+	<form method="POST">
+	<label>Email:</label><br>
+	<input type="text" id="email" name="email"><br>
+	<label>First Name:</label><br>
+	<input type="text" id="firstName" name="firstName"><br>
+
+	<input type="hidden" id="{{.CsrfTokenName}}" name="{{.CsrfTokenName}}" value="{{.CsrfTokenValue}}"><br>
+	<input type="submit">
+	</form>
+
+	<script nonce="{{.CspNonceValue}}">
+	console.log("hello world");
+	</script>
+
+</body>
+
+</html>`)
+	if err != nil {
+		panic(err)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			data := struct {
+				CsrfTokenName  string
+				CsrfTokenValue string
+				CspNonceValue  string
+			}{
+				CsrfTokenName:  CsrfTokenFormName,
+				CsrfTokenValue: GetCsrfToken(r.Context()),
+				CspNonceValue:  GetCspNonce(r.Context()),
+			}
+			if err = tmpl.Execute(w, data); err != nil {
+				panic(err)
+			}
+			return
+		}
+
+		if err = r.ParseForm(); err != nil {
+			panic(err)
+		}
+
+		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
 	}
 }
 
@@ -188,6 +241,32 @@ func TestGzip(t *testing.T) {
 		attest.Zero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), strings.Repeat(msg, iterations))
+	})
+
+	t.Run("issues/81", func(t *testing.T) {
+		t.Parallel()
+
+		wrappedHandler := Gzip(login())
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+
+		reader, err := gzip.NewReader(res.Body)
+		attest.Ok(t, err)
+		defer reader.Close()
+
+		rb, err := io.ReadAll(reader)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.True(t, strings.Contains(string(rb), "Welcome to awesome website."))
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

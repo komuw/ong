@@ -27,13 +27,14 @@ const (
 	//  (even if you compress something from 1300bytes to 800bytes, it still gets transmitted in 1500bytes MTU; so u have done zero work.)
 	defaultMinSize = 150
 
-	acceptEncodingHeader  = "Accept-Encoding"
-	contentEncodingHeader = "Content-Encoding"
-	contentRangeHeader    = "Content-Range"
-	acceptRangesHeader    = "Accept-Ranges"
-	contentTypeHeader     = "Content-Type"
-	contentLengthHeader   = "Content-Length"
-	rangeHeader           = "Range"
+	acceptEncodingHeader   = "Accept-Encoding"
+	contentEncodingHeader  = "Content-Encoding"
+	contentRangeHeader     = "Content-Range"
+	acceptRangesHeader     = "Accept-Ranges"
+	contentTypeHeader      = "Content-Type"
+	contentLengthHeader    = "Content-Length"
+	rangeHeader            = "Range"
+	thisMiddlewareEncoding = "gzip"
 )
 
 // Gzip is a middleware that transparently gzips the response body, for clients which support.
@@ -113,7 +114,9 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	// Only continue if they didn't already choose an encoding .
-	if grw.Header().Get(contentEncodingHeader) != "" || grw.Header().Get(contentRangeHeader) != "" {
+	if grw.Header().Get(contentEncodingHeader) != "" &&
+		grw.Header().Get(contentEncodingHeader) != thisMiddlewareEncoding ||
+		grw.Header().Get(contentRangeHeader) != "" {
 		return nonGzipped()
 	}
 
@@ -182,7 +185,7 @@ func (grw *gzipRW) handleGzipped() error {
 	grw.handledZip = true
 
 	// Set the GZIP header.
-	grw.Header().Set(contentEncodingHeader, "gzip")
+	grw.Header().Set(contentEncodingHeader, thisMiddlewareEncoding)
 
 	// if the Content-Length is already set, then calls to Write on gzip
 	// will fail to set the Content-Length header since its already set
@@ -281,7 +284,7 @@ func shouldGzipReq(r *http.Request) bool {
 		return false
 	}
 
-	if strings.Contains(r.Header.Get(acceptEncodingHeader), "gzip") {
+	if strings.Contains(r.Header.Get(acceptEncodingHeader), thisMiddlewareEncoding) {
 		return true
 	}
 
