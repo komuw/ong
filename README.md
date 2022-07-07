@@ -27,8 +27,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"sync"
-	"time"
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -41,17 +39,17 @@ func main() {
 		l,
 		middleware.WithOpts("localhost", 8081, l),
 		server.Routes{
-		    server.NewRoute(
-			    "hello/",
-			    server.MethodGet,
-			    hello("hello world"),
-		   ),
-	    })
+			server.NewRoute(
+				"hello/",
+				server.MethodGet,
+				hello("hello world"),
+			),
+		})
 
-    _, _ = server.CreateDevCertKey()
+	_, _ = server.CreateDevCertKey()
 	err := server.Run(mux, server.DevOpts())
 	if err != nil {
-		fmt.Prinln(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
