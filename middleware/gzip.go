@@ -108,8 +108,11 @@ func (grw *gzipRW) Write(b []byte) (int, error) {
 	}
 
 	{
-		// TODO: add this after benchmarking.
-		// if len(grw.buf) < 1000 {
+		// todo: enable this in future.
+		// According to our benchmarks, any value of 256/512/1024 bytes would be ideal.
+		// if len(grw.buf) < 256 {
+		// 	// don't call underlying gzip writer if the buffer is not big enough;
+		// 	// wait for it to have enough.
 		// 	return len(b), nil
 		// }
 
@@ -179,7 +182,7 @@ func (grw *gzipRW) Close() error {
 		return err
 	}
 
-	return grw.gw.Close()
+	return grw.gw.Close() // will also call gzip flush()
 }
 
 // Flush flushes the underlying *gzip.Writer and then the
