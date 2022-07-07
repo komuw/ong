@@ -222,6 +222,33 @@ func TestServer(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
 		}
+
+		{
+			// http2.
+
+			tr2 := &http.Transport{
+				// since we are using self-signed certificates, we need to skip verification.
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				// using a non-zero `TLSClientConfig`(as above) disables http2.
+				// so we have to force it.
+				ForceAttemptHTTP2: true,
+			}
+			client2 := &http.Client{Transport: tr2}
+			res, err := client2.Get(fmt.Sprintf(
+				// note: the https scheme.
+				"https://127.0.0.1:%d%s",
+				port,
+				uri,
+			))
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
