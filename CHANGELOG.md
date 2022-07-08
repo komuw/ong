@@ -37,3 +37,4 @@ Most recent version is listed first.
 - bugfix, gzip error: https://github.com/komuw/ong/pull/82
 - gzip almost everthing: https://github.com/komuw/ong/pull/83
 - pass logger as an arg to the middlewares: https://github.com/komuw/ong/pull/84
+- disable gzip: https://github.com/komuw/ong/pull/86
