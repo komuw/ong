@@ -79,7 +79,7 @@ func allDefaultMiddlewares(
 	//
 	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> HttpsRedirector -> Security -> Cors -> Csrf -> Gzip -> actual-handler
 
-	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for 50MB response.
+	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
 
 	return Panic(
