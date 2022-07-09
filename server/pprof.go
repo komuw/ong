@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
-	"os"
 	"time"
 
 	ongErrors "github.com/komuw/ong/errors"
@@ -17,7 +16,7 @@ import (
 example usage:
   go tool pprof  http://localhost:6060/debug/pprof/heap
 */
-func startPprofServer() {
+func startPprofServer(logger log.Logger) {
 	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
 	//
 	mux := http.NewServeMux()
@@ -29,13 +28,6 @@ func startPprofServer() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	logger := log.New(
-		context.Background(),
-		os.Stdout,
-		1000).
-		WithCtx(ctx).
-		WithImmediate().
-		WithFields(log.F{"pid": os.Getpid()})
 
 	port := 6060
 	addr := fmt.Sprintf("127.0.0.1:%d", port)

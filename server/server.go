@@ -191,7 +191,7 @@ func Run(h http.Handler, o opts, l log.Logger) error {
 	sigHandler(server, ctx, cancel, logger, drainDur)
 
 	{
-		startPprofServer()
+		startPprofServer(logger)
 	}
 
 	err := serve(ctx, server, o, logger)
