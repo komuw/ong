@@ -5,9 +5,9 @@ go 1.18
 require (
 	go.uber.org/automaxprocs v1.5.1
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
-	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
-	golang.org/x/net v0.0.0-20220630215102-69896b714898
-	golang.org/x/sys v0.0.0-20220702020025-31831981b65f
+	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983
+	golang.org/x/net v0.0.0-20220708220712-1185a9018129
+	golang.org/x/sys v0.0.0-20220708085239-5a0f0661e09d
 )
 
 require (
