@@ -92,13 +92,13 @@ func (r *rl) reSize() {
 	_len := len(r.mtb)
 	r.mu.RUnlock()
 
-	if _len < 2_000 {
+	if _len < 10_000 {
 		return
 	}
 
 	r.mu.Lock()
 	// The size of `tb` is ~56bytes. Although `tb` embeds another struct(mutex), that only has two fileds which are ints.
-	// So for 2_000 unique IPs the mem usage is 112KB
+	// So for 10_000 unique IPs the mem usage is 560KB
 	r.mtb = map[string]*tb{}
 	r.mu.Unlock()
 }
