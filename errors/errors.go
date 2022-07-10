@@ -15,7 +15,7 @@ import (
 
 // stackError wraps an error and adds a stack trace.
 type stackError struct {
-	stack []uintptr
+	stack [4]uintptr
 	err   error
 }
 
@@ -38,20 +38,20 @@ func Wrap(err error) *stackError {
 }
 
 func wrap(err error, skip int) *stackError {
-	stack := make([]uintptr, 50)
+	stack := [4]uintptr{}
 	// skip 0 identifies the frame for `runtime.Callers` itself and
 	// skip 1 identifies the caller of `runtime.Callers`(ie of `wrap`).
-	length := runtime.Callers(skip, stack[:])
+	_ = runtime.Callers(skip, stack[:])
 
 	return &stackError{
 		err:   err,
-		stack: stack[:length],
+		stack: stack,
 	}
 }
 
 func (e *stackError) getStackTrace() string {
 	var trace strings.Builder
-	frames := runtime.CallersFrames(e.stack)
+	frames := runtime.CallersFrames(e.stack[:])
 	for {
 		frame, more := frames.Next()
 		if !strings.Contains(frame.File, "runtime/") { // we cant use something like "go/src/runtime/" since it will break for programs built using `go build -trimpath`
