@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -20,9 +21,17 @@ func protectedHandler(msg string) http.HandlerFunc {
 func TestBasicAuth(t *testing.T) {
 	t.Parallel()
 
+	{
+		// small passwd panics.
+		attest.Panics(t, func() {
+			BasicAuth(protectedHandler("hello"), "user", strings.Repeat("a", (minPasswdSize-3)))
+		},
+		)
+	}
+
 	msg := "hello"
 	user := "some-user"
-	passwd := "some-passwd"
+	passwd := "some-long-passwd"
 	wrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
 
 	tests := []struct {
@@ -72,6 +81,7 @@ func TestBasicAuth(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
+			attest.True(t, len(passwd) >= minPasswdSize)
 			attest.Equal(t, res.StatusCode, tt.wantCode)
 		})
 	}
