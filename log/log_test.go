@@ -451,25 +451,28 @@ goarch: amd64
 pkg: github.com/komuw/ong/log
 cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
 
-BenchmarkBestCase/ong/log-8            889.8 ns/op	      41 B/op	       2 allocs/op
-BenchmarkBestCase/rs/zerolog-8           11_360 ns/op	     153 B/op	       0 allocs/op
-BenchmarkBestCase/Zap-8                  22_620 ns/op	     343 B/op	       1 allocs/op
-BenchmarkBestCase/sirupsen/logrus-8      32_635 ns/op	    2112 B/op	      26 allocs/op
+BenchmarkBestCase/no_logger-8             6.950 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBestCase/ong/log-8               902.4 ns/op	      56 B/op	       3 allocs/op
+BenchmarkBestCase/rs/zerolog-8            11_260 ns/op	     150 B/op	       0 allocs/op
+BenchmarkBestCase/Zap-8  	              22_341 ns/op	     343 B/op	       1 allocs/op
+BenchmarkBestCase/sirupsen/logrus-8       32_260 ns/op	    2042 B/op	      26 allocs/op
 */
 // The above benchmark is unfair to the others since ong/log is not logging to a io.writer when all its logging are Info logs.
 
 /*
-BenchmarkAverageCase/rs/zerolog-8        12_513 ns/op	     153 B/op	       0 allocs/op
-BenchmarkAverageCase/Zap-8               21_818 ns/op	     348 B/op	       1 allocs/op
-BenchmarkAverageCase/sirupsen/logrus-8   33_401 ns/op	    1961 B/op	      26 allocs/op
-BenchmarkAverageCase/ong/log-8         172_514 ns/op	    3571 B/op	      42 allocs/op
+BenchmarkAverageCase/no_logger-8           6.797 ns/op	       0 B/op	       0 allocs/op
+BenchmarkAverageCase/rs/zerolog-8          12_249 ns/op	     152 B/op	       0 allocs/op
+BenchmarkAverageCase/Zap-8                 21_539 ns/op	     348 B/op	       1 allocs/op
+BenchmarkAverageCase/sirupsen/logrus-8     33_543 ns/op	    1962 B/op	      26 allocs/op
+BenchmarkAverageCase/ong/log-8             75_640 ns/op	    3369 B/op	      42 allocs/op
 */
 
 /*
-BenchmarkWorstCase/rs/zerolog-8          17_867 ns/op	     303 B/op	       0 allocs/op
-BenchmarkWorstCase/Zap-8                 26_665 ns/op	     688 B/op	       2 allocs/op
-BenchmarkWorstCase/sirupsen/logrus-8     57_033 ns/op	    3663 B/op	      53 allocs/op
-BenchmarkWorstCase/ong/log-8           333_297 ns/op	   10025 B/op	     103 allocs/op
+BenchmarkWorstCase/no_logger-8             6.806 ns/op	       0 B/op	       0 allocs/op
+BenchmarkWorstCase/rs/zerolog-8            17_721 ns/op	     305 B/op	       1 allocs/op
+BenchmarkWorstCase/Zap-8                   26_612 ns/op	     690 B/op	       2 allocs/op
+BenchmarkWorstCase/sirupsen/logrus-8       56_562 ns/op	    3664 B/op	      53 allocs/op
+BenchmarkWorstCase/ong/log-8               167_518 ns/op	8362 B/op	      95 allocs/op
 */
 // The above benchmark is 'more representative' since this time round, ong/log is writing to io.writer for every invocation.
 
@@ -545,6 +548,11 @@ func getMessage() (F, []string) {
 	return f, sl
 }
 
+func noOpFunc(f F) {
+	// func used in the `no logger` benchmark.
+	_ = f
+}
+
 func BenchmarkBestCase(b *testing.B) {
 	f, sl := getMessage()
 	str := fmt.Sprintf("%s", sl)
@@ -583,6 +591,14 @@ func BenchmarkBestCase(b *testing.B) {
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
 			l.Info(f)
+		}
+	})
+
+	b.Run("no logger", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			noOpFunc(f)
 		}
 	})
 }
@@ -643,6 +659,14 @@ func BenchmarkAverageCase(b *testing.B) {
 			}
 		}
 	})
+
+	b.Run("no logger", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			noOpFunc(f)
+		}
+	})
 }
 
 func BenchmarkWorstCase(b *testing.B) {
@@ -689,6 +713,14 @@ func BenchmarkWorstCase(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			l.Info(f)
 			l.Error(logErr, f)
+		}
+	})
+
+	b.Run("no logger", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			noOpFunc(f)
 		}
 	})
 }

@@ -33,7 +33,7 @@ func main() {
 			server.NewRoute(
 				"serveDirectory",
 				server.MethodAll,
-				middleware.BasicAuth(api.handleFileServer(), "user", "passwd"),
+				middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
 			),
 			server.NewRoute(
 				"check/",
