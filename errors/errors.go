@@ -2,7 +2,6 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -13,14 +12,15 @@ import (
 //   (a) https://github.com/golang/pkgsite whose license(BSD 3-Clause "New") can be found here: https://github.com/golang/pkgsite/blob/24f94ffc546bde6aae0552efa6a940041d9d28e1/LICENSE
 //   (b) https://www.komu.engineer/blogs/08/golang-stacktrace
 
-// stackError wraps an error and adds a stack trace.
+// stackError is an error that contains a stack trace.
 type stackError struct {
 	stack [4]uintptr
+	text  string
 	err   error
 }
 
 func (e *stackError) Error() string {
-	return e.err.Error() // ignore the stack
+	return e.text // ignore the stack
 }
 
 func (e *stackError) Unwrap() error {
@@ -29,23 +29,24 @@ func (e *stackError) Unwrap() error {
 
 // New returns an error with the supplied message. New also records the stack trace at the point it was called.
 func New(text string) *stackError {
-	return wrap(errors.New(text), 3)
+	return wrap(text, nil, 3)
 }
 
 // Wrap returns err, capturing a stack trace.
 func Wrap(err error) *stackError {
-	return wrap(err, 3)
+	return wrap(err.Error(), err, 3)
 }
 
-func wrap(err error, skip int) *stackError {
+func wrap(text string, err error, skip int) *stackError {
 	stack := [4]uintptr{}
 	// skip 0 identifies the frame for `runtime.Callers` itself and
 	// skip 1 identifies the caller of `runtime.Callers`(ie of `wrap`).
 	_ = runtime.Callers(skip, stack[:])
 
 	return &stackError{
-		err:   err,
 		stack: stack,
+		text:  text,
+		err:   err,
 	}
 }
 
