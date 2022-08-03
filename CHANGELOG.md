@@ -39,3 +39,4 @@ Most recent version is listed first.
 - pass logger as an arg to the middlewares: https://github.com/komuw/ong/pull/84
 - disable gzip: https://github.com/komuw/ong/pull/86
 - a more efficient error stack trace: https://github.com/komuw/ong/pull/87
+- update github.com/akshayjshah/attest: https://github.com/komuw/ong/pull/93
