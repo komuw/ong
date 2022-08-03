@@ -80,7 +80,7 @@ func TestPanic(t *testing.T) {
 			"logID",
 			http.MethodGet,
 		} {
-			attest.True(t, strings.Contains(logOutput.String(), v))
+			attest.Subsequence(t, logOutput.String(), v)
 		}
 		attest.False(t, strings.Contains(logOutput.String(), "stack"))
 	})
@@ -111,9 +111,9 @@ func TestPanic(t *testing.T) {
 			http.MethodGet,
 			"stack",
 		} {
-			attest.True(t, strings.Contains(logOutput.String(), v), attest.Sprintf("`%s` was not found", v))
+			attest.Subsequence(t, logOutput.String(), v, attest.Sprintf("`%s` was not found", v))
 		}
-		attest.True(t, strings.Contains(logOutput.String(), "stack"))
+		attest.Subsequence(t, logOutput.String(), "stack")
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

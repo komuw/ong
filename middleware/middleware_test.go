@@ -209,7 +209,7 @@ func TestAllMiddleware(t *testing.T) {
 			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, tt.expectedStatusCode)
-			attest.True(t, strings.Contains(string(rb), tt.expectedMsg))
+			attest.Subsequence(t, string(rb), tt.expectedMsg)
 		})
 	}
 }

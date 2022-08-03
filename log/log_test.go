@@ -125,7 +125,7 @@ func TestLogger(t *testing.T) {
 		msg := "oops, Houston we got 99 problems."
 		l.Error(errors.New(msg))
 
-		attest.True(t, strings.Contains(w.String(), msg))
+		attest.Subsequence(t, w.String(), msg)
 	})
 
 	t.Run("info logs are flushed on error", func(t *testing.T) {
@@ -140,8 +140,8 @@ func TestLogger(t *testing.T) {
 		errMsg := "oops, Houston we got 99 problems."
 		l.Error(errors.New(errMsg))
 
-		attest.True(t, strings.Contains(w.String(), infoMsg))
-		attest.True(t, strings.Contains(w.String(), errMsg))
+		attest.Subsequence(t, w.String(), infoMsg)
+		attest.Subsequence(t, w.String(), errMsg)
 	})
 
 	t.Run("neccesary fields added", func(t *testing.T) {
@@ -157,10 +157,10 @@ func TestLogger(t *testing.T) {
 			l.Error(errors.New("bad"))
 
 			id := GetId(l.ctx)
-			attest.True(t, strings.Contains(w.String(), id))
-			attest.True(t, strings.Contains(w.String(), "level"))
-			attest.True(t, strings.Contains(w.String(), "stack"))
-			attest.True(t, strings.Contains(w.String(), "err"))
+			attest.Subsequence(t, w.String(), id)
+			attest.Subsequence(t, w.String(), "level")
+			attest.Subsequence(t, w.String(), "stack")
+			attest.Subsequence(t, w.String(), "err")
 			attest.False(t, strings.Contains(w.String(), "line")) // line not added
 		}
 
@@ -171,11 +171,11 @@ func TestLogger(t *testing.T) {
 			l.Error(errors.New(errMsg))
 
 			id := GetId(l.ctx)
-			attest.True(t, strings.Contains(w.String(), id))
-			attest.True(t, strings.Contains(w.String(), "level"))
-			attest.True(t, strings.Contains(w.String(), "stack"))
-			attest.True(t, strings.Contains(w.String(), "err"))
-			attest.True(t, strings.Contains(w.String(), "line")) // line added
+			attest.Subsequence(t, w.String(), id)
+			attest.Subsequence(t, w.String(), "level")
+			attest.Subsequence(t, w.String(), "stack")
+			attest.Subsequence(t, w.String(), "err")
+			attest.Subsequence(t, w.String(), "line") // line added
 		}
 	})
 
@@ -196,9 +196,9 @@ func TestLogger(t *testing.T) {
 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
 		attest.False(t, strings.Contains(w.String(), "hello world : 5"))
-		attest.True(t, strings.Contains(w.String(), "hello world : 6"))
-		attest.True(t, strings.Contains(w.String(), "hello world : 7"))
-		attest.True(t, strings.Contains(w.String(), errMsg))
+		attest.Subsequence(t, w.String(), "hello world : 6")
+		attest.Subsequence(t, w.String(), "hello world : 7")
+		attest.Subsequence(t, w.String(), errMsg)
 	})
 
 	t.Run("various ways of calling l.Error", func(t *testing.T) {
@@ -217,9 +217,9 @@ func TestLogger(t *testing.T) {
 		l.Error(nil)
 		l.Error(nil, F{"seven": "eight"})
 
-		attest.True(t, strings.Contains(w.String(), msg))
+		attest.Subsequence(t, w.String(), msg)
 		for _, v := range []string{"one", "two", "three", "four", "five", "six", "seven", "eight"} {
-			attest.True(t, strings.Contains(w.String(), v), attest.Sprintf("`%s` not found", v))
+			attest.Subsequence(t, w.String(), v, attest.Sprintf("`%s` not found", v))
 		}
 	})
 
@@ -248,8 +248,8 @@ func TestLogger(t *testing.T) {
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-			attest.True(t, strings.Contains(w.String(), "hello world : 3"))
-			attest.True(t, strings.Contains(w.String(), errMsg))
+			attest.Subsequence(t, w.String(), "hello world : 3")
+			attest.Subsequence(t, w.String(), errMsg)
 		}
 	})
 
@@ -278,8 +278,8 @@ func TestLogger(t *testing.T) {
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-			attest.True(t, strings.Contains(w.String(), "hello world : 3"))
-			attest.True(t, strings.Contains(w.String(), errMsg))
+			attest.Subsequence(t, w.String(), "hello world : 3")
+			attest.Subsequence(t, w.String(), errMsg)
 		}
 	})
 
@@ -304,7 +304,7 @@ func TestLogger(t *testing.T) {
 			msg,
 			errMsg,
 		} {
-			attest.True(t, strings.Contains(w.String(), v))
+			attest.Subsequence(t, w.String(), v)
 		}
 		attest.Equal(t, l.flds, flds)
 
@@ -321,7 +321,7 @@ func TestLogger(t *testing.T) {
 			msg,
 			newErrMsg,
 		} {
-			attest.True(t, strings.Contains(w.String(), v))
+			attest.Subsequence(t, w.String(), v)
 		}
 	})
 
@@ -333,7 +333,7 @@ func TestLogger(t *testing.T) {
 		l := New(context.Background(), w, 2).WithImmediate()
 		l.Info(F{"msg": msg})
 
-		attest.True(t, strings.Contains(w.String(), msg))
+		attest.Subsequence(t, w.String(), msg)
 	})
 
 	t.Run("interop with stdlibLog", func(t *testing.T) {
@@ -345,7 +345,7 @@ func TestLogger(t *testing.T) {
 		stdLogger := stdLog.New(l, "stdlib", stdLog.Lshortfile)
 		stdLogger.Println(msg)
 
-		attest.True(t, strings.Contains(w.String(), msg))
+		attest.Subsequence(t, w.String(), msg)
 	})
 
 	t.Run("get stdlibLog", func(t *testing.T) {
@@ -356,7 +356,7 @@ func TestLogger(t *testing.T) {
 		l := New(context.Background(), w, 2)
 		stdLogger := l.StdLogger()
 		stdLogger.Println(msg)
-		attest.True(t, strings.Contains(w.String(), msg))
+		attest.Subsequence(t, w.String(), msg)
 	})
 
 	t.Run("WithCaller uses correct line", func(t *testing.T) {
@@ -367,8 +367,8 @@ func TestLogger(t *testing.T) {
 			msg := "hey what up?"
 			l := New(context.Background(), w, 2)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
-			attest.True(t, strings.Contains(w.String(), msg))
-			attest.True(t, strings.Contains(w.String(), "ong/log/log_test.go:369"))
+			attest.Subsequence(t, w.String(), msg)
+			attest.Subsequence(t, w.String(), "ong/log/log_test.go:369")
 		}
 
 		{
@@ -378,7 +378,7 @@ func TestLogger(t *testing.T) {
 			msg := "hey what up?"
 			l := New(context.Background(), w, 2)
 			l.WithCaller().StdLogger().Println(msg)
-			attest.True(t, strings.Contains(w.String(), msg))
+			attest.Subsequence(t, w.String(), msg)
 			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
 		}
 
@@ -388,7 +388,7 @@ func TestLogger(t *testing.T) {
 			l := New(context.Background(), w, 2).WithCaller()
 			stdLogger := stdLog.New(l, "stdlib", 0)
 			stdLogger.Println(msg)
-			attest.True(t, strings.Contains(w.String(), msg))
+			attest.Subsequence(t, w.String(), msg)
 			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
 		}
 	})
