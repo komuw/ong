@@ -21,8 +21,8 @@ func TestNew(t *testing.T) {
 			a := New()
 			b := New()
 			c := New()
-			attest.True(t, a != b)
-			attest.True(t, a != c)
+			attest.NotEqual(t, a, b)
+			attest.NotEqual(t, a, c)
 		}
 
 		{
@@ -30,8 +30,8 @@ func TestNew(t *testing.T) {
 			a := Random(_len)
 			b := Random(_len)
 			c := Random(_len)
-			attest.True(t, a != b)
-			attest.True(t, a != c)
+			attest.NotEqual(t, a, b)
+			attest.NotEqual(t, a, c)
 		}
 
 		{
