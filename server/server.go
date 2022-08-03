@@ -162,7 +162,7 @@ func Run(h http.Handler, o opts, l log.Logger) error {
 	defer cancel()
 	logger := l.WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
 
-	tlsConf, errTc := getTlsConfig(o, logger)
+	tlsConf, errTc := getTlsConfig(o)
 	if errTc != nil {
 		return errTc
 	}

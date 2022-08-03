@@ -59,7 +59,7 @@ func TestHttpsRedirector(t *testing.T) {
 	t.Run("post is redirected", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello world"
+		msg := "hello you"
 		port := uint16(443)
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		rec := httptest.NewRecorder()

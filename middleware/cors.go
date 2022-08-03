@@ -78,7 +78,7 @@ func Cors(
 			w.WriteHeader(http.StatusNoContent)
 		} else {
 			// handle actual request
-			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders)
+			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods)
 			wrappedHandler(w, r)
 		}
 	}
@@ -162,7 +162,6 @@ func handleActualRequest(
 	allowedOrigins []string,
 	allowedWildcardOrigins []wildcard,
 	allowedMethods []string,
-	allowedHeaders []string,
 ) {
 	headers := w.Header()
 	origin := r.Header.Get(originHeader)
