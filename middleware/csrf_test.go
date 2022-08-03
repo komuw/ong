@@ -43,10 +43,10 @@ func TestStore(t *testing.T) {
 			}(tok)
 		}
 
-		for _, tok := range tokens {
-			go func(t string) {
+		for range tokens {
+			go func() {
 				store.reset()
-			}(tok)
+			}()
 		}
 
 		wg := &sync.WaitGroup{}

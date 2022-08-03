@@ -137,7 +137,7 @@ func TestGzip(t *testing.T) {
 		strBody := readBody(t, res)
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(strBody, msg))
+		attest.Subsequence(t, strBody, msg)
 	})
 
 	t.Run("middleware succeds", func(t *testing.T) {
@@ -155,7 +155,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(strBody, msg))
+		attest.Subsequence(t, strBody, msg)
 	})
 
 	t.Run("http.Flusher is supported and zipped", func(t *testing.T) {
@@ -174,8 +174,8 @@ func TestGzip(t *testing.T) {
 		attest.True(t, rec.Flushed)
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(strBody, msg))
-		attest.True(t, strings.Contains(strBody, "FlusherCalled"))
+		attest.Subsequence(t, strBody, msg)
+		attest.Subsequence(t, strBody, "FlusherCalled")
 	})
 
 	t.Run("http.Flusher is supported and small is not zipped", func(t *testing.T) {
@@ -194,8 +194,8 @@ func TestGzip(t *testing.T) {
 		attest.True(t, rec.Flushed)
 		attest.NotZero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(strBody, msg))
-		attest.True(t, strings.Contains(strBody, "FlusherCalled"))
+		attest.Subsequence(t, strBody, msg)
+		attest.Subsequence(t, strBody, "FlusherCalled")
 	})
 
 	t.Run("without gzip acceptEncoding not zipped", func(t *testing.T) {
@@ -213,7 +213,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Zero(t, res.Header.Get(contentEncodingHeader))
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(strBody, msg))
+		attest.Subsequence(t, strBody, msg)
 	})
 
 	t.Run("issues/81", func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(strBody, "Welcome to awesome website."))
+		attest.Subsequence(t, strBody, "Welcome to awesome website.")
 	})
 
 	t.Run("issues/81", func(t *testing.T) {
@@ -249,7 +249,7 @@ func TestGzip(t *testing.T) {
 
 		attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.True(t, strings.Contains(strBody, "Welcome to awesome website."))
+		attest.Subsequence(t, strBody, "Welcome to awesome website.")
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -271,7 +271,7 @@ func TestGzip(t *testing.T) {
 
 			attest.Equal(t, res.Header.Get(contentEncodingHeader), "gzip")
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.True(t, strings.Contains(strBody, msg))
+			attest.Subsequence(t, strBody, msg)
 		}
 
 		wg := &sync.WaitGroup{}

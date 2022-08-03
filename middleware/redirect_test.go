@@ -59,7 +59,7 @@ func TestHttpsRedirector(t *testing.T) {
 	t.Run("post is redirected", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello world"
+		msg := "hello you"
 		port := uint16(443)
 		wrappedHandler := HttpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		rec := httptest.NewRecorder()
@@ -157,8 +157,8 @@ func TestHttpsRedirector(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Zero(t, res.Header.Get(locationHeader))
-		attest.True(t, !strings.Contains(string(rb), msg))
-		attest.True(t, strings.Contains(string(rb), postMsg))
+		attest.False(t, strings.Contains(string(rb), msg))
+		attest.Subsequence(t, string(rb), postMsg)
 	})
 
 	t.Run("port combinations", func(t *testing.T) {

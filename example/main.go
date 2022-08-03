@@ -63,19 +63,19 @@ type myAPI struct {
 
 func NewMyApi(db string) myAPI {
 	return myAPI{
-		db: "someDb",
+		db: db,
 		l:  log.New(context.Background(), os.Stdout, 1000),
 	}
 }
 
-func (s myAPI) handleFileServer() http.HandlerFunc {
+func (m myAPI) handleFileServer() http.HandlerFunc {
 	// Do NOT let `http.FileServer` be able to serve your root directory.
 	// Otherwise, your .git folder and other sensitive info(including http://localhost:8080/main.go) may be available
 	// instead create a folder that only has your templates and server that.
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
 	return func(w http.ResponseWriter, req *http.Request) {
-		s.l.Info(log.F{"msg": "handleFileServer", "redactedURL": req.URL.Redacted()})
+		m.l.Info(log.F{"msg": "handleFileServer", "redactedURL": req.URL.Redacted()})
 		realHandler(w, req)
 	}
 }
@@ -85,7 +85,7 @@ func (s myAPI) handleFileServer() http.HandlerFunc {
 // Why return `http.HandlerFunc` instead of `http.Handler`?
 // `HandlerFunc` implements `Handler` interface so they are kind of interchangeable
 // Pick whichever is easier for you to use. Sometimes you might have to convert between them
-func (s myAPI) handleAPI() http.HandlerFunc {
+func (m myAPI) handleAPI() http.HandlerFunc {
 	// allows for handler specific setup
 	thing := func() int {
 		return 42
@@ -96,7 +96,7 @@ func (s myAPI) handleAPI() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// intialize somethings only once for perf
 		once.Do(func() {
-			s.l.Info(log.F{"msg": "called only once during the first request"})
+			m.l.Info(log.F{"msg": "called only once during the first request"})
 			serverStart = time.Now()
 		})
 
@@ -113,11 +113,11 @@ func (s myAPI) handleAPI() http.HandlerFunc {
 }
 
 // you can take arguments for handler specific dependencies
-func (s myAPI) check(code int) http.HandlerFunc {
+func (m myAPI) check(code int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
-		s.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
+		m.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
 		_, _ = fmt.Fprint(w, "hello from check/ endpoint")
 		// use code, which is a dependency specific to this handler
@@ -125,7 +125,7 @@ func (s myAPI) check(code int) http.HandlerFunc {
 	}
 }
 
-func (s myAPI) login() http.HandlerFunc {
+func (m myAPI) login() http.HandlerFunc {
 	tmpl, err := template.New("myTpl").Parse(`<!DOCTYPE html>
 <html>
 

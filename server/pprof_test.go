@@ -30,6 +30,7 @@ func TestPprofServer(t *testing.T) {
 		port := 6060
 		res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
 		attest.Ok(t, err)
+		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 	})
@@ -47,6 +48,7 @@ func TestPprofServer(t *testing.T) {
 			port := 6060
 			res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
 			attest.Ok(t, err)
+			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 		}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -66,16 +65,12 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:30",
-				"ong/errors/errors_test.go:23",
-				"ong/errors/errors_test.go:17",
-				"ong/errors/errors_test.go:61",
+				"ong/errors/errors_test.go:29",
+				"ong/errors/errors_test.go:22",
+				"ong/errors/errors_test.go:16",
+				"ong/errors/errors_test.go:60",
 			} {
-				attest.True(
-					t,
-					strings.Contains(stackTrace, v),
-					attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace),
-				)
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
 		})
 
@@ -90,15 +85,11 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:45",
-				"ong/errors/errors_test.go:36",
-				"ong/errors/errors_test.go:85",
+				"ong/errors/errors_test.go:44",
+				"ong/errors/errors_test.go:35",
+				"ong/errors/errors_test.go:80",
 			} {
-				attest.True(
-					t,
-					strings.Contains(stackTrace, v),
-					attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace),
-				)
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
 		})
 	})
@@ -114,16 +105,12 @@ func TestStackError(t *testing.T) {
 
 		extendedFormatting := fmt.Sprintf("%+v", err)
 		for _, v := range []string{
-			"ong/errors/errors_test.go:30",
-			"ong/errors/errors_test.go:23",
-			"ong/errors/errors_test.go:17",
-			"ong/errors/errors_test.go:109",
+			"ong/errors/errors_test.go:29",
+			"ong/errors/errors_test.go:22",
+			"ong/errors/errors_test.go:16",
+			"ong/errors/errors_test.go:100",
 		} {
-			attest.True(
-				t,
-				strings.Contains(extendedFormatting, v),
-				attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting),
-			)
+			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
 		}
 	})
 

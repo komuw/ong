@@ -10,7 +10,6 @@ import (
 	"golang.org/x/net/idna"
 
 	ongErrors "github.com/komuw/ong/errors"
-	"github.com/komuw/ong/log"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -24,7 +23,7 @@ import (
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
-func getTlsConfig(o opts, logger log.Logger) (*tls.Config, error) {
+func getTlsConfig(o opts) (*tls.Config, error) {
 	if err := validateDomain(o.tls.domain); err != nil {
 		return nil, err
 	}

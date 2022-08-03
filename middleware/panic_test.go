@@ -80,7 +80,7 @@ func TestPanic(t *testing.T) {
 			"logID",
 			http.MethodGet,
 		} {
-			attest.True(t, strings.Contains(logOutput.String(), v))
+			attest.Subsequence(t, logOutput.String(), v)
 		}
 		attest.False(t, strings.Contains(logOutput.String(), "stack"))
 	})
@@ -111,9 +111,9 @@ func TestPanic(t *testing.T) {
 			http.MethodGet,
 			"stack",
 		} {
-			attest.True(t, strings.Contains(logOutput.String(), v), attest.Sprintf("`%s` was not found", v))
+			attest.Subsequence(t, logOutput.String(), v, attest.Sprintf("`%s` was not found", v))
 		}
-		attest.True(t, strings.Contains(logOutput.String(), "stack"))
+		attest.Subsequence(t, logOutput.String(), "stack")
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestPanic(t *testing.T) {
 
 		// &bytes.Buffer{} is not concurrency safe, so we use os.Stderr instead.
 		logOutput := os.Stderr
-		msg := "hello"
+		msg := "hey"
 		err := errors.New(msg)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.

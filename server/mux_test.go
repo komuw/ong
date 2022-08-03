@@ -86,6 +86,7 @@ func TestMux(t *testing.T) {
 			// so here we make a http GET so that we can have a csrf token.
 			res, err := client.Get(ts.URL + uri)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 
 			csrfToken = res.Header.Get(middleware.CsrfHeader)
 			attest.Equal(t, res.StatusCode, http.StatusOK)
@@ -97,6 +98,7 @@ func TestMux(t *testing.T) {
 		req.Header.Set(middleware.CsrfHeader, csrfToken)
 		res, err := client.Do(req)
 		attest.Ok(t, err)
+		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusMethodNotAllowed)
 	})

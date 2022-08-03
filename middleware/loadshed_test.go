@@ -88,7 +88,11 @@ func TestLoadShedder(t *testing.T) {
 }
 
 func TestPercentile(t *testing.T) {
+	t.Parallel()
+
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		{
 			lq := latencyQueue{
 				sl: []latency{
@@ -122,7 +126,11 @@ func TestPercentile(t *testing.T) {
 }
 
 func TestLatencyQueue(t *testing.T) {
+	t.Parallel()
+
 	t.Run("all samples taken outside samplingPeriod", func(t *testing.T) {
+		t.Parallel()
+
 		now := time.Now().UTC()
 		samplingPeriod := 10 * time.Millisecond
 		minSampleSize := 10
@@ -140,6 +148,8 @@ func TestLatencyQueue(t *testing.T) {
 	})
 
 	t.Run("all samples taken within samplingPeriod", func(t *testing.T) {
+		t.Parallel()
+
 		now := time.Now().UTC()
 		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10
@@ -162,6 +172,8 @@ func TestLatencyQueue(t *testing.T) {
 	})
 
 	t.Run("number of samples less than minSampleSize", func(t *testing.T) {
+		t.Parallel()
+
 		now := time.Now().UTC()
 		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10_000
@@ -184,6 +196,8 @@ func TestLatencyQueue(t *testing.T) {
 	})
 
 	t.Run("all samples taken in the future", func(t *testing.T) {
+		t.Parallel()
+
 		now := time.Now().UTC()
 		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10

@@ -83,13 +83,6 @@ jobs:
         run: |
           ulimit -a
           env
-          go test -timeout 1m -race -run=XXXX -bench=. ./...
-          go test -timeout 4m -v -race ./...
-        env:
-          ONG_RUNNING_IN_TESTS: 'YES'
-
-      - name: test coverage
-        run: |
           set -x
 
           # check integrity of codecov
@@ -98,6 +91,7 @@ jobs:
           shasum --algorithm 512 --check <(curl -s "https://raw.githubusercontent.com/codecov/codecov-bash/${VERSION}/SHA512SUM" | grep codecov)
           rm -rf codecov
 
+          go test -timeout 1m -race -run=XXXX -bench=. ./...
           go test -timeout 4m -v -race -cover -coverprofile=coverage.out ./... && bash <(curl -s https://codecov.io/bash)
           go tool cover -html=coverage.out -o coverage.html
           go tool cover -func=coverage.out

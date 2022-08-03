@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -104,7 +103,7 @@ func TestLogMiddleware(t *testing.T) {
 			"requestAddr",
 			"error",
 		} {
-			attest.True(t, strings.Contains(logOutput.String(), v))
+			attest.Subsequence(t, logOutput.String(), v)
 		}
 
 		logHeader := res.Header.Get(logIDKey)
@@ -202,7 +201,7 @@ func TestLogMiddleware(t *testing.T) {
 				// common
 				"durationMS",
 			} {
-				attest.True(t, strings.Contains(logOutput.String(), v))
+				attest.Subsequence(t, logOutput.String(), v)
 			}
 
 			logHeader := res.Header.Get(logIDKey)
