@@ -162,14 +162,18 @@ func TestAllMiddleware(t *testing.T) {
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
 		)
-		defer ts.Close()
+		t.Cleanup(func() {
+			ts.Close()
+		})
 
 		res, err := client.Get(ts.URL)
 		attest.Ok(t, err)
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
-		defer res.Body.Close()
+		t.Cleanup(func() {
+			res.Body.Close()
+		})
 
 		csrfToken = res.Header.Get(CsrfHeader)
 		attest.Equal(t, res.StatusCode, http.StatusOK)
@@ -189,7 +193,9 @@ func TestAllMiddleware(t *testing.T) {
 			ts := httptest.NewTLSServer(
 				wrappedHandler,
 			)
-			defer ts.Close()
+			t.Cleanup(func() {
+				ts.Close()
+			})
 
 			req, err := http.NewRequest(tt.httpMethod, ts.URL, nil)
 			attest.Ok(t, err)
@@ -206,7 +212,9 @@ func TestAllMiddleware(t *testing.T) {
 
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
-			defer res.Body.Close()
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
 			attest.Equal(t, res.StatusCode, tt.expectedStatusCode)
 			attest.Subsequence(t, string(rb), tt.expectedMsg)
@@ -384,6 +392,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		req.Header.Set(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
 		res, err := client.Do(req)
 		attest.Ok(b, err)
+		defer res.Body.Close()
 
 		attest.Equal(b, res.StatusCode, http.StatusOK)
 		attest.Zero(b, res.Header.Get(contentEncodingHeader))
