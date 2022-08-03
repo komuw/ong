@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	go.uber.org/automaxprocs v1.5.1
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
-	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983
-	golang.org/x/net v0.0.0-20220708220712-1185a9018129
-	golang.org/x/sys v0.0.0-20220708085239-5a0f0661e09d
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
+	golang.org/x/net v0.0.0-20220802222814-0bcc04d9c69b
+	golang.org/x/sys v0.0.0-20220731174439-a90be440212d
 )
 
 require (
@@ -17,16 +17,16 @@ require (
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // test
 	github.com/akshayjshah/attest v0.4.0 // test
-	github.com/klauspost/compress v1.15.7 // test
+	github.com/klauspost/compress v1.15.9 // test
 	github.com/rs/zerolog v1.27.0 // test
-	github.com/sirupsen/logrus v1.8.1 // test
+	github.com/sirupsen/logrus v1.9.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
 	go.uber.org/zap v1.21.0 // test
 )
