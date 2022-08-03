@@ -1,7 +1,7 @@
 github.com/NYTimes/gziphandler v1.1.1 h1:ZUDjpQae29j0ryrS0u/B8HZfJBtBQHjqw2rQ2cqUQ3I=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
-github.com/akshayjshah/attest v0.2.2 h1:0XKkfzpMpE+kJCkrnpV+ccwakypEwXE8v2sIbVNgOT8=
-github.com/akshayjshah/attest v0.2.2/go.mod h1:EsNGoxoQ0/Y18OjI48piVra6dKxLgOHckwEKBeeFVwY=
+github.com/akshayjshah/attest v0.4.0 h1:WsUC9HOLWNx+enIGN1Zb3HDx0d6v9K2ZSRdwZkWsN+I=
+github.com/akshayjshah/attest v0.4.0/go.mod h1:xOHx7YBQ1aDFYNp9OpICMPKJrI+YidFSmHx412ptvsc=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/coreos/go-systemd/v22 v22.3.3-0.20220203105225-a9a7ef127534/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=

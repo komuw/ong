@@ -23,7 +23,7 @@ require (
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // test
-	github.com/akshayjshah/attest v0.2.2 // test
+	github.com/akshayjshah/attest v0.4.0 // test
 	github.com/klauspost/compress v1.15.7 // test
 	github.com/rs/zerolog v1.27.0 // test
 	github.com/sirupsen/logrus v1.8.1 // test
