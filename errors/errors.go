@@ -20,7 +20,10 @@ type stackError struct {
 }
 
 func (e *stackError) Error() string {
-	return e.text // ignore the stack
+	if e.err == nil {
+		return e.text // ignore the stack
+	}
+	return e.text + ": " + e.err.Error() // ignore the stack
 }
 
 func (e *stackError) Unwrap() error {
