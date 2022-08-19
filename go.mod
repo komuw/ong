@@ -1,6 +1,6 @@
 module github.com/komuw/ong
 
-go 1.18
+go 1.19
 
 require (
 	go.uber.org/automaxprocs v1.5.1

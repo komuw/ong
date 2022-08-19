@@ -153,10 +153,10 @@ func (l Logger) Error(e error, fs ...F) {
 // This is useful if you want to set this logger as a writer for the standard library log.
 //
 // usage:
-//   l := log.New(ctx, os.Stdout, 100, true)
-//   stdLogger := stdLog.New(l, "stdlib", stdLog.LstdFlags)
-//   stdLogger.Println("hello world")
 //
+//	l := log.New(ctx, os.Stdout, 100, true)
+//	stdLogger := stdLog.New(l, "stdlib", stdLog.LstdFlags)
+//	stdLogger.Println("hello world")
 func (l Logger) Write(p []byte) (n int, err error) {
 	n = len(p)
 	if n > 0 && p[n-1] == '\n' {
@@ -172,10 +172,10 @@ func (l Logger) Write(p []byte) (n int, err error) {
 // StdLogger returns a logger from the Go standard library log package.
 // That logger will use l as its output.
 // usage:
-//   l := log.New(ctx, os.Stdout, 100, true)
-//   stdLogger := l.StdLogger()
-//   stdLogger.Println("hey")
 //
+//	l := log.New(ctx, os.Stdout, 100, true)
+//	stdLogger := l.StdLogger()
+//	stdLogger.Println("hey")
 func (l Logger) StdLogger() *stdLog.Logger {
 	l = l.WithImmediate().WithCaller()
 	return stdLog.New(l, "", 0)

@@ -14,7 +14,8 @@ import (
 
 /*
 example usage:
-  go tool pprof  http://localhost:6060/debug/pprof/heap
+
+	go tool pprof  http://localhost:6060/debug/pprof/heap
 */
 func startPprofServer(logger log.Logger) {
 	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86

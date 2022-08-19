@@ -53,8 +53,8 @@ func WithOpts(domain string, httpsPort uint16, l log.Logger) Opts {
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
 //
 // usage:
-//   allDefaultMiddlewares(wh, opts{"example.com", -1, nil, nil, nil, os.Stdout})
 //
+//	allDefaultMiddlewares(wh, opts{"example.com", -1, nil, nil, nil, os.Stdout})
 func allDefaultMiddlewares(
 	wrappedHandler http.HandlerFunc,
 	o Opts,
