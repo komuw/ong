@@ -11,8 +11,7 @@ func TestCreateDevCertKey(t *testing.T) {
 	t.Parallel()
 
 	if os.Getenv("GITHUB_ACTIONS") != "" {
-		// setRlimit() fails in github actions with error: `operation not permitted`
-		// specifically the call to `unix.Setrlimit()`
+		// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
 		return
 	}
 
