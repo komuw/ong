@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -160,6 +161,11 @@ func TestServer(t *testing.T) {
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
+			return
+		}
+
 		port := uint16(8081)
 		uri := "/api"
 		msg := "hello world"
@@ -245,6 +251,11 @@ func TestServer(t *testing.T) {
 
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
+
+		if os.Getenv("GITHUB_ACTIONS") != "" {
+			// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
+			return
+		}
 
 		port := math.MaxUint16 - uint16(3)
 		uri := "/api"
