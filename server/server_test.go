@@ -8,7 +8,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -161,13 +160,6 @@ func TestServer(t *testing.T) {
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
-		if os.Getenv("GITHUB_ACTIONS") != "" {
-			// server.Run() calls setRlimit()
-			// and setRlimit() fails in github actions with error: `operation not permitted`
-			// specifically the call to `unix.Setrlimit()`
-			return
-		}
-
 		port := uint16(8081)
 		uri := "/api"
 		msg := "hello world"
@@ -253,13 +245,6 @@ func TestServer(t *testing.T) {
 
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
-
-		if os.Getenv("GITHUB_ACTIONS") != "" {
-			// server.Run() calls setRlimit()
-			// and setRlimit() fails in github actions with error: `operation not permitted`
-			// specifically the call to `unix.Setrlimit()`
-			return
-		}
 
 		port := math.MaxUint16 - uint16(3)
 		uri := "/api"
