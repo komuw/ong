@@ -41,3 +41,4 @@ Most recent version is listed first.
 - a more efficient error stack trace: https://github.com/komuw/ong/pull/87
 - update github.com/akshayjshah/attest: https://github.com/komuw/ong/pull/93
 - update to Go 1.19: https://github.com/komuw/ong/pull/102
+- remove rlimit code, go1.19 does automatically: https://github.com/komuw/ong/pull/104
