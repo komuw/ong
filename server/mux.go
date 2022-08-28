@@ -76,7 +76,8 @@ func NewMux(l log.Logger, opt middleware.Opts, rts Routes) *mux {
 			mid = middleware.All
 		}
 
-		m.addPattern(rt.pattern,
+		m.addPattern(
+			rt.pattern,
 			mid(rt.handler, opt),
 		)
 	}

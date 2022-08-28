@@ -40,3 +40,4 @@ Most recent version is listed first.
 - disable gzip: https://github.com/komuw/ong/pull/86
 - a more efficient error stack trace: https://github.com/komuw/ong/pull/87
 - update github.com/akshayjshah/attest: https://github.com/komuw/ong/pull/93
+- update to Go 1.19: https://github.com/komuw/ong/pull/102

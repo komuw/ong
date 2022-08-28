@@ -37,9 +37,9 @@ runs:
       # * Module download cache
       #
       # The cache key looks like:
-      #   `ong ci-run_tests-Linux-1.18-matrix(1.18|ubuntu-22.04)-go-mod-<hash>`
+      #   `ong ci-run_tests-Linux-1.19-matrix(1.19|ubuntu-22.04)-go-mod-<hash>`
       # The restore key looks like:
-      #   `ong ci-run_tests-Linux-1.18-matrix(1.18|ubuntu-22.04)-go-mod-`
+      #   `ong ci-run_tests-Linux-1.19-matrix(1.19|ubuntu-22.04)-go-mod-`
       #
       path: ~/go/pkg/mod
       key: ${{ env.PREFIX }}-go-mod-${{ hashFiles('**/go.sum') }}
@@ -55,9 +55,9 @@ runs:
       # * Build cache (Windows)
       #
       # The cache key looks like:
-      #   `ong ci-run_tests-Linux-1.18-matrix(1.18|ubuntu-22.04)-go-build-refs/pull/24/merge-<hash>`
+      #   `ong ci-run_tests-Linux-1.19-matrix(1.19|ubuntu-22.04)-go-build-refs/pull/24/merge-<hash>`
       # The restore key looks like:
-      #   `ong ci-run_tests-Linux-1.18-matrix(1.18|ubuntu-22.04)-go-build-`
+      #   `ong ci-run_tests-Linux-1.19-matrix(1.19|ubuntu-22.04)-go-build-`
       #
       path: |
         ~/.cache/go-build
