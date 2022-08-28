@@ -4,10 +4,10 @@ go 1.19
 
 require (
 	go.uber.org/automaxprocs v1.5.1
-	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
-	golang.org/x/net v0.0.0-20220812174116-3211cb980234
-	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6
+	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d
+	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
+	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b
+	golang.org/x/sys v0.0.0-20220825204002-c680a09ffe64
 )
 
 require (
@@ -28,5 +28,5 @@ require (
 	github.com/rs/zerolog v1.27.0 // test
 	github.com/sirupsen/logrus v1.9.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
-	go.uber.org/zap v1.22.0 // test
+	go.uber.org/zap v1.23.0 // test
 )
