@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 1
     strategy:
       matrix:
-        go-version: [1.18]
+        go-version: [1.19]
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -61,7 +61,7 @@ jobs:
     timeout-minutes: 7
     strategy:
       matrix:
-        go-version: [1.18]
+        go-version: [1.19]
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -103,7 +103,7 @@ jobs:
     timeout-minutes: 5
     strategy:
       matrix:
-        go-version: [1.18]
+        go-version: [1.19]
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -156,9 +156,9 @@ jobs:
 
           go vet -all ./...
           go vet -vettool=/home/runner/go/bin/shadow -strict ./...
-          /home/runner/go/bin/staticcheck -tests -go 1.18 ./...
-          # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.18
-          # /home/runner/go/bin/structslop ./... # does not seem to work with Go1.18
+          /home/runner/go/bin/staticcheck -tests -go 1.19 ./...
+          # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.19
+          # /home/runner/go/bin/structslop ./... # does not seem to work with Go1.19
           /home/runner/go/bin/httperroryzer ./...
           # see: https://github.com/golang/go/commit/a98589711da5e9d935e8d690cfca92892e86d557
           /home/runner/go/bin/errcheck -ignoregenerated -ignoretests -asserts ./...
@@ -197,7 +197,7 @@ jobs:
   #   timeout-minutes: 2
   #   strategy:
   #     matrix:
-  #       go-version: [1.18]
+  #       go-version: [1.19]
   #       platform: [ubuntu-22.04]
   #   runs-on: ${{ matrix.platform }}
   #   steps:
