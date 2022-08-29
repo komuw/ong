@@ -15,6 +15,7 @@ import (
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/server/automaxmem"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -42,7 +43,7 @@ type opts struct {
 	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
 	tls               tlsOpts
-	// this ones are created automatically
+	// the following ones are created automatically
 	host          string
 	serverPort    string
 	serverAddress string
@@ -156,6 +157,7 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) opts {
 // If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
 func Run(h http.Handler, o opts, l log.Logger) error {
 	_, _ = maxprocs.Set()
+	_ = automaxmem.Set()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
