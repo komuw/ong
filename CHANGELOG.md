@@ -42,3 +42,4 @@ Most recent version is listed first.
 - update github.com/akshayjshah/attest: https://github.com/komuw/ong/pull/93
 - update to Go 1.19: https://github.com/komuw/ong/pull/102
 - remove rlimit code, go1.19 does automatically: https://github.com/komuw/ong/pull/104
+- automatically set GOMEMLIMIT in container environments: https://github.com/komuw/ong/pull/105
