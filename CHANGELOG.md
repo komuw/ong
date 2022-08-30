@@ -2,6 +2,8 @@
 
 Most recent version is listed first.  
 
+## v0.0.2
+- automatically set GOMAXPROCS in container environments, using internal package: https://github.com/komuw/ong/pull/106
 
 ## v0.0.1
 - added some middlewares: https://github.com/komuw/ong/pull/22
