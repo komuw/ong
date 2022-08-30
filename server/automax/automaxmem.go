@@ -1,6 +1,6 @@
-// Package automaxmem automatically sets GOMEMLIMIT to match the Linux
+// Package automax automatically sets GOMEMLIMIT & GOMAXPROCS to match the Linux
 // container memory quota, if any.
-package automaxmem
+package automax
 
 import (
 	"os"
@@ -20,11 +20,11 @@ type config struct {
 	cgroupV2 string
 }
 
-// Set GOMEMLIMIT to match the Linux container memory quota (if any), returning an undo function.
+// SetMem GOMEMLIMIT to match the Linux container memory quota (if any), returning an undo function.
 // It is a no-op on non-Linux systems and in Linux environments without a configured memory quota.
 //
 // The optional argument c is only for test purposes.
-func Set(c ...config) func() {
+func SetMem(c ...config) func() {
 	prev := currentMaxMem()
 	undo := func() {
 		debug.SetMemoryLimit(prev)

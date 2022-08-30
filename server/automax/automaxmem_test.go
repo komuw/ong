@@ -1,4 +1,4 @@
-package automaxmem
+package automax
 
 import (
 	"fmt"
@@ -42,7 +42,7 @@ func TestSet(t *testing.T) {
 		c := []config{
 			{cgroupV1: f1.Name()},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 		undo()
@@ -57,7 +57,7 @@ func TestSet(t *testing.T) {
 		c := []config{
 			{cgroupV2: f2.Name()},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 		undo()
@@ -76,7 +76,7 @@ func TestSet(t *testing.T) {
 				cgroupV2: f2.Name(),
 			},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 		undo()
@@ -91,7 +91,7 @@ func TestSet(t *testing.T) {
 		c := []config{
 			{cgroupV2: f2.Name()},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 
