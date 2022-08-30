@@ -40,7 +40,7 @@ func TestSet(t *testing.T) {
 		attest.NotEqual(t, currentMaxMem(), expected)
 
 		c := []config{
-			{cgroupV1: f1.Name()},
+			{memCgroupV1: f1.Name()},
 		}
 		undo := SetMem(c...)
 
@@ -55,7 +55,7 @@ func TestSet(t *testing.T) {
 		attest.NotEqual(t, currentMaxMem(), expected)
 
 		c := []config{
-			{cgroupV2: f2.Name()},
+			{memCgroupV2: f2.Name()},
 		}
 		undo := SetMem(c...)
 
@@ -72,8 +72,8 @@ func TestSet(t *testing.T) {
 
 		c := []config{
 			{
-				cgroupV1: f1.Name(),
-				cgroupV2: f2.Name(),
+				memCgroupV1: f1.Name(),
+				memCgroupV2: f2.Name(),
 			},
 		}
 		undo := SetMem(c...)
@@ -89,7 +89,7 @@ func TestSet(t *testing.T) {
 		attest.NotEqual(t, currentMaxMem(), expected)
 
 		c := []config{
-			{cgroupV2: f2.Name()},
+			{memCgroupV2: f2.Name()},
 		}
 		undo := SetMem(c...)
 
