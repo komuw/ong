@@ -8,7 +8,7 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
-func TestSet(t *testing.T) {
+func TestSetMem(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()

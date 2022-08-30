@@ -12,12 +12,6 @@ const (
 	ignoreLimit = 10 * 1024 * 1024 // 10MB
 )
 
-// config is used for tests.
-type config struct {
-	memCgroupV1 string
-	memCgroupV2 string
-}
-
 func setMem(c ...config) func() {
 	prev := currentMaxMem()
 	undo := func() {

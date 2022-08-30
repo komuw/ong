@@ -3,7 +3,6 @@ module github.com/komuw/ong
 go 1.19
 
 require (
-	go.uber.org/automaxprocs v1.5.1
 	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d
 	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
 	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b

@@ -17,7 +17,6 @@ import (
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/server/automax"
 
-	"go.uber.org/automaxprocs/maxprocs"
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
@@ -156,7 +155,7 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) opts {
 // The server shuts down cleanly after receiving any terminating signal.
 // If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
 func Run(h http.Handler, o opts, l log.Logger) error {
-	_, _ = maxprocs.Set()
+	_ = automax.SetCpu()
 	_ = automax.SetMem()
 
 	ctx, cancel := context.WithCancel(context.Background())
