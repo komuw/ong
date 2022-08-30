@@ -16,6 +16,7 @@ const (
 )
 
 // It is a result of `cpu.cfs_quota_us / cpu.cfs_period_us`.
+// It only works for cgroupV2.
 func setCpu(c ...config) func() {
 	path := cgroupv2FilePath
 	if len(c) > 0 {
