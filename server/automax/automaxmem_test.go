@@ -1,4 +1,4 @@
-package automaxmem
+package automax
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
-func TestSet(t *testing.T) {
+func TestSetMem(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
@@ -40,9 +40,9 @@ func TestSet(t *testing.T) {
 		attest.NotEqual(t, currentMaxMem(), expected)
 
 		c := []config{
-			{cgroupV1: f1.Name()},
+			{memCgroupV1: f1.Name()},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 		undo()
@@ -55,9 +55,9 @@ func TestSet(t *testing.T) {
 		attest.NotEqual(t, currentMaxMem(), expected)
 
 		c := []config{
-			{cgroupV2: f2.Name()},
+			{memCgroupV2: f2.Name()},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 		undo()
@@ -72,11 +72,11 @@ func TestSet(t *testing.T) {
 
 		c := []config{
 			{
-				cgroupV1: f1.Name(),
-				cgroupV2: f2.Name(),
+				memCgroupV1: f1.Name(),
+				memCgroupV2: f2.Name(),
 			},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 		undo()
@@ -89,9 +89,9 @@ func TestSet(t *testing.T) {
 		attest.NotEqual(t, currentMaxMem(), expected)
 
 		c := []config{
-			{cgroupV2: f2.Name()},
+			{memCgroupV2: f2.Name()},
 		}
-		undo := Set(c...)
+		undo := SetMem(c...)
 
 		attest.Equal(t, currentMaxMem(), expected)
 
