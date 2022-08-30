@@ -33,6 +33,7 @@ func Set(c ...config) func() {
 	var content []byte
 	var err error
 	if len(c) > 0 {
+		// we are running under tests.
 		content, err = os.ReadFile(c[0].cgroupV2)
 		if err != nil {
 			content, err = os.ReadFile(c[0].cgroupV1)
