@@ -8,11 +8,11 @@ import (
 
 type ctxKey string
 
-var key = ctxKey("key")
-
 func TestDetach(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
+
+	key := ctxKey("key")
 	ctx = context.WithValue(ctx, key, "value")
 	dctx := Detach(ctx)
 	// Detached context has the same values.
@@ -35,6 +35,7 @@ func ExampleDetach() {
 	someOtherFunc := func(ctx context.Context) {}
 
 	foo := func() {
+		key := ctxKey("key")
 		ctx := context.WithValue(context.Background(), key, "my_value")
 
 		// Detach is not required here.
