@@ -35,7 +35,7 @@ func ExampleDetach() {
 	someOtherFunc := func(ctx context.Context) {}
 
 	foo := func() {
-		ctx := context.WithValue(context.Background(), "my_key", "my_value")
+		ctx := context.WithValue(context.Background(), key, "my_value")
 
 		// Detach is not required here.
 		someFunc(ctx)
