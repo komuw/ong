@@ -43,6 +43,7 @@ func timeeq(m dsl.Matcher) {
 
 // err but no an error
 func errnoterror(m dsl.Matcher) {
+
 	// Would be easier to check for all err identifiers instead, but then how do we get the type from m[] ?
 
 	m.Match(
@@ -132,6 +133,7 @@ func ifreturn(m dsl.Matcher) {
 	m.Match("if !$x { return $*_ }; if $x {$*_ }").Report("odd sequence of if test")
 	m.Match("if $x == $y { return $*_ }; if $x != $y {$*_ }").Report("odd sequence of if test")
 	m.Match("if $x != $y { return $*_ }; if $x == $y {$*_ }").Report("odd sequence of if test")
+
 }
 
 func oddifsequence(m dsl.Matcher) {
@@ -224,6 +226,7 @@ func floateq(m dsl.Matcher) {
 	m.Match("switch $x { $*_ }", "switch $*_; $x { $*_ }").
 		Where(m["x"].Type.Is("float64")).
 		Report("floating point as switch expression")
+
 }
 
 func badexponent(m dsl.Matcher) {
@@ -251,6 +254,7 @@ func floatloop(m dsl.Matcher) {
 }
 
 func urlredacted(m dsl.Matcher) {
+
 	m.Match(
 		"log.Println($x, $*_)",
 		"log.Println($*_, $x, $*_)",
@@ -275,6 +279,7 @@ func sprinterr(m dsl.Matcher) {
 	).
 		Where(m["err"].Type.Is("error")).
 		Report("maybe call $err.Error() instead of fmt.Sprint()?")
+
 }
 
 func largeloopcopy(m dsl.Matcher) {
@@ -332,6 +337,7 @@ func nilerr(m dsl.Matcher) {
 		`if err == nil { return $*_, err }`,
 	).
 		Report(`return nil error instead of nil value`)
+
 }
 
 func mailaddress(m dsl.Matcher) {
@@ -347,6 +353,7 @@ func mailaddress(m dsl.Matcher) {
 	).
 		Report("use net/mail Address.String() instead of fmt.Sprintf()").
 		Suggest("(&mail.Address{Name:$NAME, Address:$EMAIL}).String()")
+
 }
 
 func errnetclosed(m dsl.Matcher) {
@@ -356,6 +363,7 @@ func errnetclosed(m dsl.Matcher) {
 		Where(m["text"].Text.Matches("\".*closed network connection.*\"")).
 		Report(`String matching against error texts is fragile; use net.ErrClosed instead`).
 		Suggest(`errors.Is($err, net.ErrClosed)`)
+
 }
 
 func hmacnew(m dsl.Matcher) {
@@ -386,6 +394,12 @@ func writestring(m dsl.Matcher) {
 		Suggest("$w.Write($b)")
 }
 
+func fmtfprint(m dsl.Matcher) {
+	m.Match(`fmt.Fprint($w, string($b))`).
+		Where(m["b"].Type.Is("[]byte")).
+		Suggest("$w.Write($b)")
+}
+
 func badlock(m dsl.Matcher) {
 	// Shouldn't give many false positives without type filter
 	// as Lock+Unlock pairs in combination with defer gives us pretty
@@ -405,6 +419,16 @@ func badlock(m dsl.Matcher) {
 		Where(m["mu1"].Text == m["mu2"].Text).
 		At(m["mu2"]).
 		Report(`maybe defer $mu1.RUnlock() was intended?`)
+}
+
+func setenvUsedInTests(m dsl.Matcher) {
+	m.Match(
+		`os.Setenv($key, $val); defer os.Unsetenv($key)`,
+		`os.Setenv($key, $val); defer os.Setenv($key, "")`,
+	).
+		Where(m.File().Name.Matches("_test.go")).
+		Report(`should prefer t.Setenv within tests`).
+		Suggest(`t.Setenv($key, $val)`)
 }
 
 func contextTODO(m dsl.Matcher) {
@@ -490,4 +514,26 @@ func ioutilWriteFile(m dsl.Matcher) {
 	).Where(m["f"].Type.Is("string") && m["d"].Type.Is("[]byte") && m["p"].Type.Is("fs.FileMode")).
 		Report(`As of Go 1.16, this function simply calls os.WriteFile.`).
 		Suggest(`os.WriteFile($f, $d, $p)`)
+}
+
+func ioWriterWriteMisuse(m dsl.Matcher) {
+	// io.Writer.Write([]byte(string)) => io.WriteString(io.Writer, string)
+	m.Match(`$w.Write([]byte($s))`).
+		Where(m["s"].Type.Is("string") && m["w"].Type.HasMethod("io.Writer.Write") && !m["w"].Type.HasMethod("io.StringWriter.WriteString")).
+		Report(`Use io.WriteString when writing a string to an io.Writer`).
+		Suggest(`io.WriteString($w, $s)`)
+
+	// interface{ io.Writer; io.StringWriter }.Write([]byte(string)) => interface{ io.Writer; io.StringWriter }.WriteString(string)
+	m.Match(`$w.Write([]byte($s))`).
+		Where(m["s"].Type.Is("string") && m["w"].Type.HasMethod("io.Writer.Write") && m["w"].Type.HasMethod("io.StringWriter.WriteString")).
+		Report(`Use WriteString when writing a string to an io.StringWriter`).
+		Suggest(`$w.WriteString($s)`)
+}
+
+func ioStringWriterWriteStringMisuse(m dsl.Matcher) {
+	// interface{ io.Writer; io.StringWriter }.WriteString(string([]byte)) => interface{ io.Writer; io.StringWriter }.Write([]byte)
+	m.Match(`$w.WriteString(string($b))`).
+		Where(m["b"].Type.Is("[]byte") && m["w"].Type.HasMethod("io.Writer.Write") && m["w"].Type.HasMethod("io.StringWriter.WriteString")).
+		Report(`Use Write when writing a []byte to an io.Writer`).
+		Suggest(`$w.Write($b)`)
 }
