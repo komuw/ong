@@ -29,3 +29,19 @@ func TestDetach(t *testing.T) {
 		t.Errorf("detached context Err: got %v, want nil", err)
 	}
 }
+
+func ExampleDetach() {
+	someFunc := func(ctx context.Context) {}
+	someOtherFunc := func(ctx context.Context) {}
+
+	foo := func() {
+		ctx := context.WithValue(context.Background(), "my_key", "my_value")
+
+		someFunc(ctx)
+
+		// We need Detach here, because someOtherFunc can outlive the cancellation of the parent context.
+		go someOtherFunc(Detach(ctx))
+	}
+
+	foo()
+}
