@@ -37,9 +37,10 @@ func ExampleDetach() {
 	foo := func() {
 		ctx := context.WithValue(context.Background(), "my_key", "my_value")
 
+		// Detach is not required here.
 		someFunc(ctx)
 
-		// We need Detach here, because someOtherFunc can outlive the cancellation of the parent context.
+		// We need Detach here, because someOtherFunc(having been called in a goroutine) can outlive the cancellation of the parent context.
 		go someOtherFunc(Detach(ctx))
 	}
 
