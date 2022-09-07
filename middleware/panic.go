@@ -15,8 +15,8 @@ import (
 func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
-			err := recover()
-			if err != nil {
+			errR := recover()
+			if errR != nil {
 				reqL := l.WithCtx(r.Context()).WithCaller()
 
 				code := http.StatusInternalServerError
@@ -28,7 +28,7 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 				)
 
 				flds := log.F{
-					"err":         fmt.Sprint(err),
+					"err":         fmt.Sprint(errR),
 					"requestAddr": r.RemoteAddr,
 					"method":      r.Method,
 					"path":        r.URL.EscapedPath(),
@@ -40,7 +40,7 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 				}
 				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
-				if e, ok := err.(error); ok {
+				if e, ok := errR.(error); ok {
 					reqL.Error(e, flds)
 				} else {
 					reqL.Error(nil, flds)

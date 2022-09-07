@@ -5,6 +5,7 @@ Most recent version is listed first.
 ## v0.0.3
 - add an xcontext package: https://github.com/komuw/ong/pull/109
 - use latest semgrep-go linter: https://github.com/komuw/ong/pull/111
+- add semgrep linter: https://github.com/komuw/ong/pull/113
 - add ability to handle csrf tokens in a distributed setting: https://github.com/komuw/ong/pull/112
 
 ## v0.0.2
