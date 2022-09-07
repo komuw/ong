@@ -165,8 +165,12 @@ jobs:
           
           # dont use golangci-lint
           # see: https://twitter.com/dominikhonnef/status/1394766501157167112
+          /home/runner/go/bin/golangci-lint run --no-config --enable=bodyclose,exhaustive,exportloopref,gochecknoglobals,tparallel,unparam ./...
+
+          mkdir -p /tmp/dgryski/semgrep-go
+          wget -nc --output-document=/tmp/dgryski/semgrep-go/rules.go https://raw.githubusercontent.com/dgryski/semgrep-go/master/ruleguard.rules.go
           go get github.com/quasilyte/go-ruleguard/dsl
-          golangci-lint run --config .golangci.yml ./...
+          /home/runner/go/bin/ruleguard -c 1 -rules /tmp/dgryski/semgrep-go/rules.go ./...
           go mod tidy
 
           # deadlock detection
