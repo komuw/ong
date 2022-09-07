@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -108,7 +109,7 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 		}
 
 		res := fmt.Sprintf("serverStart=%v\n. Hello. answer to life is %v \n", serverStart, ting)
-		_, _ = w.Write([]byte(res))
+		_, _ = io.WriteString(w, res)
 	}
 }
 

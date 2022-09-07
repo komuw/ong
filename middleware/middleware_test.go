@@ -26,7 +26,7 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 				panic(e)
 			}
 			if len(b) > 1 {
-				fmt.Fprint(w, string(b))
+				_, _ = w.Write(b)
 				return
 			}
 		}
