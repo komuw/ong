@@ -4,8 +4,8 @@ import "sync"
 
 // Store persists any information(like csrf tokens) that is needed by Ong in its normal running.
 type Store interface {
-	Set(token string)
-	Exists(token string) bool
+	Set(s string)
+	Exists(s string) bool
 	Reset()
 }
 
