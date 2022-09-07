@@ -19,7 +19,7 @@ func someHttpsRedirectorHandler(msg string) http.HandlerFunc {
 			p := make([]byte, 16)
 			_, err := r.Body.Read(p)
 			if err == nil || err == io.EOF {
-				fmt.Fprint(w, string(p))
+				_, _ = w.Write(p)
 				return
 			}
 		}

@@ -1,6 +1,7 @@
 package automax
 
 import (
+	"io"
 	"os"
 	"testing"
 
@@ -15,7 +16,7 @@ func TestSetCpu(t *testing.T) {
 		f, err := os.CreateTemp(dir, "pattern")
 		attest.Ok(t, err)
 
-		_, err = f.Write([]byte(cgroupV2Value))
+		_, err = io.WriteString(f, cgroupV2Value)
 		attest.Ok(t, err)
 
 		t.Cleanup(func() {

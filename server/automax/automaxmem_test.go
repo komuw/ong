@@ -2,6 +2,7 @@ package automax
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
@@ -26,11 +27,11 @@ func TestSetMem(t *testing.T) {
 	})
 
 	cgroupV1Value := 125 * 1024 * 1024 // 125 MB
-	_, err = f1.Write([]byte(fmt.Sprint(cgroupV1Value)))
+	_, err = io.WriteString(f1, fmt.Sprint(cgroupV1Value))
 	attest.Ok(t, err)
 
 	cgroupV2Value := 456 * 1024 * 1024 // 456 MB
-	_, err = f2.Write([]byte(fmt.Sprint(cgroupV2Value)))
+	_, err = io.WriteString(f2, fmt.Sprint(cgroupV2Value))
 	attest.Ok(t, err)
 
 	t.Run("cgroupV1", func(t *testing.T) {
