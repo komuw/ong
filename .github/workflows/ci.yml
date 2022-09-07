@@ -167,6 +167,9 @@ jobs:
           
           # dont use golangci-lint
           # see: https://twitter.com/dominikhonnef/status/1394766501157167112
+          #
+          # In our case we need to use it so that we can be able to use `nolint:gocritic` in the errors package.
+          #
           wget --output-document=.github/semgrep-go-rules.go https://raw.githubusercontent.com/dgryski/semgrep-go/master/ruleguard.rules.go
           go get github.com/quasilyte/go-ruleguard/dsl
           golangci-lint run --config .golangci.yml ./...
