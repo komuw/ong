@@ -170,11 +170,16 @@ jobs:
           #
           # In our case we need to use it so that we can be able to use `nolint:gocritic` in the errors package.
           #
-          wget --output-document=.github/semgrep-go-rules.go https://raw.githubusercontent.com/dgryski/semgrep-go/master/ruleguard.rules.go
+          wget -nc --output-document=/tmp/semgrep-go.zip https://github.com/dgryski/semgrep-go/archive/refs/heads/master.zip
+          unzip /tmp/semgrep-go.zip -d /tmp/semgrep-go
           go get github.com/quasilyte/go-ruleguard/dsl
           golangci-lint run --config .golangci.yml ./...
           go mod tidy
-          git checkout .github/semgrep-go-rules.go
+          python -m venv /tmp/.venv && \
+          . /tmp/.venv/bin/activate && \
+          python -m pip install semgrep && \
+          semgrep -f /tmp/semgrep-go/semgrep-go-master/ . && \
+          deactivate
 
           # deadlock detection
           # https://github.com/cockroachdb/cockroach/issues/7972

@@ -22,4 +22,4 @@ linters-settings:
     settings:
       ruleguard:
         # The special '${configDir}' variable is substituted with the absolute directory containing the golangci config file.
-        rules: '${configDir}/.github/semgrep-go-rules.go'
+        rules: '/tmp/semgrep-go/semgrep-go-master/ruleguard.rules.go'
