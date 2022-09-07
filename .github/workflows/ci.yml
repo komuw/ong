@@ -167,6 +167,7 @@ jobs:
           
           # dont use golangci-lint
           # see: https://twitter.com/dominikhonnef/status/1394766501157167112
+          wget --output-document=.github/semgrep-go-rules.go https://raw.githubusercontent.com/dgryski/semgrep-go/master/ruleguard.rules.go
           go get github.com/quasilyte/go-ruleguard/dsl
           golangci-lint run --config .golangci.yml ./...
           go mod tidy
