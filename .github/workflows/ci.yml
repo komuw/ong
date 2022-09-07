@@ -171,6 +171,7 @@ jobs:
           go get github.com/quasilyte/go-ruleguard/dsl
           golangci-lint run --config .golangci.yml ./...
           go mod tidy
+          git checkout .github/semgrep-go-rules.go
 
           # deadlock detection
           # https://github.com/cockroachdb/cockroach/issues/7972
