@@ -1,4 +1,4 @@
-// Package automax automatically sets GOMEMLIMIT & GOMAXPROCS to match the linux container memory quota, if any.
+// Package automax automatically sets GOMEMLIMIT & GOMAXPROCS to match the linux container memory & cpu quotas, if any.
 package automax
 
 // config is used for tests.
