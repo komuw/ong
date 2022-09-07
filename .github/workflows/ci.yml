@@ -175,10 +175,10 @@ jobs:
           go get github.com/quasilyte/go-ruleguard/dsl
           golangci-lint run --config .golangci.yml ./...
           go mod tidy
-          python -m venv /tmp/.venv && \
-          . /tmp/.venv/bin/activate && \
-          python -m pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org semgrep && \
-          semgrep -f /tmp/semgrep-go/semgrep-go-master/ --error . && \
+          python -m venv /tmp/.venv
+          . /tmp/.venv/bin/activate
+          python -m pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org semgrep
+          semgrep -f /tmp/semgrep-go/semgrep-go-master/ --error .
           deactivate
 
           # deadlock detection
