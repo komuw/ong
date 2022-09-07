@@ -3,9 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
-	"fmt"
 	"mime"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -64,16 +62,6 @@ const (
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
 func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	start := time.Now()
-
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	localIp := localAddr.IP
-	fmt.Println("\n\t localIp: ", localIp, "\n.")
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -148,9 +136,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			2. https://security.stackexchange.com/a/172646
 		*/
 		breachAttackToken := id.Random(csrfBytesTokenLength)
-		tokenToIssue := breachAttackToken + actualToken + fmt.Sprint(localIp)
-
-		fmt.Println("\n\t tokenToIssue: ", tokenToIssue, "\n.")
+		tokenToIssue := breachAttackToken + actualToken
 
 		// 3. create cookie
 		cookie.Set(
