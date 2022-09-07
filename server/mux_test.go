@@ -24,6 +24,8 @@ func someMuxHandler(msg string) http.HandlerFunc {
 func TestMux(t *testing.T) {
 	t.Parallel()
 
+	csrfStore := middleware.NewMemStore()
+
 	tr := &http.Transport{
 		// since we are using self-signed certificates, we need to skip verification.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -37,7 +39,7 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", 443, l),
+			middleware.WithOpts("localhost", 443, l, csrfStore),
 			Routes{
 				NewRoute(
 					"/api",
@@ -64,7 +66,7 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", 443, l),
+			middleware.WithOpts("localhost", 443, l, csrfStore),
 			Routes{
 				NewRoute(
 					uri,
@@ -110,7 +112,7 @@ func TestMux(t *testing.T) {
 		uri := "/api"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", 443, l),
+			middleware.WithOpts("localhost", 443, l, csrfStore),
 			Routes{
 				NewRoute(
 					uri,

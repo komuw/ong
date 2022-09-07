@@ -24,6 +24,7 @@ type Opts struct {
 	allowedMethods []string
 	allowedHeaders []string
 	l              log.Logger
+	st             Store
 }
 
 // NewOpts returns a new opts.
@@ -34,6 +35,7 @@ func NewOpts(
 	allowedMethods []string,
 	allowedHeaders []string,
 	l log.Logger,
+	st Store,
 ) Opts {
 	return Opts{
 		domain:         domain,
@@ -42,12 +44,13 @@ func NewOpts(
 		allowedMethods: allowedMethods,
 		allowedHeaders: allowedHeaders,
 		l:              l,
+		st:             st,
 	}
 }
 
 // WithOpts returns a new opts that has sensible defaults.
-func WithOpts(domain string, httpsPort uint16, l log.Logger) Opts {
-	return NewOpts(domain, httpsPort, nil, nil, nil, l)
+func WithOpts(domain string, httpsPort uint16, l log.Logger, st Store) Opts {
+	return NewOpts(domain, httpsPort, nil, nil, nil, l, st)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -65,6 +68,7 @@ func allDefaultMiddlewares(
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
 	logger := o.l
+	st := o.st
 
 	// The way the middlewares are layered is:
 	// 1. Panic on the outer since we want it to watch all other middlewares.
@@ -92,6 +96,7 @@ func allDefaultMiddlewares(
 								Csrf(
 									wrappedHandler,
 									domain,
+									st,
 								),
 								allowedOrigins,
 								allowedMethods,

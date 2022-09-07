@@ -38,6 +38,8 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 func TestAllMiddleware(t *testing.T) {
 	t.Parallel()
 
+	csrfStore := NewMemStore()
+
 	tr := &http.Transport{
 		// since we are using self-signed certificates, we need to skip verification.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -157,7 +159,7 @@ func TestAllMiddleware(t *testing.T) {
 		// non-safe http methods(like POST) require a server-known csrf token;
 		// otherwise it fails with http 403
 		// so here we make a http GET so that we can have a csrf token.
-		o := WithOpts("localhost", 443, l)
+		o := WithOpts("localhost", 443, l, csrfStore)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 		ts := httptest.NewTLSServer(
 			wrappedHandler,
@@ -187,7 +189,7 @@ func TestAllMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			o := WithOpts("localhost", 443, l)
+			o := WithOpts("localhost", 443, l, csrfStore)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
 			ts := httptest.NewTLSServer(
@@ -225,6 +227,8 @@ func TestAllMiddleware(t *testing.T) {
 func TestMiddlewareServer(t *testing.T) {
 	t.Parallel()
 
+	csrfStore := NewMemStore()
+
 	tr := &http.Transport{
 		// since we are using self-signed certificates, we need to skip verification.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -237,7 +241,7 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("localhost", 443, l)
+		o := WithOpts("localhost", 443, l, csrfStore)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts := httptest.NewTLSServer(
@@ -264,7 +268,7 @@ func TestMiddlewareServer(t *testing.T) {
 			// non-safe http methods(like POST) require a server-known csrf token;
 			// otherwise it fails with http 403
 			// so here we make a http GET so that we can have a csrf token.
-			o := WithOpts("localhost", 443, l)
+			o := WithOpts("localhost", 443, l, csrfStore)
 			msg := "hey"
 			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
@@ -287,7 +291,7 @@ func TestMiddlewareServer(t *testing.T) {
 		}
 
 		msg := "hello world"
-		o := WithOpts("localhost", 443, l)
+		o := WithOpts("localhost", 443, l, csrfStore)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts := httptest.NewTLSServer(
@@ -314,7 +318,7 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("localhost", 443, l)
+		o := WithOpts("localhost", 443, l, csrfStore)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
@@ -361,8 +365,11 @@ var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
+
+	csrfStore := NewMemStore()
+
 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
-	o := WithOpts("localhost", 443, l)
+	o := WithOpts("localhost", 443, l, csrfStore)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 	ts := httptest.NewTLSServer(
 		wrappedHandler,

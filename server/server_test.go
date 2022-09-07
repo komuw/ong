@@ -150,6 +150,8 @@ func someServerTestHandler(msg string) http.HandlerFunc {
 func TestServer(t *testing.T) {
 	t.Parallel()
 
+	csrfStore := middleware.NewMemStore()
+
 	tr := &http.Transport{
 		// since we are using self-signed certificates, we need to skip verification.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -171,7 +173,7 @@ func TestServer(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", port, l),
+			middleware.WithOpts("localhost", port, l, csrfStore),
 			Routes{
 				NewRoute(
 					uri,
@@ -262,7 +264,7 @@ func TestServer(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", port, l),
+			middleware.WithOpts("localhost", port, l, csrfStore),
 			Routes{
 				NewRoute(
 					uri,

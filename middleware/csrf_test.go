@@ -19,7 +19,7 @@ func TestStore(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := NewMemStore()
 
 		tokens := []string{
 			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
@@ -33,19 +33,19 @@ func TestStore(t *testing.T) {
 
 		for _, tok := range tokens {
 			go func(t string) {
-				store.set(t)
+				store.Set(t)
 			}(tok)
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				store.exists(t)
+				store.Exists(t)
 			}(tok)
 		}
 
 		for range tokens {
 			go func() {
-				store.reset()
+				store.Reset()
 			}()
 		}
 
@@ -54,7 +54,7 @@ func TestStore(t *testing.T) {
 			wg.Add(1)
 			go func(t string) {
 				defer wg.Done()
-				store.set(t)
+				store.Set(t)
 			}(tok)
 		}
 		wg.Wait()
@@ -63,7 +63,7 @@ func TestStore(t *testing.T) {
 	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := NewMemStore()
 
 		tokens := []string{
 			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
@@ -79,7 +79,7 @@ func TestStore(t *testing.T) {
 			wg.Add(1)
 			go func(t string) {
 				defer wg.Done()
-				store.set(t)
+				store.Set(t)
 			}(tok)
 		}
 		wg.Wait()
@@ -90,7 +90,7 @@ func TestStore(t *testing.T) {
 	t.Run("reset", func(t *testing.T) {
 		t.Parallel()
 
-		store := newStore()
+		store := NewMemStore()
 
 		tokens := []string{"aaron", "abandoned", "according", "accreditation", "accurately", "accused"}
 		wg := &sync.WaitGroup{}
@@ -98,14 +98,14 @@ func TestStore(t *testing.T) {
 			wg.Add(1)
 			go func(t string) {
 				defer wg.Done()
-				store.set(t)
+				store.Set(t)
 			}(tok)
 		}
 		wg.Wait()
 
 		attest.Equal(t, store._len(), len(tokens))
 
-		store.reset()
+		store.Reset()
 		attest.Equal(t, store._len(), 0)
 	})
 }
@@ -229,12 +229,14 @@ func someCsrfHandler(msg string) http.HandlerFunc {
 func TestCsrf(t *testing.T) {
 	t.Parallel()
 
+	csrfStore := NewMemStore()
+
 	t.Run("middleware succeds", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -255,7 +257,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -286,7 +288,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -310,7 +312,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -332,7 +334,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -369,7 +371,7 @@ func TestCsrf(t *testing.T) {
 		attest.NotZero(t, res.Header.Get(tokenHeader))
 
 		// (e)
-		attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
+		attest.True(t, csrfStore.Exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
 		attest.True(t, csrfStore._len() > 0)
 	})
 
@@ -378,7 +380,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -410,7 +412,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
 
@@ -473,7 +475,7 @@ func TestCsrf(t *testing.T) {
 			attest.NotZero(t, res.Header.Get(tokenHeader))
 
 			// (e)
-			attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
+			attest.True(t, csrfStore.Exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
 			attest.True(t, csrfStore._len() > 0)
 		}
 	})
@@ -483,7 +485,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		rec := httptest.NewRecorder()
 		postMsg := "my name is John"
@@ -512,7 +514,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
+		wrappedHandler := Csrf(someCsrfHandler(msg), domain, csrfStore)
 
 		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
 
@@ -576,7 +578,7 @@ func TestCsrf(t *testing.T) {
 				attest.NotZero(t, res.Header.Get(tokenHeader))
 
 				// (e)
-				attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
+				attest.True(t, csrfStore.Exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
 				attest.True(t, csrfStore._len() > 0)
 			}
 

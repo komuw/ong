@@ -2,10 +2,8 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"mime"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/komuw/ong/id"
@@ -17,19 +15,19 @@ import (
 //   (a) https://github.com/gofiber/fiber whose license(MIT) can be found here:            https://github.com/gofiber/fiber/blob/v2.34.1/LICENSE
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
-var (
-	// errCsrfTokenNotFound is returned when a request using a non-safe http method
-	// either does not supply a csrf token, or the supplied token is not recognized by the server.
-	errCsrfTokenNotFound = errors.New("csrf token not found")
-	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
-	// Imagine if you had `Csrf(loginHandler, domain)` & `Csrf(cartCheckoutHandler, domain)`, if they didn't share a global store,
-	// a customer navigating from login to checkout would get a errCsrfTokenNotFound error; which is not what we want.
-	csrfStore = newStore() //nolint:gochecknoglobals
-)
+type errOng string
+
+func (e errOng) Error() string {
+	return string(e)
+}
 
 type csrfContextKey string
 
 const (
+	// errCsrfTokenNotFound is returned when a request using a non-safe http method
+	// either does not supply a csrf token, or the supplied token is not recognized by the server.
+	errCsrfTokenNotFound = errOng("csrf token not found")
+
 	// CsrfTokenFormName is the name of the html form name attribute for csrf token.
 	CsrfTokenFormName = "csrftoken" // named after what django uses.
 	// CsrfHeader is the name of the http header that Ong uses to store csrf token.
@@ -60,7 +58,7 @@ const (
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
-func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
+func Csrf(wrappedHandler http.HandlerFunc, domain string, st Store) http.HandlerFunc {
 	start := time.Now()
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +100,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 				break
 			}
 
-			if !csrfStore.exists(actualToken) {
+			if !st.Exists(actualToken) {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
 				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
@@ -161,13 +159,13 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, tokenToIssue))
 
 		// 7. save `actualToken` in memory store.
-		csrfStore.set(actualToken)
+		st.Set(actualToken)
 
 		// 8. reset memory to decrease its size.
 		now := time.Now()
 		diff := now.Sub(start)
 		if diff > resetDuration {
-			csrfStore.reset()
+			st.Reset()
 			start = now
 		}
 
@@ -233,46 +231,4 @@ func getToken(r *http.Request) (actualToken string) {
 	}
 
 	return tok
-}
-
-// store persists csrf tokens server-side, in-memory.
-type store struct {
-	mu sync.RWMutex // protects m
-	m  map[string]struct{}
-}
-
-func newStore() *store {
-	return &store{
-		m: map[string]struct{}{},
-	}
-}
-
-func (s *store) exists(actualToken string) bool {
-	if len(actualToken) < 1 {
-		return false
-	}
-	s.mu.RLock()
-	_, ok := s.m[actualToken]
-	s.mu.RUnlock()
-	return ok
-}
-
-func (s *store) set(actualToken string) {
-	s.mu.Lock()
-	s.m[actualToken] = struct{}{}
-	s.mu.Unlock()
-}
-
-func (s *store) reset() {
-	s.mu.Lock()
-	s.m = map[string]struct{}{}
-	s.mu.Unlock()
-}
-
-// used in tests
-func (s *store) _len() int {
-	s.mu.RLock()
-	l := len(s.m)
-	s.mu.RUnlock()
-	return l
 }
