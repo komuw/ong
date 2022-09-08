@@ -13,103 +13,6 @@ import (
 	"github.com/komuw/ong/id"
 )
 
-func TestStore(t *testing.T) {
-	t.Parallel()
-
-	t.Run("concurrency safe", func(t *testing.T) {
-		t.Parallel()
-
-		store := newStore()
-
-		tokens := []string{
-			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
-			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
-			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
-			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
-			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
-			"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
-		}
-
-		for _, tok := range tokens {
-			go func(t string) {
-				store.set(t)
-			}(tok)
-		}
-
-		for _, tok := range tokens {
-			go func(t string) {
-				store.exists(t)
-			}(tok)
-		}
-
-		for range tokens {
-			go func() {
-				store.reset()
-			}()
-		}
-
-		wg := &sync.WaitGroup{}
-		for _, tok := range tokens {
-			wg.Add(1)
-			go func(t string) {
-				defer wg.Done()
-				store.set(t)
-			}(tok)
-		}
-		wg.Wait()
-	})
-
-	t.Run("set", func(t *testing.T) {
-		t.Parallel()
-
-		store := newStore()
-
-		tokens := []string{
-			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
-			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
-			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
-			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
-			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
-			"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
-		}
-		wg := &sync.WaitGroup{}
-		for _, tok := range tokens {
-			wg.Add(1)
-			go func(t string) {
-				defer wg.Done()
-				store.set(t)
-			}(tok)
-		}
-		wg.Wait()
-
-		attest.Equal(t, store._len(), len(tokens))
-	})
-
-	t.Run("reset", func(t *testing.T) {
-		t.Parallel()
-
-		store := newStore()
-
-		tokens := []string{"aaron", "abandoned", "according", "accreditation", "accurately", "accused"}
-		wg := &sync.WaitGroup{}
-		for _, tok := range tokens {
-			wg.Add(1)
-			go func(t string) {
-				defer wg.Done()
-				store.set(t)
-			}(tok)
-		}
-		wg.Wait()
-
-		attest.Equal(t, store._len(), len(tokens))
-
-		store.reset()
-		attest.Equal(t, store._len(), 0)
-	})
-}
-
 func TestGetToken(t *testing.T) {
 	t.Parallel()
 
@@ -123,40 +26,24 @@ func TestGetToken(t *testing.T) {
 
 	t.Run("small token size", func(t *testing.T) {
 		t.Parallel()
-		{
-			want := id.Random(csrfBytesTokenLength)
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.AddCookie(&http.Cookie{
-				Name:     csrfCookieName,
-				Value:    want,
-				Path:     "/",
-				HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
-				Secure:   true,  // https only.
-				SameSite: http.SameSiteStrictMode,
-			})
-			tok := getToken(req)
-			attest.Zero(t, tok)
-		}
-		{
-			want := id.Random(csrfBytesTokenLength / 2)
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.AddCookie(&http.Cookie{
-				Name:     csrfCookieName,
-				Value:    want,
-				Path:     "/",
-				HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
-				Secure:   true,  // https only.
-				SameSite: http.SameSiteStrictMode,
-			})
-			tok := getToken(req)
-			attest.Zero(t, tok)
-		}
+		want := id.Random(csrfBytesTokenLength / 2)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.AddCookie(&http.Cookie{
+			Name:     csrfCookieName,
+			Value:    want,
+			Path:     "/",
+			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
+			Secure:   true,  // https only.
+			SameSite: http.SameSiteStrictMode,
+		})
+		tok := getToken(req)
+		attest.Zero(t, tok)
 	})
 
 	t.Run("from cookie", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(2 * csrfBytesTokenLength)
+		want := id.Random(csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
 			Name:     csrfCookieName,
@@ -167,17 +54,17 @@ func TestGetToken(t *testing.T) {
 			SameSite: http.SameSiteStrictMode,
 		})
 		got := getToken(req)
-		attest.Equal(t, got, want[csrfStringTokenlength:])
+		attest.Equal(t, got, want)
 	})
 
 	t.Run("from header", func(t *testing.T) {
 		t.Parallel()
 
-		want := id.Random(2 * csrfBytesTokenLength)
+		want := id.Random(csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Set(CsrfHeader, want)
 		got := getToken(req)
-		attest.Equal(t, got, want[csrfStringTokenlength:])
+		attest.Equal(t, got, want)
 	})
 
 	t.Run("from form", func(t *testing.T) {
@@ -189,7 +76,7 @@ func TestGetToken(t *testing.T) {
 		attest.Ok(t, err)
 		req.Form.Add(CsrfTokenFormName, want)
 		got := getToken(req)
-		attest.Equal(t, got, want[csrfStringTokenlength:])
+		attest.Equal(t, got, want)
 	})
 
 	t.Run("cookie takes precedence", func(t *testing.T) {
@@ -213,7 +100,7 @@ func TestGetToken(t *testing.T) {
 		req.Form.Add(CsrfTokenFormName, formToken)
 
 		got := getToken(req)
-		attest.Equal(t, got, cookieToken[csrfStringTokenlength:])
+		attest.Equal(t, got, cookieToken)
 	})
 }
 
@@ -257,7 +144,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
+		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
@@ -278,7 +165,7 @@ func TestCsrf(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
-		attest.Equal(t, res.Header.Get(tokenHeader)[csrfStringTokenlength:], reqCsrfTok[csrfStringTokenlength:])
+		attest.NotZero(t, res.Header.Get(tokenHeader))
 	})
 
 	t.Run("fetch token from HEAD requests", func(t *testing.T) {
@@ -288,7 +175,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
+		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 		req.Header.Set(CsrfHeader, reqCsrfTok)
@@ -302,7 +189,7 @@ func TestCsrf(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
-		attest.Equal(t, res.Header.Get(tokenHeader)[csrfStringTokenlength:], reqCsrfTok[csrfStringTokenlength:])
+		attest.NotZero(t, res.Header.Get(tokenHeader))
 	})
 
 	t.Run("can generate csrf tokens", func(t *testing.T) {
@@ -352,7 +239,6 @@ func TestCsrf(t *testing.T) {
 		// (b) cookie header is set.
 		// (c) vary header is updated.
 		// (d) r.context is updated.
-		// (e) memory store is updated.
 
 		// (a)
 		attest.Equal(t, len(res.Cookies()), 1)
@@ -367,10 +253,6 @@ func TestCsrf(t *testing.T) {
 
 		// (d)
 		attest.NotZero(t, res.Header.Get(tokenHeader))
-
-		// (e)
-		attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
-		attest.True(t, csrfStore._len() > 0)
 	})
 
 	t.Run("POST requests must have valid token", func(t *testing.T) {
@@ -380,7 +262,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
+		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
@@ -405,14 +287,16 @@ func TestCsrf(t *testing.T) {
 		attest.Equal(t, len(res.Cookies()), 0)
 	})
 
-	t.Run("POST requests with valid token", func(t *testing.T) {
+	t.Run("POST requests with valid token one tab", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
 		domain := "example.com"
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
+		key := getKey()
+		encryptedMsg, _ := encrypt(key, "msgToEncryt")
+		reqCsrfTok := encode(encryptedMsg)
 
 		{
 			// make GET request
@@ -456,7 +340,6 @@ func TestCsrf(t *testing.T) {
 			// (b) cookie header is set.
 			// (c) vary header is updated.
 			// (d) r.context is updated.
-			// (e) memory store is updated.
 
 			// (a)
 			attest.Equal(t, len(res.Cookies()), 1)
@@ -471,10 +354,6 @@ func TestCsrf(t *testing.T) {
 
 			// (d)
 			attest.NotZero(t, res.Header.Get(tokenHeader))
-
-			// (e)
-			attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
-			attest.True(t, csrfStore._len() > 0)
 		}
 	})
 
@@ -514,7 +393,9 @@ func TestCsrf(t *testing.T) {
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := Csrf(someCsrfHandler(msg), domain)
 
-		reqCsrfTok := id.Random(2 * csrfBytesTokenLength)
+		key := getKey()
+		encryptedMsg, _ := encrypt(key, "msgToEncryt")
+		reqCsrfTok := encode(encryptedMsg)
 
 		{
 			// make GET request
@@ -559,7 +440,6 @@ func TestCsrf(t *testing.T) {
 				// (b) cookie header is set.
 				// (c) vary header is updated.
 				// (d) r.context is updated.
-				// (e) memory store is updated.
 
 				// (a)
 				attest.Equal(t, len(res.Cookies()), 1)
@@ -574,10 +454,6 @@ func TestCsrf(t *testing.T) {
 
 				// (d)
 				attest.NotZero(t, res.Header.Get(tokenHeader))
-
-				// (e)
-				attest.True(t, csrfStore.exists(res.Header.Get(tokenHeader)[csrfStringTokenlength:]))
-				attest.True(t, csrfStore._len() > 0)
 			}
 
 			wg := &sync.WaitGroup{}

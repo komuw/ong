@@ -5,7 +5,6 @@ import (
 	"errors"
 	"mime"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/komuw/ong/id"
@@ -17,15 +16,9 @@ import (
 //   (a) https://github.com/gofiber/fiber whose license(MIT) can be found here:            https://github.com/gofiber/fiber/blob/v2.34.1/LICENSE
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
-var (
-	// errCsrfTokenNotFound is returned when a request using a non-safe http method
-	// either does not supply a csrf token, or the supplied token is not recognized by the server.
-	errCsrfTokenNotFound = errors.New("csrf token not found")
-	// csrfStore needs to be a global var so that different handlers that are decorated with the Csrf middleware can use same store.
-	// Imagine if you had `Csrf(loginHandler, domain)` & `Csrf(cartCheckoutHandler, domain)`, if they didn't share a global store,
-	// a customer navigating from login to checkout would get a errCsrfTokenNotFound error; which is not what we want.
-	csrfStore = newStore() //nolint:gochecknoglobals
-)
+// errCsrfTokenNotFound is returned when a request using a non-safe http method
+// either does not supply a csrf token, or the supplied token is not recognized by the server.
+var errCsrfTokenNotFound = errors.New("csrf token not found")
 
 type csrfContextKey string
 
@@ -49,19 +42,17 @@ const (
 	// django: 1yr??
 	// gofiber/fiber; 1hr
 	tokenMaxAge = 12 * time.Hour
-	// The memory store is reset(for memory efficiency) every resetDuration.
-	resetDuration = tokenMaxAge + (7 * time.Minute)
 
 	// django appears to use 32 random characters for its csrf token.
 	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
 	csrfBytesTokenLength = 32
-	// we call `id.Random()` with `csrfBytesTokenLength` and it returns a string of `csrfStringTokenlength`
-	csrfStringTokenlength = 43
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
 func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
-	start := time.Now()
+	// TODO: supply key as middleware argument.
+	key := getKey() // TODO: validate key length.
+	msgToEncryt := id.Random(16)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -102,7 +93,22 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 				break
 			}
 
-			if !csrfStore.exists(actualToken) {
+			tokenExists := func(actualToken string) error {
+				encryptedMsg, err := decode(actualToken)
+				if err != nil {
+					return err
+				}
+
+				_, err = decrypt(key, encryptedMsg)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}
+
+			errN := tokenExists(actualToken)
+			if errN != nil {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
 				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
@@ -115,11 +121,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			}
 		}
 
-		// 2. If actualToken is still an empty string. generate it.
-		if actualToken == "" {
-			actualToken = id.Random(csrfBytesTokenLength)
-		}
-
+		// 2. generate a new token.
 		/*
 			We need to try and protect against BreachAttack[1]. See[2] for a refresher on how it works.
 			The mitigations against the attack in order of effectiveness are:
@@ -131,12 +133,18 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 			(f) Length hiding (by adding random number of bytes to the responses)
 			(g) Rate-limiting the requests
 			Most csrf implementation use (d). Here, we'll use (c)
+			The [encrypt] func uses a random nonce everytime it is called.
 
 			1. http://breachattack.com/
 			2. https://security.stackexchange.com/a/172646
 		*/
-		breachAttackToken := id.Random(csrfBytesTokenLength)
-		tokenToIssue := breachAttackToken + actualToken
+		encryptedMsg, _ := encrypt(
+			// the only error you can get from [encrypt] is if key length is not okay.
+			// but we already validate key length ahead of time.
+			key,
+			msgToEncryt,
+		)
+		tokenToIssue := encode(encryptedMsg)
 
 		// 3. create cookie
 		cookie.Set(
@@ -159,17 +167,6 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 
 		// 6. store tokenToIssue in context
 		r = r.WithContext(context.WithValue(ctx, csrfCtxKey, tokenToIssue))
-
-		// 7. save `actualToken` in memory store.
-		csrfStore.set(actualToken)
-
-		// 8. reset memory to decrease its size.
-		now := time.Now()
-		diff := now.Sub(start)
-		if diff > resetDuration {
-			csrfStore.reset()
-			start = now
-		}
 
 		wrappedHandler(w, r)
 	}
@@ -221,58 +218,11 @@ func getToken(r *http.Request) (actualToken string) {
 		tok = fromHeader()
 	}
 
-	if len(tok) != (2 * csrfStringTokenlength) {
+	if len(tok) < csrfBytesTokenLength {
 		// Request has presented a token that we probably didn't generate coz this library issues
-		// a token that is of length (2 * csrfStringTokenlength).
-		// So, set it to empty string so that a proper token will get generated.
+		// tokens with le > csrfBytesTokenLength
 		tok = ""
-	} else {
-		// In this lib, the token we issue to the user is `breachAttackToken + actualToken`
-		// So here we retrieve the actual token
-		tok = tok[csrfStringTokenlength:]
 	}
 
 	return tok
-}
-
-// store persists csrf tokens server-side, in-memory.
-type store struct {
-	mu sync.RWMutex // protects m
-	m  map[string]struct{}
-}
-
-func newStore() *store {
-	return &store{
-		m: map[string]struct{}{},
-	}
-}
-
-func (s *store) exists(actualToken string) bool {
-	if len(actualToken) < 1 {
-		return false
-	}
-	s.mu.RLock()
-	_, ok := s.m[actualToken]
-	s.mu.RUnlock()
-	return ok
-}
-
-func (s *store) set(actualToken string) {
-	s.mu.Lock()
-	s.m[actualToken] = struct{}{}
-	s.mu.Unlock()
-}
-
-func (s *store) reset() {
-	s.mu.Lock()
-	s.m = map[string]struct{}{}
-	s.mu.Unlock()
-}
-
-// used in tests
-func (s *store) _len() int {
-	s.mu.RLock()
-	l := len(s.m)
-	s.mu.RUnlock()
-	return l
 }

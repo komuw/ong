@@ -8,20 +8,6 @@ import (
 	"time"
 )
 
-/*
-customEncodeURL is like `bas64.encodeURL` except we replace:
-
-	(a) `-_` with `HQ`
-	(b) `0,O,o` with `3,A,q`
-	(c) `U,V,u,v` with `K,X,k,x`
-	(d) `I,i,L,l,1` with `G,g,R,r,8`
-	(e) `b,6` with `m,7`
-*/
-const customEncodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz3823457789HQ"
-
-// customEncoding is like `base64.RawURLEncoding` except that it uses customEncodeURL
-var customEncoding = base64.NewEncoding(customEncodeURL).WithPadding(base64.NoPadding) //nolint:gochecknoglobals
-
 // New returns a new random string
 func New() string {
 	return Random(16)
@@ -48,5 +34,18 @@ func Random(n int) string {
 		_, _ = mathRand.Read(b) // docs say that it always returns a nil error.
 	}
 
-	return customEncoding.EncodeToString(b)
+	return encoding().EncodeToString(b)
+}
+
+// encodeURL is like [base64.EncodeURL] except we replace:
+// (a) `-_` with `HQ`
+// (b) `0,O,o` with `3,A,q`
+// (c) `U,V,u,v` with `K,X,k,x`
+// (d) `I,i,L,l,1` with `G,g,R,r,8`
+// (e) `b,6` with `m,7`
+const encodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz3823457789HQ"
+
+// encoding returns a [base64.Encoding] that is similar to [base64.RawURLEncoding] except that it uses [encodeURL]
+func encoding() *base64.Encoding {
+	return base64.NewEncoding(encodeURL).WithPadding(base64.NoPadding)
 }

@@ -14,9 +14,8 @@ func TestSecret(t *testing.T) {
 	t.Run("encrypt/decrypt", func(t *testing.T) {
 		t.Parallel()
 
-		secretKey := "hey"
 		msgToEncryt := "hello world!"
-		key := getKey(secretKey)
+		key := getKey()
 
 		encryptedMsg, err := encrypt(key, msgToEncryt)
 		attest.Ok(t, err)
@@ -27,12 +26,32 @@ func TestSecret(t *testing.T) {
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 	})
 
+	t.Run("encrypt/decrypt base64", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncryt := "hello world!"
+		key := getKey()
+
+		encryptedMsg, err := encrypt(key, msgToEncryt)
+		attest.Ok(t, err)
+
+		token := encode(encryptedMsg)
+
+		encryptedMsg2, err := decode(token)
+		decryptedMsg, err := decrypt(key, encryptedMsg2)
+		attest.Ok(t, err)
+
+		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+	})
+
 	t.Run("encrypt same msg is unique", func(t *testing.T) {
 		t.Parallel()
 
-		secretKey := "hey"
+		// This is a useful property especially in how we use it in csrf protection
+		// against breachattack.
+
 		msgToEncryt := "hello world!"
-		key := getKey(secretKey)
+		key := getKey()
 
 		encryptedMsg, err := encrypt(key, msgToEncryt)
 		attest.Ok(t, err)
@@ -58,11 +77,10 @@ func TestSecret(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		secretKey := "hey"
 		msgToEncryt := "hello world!"
 
 		run := func() {
-			key := getKey(secretKey)
+			key := getKey()
 			encryptedMsg, err := encrypt(key, msgToEncryt)
 			attest.Ok(t, err)
 			decryptedMsg, err := decrypt(key, encryptedMsg)

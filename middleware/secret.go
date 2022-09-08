@@ -2,11 +2,11 @@ package middleware
 
 import (
 	cryptoRand "crypto/rand"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	mathRand "math/rand"
 	"time"
-
-	"golang.org/x/crypto/argon2"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )
@@ -39,7 +39,7 @@ func rand(n1, n2 int) []byte {
 }
 
 // TODO: this func should be called only once.
-func getKey(secretKey string) []byte {
+func getKey() []byte {
 	// secretKey comes from the user.
 
 	/*
@@ -49,20 +49,23 @@ func getKey(secretKey string) []byte {
 		salt should be random.
 		- https://pkg.go.dev/golang.org/x/crypto/argon2#Key
 	*/
-	time := uint32(3)
-	memory := uint32(32 * 1024) // 32MB
-	threads := uint8(4)
-	salt := rand(16, 16)
+	// time := uint32(3)
+	// memory := uint32(32 * 1024) // 32MB
+	// threads := uint8(4)
+	// salt := rand(16, 16) // 16bytes are recommended
+	// key := argon2.Key(
+	// 	[]byte(secretKey),
+	// 	salt,
+	// 	time,
+	// 	memory,
+	// 	threads,
+	// 	chacha20poly1305.KeySize,
+	// )
 
-	key := argon2.Key(
-		[]byte(secretKey),
-		salt,
-		time,
-		memory,
-		threads,
-		chacha20poly1305.KeySize,
-	)
-
+	key := []byte("the key should 32bytes & random.")
+	if len(key) != chacha20poly1305.KeySize {
+		panic(fmt.Sprintf("key should have length of %d", chacha20poly1305.KeySize))
+	}
 	return key
 }
 
@@ -105,4 +108,12 @@ func decrypt(key, encryptedMsg []byte) ([]byte, error) {
 	}
 
 	return decryptedMsg, nil
+}
+
+func encode(payload []byte) string {
+	return base64.RawURLEncoding.EncodeToString(payload)
+}
+
+func decode(payload string) ([]byte, error) {
+	return base64.RawURLEncoding.DecodeString(payload)
 }
