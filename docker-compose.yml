@@ -1,42 +1,27 @@
-version: '3.3'
+version: '3.9'
 services:
 
-  tyk-gateway:
-    # We are using Tyk release candidate 4.
-    # You can however use any other version
-    image: tykio/tyk-gateway:v4.0.0-rc19
+  service-one:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      # This port number is the port at which the Tyk gateway is listening on.
-      # It should match the value of `listen_port` in the `my_tyk.conf` file.
-      - "7391:7391"
-    volumes:
-      - ./my_tyk.conf:/opt/tyk-gateway/tyk.conf
+      - "45080:65080"
+      - "45081:65081"
+      - "45060:65060"
     networks:
-      - tyk
+      - hey
 
-  # Tyk depends on a store of some sorts to persist API definitions.
-  # Here we use redis 
-  tyk-redis:
-    image: redis
+  service-two:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
+      - "55080:65080"
+      - "55081:65081"
+      - "55060:65060"
     networks:
-      - tyk
+      - hey
 
-volumes:
-  redis-data: null
-
-# We create a docker network and so that tyk-gateway is able to access the redis store.
 networks:
-  tyk: null
-
-#
-#
-#
-#
-# some miscellaneous notes:
-#
-# apt -y update;apt -y install procps psmisc telnet iputils-ping nano curl wget
-# wget https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v2.0/json/petstore.json
+  hey: null
