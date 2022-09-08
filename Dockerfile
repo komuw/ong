@@ -4,7 +4,7 @@ FROM golang:1.19
 # create a working directory inside the image
 WORKDIR /app
 
-RUN apt-get update -y;apt-get -y install libnss3-tools
+RUN apt-get update -y;apt-get -y install libnss3-tools procps psmisc telnet iputils-ping nano curl wget
 
 RUN mkdir -p /root/.pki/nssdb
 
