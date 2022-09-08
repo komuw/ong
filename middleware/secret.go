@@ -4,7 +4,6 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	mathRand "math/rand"
 	"time"
 
@@ -36,37 +35,6 @@ func rand(n1, n2 int) []byte {
 		_, _ = mathRand.Read(b)                    // docs say that it always returns a nil error.
 	}
 	return b
-}
-
-// TODO: this func should be called only once.
-func getKey() []byte {
-	// secretKey comes from the user.
-
-	/*
-		The draft RFC recommends[2] time=3, and memory=32*1024 is a sensible number.
-		If using that amount of memory (32 MB) is not possible in some contexts then the time parameter can be increased to compensate.
-		The number of threads can be adjusted to the number of available CPUs.
-		salt should be random.
-		- https://pkg.go.dev/golang.org/x/crypto/argon2#Key
-	*/
-	// time := uint32(3)
-	// memory := uint32(32 * 1024) // 32MB
-	// threads := uint8(4)
-	// salt := rand(16, 16) // 16bytes are recommended
-	// key := argon2.Key(
-	// 	[]byte(secretKey),
-	// 	salt,
-	// 	time,
-	// 	memory,
-	// 	threads,
-	// 	chacha20poly1305.KeySize,
-	// )
-
-	key := []byte("the key should 32bytes & random.")
-	if len(key) != chacha20poly1305.KeySize {
-		panic(fmt.Sprintf("key should have length of %d", chacha20poly1305.KeySize))
-	}
-	return key
 }
 
 func encrypt(key []byte, msg string) ([]byte, error) {

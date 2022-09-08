@@ -3,11 +3,13 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"mime"
 	"net/http"
 	"time"
 
 	"github.com/komuw/ong/id"
+	"golang.org/x/crypto/chacha20poly1305"
 
 	"github.com/komuw/ong/cookie"
 )
@@ -49,9 +51,10 @@ const (
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
-func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
-	// TODO: supply key as middleware argument.
-	key := getKey() // TODO: validate key length.
+func Csrf(wrappedHandler http.HandlerFunc, secretKey []byte, domain string) http.HandlerFunc {
+	if err := validKey(secretKey); err != nil {
+		panic(err)
+	}
 	msgToEncryt := id.Random(16)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +96,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 				break
 			}
 
-			errN := validateToken(key, actualToken)
+			errN := validateToken(secretKey, actualToken)
 			if errN != nil {
 				// we should fail the request since it means that the server is not aware of such a token.
 				cookie.Delete(w, csrfCookieName, domain)
@@ -127,7 +130,7 @@ func Csrf(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		encryptedMsg, _ := encrypt(
 			// the only error you can get from [encrypt] is if key length is not okay.
 			// but we already validate key length ahead of time.
-			key,
+			secretKey,
 			msgToEncryt,
 		)
 		tokenToIssue := encode(encryptedMsg)
@@ -226,4 +229,21 @@ func validateToken(key []byte, actualToken string) error {
 	}
 
 	return nil
+}
+
+// validKey checks whether the secretKey in question is valid.
+func validKey(secretKey []byte) error {
+	const nulByte = '\x00'
+
+	if len(secretKey) != chacha20poly1305.KeySize {
+		return fmt.Errorf("secretKey should be of size: %d", chacha20poly1305.KeySize)
+	}
+
+	for _, v := range secretKey {
+		if v != nulByte {
+			return nil
+		}
+	}
+
+	return errors.New("the secretKey is not random")
 }

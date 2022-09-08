@@ -16,7 +16,17 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"golang.org/x/crypto/chacha20poly1305"
 )
+
+func getSecretKey() []byte {
+	key := []byte("the key should 32bytes & random.")
+	if len(key) != chacha20poly1305.KeySize {
+		panic(fmt.Sprintf("key should have length of %d", chacha20poly1305.KeySize))
+	}
+
+	return key
+}
 
 func TestDrainDuration(t *testing.T) {
 	t.Parallel()
@@ -171,7 +181,7 @@ func TestServer(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", port, l),
+			middleware.WithOpts("localhost", port, getSecretKey(), l),
 			Routes{
 				NewRoute(
 					uri,
@@ -262,7 +272,7 @@ func TestServer(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", port, l),
+			middleware.WithOpts("localhost", port, getSecretKey(), l),
 			Routes{
 				NewRoute(
 					uri,
