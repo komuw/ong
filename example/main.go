@@ -19,12 +19,10 @@ import (
 // 1. https://www.youtube.com/watch?v=rWBSMsLG8po
 // 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
 
-// TODO: update readme.
-
 func main() {
 	api := NewMyApi("someDb")
 	l := log.New(context.Background(), os.Stdout, 1000)
-	secretKey := []byte("the key should 32bytes & random.")
+	secretKey := []byte("key should be 32bytes and random")
 	mux := server.NewMux(
 		l,
 		middleware.WithOpts("localhost", 8081, secretKey, l),

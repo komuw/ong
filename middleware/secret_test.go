@@ -37,7 +37,7 @@ func getSecretKey() []byte {
 		)
 	*/
 
-	key := []byte("the key should 32bytes & random.")
+	key := []byte("key should be 32bytes and random")
 	if len(key) != chacha20poly1305.KeySize {
 		panic(fmt.Sprintf("key should have length of %d", chacha20poly1305.KeySize))
 	}
