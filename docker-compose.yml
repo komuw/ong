@@ -14,10 +14,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "45080:65080"
-      - "45081:65081"
-      - "45060:65060"
     networks:
       - hey
 
@@ -25,10 +21,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "55080:65080"
-      - "55081:65081"
-      - "55060:65060"
+    networks:
+      - hey
+
+  service-three:
+    build:
+      context: .
+      dockerfile: Dockerfile
     networks:
       - hey
 

@@ -24,6 +24,8 @@ RUN go build -race -o theApp example/main.go
 EXPOSE 65080
 EXPOSE 65081
 EXPOSE 65060
+EXPOSE 80
+EXPOSE 443
 
 # command to be used to execute when the image is used to start a container
 CMD [ "./theApp" ]
