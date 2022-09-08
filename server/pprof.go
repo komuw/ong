@@ -15,7 +15,7 @@ import (
 /*
 example usage:
 
-	go tool pprof  http://localhost:6060/debug/pprof/heap
+	go tool pprof  http://localhost:65060/debug/pprof/heap
 */
 func startPprofServer(logger log.Logger) {
 	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
@@ -30,7 +30,7 @@ func startPprofServer(logger log.Logger) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	port := 6060
+	port := 65060
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	readHeader, read, write, idle := pprofTimeouts()
 	pprofSrv := &http.Server{
@@ -70,9 +70,9 @@ func pprofTimeouts() (readHeader, read, write, idle time.Duration) {
 	/*
 		The pprof tool supports fetching profles by duration.
 		eg; fetch cpu profile for the last 5mins(300sec):
-			go tool pprof http://localhost:6060/debug/pprof/profile?seconds=300
+			go tool pprof http://localhost:65060/debug/pprof/profile?seconds=300
 		This may fail with an error like:
-			http://localhost:6060/debug/pprof/profile?seconds=300: server response: 400 Bad Request - profile duration exceeds server's WriteTimeout
+			http://localhost:65060/debug/pprof/profile?seconds=300: server response: 400 Bad Request - profile duration exceeds server's WriteTimeout
 		So we need to be generous with our timeouts. Which is okay since pprof runs in a mux that is not exposed to the internet(localhost)
 	*/
 	readHeader = 7 * time.Second

@@ -38,7 +38,7 @@ func main() {
 	secretKey := []byte("key should be 32bytes and random")
 	mux := server.NewMux(
 		l,
-		middleware.WithOpts("localhost", 8081, secretKey, l),
+		middleware.WithOpts("localhost", 65081, secretKey, l),
 		server.Routes{
 			server.NewRoute(
 				"hello/",

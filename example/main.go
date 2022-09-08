@@ -25,7 +25,7 @@ func main() {
 	secretKey := []byte("key should be 32bytes and random")
 	mux := server.NewMux(
 		l,
-		middleware.WithOpts("localhost", 8081, secretKey, l),
+		middleware.WithOpts("localhost", 65081, secretKey, l),
 		server.Routes{
 			server.NewRoute(
 				"/api",
@@ -72,7 +72,7 @@ func NewMyApi(db string) myAPI {
 
 func (m myAPI) handleFileServer() http.HandlerFunc {
 	// Do NOT let `http.FileServer` be able to serve your root directory.
-	// Otherwise, your .git folder and other sensitive info(including http://localhost:8080/main.go) may be available
+	// Otherwise, your .git folder and other sensitive info(including http://localhost:65080/main.go) may be available
 	// instead create a folder that only has your templates and server that.
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP

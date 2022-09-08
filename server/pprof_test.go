@@ -27,7 +27,7 @@ func TestPprofServer(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		uri := "/debug/pprof/heap"
-		port := 6060
+		port := 65060
 		res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
 		attest.Ok(t, err)
 		defer res.Body.Close()
@@ -45,7 +45,7 @@ func TestPprofServer(t *testing.T) {
 
 		runhandler := func() {
 			uri := "/debug/pprof/heap"
-			port := 6060
+			port := 65060
 			res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
 			attest.Ok(t, err)
 			defer res.Body.Close()
