@@ -29,7 +29,7 @@ const (
 	referrerHeader = "Referrer-Policy"
 	stsHeader      = "Strict-Transport-Security"
 
-	cspBytesTokenLength = 32
+	cspBytesTokenLength = csrfBytesTokenLength
 )
 
 // Security is a middleware that adds some important HTTP security headers and assigns them sensible default values.
