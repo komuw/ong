@@ -70,14 +70,13 @@ func Csrf(wrappedHandler http.HandlerFunc, secretKey []byte, domain string) http
 
 		ctx := r.Context()
 
-		actualToken := ""
 		switch r.Method {
 		// safe methods under rfc7231: https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.1
 		case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
-			actualToken = getToken(r)
+			break
 		default:
 			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
-			actualToken = getToken(r)
+			actualToken := getToken(r)
 
 			ct, _, err := mime.ParseMediaType(r.Header.Get(ctHeader))
 			if err == nil &&
