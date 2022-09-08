@@ -1,0 +1,20 @@
+# https://github.com/docker-library/haproxy/blob/master/2.0/Dockerfile
+
+FROM haproxy:1.9
+
+RUN apt-get update -y;apt-get -y install libnss3-tools procps psmisc telnet iputils-ping nano curl wget
+
+COPY haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
+# COPY dhparam.pem /usr/local/etc/haproxy/dhparam.pem
+# COPY mycert.pem /etc/haproxy/mycert
+
+EXPOSE 1936
+EXPOSE 43000
+
+
+# usage:
+# docker build -t myhaproxy .
+# docker run -P myhaproxy
+#
+# docker-compose build && docker-compose up
+# - curl -vLk http://localhost:43000/health

@@ -1,6 +1,15 @@
 version: '3.9'
 services:
 
+  haproxy:
+    build:
+      context: .
+      dockerfile: haproxyDockerfile
+    ports:
+      - "43000:43000"
+    networks:
+      - hey
+
   service-one:
     build:
       context: .
