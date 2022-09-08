@@ -75,6 +75,7 @@ func TestSecret(t *testing.T) {
 		token := encode(encryptedMsg)
 
 		encryptedMsg2, err := decode(token)
+		attest.Ok(t, err)
 		decryptedMsg, err := decrypt(key, encryptedMsg2)
 		attest.Ok(t, err)
 
