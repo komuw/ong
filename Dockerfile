@@ -6,8 +6,6 @@ WORKDIR /app
 
 RUN apt-get update -y;apt-get -y install libnss3-tools procps psmisc telnet iputils-ping nano curl wget
 
-RUN mkdir -p /root/.pki/nssdb
-
 # copy Go modules and dependencies to image
 COPY go.mod /app
 
