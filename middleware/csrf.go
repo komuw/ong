@@ -223,11 +223,7 @@ func validateToken(key []byte, actualToken string) error {
 	}
 
 	_, err = decrypt(key, encryptedMsg)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // validKey checks whether the secretKey in question is valid.
