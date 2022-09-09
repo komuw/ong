@@ -41,7 +41,12 @@ type Enc struct {
 
 // New returns a [cipher.AEAD]
 // The key should be random and 32 bytes in length.
-func New(key []byte) (*Enc, error) {
+// New panics if key is not of sufficient length or if it is full of null bytes.
+func New(key []byte) *Enc {
+	// I think it is okay for New to panic instead of returning an error.
+	// Since this is a crypto library, it is better to fail loudly than fail silently.
+	//
+
 	isRandom := false
 	// if all the elements in the slice are nul bytes, then the key is not random.
 	for _, v := range key {
@@ -52,17 +57,17 @@ func New(key []byte) (*Enc, error) {
 	}
 
 	if !isRandom {
-		return nil, errors.New("the secretKey is not random")
+		panic(errors.New("the secretKey is not random"))
 	}
 
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
 	// It should be preferred when nonce uniqueness cannot be trivially ensured
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return &Enc{aead}, nil
+	return &Enc{aead}
 }
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.

@@ -13,10 +13,7 @@ func ExampleEnc_Encrypt() {
 		panic(err)
 	}
 
-	e, err := enc.New(key)
-	if err != nil {
-		panic(err)
-	}
+	e := enc.New(key)
 
 	plainTextMsg := "Muziki asili yake - Remmy Ongala." // English: `What is the origin of music by Remmy Ongala`
 	encryptedMsg := e.Encrypt(plainTextMsg)
@@ -31,10 +28,7 @@ func ExampleEnc_EncryptEncode() {
 		panic(err)
 	}
 
-	e, err := enc.New(key)
-	if err != nil {
-		panic(err)
-	}
+	e := enc.New(key)
 
 	originalPlainTextMsg := "three little birds."
 	encryptedEncodedMsg := e.EncryptEncode(originalPlainTextMsg)

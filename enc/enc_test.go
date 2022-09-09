@@ -53,20 +53,21 @@ func TestSecret(t *testing.T) {
 
 		// okay key
 		key := getSecretKey()
-		_, err := New(key)
-		attest.Ok(t, err)
+		_ = New(key)
 
 		// short key
-		_, err = New([]byte{1, 3, 8})
-		attest.Error(t, err)
+		attest.Panics(t, func() {
+			_ = New([]byte{1, 3, 8})
+		})
 
 		// non-random key
 		key = getSecretKey()
 		for j := range key {
 			key[j] = nulByte
 		}
-		_, err = New(key)
-		attest.Error(t, err)
+		attest.Panics(t, func() {
+			_ = New(key)
+		})
 	})
 
 	t.Run("encrypt/decrypt", func(t *testing.T) {
@@ -74,8 +75,7 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-		enc, err := New(key)
-		attest.Ok(t, err)
+		enc := New(key)
 
 		encryptedMsg := enc.Encrypt(msgToEncryt)
 
@@ -90,8 +90,7 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-		enc, err := New(key)
-		attest.Ok(t, err)
+		enc := New(key)
 
 		token := enc.EncryptEncode(msgToEncryt)
 
@@ -108,15 +107,13 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-		enc, err := New(key)
-		attest.Ok(t, err)
+		enc := New(key)
 
 		encryptedMsg := enc.Encrypt(msgToEncryt)
 
 		var em []byte
 		for i := 0; i < 4; i++ {
 			em = enc.Encrypt(msgToEncryt)
-			attest.Ok(t, err)
 			if slices.Equal(encryptedMsg, em) {
 				t.Fatal("slices should not be equal")
 			}
@@ -138,11 +135,9 @@ func TestSecret(t *testing.T) {
 
 		run := func() {
 			key := getSecretKey()
-			enc, err := New(key)
-			attest.Ok(t, err)
+			enc := New(key)
 
 			encryptedMsg := enc.Encrypt(msgToEncryt)
-			attest.Ok(t, err)
 			decryptedMsg, err := enc.Decrypt(encryptedMsg)
 			attest.Ok(t, err)
 			attest.Equal(t, string(decryptedMsg), msgToEncryt)
