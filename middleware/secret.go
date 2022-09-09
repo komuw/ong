@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/cipher"
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -26,6 +27,70 @@ import (
 // This file uses [chacha20poly1305.NewX] which is XChaCha20-Poly1305.
 //
 
+// enc is an AEAD cipher mode providing authenticated encryption with associated data.
+// see [cipher.AEAD]
+type enc struct {
+	cipher.AEAD
+}
+
+// NewEnc returns an [cipher.AEAD]
+// The key should be random and 32 bytes in length.
+func NewEnc(key []byte) (*enc, error) {
+	const nulByte = '\x00'
+	isRandom := false
+	// if all the elements in the slice are nul bytes, then the key is not random.
+	for _, v := range key {
+		if v != nulByte {
+			isRandom = true
+			break
+		}
+	}
+
+	if !isRandom {
+		return nil, errors.New("the secretKey is not random")
+	}
+
+	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
+	// It should be preferred when nonce uniqueness cannot be trivially ensured
+	aead, err := chacha20poly1305.NewX(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return &enc{aead}, nil
+}
+
+// Encrypt encrypts the msg using XChaCha20-Poly1305
+func (e *enc) Encrypt(msg string) []byte {
+	msgToEncryt := []byte(msg)
+
+	// Select a random nonce, and leave capacity for the ciphertext.
+	nonce := rand(e.NonceSize(), e.NonceSize()+len(msgToEncryt)+e.Overhead())
+
+	// Encrypt the message and append the ciphertext to the nonce.
+	encryptedMsg := e.Seal(nonce, nonce, msgToEncryt, nil)
+
+	return encryptedMsg
+}
+
+// Decrypt decrypts the encryptedMsg using XChaCha20-Poly1305
+func (e *enc) Decrypt(encryptedMsg []byte) ([]byte, error) {
+	if len(encryptedMsg) < e.NonceSize() {
+		return nil, errors.New("ciphertext too short")
+	}
+
+	// Split nonce and ciphertext.
+	nonce, ciphertext := encryptedMsg[:e.NonceSize()], encryptedMsg[e.NonceSize():]
+
+	// Decrypt the message and check it wasn't tampered with.
+	decryptedMsg, err := e.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return decryptedMsg, nil
+}
+
 func rand(n1, n2 int) []byte {
 	b := make([]byte, n1, n2)
 	if _, err := cryptoRand.Read(b); err != nil {
@@ -41,47 +106,6 @@ func rand(n1, n2 int) []byte {
 		_, _ = mathRand.Read(b)                    // docs say that it always returns a nil error.
 	}
 	return b
-}
-
-func encrypt(key []byte, msg string) ([]byte, error) {
-	msgToEncryt := []byte(msg)
-
-	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
-	// It should be preferred when nonce uniqueness cannot be trivially ensured
-	aead, err := chacha20poly1305.NewX(key)
-	if err != nil {
-		return nil, err
-	}
-
-	// Select a random nonce, and leave capacity for the ciphertext.
-	nonce := rand(aead.NonceSize(), aead.NonceSize()+len(msgToEncryt)+aead.Overhead())
-
-	// Encrypt the message and append the ciphertext to the nonce.
-	encryptedMsg := aead.Seal(nonce, nonce, msgToEncryt, nil)
-
-	return encryptedMsg, nil
-}
-
-func decrypt(key, encryptedMsg []byte) ([]byte, error) {
-	aead, err := chacha20poly1305.NewX(key)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(encryptedMsg) < aead.NonceSize() {
-		return nil, errors.New("ciphertext too short")
-	}
-
-	// Split nonce and ciphertext.
-	nonce, ciphertext := encryptedMsg[:aead.NonceSize()], encryptedMsg[aead.NonceSize():]
-
-	// Decrypt the message and check it wasn't tampered with.
-	decryptedMsg, err := aead.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return decryptedMsg, nil
 }
 
 func encode(payload []byte) string {

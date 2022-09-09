@@ -292,7 +292,9 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		encryptedMsg, _ := encrypt(key, "msgToEncryt")
+		enc, err := NewEnc(key)
+		attest.Ok(t, err)
+		encryptedMsg := enc.Encrypt("msgToEncryt")
 		reqCsrfTok := encode(encryptedMsg)
 
 		{
@@ -391,7 +393,9 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		encryptedMsg, _ := encrypt(key, "msgToEncryt")
+		enc, err := NewEnc(key)
+		attest.Ok(t, err)
+		encryptedMsg := enc.Encrypt("msgToEncryt")
 		reqCsrfTok := encode(encryptedMsg)
 
 		{

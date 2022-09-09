@@ -53,11 +53,12 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-
-		encryptedMsg, err := encrypt(key, msgToEncryt)
+		enc, err := NewEnc(key)
 		attest.Ok(t, err)
 
-		decryptedMsg, err := decrypt(key, encryptedMsg)
+		encryptedMsg := enc.Encrypt(msgToEncryt)
+
+		decryptedMsg, err := enc.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
 
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
@@ -68,15 +69,16 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-
-		encryptedMsg, err := encrypt(key, msgToEncryt)
+		enc, err := NewEnc(key)
 		attest.Ok(t, err)
+
+		encryptedMsg := enc.Encrypt(msgToEncryt)
 
 		token := encode(encryptedMsg)
 
 		encryptedMsg2, err := decode(token)
 		attest.Ok(t, err)
-		decryptedMsg, err := decrypt(key, encryptedMsg2)
+		decryptedMsg, err := enc.Decrypt(encryptedMsg2)
 		attest.Ok(t, err)
 
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
@@ -90,24 +92,25 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-
-		encryptedMsg, err := encrypt(key, msgToEncryt)
+		enc, err := NewEnc(key)
 		attest.Ok(t, err)
+
+		encryptedMsg := enc.Encrypt(msgToEncryt)
 
 		var em []byte
 		for i := 0; i < 4; i++ {
-			em, err = encrypt(key, msgToEncryt)
+			em = enc.Encrypt(msgToEncryt)
 			attest.Ok(t, err)
 			if slices.Equal(encryptedMsg, em) {
 				t.Fatal("slices should not be equal")
 			}
 		}
 
-		decryptedMsg, err := decrypt(key, encryptedMsg)
+		decryptedMsg, err := enc.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 
-		decryptedMsgForEm, err := decrypt(key, em)
+		decryptedMsgForEm, err := enc.Decrypt(em)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsgForEm), msgToEncryt)
 	})
@@ -119,9 +122,12 @@ func TestSecret(t *testing.T) {
 
 		run := func() {
 			key := getSecretKey()
-			encryptedMsg, err := encrypt(key, msgToEncryt)
+			enc, err := NewEnc(key)
 			attest.Ok(t, err)
-			decryptedMsg, err := decrypt(key, encryptedMsg)
+
+			encryptedMsg := enc.Encrypt(msgToEncryt)
+			attest.Ok(t, err)
+			decryptedMsg, err := enc.Decrypt(encryptedMsg)
 			attest.Ok(t, err)
 			attest.Equal(t, string(decryptedMsg), msgToEncryt)
 		}
