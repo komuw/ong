@@ -180,6 +180,8 @@ jobs:
           python -m pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org semgrep
           semgrep -f /tmp/semgrep-go/semgrep-go-master/ --error .
           deactivate
+          # An alternative it to do:
+          # semgrep -f https://semgrep.dev/r/dgryski.semgrep-go --exclude="*_test.go" .
 
           # deadlock detection
           # https://github.com/cockroachdb/cockroach/issues/7972

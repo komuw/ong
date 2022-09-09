@@ -139,9 +139,18 @@ func installCA() (caCert *x509.Certificate, caKey any) {
 		}
 		nssDb := filepath.Join(u.HomeDir, ".pki/nssdb")
 
+		createDir := []string{"mkdir", "-p", nssDb}
+		cmd = commandWithSudo(createDir...)
+		out, err = cmd.CombinedOutput()
+		certLogger.Info(log.F{"msg": string(out), "args": cmd.Args, "err": err})
+		if err != nil {
+			panic(err)
+		}
+
 		delete := []string{"certutil", "-D", "-d", nssDb, "-n", caUniqename}
 		cmd = commandWithSudo(delete...)
 		out, err = cmd.CombinedOutput()
+		certLogger.Info(log.F{"msg": string(out), "args": cmd.Args, "err": err})
 		_ = err // ignore error
 
 		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertName}
