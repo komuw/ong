@@ -28,7 +28,7 @@ func getSecretKey() []byte {
 		threads := uint8(4)
 		salt := rand(16, 16) // 16bytes are recommended
 		key := argon2.Key(
-			[]byte(secretKey),
+			[]byte("secretKey"),
 			salt,
 			time,
 			memory,
@@ -63,7 +63,7 @@ func TestSecret(t *testing.T) {
 		// non-random key
 		key = getSecretKey()
 		for j := range key {
-			key[j] = nulByte
+			key[j] = 'a'
 		}
 		attest.Panics(t, func() {
 			_ = New(key)

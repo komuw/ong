@@ -30,8 +30,6 @@ import (
 // This file uses [chacha20poly1305.NewX] which is XChaCha20-Poly1305.
 //
 
-const nulByte = '\x00'
-
 // Enc is an AEAD cipher mode providing authenticated encryption with associated data.
 // Use [New] to get a valid Enc.
 // see [cipher.AEAD]
@@ -41,23 +39,24 @@ type Enc struct {
 
 // New returns a [cipher.AEAD]
 // The key should be random and 32 bytes in length.
-// New panics if key is not of sufficient length or if it is full of null bytes.
+// New panics if key is not of sufficient length or if it is full of similar bytes.
 func New(key []byte) *Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
 
 	isRandom := false
-	// if all the elements in the slice are nul bytes, then the key is not random.
-	for _, v := range key {
-		if v != nulByte {
+	firstChar := key[0]
+	for _, v := range key[1:] {
+		// if all the elements in the slice are equal, then the key is not random.
+		if v != firstChar {
 			isRandom = true
 			break
 		}
 	}
 
 	if !isRandom {
-		panic(errors.New("the secretKey is not random"))
+		panic(errors.New("the key is not random"))
 	}
 
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
