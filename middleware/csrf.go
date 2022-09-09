@@ -97,14 +97,18 @@ func Csrf(wrappedHandler http.HandlerFunc, secretKey []byte, domain string) http
 
 			errN := validateToken(secretKey, actualToken)
 			if errN != nil {
-				// we should fail the request since it means that the server is not aware of such a token.
+				// We should redirect the request since it means that the server is not aware of such a token.
+				// It shoulbe be a temporary redirect to the same page but this time send a http GET request.
+				//
+				// To test using curl, use;
+				//   curl -kL \
+				//   -H "Content-Type: application/x-www-form-urlencoded" \
+				//   -d "firstName=john&csrftoken=bogusToken" https://localhost:65081/login/
+				// Do NOT use `-X POST`, see: https://stackoverflow.com/a/41890653/2768067
+				//
 				cookie.Delete(w, csrfCookieName, domain)
 				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
-				http.Error(
-					w,
-					errCsrfTokenNotFound.Error(),
-					http.StatusForbidden,
-				)
+				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
 				return
 			}
 		}
