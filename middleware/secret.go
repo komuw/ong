@@ -61,7 +61,7 @@ func NewEnc(key []byte) (*enc, error) {
 	return &enc{aead}, nil
 }
 
-// Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305
+// Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
 func (e *enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
@@ -72,7 +72,7 @@ func (e *enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	return e.Seal(nonce, nonce, msgToEncryt, nil)
 }
 
-// Decrypt decrypts the encryptedMsg using XChaCha20-Poly1305
+// Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
 func (e *enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if len(encryptedMsg) < e.NonceSize() {
 		return nil, errors.New("ciphertext too short")
@@ -90,7 +90,7 @@ func (e *enc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
 	return base64.RawURLEncoding.EncodeToString(e.Encrypt(plainTextMsg))
 }
 
-// DecryptDecode takes a encryptedEncodedMsg that was generated using [EncryptEncode] and returns the original un-encrypted string.
+// DecryptDecode takes an encryptedEncodedMsg that was generated using [EncryptEncode] and returns the original un-encrypted string.
 func (e *enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	encryptedMsg, err := base64.RawURLEncoding.DecodeString(encryptedEncodedMsg)
 	if err != nil {
