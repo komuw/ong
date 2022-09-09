@@ -48,6 +48,27 @@ func getSecretKey() []byte {
 func TestSecret(t *testing.T) {
 	t.Parallel()
 
+	t.Run("new", func(t *testing.T) {
+		t.Parallel()
+
+		// okay key
+		key := getSecretKey()
+		_, err := NewEnc(key)
+		attest.Ok(t, err)
+
+		// short key
+		_, err = NewEnc([]byte{1, 3, 8})
+		attest.Error(t, err)
+
+		// non-random key
+		key = getSecretKey()
+		for j := range key {
+			key[j] = nulByte
+		}
+		_, err = NewEnc(key)
+		attest.Error(t, err)
+	})
+
 	t.Run("encrypt/decrypt", func(t *testing.T) {
 		t.Parallel()
 

@@ -27,6 +27,8 @@ import (
 // This file uses [chacha20poly1305.NewX] which is XChaCha20-Poly1305.
 //
 
+const nulByte = '\x00'
+
 // enc is an AEAD cipher mode providing authenticated encryption with associated data.
 // see [cipher.AEAD]
 type enc struct {
@@ -36,7 +38,6 @@ type enc struct {
 // NewEnc returns an [cipher.AEAD]
 // The key should be random and 32 bytes in length.
 func NewEnc(key []byte) (*enc, error) {
-	const nulByte = '\x00'
 	isRandom := false
 	// if all the elements in the slice are nul bytes, then the key is not random.
 	for _, v := range key {
