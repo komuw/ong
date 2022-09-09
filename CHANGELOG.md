@@ -2,6 +2,9 @@
 
 Most recent version is listed first.  
 
+## v0.0.4
+- add new encryption/decryption package: https://github.com/komuw/ong/pull/118
+
 ## v0.0.3
 - add an xcontext package: https://github.com/komuw/ong/pull/109
 - use latest semgrep-go linter: https://github.com/komuw/ong/pull/111
