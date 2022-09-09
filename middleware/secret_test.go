@@ -93,15 +93,10 @@ func TestSecret(t *testing.T) {
 		enc, err := NewEnc(key)
 		attest.Ok(t, err)
 
-		encryptedMsg := enc.Encrypt(msgToEncryt)
+		token := enc.EncryptEncode(msgToEncryt)
 
-		token := encode(encryptedMsg)
-
-		encryptedMsg2, err := decode(token)
+		decryptedMsg, err := enc.DecryptDecode(token)
 		attest.Ok(t, err)
-		decryptedMsg, err := enc.Decrypt(encryptedMsg2)
-		attest.Ok(t, err)
-
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 	})
 

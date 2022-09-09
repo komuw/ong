@@ -92,6 +92,26 @@ func (e *enc) Decrypt(encryptedMsg []byte) ([]byte, error) {
 	return decryptedMsg, nil
 }
 
+// EncryptEncode is like [Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]
+func (e *enc) EncryptEncode(msg string) string {
+	return base64.RawURLEncoding.EncodeToString(e.Encrypt(msg))
+}
+
+// DecryptDecode takes a msg that was generated using [EncryptEncode] and returns the original un-encrypted string.
+func (e *enc) DecryptDecode(msg string) (string, error) {
+	encryptedMsg, err := base64.RawURLEncoding.DecodeString(msg)
+	if err != nil {
+		return "", err
+	}
+
+	decrypted, err := e.Decrypt(encryptedMsg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decrypted), nil
+}
+
 func rand(n1, n2 int) []byte {
 	b := make([]byte, n1, n2)
 	if _, err := cryptoRand.Read(b); err != nil {
@@ -107,12 +127,4 @@ func rand(n1, n2 int) []byte {
 		_, _ = mathRand.Read(b)                    // docs say that it always returns a nil error.
 	}
 	return b
-}
-
-func encode(payload []byte) string {
-	return base64.RawURLEncoding.EncodeToString(payload)
-}
-
-func decode(payload string) ([]byte, error) {
-	return base64.RawURLEncoding.DecodeString(payload)
 }
