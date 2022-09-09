@@ -1,4 +1,7 @@
-package middleware
+// Package enc provides utilities to carry out encryption and decryption.
+// This library has not been vetted and people are encouraged to not use it,
+// instead use the crypto facilities in the Go standard library and/or x/crypto.
+package enc
 
 import (
 	"crypto/cipher"
@@ -35,9 +38,9 @@ type enc struct {
 	cipher.AEAD
 }
 
-// NewEnc returns a [cipher.AEAD]
+// New returns a [cipher.AEAD]
 // The key should be random and 32 bytes in length.
-func NewEnc(key []byte) (*enc, error) {
+func New(key []byte) (*enc, error) {
 	isRandom := false
 	// if all the elements in the slice are nul bytes, then the key is not random.
 	for _, v := range key {

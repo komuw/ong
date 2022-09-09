@@ -1,4 +1,4 @@
-package middleware
+package enc
 
 import (
 	"fmt"
@@ -21,8 +21,8 @@ func getSecretKey() []byte {
 
 	/*
 		key should be randomly generated or derived from a function like Argon2.
-			import "golang.org/x/crypto/argon2"
 
+		import "golang.org/x/crypto/argon2"
 		time := uint32(3)
 		memory := uint32(32 * 1024) // 32MB
 		threads := uint8(4)
@@ -53,11 +53,11 @@ func TestSecret(t *testing.T) {
 
 		// okay key
 		key := getSecretKey()
-		_, err := NewEnc(key)
+		_, err := New(key)
 		attest.Ok(t, err)
 
 		// short key
-		_, err = NewEnc([]byte{1, 3, 8})
+		_, err = New([]byte{1, 3, 8})
 		attest.Error(t, err)
 
 		// non-random key
@@ -65,7 +65,7 @@ func TestSecret(t *testing.T) {
 		for j := range key {
 			key[j] = nulByte
 		}
-		_, err = NewEnc(key)
+		_, err = New(key)
 		attest.Error(t, err)
 	})
 
@@ -74,7 +74,7 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-		enc, err := NewEnc(key)
+		enc, err := New(key)
 		attest.Ok(t, err)
 
 		encryptedMsg := enc.Encrypt(msgToEncryt)
@@ -90,7 +90,7 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-		enc, err := NewEnc(key)
+		enc, err := New(key)
 		attest.Ok(t, err)
 
 		token := enc.EncryptEncode(msgToEncryt)
@@ -108,7 +108,7 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
-		enc, err := NewEnc(key)
+		enc, err := New(key)
 		attest.Ok(t, err)
 
 		encryptedMsg := enc.Encrypt(msgToEncryt)
@@ -138,7 +138,7 @@ func TestSecret(t *testing.T) {
 
 		run := func() {
 			key := getSecretKey()
-			enc, err := NewEnc(key)
+			enc, err := New(key)
 			attest.Ok(t, err)
 
 			encryptedMsg := enc.Encrypt(msgToEncryt)
