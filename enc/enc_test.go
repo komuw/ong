@@ -193,16 +193,16 @@ func ExampleEncryptEncode() {
 	originalPlainTextMsg := "three little birds."
 	encryptedEncodedMsg := e.EncryptEncode(originalPlainTextMsg)
 
-	plainTextMsg, err := e.DecryptDecode(encryptedEncodedMsg)
+	resultantPlainTextMsg, err := e.DecryptDecode(encryptedEncodedMsg)
 	if err != nil {
 		panic(err)
 	}
 
-	if plainTextMsg != originalPlainTextMsg {
+	if resultantPlainTextMsg != originalPlainTextMsg {
 		panic("something went wrong")
 	}
 
-	fmt.Print(plainTextMsg)
+	fmt.Print(resultantPlainTextMsg)
 
 	// Output: three little birds.
 }
