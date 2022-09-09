@@ -1,6 +1,6 @@
 // Package enc provides utilities to carry out encryption and decryption.
-// This library has not been vetted and people are encouraged to not use it,
-// instead use the crypto facilities in the Go standard library and/or x/crypto.
+// This library has not been vetted and people are discouraged from using it.
+// Instead use the crypto facilities in the Go standard library and/or golang.org/x/crypto
 package enc
 
 import (
