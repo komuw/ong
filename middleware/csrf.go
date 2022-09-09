@@ -108,7 +108,14 @@ func Csrf(wrappedHandler http.HandlerFunc, secretKey []byte, domain string) http
 				//
 				cookie.Delete(w, csrfCookieName, domain)
 				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
-				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+				http.Redirect(
+					w,
+					r,
+					r.URL.String(),
+					// http 303(StatusSeeOther) is guaranteed by the spec to always use http GET.
+					// https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
+					http.StatusSeeOther,
+				)
 				return
 			}
 		}
