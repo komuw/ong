@@ -69,7 +69,7 @@ func (e *enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
-	nonce := rand(e.NonceSize(), e.NonceSize()+len(msgToEncryt)+e.Overhead())
+	nonce := random(e.NonceSize(), e.NonceSize()+len(msgToEncryt)+e.Overhead())
 
 	// Encrypt the message and append the ciphertext to the nonce.
 	return e.Seal(nonce, nonce, msgToEncryt, nil)
@@ -108,7 +108,7 @@ func (e *enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, er
 	return string(decrypted), nil
 }
 
-func rand(n1, n2 int) []byte {
+func random(n1, n2 int) []byte {
 	b := make([]byte, n1, n2)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, n1, n2)

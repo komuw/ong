@@ -30,20 +30,18 @@ func TestDetach(t *testing.T) {
 	}
 }
 
+func log(ctx context.Context, logMsg string)   {}
+func sendMail(ctx context.Context, msg string) {}
+
 func ExampleDetach() {
-	someFunc := func(ctx context.Context) {}
-	someOtherFunc := func(ctx context.Context) {}
+	key := ctxKey("key")
+	ctx := context.WithValue(context.Background(), key, "my_value")
 
-	foo := func() {
-		key := ctxKey("key")
-		ctx := context.WithValue(context.Background(), key, "my_value")
+	// Detach is not required here.
+	log(ctx, "api called.")
 
-		// Detach is not required here.
-		someFunc(ctx)
+	// We need to use Detach here, because sendMail(having been called in a goroutine) can outlive the cancellation of the parent context.
+	go sendMail(Detach(ctx), "hello")
 
-		// We need Detach here, because someOtherFunc(having been called in a goroutine) can outlive the cancellation of the parent context.
-		go someOtherFunc(Detach(ctx))
-	}
-
-	foo()
+	// Output:
 }
