@@ -1,7 +1,6 @@
 package enc
 
 import (
-	"crypto/rand"
 	"fmt"
 	"sync"
 	"testing"
@@ -159,50 +158,4 @@ func TestSecret(t *testing.T) {
 		}
 		wg.Wait()
 	})
-}
-
-func ExampleEncrypt() {
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		panic(err)
-	}
-
-	e, err := New(key)
-	if err != nil {
-		panic(err)
-	}
-
-	plainTextMsg := "Muziki asili yake - Remmy Ongala." // English: `What is the origin of music by Remmy Ongala`
-	encryptedMsg := e.Encrypt(plainTextMsg)
-	_ = encryptedMsg
-
-	// Output:
-}
-
-func ExampleEncryptEncode() {
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		panic(err)
-	}
-
-	e, err := New(key)
-	if err != nil {
-		panic(err)
-	}
-
-	originalPlainTextMsg := "three little birds."
-	encryptedEncodedMsg := e.EncryptEncode(originalPlainTextMsg)
-
-	resultantPlainTextMsg, err := e.DecryptDecode(encryptedEncodedMsg)
-	if err != nil {
-		panic(err)
-	}
-
-	if resultantPlainTextMsg != originalPlainTextMsg {
-		panic("something went wrong")
-	}
-
-	fmt.Print(resultantPlainTextMsg)
-
-	// Output: three little birds.
 }

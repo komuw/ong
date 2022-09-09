@@ -32,15 +32,16 @@ import (
 
 const nulByte = '\x00'
 
-// enc is an AEAD cipher mode providing authenticated encryption with associated data.
+// Enc is an AEAD cipher mode providing authenticated encryption with associated data.
+// Use [New] to get a valid Enc.
 // see [cipher.AEAD]
-type enc struct {
+type Enc struct {
 	cipher.AEAD
 }
 
 // New returns a [cipher.AEAD]
 // The key should be random and 32 bytes in length.
-func New(key []byte) (*enc, error) {
+func New(key []byte) (*Enc, error) {
 	isRandom := false
 	// if all the elements in the slice are nul bytes, then the key is not random.
 	for _, v := range key {
@@ -61,11 +62,11 @@ func New(key []byte) (*enc, error) {
 		return nil, err
 	}
 
-	return &enc{aead}, nil
+	return &Enc{aead}, nil
 }
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
-func (e *enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
+func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
@@ -76,7 +77,7 @@ func (e *enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 }
 
 // Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
-func (e *enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
+func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if len(encryptedMsg) < e.NonceSize() {
 		return nil, errors.New("ciphertext too short")
 	}
@@ -89,12 +90,12 @@ func (e *enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 }
 
 // EncryptEncode is like [Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]
-func (e *enc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
+func (e *Enc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
 	return base64.RawURLEncoding.EncodeToString(e.Encrypt(plainTextMsg))
 }
 
 // DecryptDecode takes an encryptedEncodedMsg that was generated using [EncryptEncode] and returns the original un-encrypted string.
-func (e *enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
+func (e *Enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	encryptedMsg, err := base64.RawURLEncoding.DecodeString(encryptedEncodedMsg)
 	if err != nil {
 		return "", err
