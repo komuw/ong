@@ -1,4 +1,4 @@
-package middleware
+package enc
 
 import (
 	"fmt"
@@ -21,8 +21,8 @@ func getSecretKey() []byte {
 
 	/*
 		key should be randomly generated or derived from a function like Argon2.
-			import "golang.org/x/crypto/argon2"
 
+		import "golang.org/x/crypto/argon2"
 		time := uint32(3)
 		memory := uint32(32 * 1024) // 32MB
 		threads := uint8(4)
@@ -48,16 +48,38 @@ func getSecretKey() []byte {
 func TestSecret(t *testing.T) {
 	t.Parallel()
 
+	t.Run("new", func(t *testing.T) {
+		t.Parallel()
+
+		// okay key
+		key := getSecretKey()
+		_ = New(key)
+
+		// short key
+		attest.Panics(t, func() {
+			_ = New([]byte{1, 3, 8})
+		})
+
+		// non-random key
+		key = getSecretKey()
+		for j := range key {
+			key[j] = nulByte
+		}
+		attest.Panics(t, func() {
+			_ = New(key)
+		})
+	})
+
 	t.Run("encrypt/decrypt", func(t *testing.T) {
 		t.Parallel()
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
+		enc := New(key)
 
-		encryptedMsg, err := encrypt(key, msgToEncryt)
-		attest.Ok(t, err)
+		encryptedMsg := enc.Encrypt(msgToEncryt)
 
-		decryptedMsg, err := decrypt(key, encryptedMsg)
+		decryptedMsg, err := enc.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
 
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
@@ -68,17 +90,12 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
+		enc := New(key)
 
-		encryptedMsg, err := encrypt(key, msgToEncryt)
+		token := enc.EncryptEncode(msgToEncryt)
+
+		decryptedMsg, err := enc.DecryptDecode(token)
 		attest.Ok(t, err)
-
-		token := encode(encryptedMsg)
-
-		encryptedMsg2, err := decode(token)
-		attest.Ok(t, err)
-		decryptedMsg, err := decrypt(key, encryptedMsg2)
-		attest.Ok(t, err)
-
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 	})
 
@@ -90,24 +107,23 @@ func TestSecret(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
+		enc := New(key)
 
-		encryptedMsg, err := encrypt(key, msgToEncryt)
-		attest.Ok(t, err)
+		encryptedMsg := enc.Encrypt(msgToEncryt)
 
 		var em []byte
 		for i := 0; i < 4; i++ {
-			em, err = encrypt(key, msgToEncryt)
-			attest.Ok(t, err)
+			em = enc.Encrypt(msgToEncryt)
 			if slices.Equal(encryptedMsg, em) {
 				t.Fatal("slices should not be equal")
 			}
 		}
 
-		decryptedMsg, err := decrypt(key, encryptedMsg)
+		decryptedMsg, err := enc.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 
-		decryptedMsgForEm, err := decrypt(key, em)
+		decryptedMsgForEm, err := enc.Decrypt(em)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsgForEm), msgToEncryt)
 	})
@@ -119,9 +135,10 @@ func TestSecret(t *testing.T) {
 
 		run := func() {
 			key := getSecretKey()
-			encryptedMsg, err := encrypt(key, msgToEncryt)
-			attest.Ok(t, err)
-			decryptedMsg, err := decrypt(key, encryptedMsg)
+			enc := New(key)
+
+			encryptedMsg := enc.Encrypt(msgToEncryt)
+			decryptedMsg, err := enc.Decrypt(encryptedMsg)
 			attest.Ok(t, err)
 			attest.Equal(t, string(decryptedMsg), msgToEncryt)
 		}

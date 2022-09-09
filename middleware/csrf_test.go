@@ -9,9 +9,20 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/enc"
+
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/id"
 )
+
+func getSecretKey() []byte {
+	key := []byte("key should be 32bytes and random")
+	if len(key) != 32 { // chacha20poly1305.KeySize
+		panic(fmt.Sprintf("key should have length of %d", 32))
+	}
+
+	return key
+}
 
 func TestGetToken(t *testing.T) {
 	t.Parallel()
@@ -292,8 +303,8 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		encryptedMsg, _ := encrypt(key, "msgToEncryt")
-		reqCsrfTok := encode(encryptedMsg)
+		enc := enc.New(key)
+		reqCsrfTok := enc.EncryptEncode("msgToEncryt")
 
 		{
 			// make GET request
@@ -391,8 +402,8 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		encryptedMsg, _ := encrypt(key, "msgToEncryt")
-		reqCsrfTok := encode(encryptedMsg)
+		enc := enc.New(key)
+		reqCsrfTok := enc.EncryptEncode("msgToEncryt")
 
 		{
 			// make GET request

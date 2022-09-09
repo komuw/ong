@@ -29,21 +29,3 @@ func TestDetach(t *testing.T) {
 		t.Errorf("detached context Err: got %v, want nil", err)
 	}
 }
-
-func ExampleDetach() {
-	someFunc := func(ctx context.Context) {}
-	someOtherFunc := func(ctx context.Context) {}
-
-	foo := func() {
-		key := ctxKey("key")
-		ctx := context.WithValue(context.Background(), key, "my_value")
-
-		// Detach is not required here.
-		someFunc(ctx)
-
-		// We need Detach here, because someOtherFunc(having been called in a goroutine) can outlive the cancellation of the parent context.
-		go someOtherFunc(Detach(ctx))
-	}
-
-	foo()
-}
