@@ -18,27 +18,6 @@ import (
 // TODO: maybe we need a global var similar to [http.DefaultClient]
 //       or maybe use a func that uses sync.once
 
-// TODO: check http.DefaultTransport
-//
-// DefaultTransport is the default implementation of Transport and is
-// used by DefaultClient. It establishes network connections as needed
-// and caches them for reuse by subsequent calls. It uses HTTP proxies
-// as directed by the $HTTP_PROXY and $NO_PROXY (or $http_proxy and
-// $no_proxy) environment variables.
-//
-// var DefaultTransport RoundTripper = &Transport{
-// 	Proxy: ProxyFromEnvironment,
-// 	DialContext: defaultTransportDialContext(&net.Dialer{
-// 		Timeout:   30 * time.Second,
-// 		KeepAlive: 30 * time.Second,
-// 	}),
-// 	ForceAttemptHTTP2:     true,
-// 	MaxIdleConns:          100,
-// 	IdleConnTimeout:       90 * time.Second,
-// 	TLSHandshakeTimeout:   10 * time.Second,
-// 	ExpectContinueTimeout: 1 * time.Second,
-// }
-
 func getClient(ssrfSafe bool) *http.Client {
 	_ = http.DefaultClient
 	_ = http.DefaultTransport
@@ -75,14 +54,9 @@ func getClient(ssrfSafe bool) *http.Client {
 func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall.RawConn) error {
 	if !ssrfSafe {
 		return nil
-		// return func(network, address string, conn syscall.RawConn) error {
-		// 	fmt.Println("\n\t AAA network, address, conn, ssrfSafe : ", network, address, conn, ssrfSafe, "\n.")
-		// 	return nil
-		// }
 	}
 
 	return func(network, address string, conn syscall.RawConn) error {
-		fmt.Println("\n\t BBB network, address, conn, ssrfSafe : ", network, address, conn, ssrfSafe, "\n.")
 		if !(network == "tcp4" || network == "tcp6") {
 			return fmt.Errorf("%s is not a safe network type", network)
 		}
@@ -104,28 +78,6 @@ func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall
 		return nil
 	}
 }
-
-// func ssrfSocketControl(network, address string, conn syscall.RawConn) error {
-// 	if !(network == "tcp4" || network == "tcp6") {
-// 		return fmt.Errorf("%s is not a safe network type", network)
-// 	}
-
-// 	host, _, err := net.SplitHostPort(address)
-// 	if err != nil {
-// 		return fmt.Errorf("%s is not a valid host/port pair: %s", address, err)
-// 	}
-
-// 	ipaddress := net.ParseIP(host)
-// 	if ipaddress == nil {
-// 		return fmt.Errorf("%s is not a valid IP address", host)
-// 	}
-
-// 	if !isPublicIPAddress(ipaddress) {
-// 		return fmt.Errorf("%s is not a public IP address", ipaddress)
-// 	}
-
-// 	return nil
-// }
 
 func ipv4Net(a, b, c, d byte, subnetPrefixLen int) net.IPNet {
 	return net.IPNet{
