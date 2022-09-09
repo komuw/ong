@@ -19,10 +19,12 @@ import (
 // XChaCha20-Poly1305, unlinke aes-gcm, has no message limit per key.
 // It can safely encrypt an unlimited number of messages with the same key, without any limit to the size of a message.
 // see:
+//   - https://gist.github.com/komuw/4d44a25e1b6786100ffe0308106e80f2
 //   - https://libsodium.gitbook.io/doc/secret-key_cryptography/aead/chacha20-poly1305/xchacha20-poly1305_construction
 //   - https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
 //
 // This file uses [chacha20poly1305.NewX] which is XChaCha20-Poly1305.
+//
 
 func rand(n1, n2 int) []byte {
 	b := make([]byte, n1, n2)
