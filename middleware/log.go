@@ -46,7 +46,9 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 				logIDKey,
 				logID,
 				domain,
-				// hopefully 15mins is enough.
+				// Hopefully 15mins is enough.
+				// Google considers a session to be 30mins.
+				// https://support.google.com/analytics/answer/2731565?hl=en#time-based-expiration
 				15*time.Minute,
 				false,
 			)
