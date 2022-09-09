@@ -16,7 +16,17 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"golang.org/x/crypto/chacha20poly1305"
 )
+
+func getSecretKey() []byte {
+	key := []byte("key should be 32bytes and random")
+	if len(key) != chacha20poly1305.KeySize {
+		panic(fmt.Sprintf("key should have length of %d", chacha20poly1305.KeySize))
+	}
+
+	return key
+}
 
 func TestDrainDuration(t *testing.T) {
 	t.Parallel()
@@ -26,7 +36,7 @@ func TestDrainDuration(t *testing.T) {
 
 		handlerTimeout := 170 * time.Second
 		o := opts{
-			port:              8080,
+			port:              65080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -45,7 +55,7 @@ func TestDrainDuration(t *testing.T) {
 
 		writeTimeout := 3 * time.Minute
 		o := opts{
-			port:              8080,
+			port:              65080,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Nanosecond,
@@ -68,7 +78,7 @@ func TestOpts(t *testing.T) {
 
 		got := DevOpts()
 		want := opts{
-			port:              8081,
+			port:              65081,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -76,9 +86,9 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
-			serverPort:        ":8081",
-			serverAddress:     "127.0.0.1:8081",
-			httpPort:          ":8080",
+			serverPort:        ":65081",
+			serverAddress:     "127.0.0.1:65081",
+			httpPort:          ":65080",
 			tls: tlsOpts{
 				certFile: "/tmp/ong_dev_certificate.pem",
 				keyFile:  "/tmp/ong_dev_key.pem",
@@ -120,7 +130,7 @@ func TestOpts(t *testing.T) {
 
 		got := DevOpts()
 		want := opts{
-			port:              8081,
+			port:              65081,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -133,9 +143,9 @@ func TestOpts(t *testing.T) {
 				keyFile:  "/tmp/ong_dev_key.pem",
 				domain:   "localhost",
 			},
-			serverPort:    ":8081",
-			serverAddress: "127.0.0.1:8081",
-			httpPort:      ":8080",
+			serverPort:    ":65081",
+			serverAddress: "127.0.0.1:65081",
+			httpPort:      ":65080",
 		}
 		attest.Equal(t, got, want)
 	})
@@ -166,12 +176,12 @@ func TestServer(t *testing.T) {
 			return
 		}
 
-		port := uint16(8081)
+		port := uint16(65081)
 		uri := "/api"
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", port, l),
+			middleware.WithOpts("localhost", port, getSecretKey(), l),
 			Routes{
 				NewRoute(
 					uri,
@@ -262,7 +272,7 @@ func TestServer(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", port, l),
+			middleware.WithOpts("localhost", port, getSecretKey(), l),
 			Routes{
 				NewRoute(
 					uri,

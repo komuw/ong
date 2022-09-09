@@ -111,7 +111,7 @@ func NewOpts(
 // DevOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
 func DevOpts() opts {
 	certFile, keyFile := certKeyPaths()
-	return withOpts(8081, certFile, keyFile, "", "localhost")
+	return withOpts(65081, certFile, keyFile, "", "localhost")
 }
 
 // CertOpts returns a new opts that has sensible defaults given certFile & keyFile.

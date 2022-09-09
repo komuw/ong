@@ -37,7 +37,7 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", 443, l),
+			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{
 				NewRoute(
 					"/api",
@@ -64,7 +64,7 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", 443, l),
+			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{
 				NewRoute(
 					uri,
@@ -110,7 +110,7 @@ func TestMux(t *testing.T) {
 		uri := "/api"
 		mux := NewMux(
 			l,
-			middleware.WithOpts("localhost", 443, l),
+			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{
 				NewRoute(
 					uri,

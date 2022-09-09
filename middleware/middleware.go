@@ -23,6 +23,7 @@ type Opts struct {
 	allowedOrigins []string
 	allowedMethods []string
 	allowedHeaders []string
+	secretKey      []byte
 	l              log.Logger
 }
 
@@ -33,6 +34,7 @@ func NewOpts(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
+	secretKey []byte,
 	l log.Logger,
 ) Opts {
 	return Opts{
@@ -41,13 +43,14 @@ func NewOpts(
 		allowedOrigins: allowedOrigins,
 		allowedMethods: allowedMethods,
 		allowedHeaders: allowedHeaders,
+		secretKey:      secretKey,
 		l:              l,
 	}
 }
 
 // WithOpts returns a new opts that has sensible defaults.
-func WithOpts(domain string, httpsPort uint16, l log.Logger) Opts {
-	return NewOpts(domain, httpsPort, nil, nil, nil, l)
+func WithOpts(domain string, httpsPort uint16, secretKey []byte, l log.Logger) Opts {
+	return NewOpts(domain, httpsPort, nil, nil, nil, secretKey, l)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -64,6 +67,7 @@ func allDefaultMiddlewares(
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
+	secretKey := o.secretKey
 	logger := o.l
 
 	// The way the middlewares are layered is:
@@ -91,6 +95,7 @@ func allDefaultMiddlewares(
 							Cors(
 								Csrf(
 									wrappedHandler,
+									secretKey,
 									domain,
 								),
 								allowedOrigins,
