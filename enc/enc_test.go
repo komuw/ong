@@ -128,6 +128,31 @@ func TestSecret(t *testing.T) {
 		attest.Equal(t, string(decryptedMsgForEm), msgToEncryt)
 	})
 
+	t.Run("same input key will always be able to encrypt and decrypt", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncryt := "hello world!"
+		key := getSecretKey()
+
+		{
+			enc1 := New(key)
+
+			encryptedMsg := enc1.Encrypt(msgToEncryt)
+			decryptedMsg, err := enc1.Decrypt(encryptedMsg)
+			attest.Ok(t, err)
+			attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		}
+
+		{
+			enc2 := New(key)
+
+			encryptedMsg := enc2.Encrypt(msgToEncryt)
+			decryptedMsg, err := enc2.Decrypt(encryptedMsg)
+			attest.Ok(t, err)
+			attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
