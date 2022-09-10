@@ -57,7 +57,7 @@ func New(key []byte) *Enc {
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
 
-	if len(key) < 8 {
+	if len(key) < 4 {
 		panic(errors.New("short key"))
 	}
 
@@ -116,7 +116,7 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 
 	// "You can send the nonce in the clear before each message; so long as it's unique." - agl
 	// see: https://crypto.stackexchange.com/a/5818
-	
+
 	// Encrypt the message and append the ciphertext to the nonce.
 	encrypted := e.a.Seal(nonce, nonce, msgToEncryt, nil)
 
