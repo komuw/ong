@@ -55,7 +55,7 @@ type Enc struct {
 }
 
 // New returns a [cipher.AEAD]
-// The key should be random. New panics if key is too small in length.
+// The key should be random. New panics on error.
 // It uses [scrypt] to derive the final key that will be used for encryption.
 func New(key string) *Enc {
 	// I think it is okay for New to panic instead of returning an error.
