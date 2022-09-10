@@ -35,7 +35,7 @@ import (
 // Use [New] to get a valid Enc.
 // see [cipher.AEAD]
 type Enc struct {
-	cipher.AEAD
+	a cipher.AEAD
 }
 
 // New returns a [cipher.AEAD]
@@ -99,23 +99,23 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
-	nonce := random(e.NonceSize(), e.NonceSize()+len(msgToEncryt)+e.Overhead())
+	nonce := random(e.a.NonceSize(), e.a.NonceSize()+len(msgToEncryt)+e.a.Overhead())
 
 	// Encrypt the message and append the ciphertext to the nonce.
-	return e.Seal(nonce, nonce, msgToEncryt, nil)
+	return e.a.Seal(nonce, nonce, msgToEncryt, nil)
 }
 
 // Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
 func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
-	if len(encryptedMsg) < e.NonceSize() {
+	if len(encryptedMsg) < e.a.NonceSize() {
 		return nil, errors.New("ciphertext too short")
 	}
 
 	// Split nonce and ciphertext.
-	nonce, ciphertext := encryptedMsg[:e.NonceSize()], encryptedMsg[e.NonceSize():]
+	nonce, ciphertext := encryptedMsg[:e.a.NonceSize()], encryptedMsg[e.a.NonceSize():]
 
 	// Decrypt the message and check it wasn't tampered with.
-	return e.Open(nil, nonce, ciphertext, nil)
+	return e.a.Open(nil, nonce, ciphertext, nil)
 }
 
 // EncryptEncode is like [Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]
