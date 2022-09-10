@@ -128,9 +128,9 @@ func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if !slices.Equal(salt, e.salt) {
 		// The encryptedMsg was encrypted using a different salt.
 		// So, we need to get the derived key for that salt and use it for decryption.
-		derivedKey, err := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
-		if err != nil {
-			return nil, err
+		derivedKey, errK := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
+		if errK != nil {
+			return nil, errK
 		}
 
 		aead, err = chacha20poly1305.NewX(derivedKey)
