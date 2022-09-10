@@ -31,11 +31,21 @@ import (
 // This file uses [chacha20poly1305.NewX] which is XChaCha20-Poly1305.
 //
 
+const (
+	saltLen = 8
+	N       = 32768 // CPU/memory cost parameter.
+	r       = 8     // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
+	p       = 1
+)
+
 // Enc is an AEAD cipher mode providing authenticated encryption with associated data.
 // Use [New] to get a valid Enc.
 // see [cipher.AEAD]
 type Enc struct {
-	a cipher.AEAD
+	a          cipher.AEAD
+	salt       []byte
+	key        []byte
+	derivedKey []byte // only used in [Encrypt], for [Decrypt] we have to redrive the key.
 }
 
 // New returns a [cipher.AEAD]
@@ -65,10 +75,7 @@ func New(key []byte) *Enc {
 	}
 
 	// derive a key.
-	salt := random(8, 8) // should be random, 8 bytes is a good length.
-	N := 32768           // CPU/memory cost parameter.
-	r := 8               // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
-	p := 1
+	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	derivedKey, err := scrypt.Key(
 		key,
 		salt,
@@ -91,7 +98,12 @@ func New(key []byte) *Enc {
 		panic(err)
 	}
 
-	return &Enc{aead}
+	return &Enc{
+		a:          aead,
+		salt:       salt,
+		key:        key,
+		derivedKey: derivedKey,
+	}
 }
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
@@ -102,7 +114,19 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	nonce := random(e.a.NonceSize(), e.a.NonceSize()+len(msgToEncryt)+e.a.Overhead())
 
 	// Encrypt the message and append the ciphertext to the nonce.
-	return e.a.Seal(nonce, nonce, msgToEncryt, nil)
+	encrypted := e.a.Seal(nonce, nonce, msgToEncryt, nil)
+
+	encrypted = append(
+		// "you can send the nonce in the clear before each message; so long as it's unique." - agl
+		// see: https://crypto.stackexchange.com/a/5818
+		//
+		// "salt does not need to be secret."
+		// see: https://crypto.stackexchange.com/a/99502
+		e.salt,
+		encrypted...,
+	)
+
+	return encrypted
 }
 
 // Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
@@ -111,11 +135,24 @@ func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 		return nil, errors.New("ciphertext too short")
 	}
 
+	// get salt
+	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
+
+	derivedKey, err := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
+	if err != nil {
+		return nil, err
+	}
+
+	aead, err := chacha20poly1305.NewX(derivedKey)
+	if err != nil {
+		return nil, err
+	}
+
 	// Split nonce and ciphertext.
-	nonce, ciphertext := encryptedMsg[:e.a.NonceSize()], encryptedMsg[e.a.NonceSize():]
+	nonce, ciphertext := encryptedMsg[:aead.NonceSize()], encryptedMsg[aead.NonceSize():]
 
 	// Decrypt the message and check it wasn't tampered with.
-	return e.a.Open(nil, nonce, ciphertext, nil)
+	return aead.Open(nil, nonce, ciphertext, nil)
 }
 
 // EncryptEncode is like [Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]
