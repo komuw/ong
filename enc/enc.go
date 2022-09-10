@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
+	"golang.org/x/exp/slices"
 )
 
 // Latacora recommends ChaCha20-Poly1305 for encryption.
@@ -138,14 +139,19 @@ func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	// get salt
 	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
 
-	derivedKey, err := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
-	if err != nil {
-		return nil, err
-	}
+	aead := e.a
+	if !slices.Equal(salt, e.salt) {
+		// The encryptedMsg was encrypted using a different salt.
+		// So, we need to get the derived key for that salt and use it for decryption.
+		derivedKey, err := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
+		if err != nil {
+			return nil, err
+		}
 
-	aead, err := chacha20poly1305.NewX(derivedKey)
-	if err != nil {
-		return nil, err
+		aead, err = chacha20poly1305.NewX(derivedKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Split nonce and ciphertext.
