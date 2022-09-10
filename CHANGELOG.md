@@ -2,6 +2,10 @@
 
 Most recent version is listed first.  
 
+
+## v0.0.5
+- use key derivation in the `enc` ecryption/decryption package: https://github.com/komuw/ong/pull/119
+
 ## v0.0.4
 - add new encryption/decryption package: https://github.com/komuw/ong/pull/118
 

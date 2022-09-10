@@ -16,15 +16,10 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
-	"golang.org/x/crypto/chacha20poly1305"
 )
 
-func getSecretKey() []byte {
-	key := []byte("key should be 32bytes and random")
-	if len(key) != chacha20poly1305.KeySize {
-		panic(fmt.Sprintf("key should have length of %d", chacha20poly1305.KeySize))
-	}
-
+func getSecretKey() string {
+	key := "hard-password"
 	return key
 }
 

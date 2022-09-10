@@ -35,7 +35,7 @@ import (
 
 func main() {
 	l := log.New(context.Background(), os.Stdout, 1000)
-	secretKey := []byte("key should be 32bytes and random")
+	secretKey := "hard-password"
 	mux := server.NewMux(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),

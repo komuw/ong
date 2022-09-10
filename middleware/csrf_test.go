@@ -15,12 +15,8 @@ import (
 	"github.com/komuw/ong/id"
 )
 
-func getSecretKey() []byte {
-	key := []byte("key should be 32bytes and random")
-	if len(key) != 32 { // chacha20poly1305.KeySize
-		panic(fmt.Sprintf("key should have length of %d", 32))
-	}
-
+func getSecretKey() string {
+	key := "hard-password"
 	return key
 }
 
