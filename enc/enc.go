@@ -114,6 +114,9 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	// Select a random nonce, and leave capacity for the ciphertext.
 	nonce := random(e.a.NonceSize(), e.a.NonceSize()+len(msgToEncryt)+e.a.Overhead())
 
+	// "You can send the nonce in the clear before each message; so long as it's unique." - agl
+	// see: https://crypto.stackexchange.com/a/5818
+	
 	// Encrypt the message and append the ciphertext to the nonce.
 	encrypted := e.a.Seal(nonce, nonce, msgToEncryt, nil)
 
