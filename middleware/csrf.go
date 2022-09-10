@@ -51,7 +51,7 @@ const (
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
 // If a csrf token is not provided(or is not valid), when it ought to have been; this middleware will issue a http GET redirect to the same url.
-func Csrf(wrappedHandler http.HandlerFunc, secretKey []byte, domain string) http.HandlerFunc {
+func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
 	enc := enc.New(secretKey)
 	msgToEncryt := id.Random(16)
 

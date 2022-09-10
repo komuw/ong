@@ -55,9 +55,8 @@ type Enc struct {
 }
 
 // New returns a [cipher.AEAD]
-// The key should be random.
-// New panics if key is too small in length or if it is full of similar bytes.
-func New(key []byte) *Enc {
+// The key should be random. New panics if key is too small in length.
+func New(key string) *Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
@@ -66,23 +65,10 @@ func New(key []byte) *Enc {
 		panic(errors.New("short key"))
 	}
 
-	isRandom := false
-	firstChar := key[0]
-	for _, v := range key[1:] {
-		// if all the elements in the slice are equal, then the key is not random.
-		if v != firstChar {
-			isRandom = true
-			break
-		}
-	}
-
-	if !isRandom {
-		panic(errors.New("the key is not random"))
-	}
-
 	// derive a key.
 	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
-	derivedKey, err := scrypt.Key(key, salt, N, r, p, chacha20poly1305.KeySize)
+	password := []byte(key)
+	derivedKey, err := scrypt.Key(password, salt, N, r, p, chacha20poly1305.KeySize)
 	if err != nil {
 		panic(err)
 	}
@@ -97,7 +83,7 @@ func New(key []byte) *Enc {
 	return &Enc{
 		aead:       aead,
 		salt:       salt,
-		key:        key,
+		key:        password,
 		derivedKey: derivedKey,
 	}
 }

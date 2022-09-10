@@ -1,55 +1,15 @@
 package enc
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
-	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/exp/slices"
 )
 
-func getSecretKey() []byte {
-	/*
-		The draft RFC recommends[2] time=3, and memory=32*1024 is a sensible number.
-		If using that amount of memory (32 MB) is not possible in some contexts then the time parameter can be increased to compensate.
-		The number of threads can be adjusted to the number of available CPUs.
-		salt should be random.
-		- https://pkg.go.dev/golang.org/x/crypto/argon2#Key
-	*/
-
-	/*
-		key should be randomly generated or derived from a function like Argon2 or scrypt.
-
-		{
-			import "golang.org/x/crypto/argon2"
-			time := uint32(3)
-			memory := uint32(32 * 1024) // 32MB
-			threads := uint8(4)
-			salt := rand(16, 16) // 16bytes are recommended
-			key := argon2.Key(
-				[]byte("secretKey"),
-				salt,
-				time,
-				memory,
-				threads,
-				chacha20poly1305.KeySize,
-			)
-		}
-		{
-			import "golang.org/x/crypto/scrypt"
-			salt := random(8, 8) // 8 bytes is a good length.
-			dk, err := scrypt.Key([]byte("secretKey"), salt, 32768, 8, 1, chacha20poly1305.KeySize)
-		}
-	*/
-
-	key := []byte("key should be 32bytes and random")
-	if len(key) != chacha20poly1305.KeySize {
-		panic(fmt.Sprintf("key should have length of %d", chacha20poly1305.KeySize))
-	}
-
-	return key
+func getSecretKey() string {
+	return "hello world"
 }
 
 func TestSecret(t *testing.T) {
@@ -64,16 +24,7 @@ func TestSecret(t *testing.T) {
 
 		// short key
 		attest.Panics(t, func() {
-			_ = New([]byte{1, 3, 8})
-		})
-
-		// non-random key
-		key = getSecretKey()
-		for j := range key {
-			key[j] = 'a'
-		}
-		attest.Panics(t, func() {
-			_ = New(key)
+			_ = New("hi")
 		})
 	})
 

@@ -1,18 +1,13 @@
 package enc_test
 
 import (
-	"crypto/rand"
 	"fmt"
 
 	"github.com/komuw/ong/enc"
 )
 
 func ExampleEnc_Encrypt() {
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		panic(err)
-	}
-
+	key := "hard-passwd"
 	e := enc.New(key)
 
 	plainTextMsg := "Muziki asili yake - Remmy Ongala." // English: `What is the origin of music by Remmy Ongala`
@@ -23,11 +18,7 @@ func ExampleEnc_Encrypt() {
 }
 
 func ExampleEnc_EncryptEncode() {
-	key := make([]byte, 32)
-	if _, err := rand.Read(key); err != nil {
-		panic(err)
-	}
-
+	key := "hard-passwd"
 	e := enc.New(key)
 
 	originalPlainTextMsg := "three little birds."
