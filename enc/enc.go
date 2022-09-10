@@ -74,6 +74,13 @@ func New(key string) *Enc {
 		panic(err)
 	}
 
+	/*
+		Another option would be to use argon2.
+		  import "golang.org/x/crypto/argon2"
+		  salt := rand(16, 16) // 16bytes are recommended
+		  key := argon2.Key( []byte("secretKey"), salt, 3, 32 * 1024, 4, chacha20poly1305.KeySize)
+	*/
+
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
 	// It should be preferred when nonce uniqueness cannot be trivially ensured
 	aead, err := chacha20poly1305.NewX(derivedKey)
