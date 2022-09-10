@@ -131,26 +131,20 @@ func TestSecret(t *testing.T) {
 	t.Run("same input key will always be able to encrypt and decrypt", func(t *testing.T) {
 		t.Parallel()
 
+		// This is a useful property especially in the csrf implementation.
+		// A csrf token that was encrypted today, should be able to be decrypted tomorrow
+		// even if the server was restarted; so long as the same key is re-used.
+
 		msgToEncryt := "hello world!"
 		key := getSecretKey()
 
-		{
-			enc1 := New(key)
+		enc1 := New(key)
+		encryptedMsg := enc1.Encrypt(msgToEncryt)
 
-			encryptedMsg := enc1.Encrypt(msgToEncryt)
-			decryptedMsg, err := enc1.Decrypt(encryptedMsg)
-			attest.Ok(t, err)
-			attest.Equal(t, string(decryptedMsg), msgToEncryt)
-		}
-
-		{
-			enc2 := New(key)
-
-			encryptedMsg := enc2.Encrypt(msgToEncryt)
-			decryptedMsg, err := enc2.Decrypt(encryptedMsg)
-			attest.Ok(t, err)
-			attest.Equal(t, string(decryptedMsg), msgToEncryt)
-		}
+		enc2 := New(key)
+		decryptedMsg, err := enc2.Decrypt(encryptedMsg)
+		attest.Ok(t, err)
+		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
