@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/scrypt"
 )
 
 // Latacora recommends ChaCha20-Poly1305 for encryption.
@@ -38,12 +39,16 @@ type Enc struct {
 }
 
 // New returns a [cipher.AEAD]
-// The key should be random and 32 bytes in length.
-// New panics if key is not of sufficient length or if it is full of similar bytes.
+// The key should be random.
+// New panics if key is too small in length or if it is full of similar bytes.
 func New(key []byte) *Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
+
+	if len(key) < 8 {
+		panic(errors.New("short key"))
+	}
 
 	isRandom := false
 	firstChar := key[0]
@@ -59,9 +64,29 @@ func New(key []byte) *Enc {
 		panic(errors.New("the key is not random"))
 	}
 
+	// derive a key.
+	salt := random(8, 8) // should be random, 8 bytes is a good length.
+	N := 32768           // CPU/memory cost parameter.
+	r := 8               // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
+	p := 1
+	derivedKey, err := scrypt.Key(
+		key,
+		salt,
+		// The values recommended as of year 2017 are:
+		// N=32768, r=8 and p=1
+		// https://pkg.go.dev/golang.org/x/crypto/scrypt#Key
+		N,
+		r,
+		p,
+		chacha20poly1305.KeySize,
+	)
+	if err != nil {
+		panic(err)
+	}
+
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
 	// It should be preferred when nonce uniqueness cannot be trivially ensured
-	aead, err := chacha20poly1305.NewX(key)
+	aead, err := chacha20poly1305.NewX(derivedKey)
 	if err != nil {
 		panic(err)
 	}
