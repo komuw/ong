@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/scrypt"
+	"golang.org/x/exp/slices"
 )
 
 // Latacora recommends ChaCha20-Poly1305 for encryption.
@@ -30,43 +32,68 @@ import (
 // This file uses [chacha20poly1305.NewX] which is XChaCha20-Poly1305.
 //
 
+const (
+	saltLen = 8
+	//
+	// The values recommended as of year 2017 are:
+	// N=32768, r=8 and p=1
+	// https://pkg.go.dev/golang.org/x/crypto/scrypt#Key
+	//
+	N = 32768 // CPU/memory cost parameter.
+	r = 8     // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
+	p = 1
+)
+
 // Enc is an AEAD cipher mode providing authenticated encryption with associated data.
 // Use [New] to get a valid Enc.
 // see [cipher.AEAD]
 type Enc struct {
-	cipher.AEAD
+	aead       cipher.AEAD
+	salt       []byte
+	key        []byte
+	derivedKey []byte // only used in [Encrypt], for [Decrypt] we have to redrive the key.
 }
 
 // New returns a [cipher.AEAD]
-// The key should be random and 32 bytes in length.
-// New panics if key is not of sufficient length or if it is full of similar bytes.
-func New(key []byte) *Enc {
+// The key should be random. New panics on error.
+// It uses [scrypt] to derive the final key that will be used for encryption.
+func New(key string) *Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
 
-	isRandom := false
-	firstChar := key[0]
-	for _, v := range key[1:] {
-		// if all the elements in the slice are equal, then the key is not random.
-		if v != firstChar {
-			isRandom = true
-			break
-		}
+	if len(key) < 4 {
+		panic(errors.New("short key"))
 	}
 
-	if !isRandom {
-		panic(errors.New("the key is not random"))
-	}
-
-	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
-	// It should be preferred when nonce uniqueness cannot be trivially ensured
-	aead, err := chacha20poly1305.NewX(key)
+	// derive a key.
+	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
+	password := []byte(key)
+	derivedKey, err := scrypt.Key(password, salt, N, r, p, chacha20poly1305.KeySize)
 	if err != nil {
 		panic(err)
 	}
 
-	return &Enc{aead}
+	/*
+		Another option would be to use argon2.
+		  import "golang.org/x/crypto/argon2"
+		  salt := rand(16, 16) // 16bytes are recommended
+		  key := argon2.Key( []byte("secretKey"), salt, 3, 32 * 1024, 4, chacha20poly1305.KeySize)
+	*/
+
+	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
+	// It should be preferred when nonce uniqueness cannot be trivially ensured
+	aead, err := chacha20poly1305.NewX(derivedKey)
+	if err != nil {
+		panic(err)
+	}
+
+	return &Enc{
+		aead:       aead,
+		salt:       salt,
+		key:        password,
+		derivedKey: derivedKey,
+	}
 }
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
@@ -74,23 +101,53 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
-	nonce := random(e.NonceSize(), e.NonceSize()+len(msgToEncryt)+e.Overhead())
+	nonce := random(e.aead.NonceSize(), e.aead.NonceSize()+len(msgToEncryt)+e.aead.Overhead())
 
 	// Encrypt the message and append the ciphertext to the nonce.
-	return e.Seal(nonce, nonce, msgToEncryt, nil)
+	encrypted := e.aead.Seal(nonce, nonce, msgToEncryt, nil)
+
+	encrypted = append(
+		// "you can send the nonce in the clear before each message; so long as it's unique." - agl
+		// see: https://crypto.stackexchange.com/a/5818
+		//
+		// "salt does not need to be secret."
+		// see: https://crypto.stackexchange.com/a/99502
+		e.salt,
+		encrypted...,
+	)
+
+	return encrypted
 }
 
 // Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
 func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
-	if len(encryptedMsg) < e.NonceSize() {
+	if len(encryptedMsg) < e.aead.NonceSize() {
 		return nil, errors.New("ciphertext too short")
 	}
 
+	// get salt
+	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
+
+	aead := e.aead
+	if !slices.Equal(salt, e.salt) {
+		// The encryptedMsg was encrypted using a different salt.
+		// So, we need to get the derived key for that salt and use it for decryption.
+		derivedKey, errK := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
+		if errK != nil {
+			return nil, errK
+		}
+
+		aead, err = chacha20poly1305.NewX(derivedKey)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Split nonce and ciphertext.
-	nonce, ciphertext := encryptedMsg[:e.NonceSize()], encryptedMsg[e.NonceSize():]
+	nonce, ciphertext := encryptedMsg[:aead.NonceSize()], encryptedMsg[aead.NonceSize():]
 
 	// Decrypt the message and check it wasn't tampered with.
-	return e.Open(nil, nonce, ciphertext, nil)
+	return aead.Open(nil, nonce, ciphertext, nil)
 }
 
 // EncryptEncode is like [Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]

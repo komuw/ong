@@ -23,7 +23,7 @@ type Opts struct {
 	allowedOrigins []string
 	allowedMethods []string
 	allowedHeaders []string
-	secretKey      []byte
+	secretKey      string
 	l              log.Logger
 }
 
@@ -34,7 +34,7 @@ func NewOpts(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
-	secretKey []byte,
+	secretKey string,
 	l log.Logger,
 ) Opts {
 	return Opts{
@@ -49,7 +49,7 @@ func NewOpts(
 }
 
 // WithOpts returns a new opts that has sensible defaults.
-func WithOpts(domain string, httpsPort uint16, secretKey []byte, l log.Logger) Opts {
+func WithOpts(domain string, httpsPort uint16, secretKey string, l log.Logger) Opts {
 	return NewOpts(domain, httpsPort, nil, nil, nil, secretKey, l)
 }
 
