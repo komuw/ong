@@ -34,16 +34,21 @@ import (
 
 const (
 	saltLen = 8
-	N       = 32768 // CPU/memory cost parameter.
-	r       = 8     // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
-	p       = 1
+	//
+	// The values recommended as of year 2017 are:
+	// N=32768, r=8 and p=1
+	// https://pkg.go.dev/golang.org/x/crypto/scrypt#Key
+	//
+	N = 32768 // CPU/memory cost parameter.
+	r = 8     // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
+	p = 1
 )
 
 // Enc is an AEAD cipher mode providing authenticated encryption with associated data.
 // Use [New] to get a valid Enc.
 // see [cipher.AEAD]
 type Enc struct {
-	a          cipher.AEAD
+	aead       cipher.AEAD
 	salt       []byte
 	key        []byte
 	derivedKey []byte // only used in [Encrypt], for [Decrypt] we have to redrive the key.
@@ -77,17 +82,7 @@ func New(key []byte) *Enc {
 
 	// derive a key.
 	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
-	derivedKey, err := scrypt.Key(
-		key,
-		salt,
-		// The values recommended as of year 2017 are:
-		// N=32768, r=8 and p=1
-		// https://pkg.go.dev/golang.org/x/crypto/scrypt#Key
-		N,
-		r,
-		p,
-		chacha20poly1305.KeySize,
-	)
+	derivedKey, err := scrypt.Key(key, salt, N, r, p, chacha20poly1305.KeySize)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +95,7 @@ func New(key []byte) *Enc {
 	}
 
 	return &Enc{
-		a:          aead,
+		aead:       aead,
 		salt:       salt,
 		key:        key,
 		derivedKey: derivedKey,
@@ -112,13 +107,13 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
-	nonce := random(e.a.NonceSize(), e.a.NonceSize()+len(msgToEncryt)+e.a.Overhead())
+	nonce := random(e.aead.NonceSize(), e.aead.NonceSize()+len(msgToEncryt)+e.aead.Overhead())
 
 	// "You can send the nonce in the clear before each message; so long as it's unique." - agl
 	// see: https://crypto.stackexchange.com/a/5818
 
 	// Encrypt the message and append the ciphertext to the nonce.
-	encrypted := e.a.Seal(nonce, nonce, msgToEncryt, nil)
+	encrypted := e.aead.Seal(nonce, nonce, msgToEncryt, nil)
 
 	encrypted = append(
 		// "you can send the nonce in the clear before each message; so long as it's unique." - agl
@@ -135,14 +130,14 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 
 // Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
 func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
-	if len(encryptedMsg) < e.a.NonceSize() {
+	if len(encryptedMsg) < e.aead.NonceSize() {
 		return nil, errors.New("ciphertext too short")
 	}
 
 	// get salt
 	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
 
-	aead := e.a
+	aead := e.aead
 	if !slices.Equal(salt, e.salt) {
 		// The encryptedMsg was encrypted using a different salt.
 		// So, we need to get the derived key for that salt and use it for decryption.
