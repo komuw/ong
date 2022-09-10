@@ -148,7 +148,7 @@ func TestSecret(t *testing.T) {
 		enc1 := New(key)
 		encryptedMsg := enc1.Encrypt(msgToEncryt)
 
-		enc2 := New(key)
+		enc2 := New(key) // server restarted
 		decryptedMsg, err := enc2.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
