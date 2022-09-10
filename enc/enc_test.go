@@ -20,21 +20,28 @@ func getSecretKey() []byte {
 	*/
 
 	/*
-		key should be randomly generated or derived from a function like Argon2.
+		key should be randomly generated or derived from a function like Argon2 or scrypt.
 
-		import "golang.org/x/crypto/argon2"
-		time := uint32(3)
-		memory := uint32(32 * 1024) // 32MB
-		threads := uint8(4)
-		salt := rand(16, 16) // 16bytes are recommended
-		key := argon2.Key(
-			[]byte("secretKey"),
-			salt,
-			time,
-			memory,
-			threads,
-			chacha20poly1305.KeySize,
-		)
+		{
+			import "golang.org/x/crypto/argon2"
+			time := uint32(3)
+			memory := uint32(32 * 1024) // 32MB
+			threads := uint8(4)
+			salt := rand(16, 16) // 16bytes are recommended
+			key := argon2.Key(
+				[]byte("secretKey"),
+				salt,
+				time,
+				memory,
+				threads,
+				chacha20poly1305.KeySize,
+			)
+		}
+		{
+			import "golang.org/x/crypto/scrypt"
+			salt := random(8, 8) // 8 bytes is a good length.
+			dk, err := scrypt.Key([]byte("secretKey"), salt, 32768, 8, 1, chacha20poly1305.KeySize)
+		}
 	*/
 
 	key := []byte("key should be 32bytes and random")
