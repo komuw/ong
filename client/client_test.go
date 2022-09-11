@@ -29,8 +29,9 @@ func TestClient(t *testing.T) {
 
 		for _, url := range urlsInPrivate {
 			cli := getClient(ssrfSafe)
-			_, err := cli.Get(url)
+			res, err := cli.Get(url)
 			attest.Error(t, err)
+			defer res.Body.Close()
 			attest.Subsequence(t, err.Error(), "is not a public IP address")
 		}
 
@@ -38,6 +39,7 @@ func TestClient(t *testing.T) {
 			cli := getClient(ssrfSafe)
 			res, err := cli.Get(url)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 		}
 	})
@@ -49,8 +51,9 @@ func TestClient(t *testing.T) {
 
 		for _, url := range urlsInPrivate {
 			cli := getClient(ssrfSafe)
-			_, err := cli.Get(url)
+			res, err := cli.Get(url)
 			attest.Error(t, err)
+			defer res.Body.Close()
 			attest.False(t, strings.Contains(err.Error(), "is not a public IP address"))
 		}
 
@@ -58,6 +61,7 @@ func TestClient(t *testing.T) {
 			cli := getClient(ssrfSafe)
 			res, err := cli.Get(url)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 		}
 	})
