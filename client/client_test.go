@@ -14,7 +14,7 @@ func TestClient(t *testing.T) {
 	// aws metadata api.
 	urlsInPrivate := []string{
 		"http://[fd00:ec2::254]/latest/meta-data/",
-		// "http://169.254.169.254/latest/meta-data/",
+		"http://169.254.169.254/latest/meta-data/",
 	}
 
 	urlsInPublic := []string{
@@ -48,7 +48,7 @@ func TestClient(t *testing.T) {
 			res, err := cli.Get(url)
 			attest.Ok(t, err)
 			clean(res)
-			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
 		}
 	})
 
@@ -59,6 +59,12 @@ func TestClient(t *testing.T) {
 
 		for _, url := range urlsInPrivate {
 			cli := New(ssrfSafe)
+			if strings.Contains(url, "169.254.169.254") {
+				// the following IP when run from laptop resolves to IP of wifi router.
+				// Thus we have to disable it from test, since the test tries making a request to the router
+				// and gets a 404.
+				break
+			}
 			res, err := cli.Get(url)
 			attest.Error(t, err)
 			clean(res)
@@ -70,7 +76,7 @@ func TestClient(t *testing.T) {
 			res, err := cli.Get(url)
 			attest.Ok(t, err)
 			clean(res)
-			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
 		}
 	})
 }
