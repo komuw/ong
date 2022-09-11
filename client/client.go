@@ -18,13 +18,8 @@ import (
 // TODO: maybe we need a global var similar to [http.DefaultClient]
 //       or maybe use a func that uses sync.once
 
-func getClient(ssrfSafe bool) *http.Client {
-	_ = http.DefaultClient
-	_ = http.DefaultTransport
-
-	// TODO: check http.DefaultClient
-	// TODO: check http.DefaultTransport
-
+// TODO: docs.
+func New(ssrfSafe bool) *http.Client {
 	timeout := 30 * time.Second
 	dialer := &net.Dialer{
 		Control: ssrfSocketControl(ssrfSafe),
@@ -91,7 +86,6 @@ func isIPv6GlobalUnicast(address net.IP) bool {
 		IP:   net.IP{0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		Mask: net.CIDRMask(3, 128),
 	}
-
 	return globalUnicastIPv6Net.Contains(address)
 }
 
