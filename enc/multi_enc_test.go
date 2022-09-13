@@ -45,6 +45,20 @@ func TestMultiEnc(t *testing.T) {
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 	})
 
+	t.Run("encrypt/decrypt base64", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncryt := "hello world!"
+		key1, key2 := getMultiSecretKeys()
+		enc := NewMulti(key1, key2)
+
+		token := enc.EncryptEncode(msgToEncryt)
+
+		decryptedMsg, err := enc.DecryptDecode(token)
+		attest.Ok(t, err)
+		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 

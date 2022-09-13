@@ -2,7 +2,9 @@ package enc
 
 import (
 	"crypto/cipher"
+	"encoding/base64"
 	"errors"
+	"strings"
 
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
@@ -14,6 +16,10 @@ type msgNum string
 const (
 	one msgNum = "one"
 	two msgNum = "two"
+	// This should be a character that is not part of either;
+	//   - base64.encodeStd
+	//   - base64.encodeURL
+	separator = ":"
 )
 
 type MultiEnc struct {
@@ -143,4 +149,34 @@ func (m *MultiEnc) decryptMulti(encryptedMsg []byte, mn msgNum) (decryptedMsg []
 
 	nonce, ciphertext := encryptedMsg[:aead.NonceSize()], encryptedMsg[aead.NonceSize():]
 	return aead.Open(nil, nonce, ciphertext, nil)
+}
+
+func (m *MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
+	encryptedMsg1, encryptedMsg2 := m.encrypt(plainTextMsg)
+	encoded1 := base64.RawURLEncoding.EncodeToString(encryptedMsg1)
+	encoded2 := base64.RawURLEncoding.EncodeToString(encryptedMsg2)
+	return encoded1 + separator + encoded2
+}
+
+func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
+	encoded := strings.Split(encryptedEncodedMsg, separator)
+	if len(encoded) != 2 {
+		return "", errors.New("message was encoded incorrectly")
+	}
+
+	encryptedMsg1, err := base64.RawURLEncoding.DecodeString(encoded[0])
+	if err != nil {
+		return "", err
+	}
+	encryptedMsg2, err := base64.RawURLEncoding.DecodeString(encoded[1])
+	if err != nil {
+		return "", err
+	}
+
+	decrypted, err := m.decrypt(encryptedMsg1, encryptedMsg2)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decrypted), nil
 }
