@@ -23,12 +23,16 @@ import (
 // TODO: docs.
 func New(ssrfSafe bool) *http.Client {
 	timeout := 30 * time.Second
+
 	dialer := &net.Dialer{
 		Control: ssrfSocketControl(ssrfSafe),
+		Resolver: &net.Resolver{
+			// Prefer Go's built-in DNS resolver.
+			PreferGo: true,
+		},
 		// this timeout and keep-alive are similar to the ones used by stdlib.
 		Timeout:   timeout,
 		KeepAlive: timeout,
-		DualStack: true,
 	}
 
 	transport := &http.Transport{
