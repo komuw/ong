@@ -55,7 +55,19 @@ func ExampleMultiEnc_EncryptEncode() {
 		panic("something went wrong")
 	}
 
-	fmt.Println(resultantPlainTextMsg)
+	// let's say that key2 is compromised and we need to rotate it.
+	rotatedKey2 := "brand new key2"
+	e2 := enc.NewMulti(key1, rotatedKey2)
+	resultantPlainTextMsg2, err := e2.DecryptDecode(encryptedEncodedMsg)
+	if err != nil {
+		panic(err)
+	}
+
+	if resultantPlainTextMsg2 != originalPlainTextMsg {
+		panic("something went wrong")
+	}
+
+	fmt.Println(resultantPlainTextMsg2)
 
 	// Output: three little birds.
 }
