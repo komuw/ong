@@ -4,6 +4,7 @@ import (
 	"crypto/cipher"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"strings"
 
 	"golang.org/x/crypto/chacha20poly1305"
@@ -109,6 +110,8 @@ func (m *MultiEnc) decrypt(encryptedMsg1, encryptedMsg2 []byte) (decryptedMsg []
 		decryptedMsg = decryptedMsg1
 	}
 
+	fmt.Println("\n\t err1: ", err1)
+	fmt.Println("\n\t err2: ", err2, "\n.")
 	if (err1 != nil) && (err2 != nil) {
 		return nil, err
 	}
@@ -117,6 +120,12 @@ func (m *MultiEnc) decrypt(encryptedMsg1, encryptedMsg2 []byte) (decryptedMsg []
 }
 
 func (m *MultiEnc) decryptMulti(encryptedMsg []byte, mn msgNum) (decryptedMsg []byte, err error) {
+	defer func() {
+		if err != nil {
+			panic(err)
+		}
+	}()
+
 	if !slices.Contains([]msgNum{one, two}, mn) {
 		return nil, errors.New("msgNumber is not known")
 	}
@@ -165,6 +174,11 @@ func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg strin
 		return "", errors.New("message was encoded incorrectly")
 	}
 
+	fmt.Println("encryptedEncodedMsg: ", encryptedEncodedMsg)
+	fmt.Println(encoded[0], encoded[1])
+
+	// TODO: this method should only fail if BOTH message decoding/decrypting also fail.
+	//       One failure should not cause us to fail.
 	encryptedMsg1, err := base64.RawURLEncoding.DecodeString(encoded[0])
 	if err != nil {
 		return "", err
