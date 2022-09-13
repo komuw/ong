@@ -18,6 +18,8 @@ import (
 // TODO: maybe we need a global var similar to [http.DefaultClient]
 //       or maybe use a func that uses sync.once
 
+// TODO: add preferGo to the client/dialer.
+
 // TODO: docs.
 func New(ssrfSafe bool) *http.Client {
 	timeout := 30 * time.Second
