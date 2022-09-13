@@ -28,4 +28,19 @@ func TestMultiEnc(t *testing.T) {
 			_ = NewMulti(key1, "hi")
 		})
 	})
+
+	t.Run("encrypt/decrypt", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncryt := "hello world!"
+		key1, key2 := getMultiSecretKeys()
+		enc := NewMulti(key1, key2)
+
+		encryptedMsg1, encryptedMsg2 := enc.encrypt(msgToEncryt)
+
+		decryptedMsg, err := enc.decrypt(encryptedMsg1, encryptedMsg2)
+		attest.Ok(t, err)
+
+		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+	})
 }
