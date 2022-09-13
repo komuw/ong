@@ -67,8 +67,7 @@ func NewMulti(key1, key2 string) *MultiEnc {
 	}
 }
 
-// TODO: Encrypt & Decrypt should be private methods. Only the base64 methods should be public.
-func (m *MultiEnc) Encrypt(plainTextMsg string) (encryptedMsg1, encryptedMsg2 []byte) {
+func (m *MultiEnc) encrypt(plainTextMsg string) (encryptedMsg1, encryptedMsg2 []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	nonce := random(
@@ -85,7 +84,7 @@ func (m *MultiEnc) Encrypt(plainTextMsg string) (encryptedMsg1, encryptedMsg2 []
 	return encrypted1, encrypted2
 }
 
-func (m *MultiEnc) Decrypt(encryptedMsg1, encryptedMsg2 []byte) (decryptedMsg []byte, err error) {
+func (m *MultiEnc) decrypt(encryptedMsg1, encryptedMsg2 []byte) (decryptedMsg []byte, err error) {
 	//
 	// In this method, we only fail if we are unable to use either of the keys.
 	// If one fails and the other succeeds, then this method also succeeds.
