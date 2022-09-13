@@ -30,6 +30,7 @@ type MultiEnc struct {
 	key2  []byte
 }
 
+// TODO: mention that you can only rotate one key at a time.
 func NewMulti(key1, key2 string) *MultiEnc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.

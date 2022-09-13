@@ -59,6 +59,26 @@ func TestMultiEnc(t *testing.T) {
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 	})
 
+	t.Run("key rotation", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncryt := "hello world!"
+		key1, key2 := getMultiSecretKeys()
+		enc := NewMulti(key1, key2)
+
+		token := enc.EncryptEncode(msgToEncryt)
+
+		decryptedMsg, err := enc.DecryptDecode(token)
+		attest.Ok(t, err)
+		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+
+		rotatedKey2 := "brand new key2"
+		encX := NewMulti(key1, rotatedKey2)
+		decryptedMsg2, err := encX.DecryptDecode(token)
+		attest.Ok(t, err)
+		attest.Equal(t, string(decryptedMsg2), msgToEncryt)
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
