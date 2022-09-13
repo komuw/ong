@@ -26,16 +26,19 @@ func New(ssrfSafe bool) *http.Client {
 
 	dialer := &net.Dialer{
 		Control: ssrfSocketControl(ssrfSafe),
+		// see: net.DefaultResolver
 		Resolver: &net.Resolver{
 			// Prefer Go's built-in DNS resolver.
 			PreferGo: true,
 		},
-		// this timeout and keep-alive are similar to the ones used by stdlib.
+		// This timeout and keep-alive are similar to the ones used by stdlib.
+		// see; http.DefaultTransport
 		Timeout:   timeout,
 		KeepAlive: timeout,
 	}
 
 	transport := &http.Transport{
+		// see: http.DefaultTransport
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           dialer.DialContext,
 		ForceAttemptHTTP2:     true,
