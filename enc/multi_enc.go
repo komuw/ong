@@ -66,6 +66,9 @@ func NewMulti(key1, key2 string) *MultiEnc {
 		panic(err)
 	}
 
+	fmt.Printf("\n NEW %p\n", aead1)
+	fmt.Printf("\n NEW %p\n", aead2)
+
 	return &MultiEnc{
 		aead1: aead1,
 		aead2: aead2,
@@ -85,6 +88,11 @@ func (m *MultiEnc) encrypt(plainTextMsg string) (encryptedMsg1, encryptedMsg2 []
 
 	encrypted1 := m.aead1.Seal(nonce, nonce, msgToEncryt, nil)
 	encrypted2 := m.aead2.Seal(nonce, nonce, msgToEncryt, nil)
+
+	fmt.Printf("\n %p\n", m.aead1)
+	fmt.Printf("\n %p\n", m.aead2)
+	fmt.Println("encrypt.encryptedMsg1; ", encrypted1)
+	fmt.Println("encrypt.encryptedMsg2; ", encrypted2)
 
 	encrypted1 = append(m.salt, encrypted1...)
 	encrypted2 = append(m.salt, encrypted2...)
@@ -188,10 +196,71 @@ func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg strin
 		return "", err
 	}
 
+	fmt.Println("DecryptDecode.encryptedMsg1; ", encryptedMsg1)
+	fmt.Println("DecryptDecode.encryptedMsg2; ", encryptedMsg2)
 	decrypted, err := m.decrypt(encryptedMsg1, encryptedMsg2)
 	if err != nil {
 		return "", err
 	}
 
 	return string(decrypted), nil
+}
+
+type theMultiEnc struct {
+	enc1 *Enc
+	enc2 *Enc
+}
+
+func NewTheMulti(key1, key2 string) theMultiEnc {
+	enc1 := New(key1)
+	enc2 := New(key2)
+	return theMultiEnc{
+		enc1: enc1,
+		enc2: enc2,
+	}
+}
+
+func (t theMultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
+	encryptedMsg1, encryptedMsg2 := t.enc1.Encrypt(plainTextMsg), t.enc2.Encrypt(plainTextMsg)
+	encoded1 := base64.RawURLEncoding.EncodeToString(encryptedMsg1)
+	encoded2 := base64.RawURLEncoding.EncodeToString(encryptedMsg2)
+	return encoded1 + separator + encoded2
+}
+
+func (t *theMultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
+	// TODO: this method should only fail if BOTH message decoding/decrypting also fail.
+	//       One failure should not cause us to fail.
+	//
+	encoded := strings.Split(encryptedEncodedMsg, separator)
+	if len(encoded) != 2 {
+		return "", errors.New("message was encoded incorrectly")
+	}
+
+	resEncryptedMsg1, err := base64.RawURLEncoding.DecodeString(encoded[0])
+	if err != nil {
+		return "", err
+	}
+	resEncryptedMsg2, err := base64.RawURLEncoding.DecodeString(encoded[1])
+	if err != nil {
+		return "", err
+	}
+
+	decryptedMsg1, err := t.enc1.Decrypt(resEncryptedMsg1)
+	if err != nil {
+		return "", err
+	}
+
+	decryptedMsg2, err := t.enc2.Decrypt(resEncryptedMsg2)
+	if err != nil {
+		return "", err
+	}
+
+	if len(decryptedMsg1) > 0 {
+		return string(decryptedMsg1), nil
+	}
+	if len(decryptedMsg2) > 0 {
+		return string(decryptedMsg2), nil
+	}
+
+	return "", err
 }
