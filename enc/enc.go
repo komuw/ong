@@ -48,10 +48,9 @@ const (
 // Use [New] to get a valid Enc.
 // see [cipher.AEAD]
 type Enc struct {
-	aead       cipher.AEAD
-	salt       []byte
-	key        []byte
-	derivedKey []byte // only used in [Encrypt], for [Decrypt] we have to redrive the key.
+	aead cipher.AEAD
+	salt []byte
+	key  []byte
 }
 
 // New returns a [cipher.AEAD]
@@ -89,10 +88,9 @@ func New(key string) *Enc {
 	}
 
 	return &Enc{
-		aead:       aead,
-		salt:       salt,
-		key:        password,
-		derivedKey: derivedKey,
+		aead: aead,
+		salt: salt,
+		key:  password,
 	}
 }
 
@@ -101,7 +99,10 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
-	nonce := random(e.aead.NonceSize(), e.aead.NonceSize()+len(msgToEncryt)+e.aead.Overhead())
+	nonce := random(
+		e.aead.NonceSize(),
+		e.aead.NonceSize()+len(msgToEncryt)+e.aead.Overhead(),
+	)
 
 	// Encrypt the message and append the ciphertext to the nonce.
 	encrypted := e.aead.Seal(nonce, nonce, msgToEncryt, nil)
