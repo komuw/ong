@@ -23,7 +23,7 @@ func NewMulti(key1, key2 string) *MultiEnc {
 	//
 
 	if len(key1) < 4 {
-		panic(errors.New("short key"))
+		panic(errors.New("short key")) // TODO: make these errors, constants.
 	}
 	if len(key2) < 4 {
 		panic(errors.New("short key"))
