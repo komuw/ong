@@ -171,6 +171,27 @@ func getMultiSecretKeys() (string, string) {
 func TestMultiEnc(t *testing.T) {
 	t.Parallel()
 
+	t.Run("same key again", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncryt := "hello world!"
+		key1 := "okay what are you"
+		key2 := "kill it with fire"
+
+		tEnc := NewTheMulti(key1, key2)
+
+		token := tEnc.EncryptEncode(msgToEncryt)
+
+		decryptedMsg, err := tEnc.DecryptDecode(token)
+		attest.Ok(t, err)
+		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+
+		tEncX := NewTheMulti(key1, key2)
+		decryptedMsg2, err := tEncX.DecryptDecode(token)
+		attest.Ok(t, err)
+		attest.Equal(t, string(decryptedMsg2), msgToEncryt)
+	})
+
 	t.Run("key rotation", func(t *testing.T) {
 		t.Parallel()
 

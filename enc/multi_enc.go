@@ -231,36 +231,41 @@ func (t *theMultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg st
 	// TODO: this method should only fail if BOTH message decoding/decrypting also fail.
 	//       One failure should not cause us to fail.
 	//
+
 	encoded := strings.Split(encryptedEncodedMsg, separator)
 	if len(encoded) != 2 {
 		return "", errors.New("message was encoded incorrectly")
 	}
 
-	resEncryptedMsg1, err := base64.RawURLEncoding.DecodeString(encoded[0])
-	if err != nil {
-		return "", err
+	resEncryptedMsg1, err1 := base64.RawURLEncoding.DecodeString(encoded[0])
+	if err1 != nil {
+		err = err1
 	}
-	resEncryptedMsg2, err := base64.RawURLEncoding.DecodeString(encoded[1])
-	if err != nil {
+	resEncryptedMsg2, err2 := base64.RawURLEncoding.DecodeString(encoded[1])
+	if err2 != nil {
+		err = err2
+	}
+
+	if (err1 != nil) && (err2 != nil) {
 		return "", err
 	}
 
-	decryptedMsg1, err := t.enc1.Decrypt(resEncryptedMsg1)
-	if err != nil {
-		return "", err
+	decryptedMsg1, err1 := t.enc1.Decrypt(resEncryptedMsg1)
+	if err1 != nil {
+		err = err1
+	}
+	decryptedMsg2, err2 := t.enc2.Decrypt(resEncryptedMsg2)
+	if err2 != nil {
+		err = err2
 	}
 
-	decryptedMsg2, err := t.enc2.Decrypt(resEncryptedMsg2)
-	if err != nil {
+	if (err1 != nil) && (err2 != nil) {
 		return "", err
 	}
 
 	if len(decryptedMsg1) > 0 {
 		return string(decryptedMsg1), nil
 	}
-	if len(decryptedMsg2) > 0 {
-		return string(decryptedMsg2), nil
-	}
 
-	return "", err
+	return string(decryptedMsg2), nil
 }
