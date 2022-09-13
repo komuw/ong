@@ -12,7 +12,7 @@ func getSecretKey() string {
 	return "hello world"
 }
 
-func TestSecret(t *testing.T) {
+func TestEnc(t *testing.T) {
 	t.Parallel()
 
 	t.Run("new", func(t *testing.T) {
