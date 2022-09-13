@@ -36,10 +36,6 @@ func (m MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string
 }
 
 func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
-	// TODO: this method should only fail if BOTH message decoding/decrypting also fail.
-	//       One failure should not cause us to fail.
-	//
-
 	encoded := strings.Split(encryptedEncodedMsg, separator)
 	if len(encoded) != 2 {
 		return "", errors.New("message was encoded incorrectly") // TODO: make these errors, constants.
@@ -55,6 +51,8 @@ func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg strin
 	}
 
 	if (err1 != nil) && (err2 != nil) {
+		// This method should only fail if BOTH message decoding/decrypting also fail.
+		// One failure should not cause us to fail.
 		return "", err
 	}
 
@@ -68,6 +66,8 @@ func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg strin
 	}
 
 	if (err1 != nil) && (err2 != nil) {
+		// This method should only fail if BOTH message decoding/decrypting also fail.
+		// One failure should not cause us to fail.
 		return "", err
 	}
 
