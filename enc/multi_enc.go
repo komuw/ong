@@ -223,14 +223,14 @@ func NewMulti(key1, key2 string) MultiEnc {
 	}
 }
 
-func (t MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
-	encryptedMsg1, encryptedMsg2 := t.enc1.Encrypt(plainTextMsg), t.enc2.Encrypt(plainTextMsg)
+func (m MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
+	encryptedMsg1, encryptedMsg2 := m.enc1.Encrypt(plainTextMsg), m.enc2.Encrypt(plainTextMsg)
 	encoded1 := base64.RawURLEncoding.EncodeToString(encryptedMsg1)
 	encoded2 := base64.RawURLEncoding.EncodeToString(encryptedMsg2)
 	return encoded1 + separator + encoded2
 }
 
-func (t *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
+func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	// TODO: this method should only fail if BOTH message decoding/decrypting also fail.
 	//       One failure should not cause us to fail.
 	//
@@ -253,11 +253,11 @@ func (t *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg strin
 		return "", err
 	}
 
-	decryptedMsg1, err1 := t.enc1.Decrypt(resEncryptedMsg1)
+	decryptedMsg1, err1 := m.enc1.Decrypt(resEncryptedMsg1)
 	if err1 != nil {
 		err = err1
 	}
-	decryptedMsg2, err2 := t.enc2.Decrypt(resEncryptedMsg2)
+	decryptedMsg2, err2 := m.enc2.Decrypt(resEncryptedMsg2)
 	if err2 != nil {
 		err = err2
 	}
