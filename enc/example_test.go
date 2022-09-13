@@ -37,3 +37,25 @@ func ExampleEnc_EncryptEncode() {
 
 	// Output: three little birds.
 }
+
+func ExampleMultiEnc_EncryptEncode() {
+	key1 := "this is it"
+	key2 := "what are we?"
+	e := enc.NewMulti(key1, key2)
+
+	originalPlainTextMsg := "three little birds."
+	encryptedEncodedMsg := e.EncryptEncode(originalPlainTextMsg)
+
+	resultantPlainTextMsg, err := e.DecryptDecode(encryptedEncodedMsg)
+	if err != nil {
+		panic(err)
+	}
+
+	if resultantPlainTextMsg != originalPlainTextMsg {
+		panic("something went wrong")
+	}
+
+	fmt.Println(resultantPlainTextMsg)
+
+	// Output: three little birds.
+}
