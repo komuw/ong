@@ -128,12 +128,8 @@ func (m *MultiEnc) decryptMulti(encryptedMsg []byte, mn msgNum) (decryptedMsg []
 		return nil, errors.New("ciphertext too short")
 	}
 
-	// get salt
 	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
-
 	if !slices.Equal(salt, m.salt) {
-		// The encryptedMsg was encrypted using a different salt.
-		// So, we need to get the derived key for that salt and use it for decryption.
 		derivedKey, errK := scrypt.Key(key, salt, N, r, p, chacha20poly1305.KeySize)
 		if errK != nil {
 			return nil, errK
@@ -145,9 +141,6 @@ func (m *MultiEnc) decryptMulti(encryptedMsg []byte, mn msgNum) (decryptedMsg []
 		}
 	}
 
-	// Split nonce and ciphertext.
 	nonce, ciphertext := encryptedMsg[:aead.NonceSize()], encryptedMsg[aead.NonceSize():]
-
-	// Decrypt the message and check it wasn't tampered with.
 	return aead.Open(nil, nonce, ciphertext, nil)
 }
