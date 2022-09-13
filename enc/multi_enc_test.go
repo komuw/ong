@@ -177,14 +177,14 @@ func TestMultiEnc(t *testing.T) {
 
 		// okay key
 		key1, key2 := getMultiSecretKeys()
-		_ = NewTheMulti(key1, key2)
+		_ = NewMulti(key1, key2)
 
 		// short keys
 		attest.Panics(t, func() {
-			_ = NewTheMulti("hi", key2)
+			_ = NewMulti("hi", key2)
 		})
 		attest.Panics(t, func() {
-			_ = NewTheMulti(key1, "hi")
+			_ = NewMulti(key1, "hi")
 		})
 	})
 
@@ -193,7 +193,7 @@ func TestMultiEnc(t *testing.T) {
 
 		msgToEncryt := "hello world!"
 		key1, key2 := getMultiSecretKeys()
-		enc := NewTheMulti(key1, key2)
+		enc := NewMulti(key1, key2)
 
 		token := enc.EncryptEncode(msgToEncryt)
 
@@ -209,7 +209,7 @@ func TestMultiEnc(t *testing.T) {
 		key1 := "okay what are you"
 		key2 := "kill it with fire"
 
-		tEnc := NewTheMulti(key1, key2)
+		tEnc := NewMulti(key1, key2)
 
 		token := tEnc.EncryptEncode(msgToEncryt)
 
@@ -217,7 +217,7 @@ func TestMultiEnc(t *testing.T) {
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 
-		tEncX := NewTheMulti(key1, key2)
+		tEncX := NewMulti(key1, key2)
 		decryptedMsg2, err := tEncX.DecryptDecode(token)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsg2), msgToEncryt)
@@ -230,7 +230,7 @@ func TestMultiEnc(t *testing.T) {
 		key1 := "okay what are you"
 		key2 := "kill it with fire"
 
-		tEnc := NewTheMulti(key1, key2)
+		tEnc := NewMulti(key1, key2)
 
 		token := tEnc.EncryptEncode(msgToEncryt)
 
@@ -239,7 +239,7 @@ func TestMultiEnc(t *testing.T) {
 		attest.Equal(t, string(decryptedMsg), msgToEncryt)
 
 		rotatedKey2 := "brand new key2"
-		tEncX := NewTheMulti(key1, rotatedKey2)
+		tEncX := NewMulti(key1, rotatedKey2)
 		decryptedMsg2, err := tEncX.DecryptDecode(token)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsg2), msgToEncryt)
@@ -252,7 +252,7 @@ func TestMultiEnc(t *testing.T) {
 
 		run := func() {
 			key1, key2 := getMultiSecretKeys()
-			enc := NewTheMulti(key1, key2)
+			enc := NewMulti(key1, key2)
 
 			token := enc.EncryptEncode(msgToEncryt)
 			decryptedMsg, err := enc.DecryptDecode(token)

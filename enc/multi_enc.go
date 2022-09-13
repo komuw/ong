@@ -208,28 +208,29 @@ const (
 	separator = ":"
 )
 
-type theMultiEnc struct {
+type MultiEnc struct {
 	enc1 *Enc
 	enc2 *Enc
 }
 
-func NewTheMulti(key1, key2 string) theMultiEnc {
+// TODO: mention that you can only rotate one key at a time.
+func NewMulti(key1, key2 string) MultiEnc {
 	enc1 := New(key1)
 	enc2 := New(key2)
-	return theMultiEnc{
+	return MultiEnc{
 		enc1: enc1,
 		enc2: enc2,
 	}
 }
 
-func (t theMultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
+func (t MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
 	encryptedMsg1, encryptedMsg2 := t.enc1.Encrypt(plainTextMsg), t.enc2.Encrypt(plainTextMsg)
 	encoded1 := base64.RawURLEncoding.EncodeToString(encryptedMsg1)
 	encoded2 := base64.RawURLEncoding.EncodeToString(encryptedMsg2)
 	return encoded1 + separator + encoded2
 }
 
-func (t *theMultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
+func (t *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	// TODO: this method should only fail if BOTH message decoding/decrypting also fail.
 	//       One failure should not cause us to fail.
 	//
