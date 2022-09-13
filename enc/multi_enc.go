@@ -30,7 +30,7 @@ func NewMulti(key1, key2 string) *MultiEnc {
 	}
 
 	// derive a key.
-	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
+	salt := random(saltLen, saltLen)
 	password1 := []byte(key1)
 	password2 := []byte(key2)
 	derivedKey1, err := scrypt.Key(password1, salt, N, r, p, chacha20poly1305.KeySize)
@@ -42,15 +42,6 @@ func NewMulti(key1, key2 string) *MultiEnc {
 		panic(err)
 	}
 
-	/*
-		Another option would be to use argon2.
-		  import "golang.org/x/crypto/argon2"
-		  salt := rand(16, 16) // 16bytes are recommended
-		  key := argon2.Key( []byte("secretKey"), salt, 3, 32 * 1024, 4, chacha20poly1305.KeySize)
-	*/
-
-	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
-	// It should be preferred when nonce uniqueness cannot be trivially ensured
 	aead1, err := chacha20poly1305.NewX(derivedKey1)
 	if err != nil {
 		panic(err)
@@ -69,50 +60,81 @@ func NewMulti(key1, key2 string) *MultiEnc {
 	}
 }
 
-func (m *MultiEnc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
+// TODO: Encrypt & Decrypt should be private methods. Only the base64 methods should be public.
+func (m *MultiEnc) Encrypt(plainTextMsg string) (encryptedMsg1 []byte, encryptedMsg2 []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
-	// Select a random nonce, and leave capacity for the ciphertext.
 	nonce := random(
 		m.aead1.NonceSize(),
 		m.aead1.NonceSize()+len(msgToEncryt)+m.aead1.Overhead(),
 	)
 
-	var encrypted []byte
 	encrypted1 := m.aead1.Seal(nonce, nonce, msgToEncryt, nil)
 	encrypted2 := m.aead2.Seal(nonce, nonce, msgToEncryt, nil)
 
-	encrypted = append(m.salt, encrypted1...)
-	encrypted = append(encrypted, encrypted2...)
-	return encrypted
+	encrypted1 = append(m.salt, encrypted1...)
+	encrypted2 = append(m.salt, encrypted2...)
+
+	return encrypted1, encrypted2
 }
 
-func (m *MultiEnc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
-	if len(encryptedMsg) < (2 * m.aead1.NonceSize()) {
-		return nil, errors.New("ciphertext too short")
+func (m *MultiEnc) Decrypt(encryptedMsg1 []byte, encryptedMsg2 []byte) (decryptedMsg1 []byte, decryptedMsg2 []byte, err error) {
+	if len(encryptedMsg1) < m.aead1.NonceSize() {
+		return nil, nil, errors.New("ciphertext too short")
+	}
+	if len(encryptedMsg2) < m.aead2.NonceSize() {
+		return nil, nil, errors.New("ciphertext too short")
 	}
 
 	// get salt
-	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
+	salt1, encryptedMsg1 := encryptedMsg1[:saltLen], encryptedMsg1[saltLen:]
+	salt2, encryptedMsg2 := encryptedMsg2[:saltLen], encryptedMsg2[saltLen:]
 
-	aead := m.aead
-	if !slices.Equal(salt, m.salt) {
-		// The encryptedMsg was encrypted using a different salt.
-		// So, we need to get the derived key for that salt and use it for decryption.
-		derivedKey, errK := scrypt.Key(m.key, salt, N, r, p, chacha20poly1305.KeySize)
-		if errK != nil {
-			return nil, errK
+	{
+		aead1 := m.aead1
+		if !slices.Equal(salt1, m.salt) {
+			// The encryptedMsg was encrypted using a different salt.
+			// So, we need to get the derived key for that salt and use it for decryption.
+			derivedKey1, errK := scrypt.Key(m.key1, salt1, N, r, p, chacha20poly1305.KeySize)
+			if errK != nil {
+				return nil, nil, errK
+			}
+
+			aead1, err = chacha20poly1305.NewX(derivedKey1)
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 
-		aead, err = chacha20poly1305.NewX(derivedKey)
-		if err != nil {
-			return nil, err
-		}
+		// Split nonce and ciphertext.
+		nonce1, ciphertext1 := encryptedMsg1[:aead1.NonceSize()], encryptedMsg1[aead1.NonceSize():]
+
+		// Decrypt the message and check it wasn't tampered with.
+		decryptedMsg1, err = aead1.Open(nil, nonce1, ciphertext1, nil)
 	}
 
-	// Split nonce and ciphertext.
-	nonce, ciphertext := encryptedMsg[:aead.NonceSize()], encryptedMsg[aead.NonceSize():]
+	{
+		aead2 := m.aead2
+		if !slices.Equal(salt2, m.salt) {
+			// The encryptedMsg was encrypted using a different salt.
+			// So, we need to get the derived key for that salt and use it for decryption.
+			derivedKey2, errK := scrypt.Key(m.key2, salt2, N, r, p, chacha20poly1305.KeySize)
+			if errK != nil {
+				return nil, nil, errK
+			}
 
-	// Decrypt the message and check it wasn't tampered with.
-	return aead.Open(nil, nonce, ciphertext, nil)
+			aead2, err = chacha20poly1305.NewX(derivedKey2)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+
+		// Split nonce and ciphertext.
+		nonce2, ciphertext2 := encryptedMsg1[:aead2.NonceSize()], encryptedMsg1[aead2.NonceSize():]
+
+		// Decrypt the message and check it wasn't tampered with.
+		decryptedMsg2, err = aead2.Open(nil, nonce2, ciphertext2, nil)
+	}
+
+	return decryptedMsg1, decryptedMsg2, err
 }
