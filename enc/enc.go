@@ -135,7 +135,7 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if !slices.Equal(salt, e.salt) {
 		// The encryptedMsg was encrypted using a different salt.
 		// So, we need to get the derived key for that salt and use it for decryption.
-		derivedKey, errK := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
+		derivedKey, errK := scrypt.Key(e.key, salt, n, r, p, chacha20poly1305.KeySize)
 		if errK != nil {
 			return nil, errK
 		}
