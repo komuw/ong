@@ -71,7 +71,10 @@ func new(ssrfSafe bool, l log.Logger) *client {
 		Timeout:   timeout,
 	}
 
-	return &client{cli: cli, l: l.WithFields(log.F{"pid": os.Getpid()})}
+	return &client{
+		cli: cli,
+		l:   l.WithFields(log.F{"pid": os.Getpid()}),
+	}
 }
 
 func (c *client) CloseIdleConnections() {
