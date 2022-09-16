@@ -98,7 +98,7 @@ func TestClient(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := new(true, l)
+			cli := SafeClient(l)
 
 			res, err := cli.Get(ctx, "https://ajmsmsYnns.com")
 
@@ -115,9 +115,49 @@ func TestClient(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := new(true, l)
+			cli := SafeClient(l)
 
 			res, err := cli.Get(ctx, "https://example.com")
+
+			attest.NotZero(t, res)
+			attest.Ok(t, err)
+			attest.Zero(t, w.String())
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+		}
+	})
+
+	t.Run("POST", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			// error
+			w := &bytes.Buffer{}
+			maxMsgs := 15
+			ctx := context.Background()
+			l := log.New(ctx, w, maxMsgs)
+
+			cli := SafeClient(l)
+
+			b := strings.NewReader(`{"key":"value"}`)
+			res, err := cli.Post(ctx, "https://ajmsmsYnns.com", "application/json", b)
+
+			attest.Zero(t, res)
+			attest.Error(t, err)
+			attest.NotZero(t, w.String())
+			attest.Subsequence(t, w.String(), "error")
+		}
+
+		{
+			// success
+			w := &bytes.Buffer{}
+			maxMsgs := 15
+			ctx := context.Background()
+			l := log.New(ctx, w, maxMsgs)
+
+			cli := SafeClient(l)
+
+			b := strings.NewReader(`{"key":"value"}`)
+			res, err := cli.Post(ctx, "https://example.com", "application/json", b)
 
 			attest.NotZero(t, res)
 			attest.Ok(t, err)
