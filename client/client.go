@@ -33,14 +33,53 @@ type Client
 */
 //
 
+// TODO: docs.
+func SafeClient(l log.Logger) *client {
+	return new(true, l)
+}
+
+// TODO: docs.
+func UnsafeClient(l log.Logger) *client {
+	return new(false, l)
+}
+
 type client struct {
 	cli *http.Client
 	l   log.Logger
 }
 
 // todo: rename to new()
-func newClient(ssrfSafe bool, l log.Logger) *client {
-	cli := new(ssrfSafe)
+func new(ssrfSafe bool, l log.Logger) *client {
+	timeout := 30 * time.Second
+
+	dialer := &net.Dialer{
+		Control: ssrfSocketControl(ssrfSafe),
+		// see: net.DefaultResolver
+		Resolver: &net.Resolver{
+			// Prefer Go's built-in DNS resolver.
+			PreferGo: true,
+		},
+		// This timeout and keep-alive are similar to the ones used by stdlib.
+		// see; http.DefaultTransport
+		Timeout:   timeout,
+		KeepAlive: timeout,
+	}
+
+	transport := &http.Transport{
+		// see: http.DefaultTransport
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialer.DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       3 * timeout,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	cli := &http.Client{
+		Transport: transport,
+		Timeout:   timeout,
+	}
+
 	return &client{cli: cli, l: l.WithFields(log.F{"pid": os.Getpid()})}
 }
 
@@ -86,57 +125,6 @@ func (c *client) log(ctx context.Context, url, method string) func(resp *http.Re
 			l.Error(err, flds)
 		}
 	}
-}
-
-// //////////////////////////////////////////////
-var (
-	sslSafeClient   = new(true)
-	sslUnsafeClient = new(false)
-)
-
-// TODO: docs.
-func SafeClient() *http.Client {
-	return sslSafeClient
-}
-
-// TODO: docs.
-func UnsafeClient() *http.Client {
-	return sslUnsafeClient
-}
-
-// TODO: docs.
-func new(ssrfSafe bool) *http.Client {
-	timeout := 30 * time.Second
-
-	dialer := &net.Dialer{
-		Control: ssrfSocketControl(ssrfSafe),
-		// see: net.DefaultResolver
-		Resolver: &net.Resolver{
-			// Prefer Go's built-in DNS resolver.
-			PreferGo: true,
-		},
-		// This timeout and keep-alive are similar to the ones used by stdlib.
-		// see; http.DefaultTransport
-		Timeout:   timeout,
-		KeepAlive: timeout,
-	}
-
-	transport := &http.Transport{
-		// see: http.DefaultTransport
-		Proxy:                 http.ProxyFromEnvironment,
-		DialContext:           dialer.DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       3 * timeout,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-	cli := &http.Client{
-		Transport: transport,
-		Timeout:   timeout,
-	}
-
-	return cli
 }
 
 func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall.RawConn) error {

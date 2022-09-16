@@ -12,6 +12,12 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
+func getLogger(ctx context.Context) log.Logger {
+	w := &bytes.Buffer{}
+	maxMsgs := 15
+	return log.New(ctx, w, maxMsgs)
+}
+
 func TestClient(t *testing.T) {
 	t.Parallel()
 
@@ -37,17 +43,18 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf safe", func(t *testing.T) {
 		t.Parallel()
 
-		cli := SafeClient()
+		ctx := context.Background()
+		cli := SafeClient(getLogger(ctx))
 
 		for _, url := range urlsInPrivate {
-			res, err := cli.Get(url)
+			res, err := cli.Get(ctx, url)
 			attest.Error(t, err)
 			clean(res)
 			attest.Subsequence(t, err.Error(), "is not a public IP address")
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(url)
+			res, err := cli.Get(ctx, url)
 			attest.Ok(t, err)
 			clean(res)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
@@ -57,7 +64,8 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf unsafe", func(t *testing.T) {
 		t.Parallel()
 
-		cli := UnsafeClient()
+		ctx := context.Background()
+		cli := UnsafeClient(getLogger(ctx))
 
 		for _, url := range urlsInPrivate {
 			if strings.Contains(url, "169.254.169.254") {
@@ -66,14 +74,14 @@ func TestClient(t *testing.T) {
 				// and gets a 404.
 				break
 			}
-			res, err := cli.Get(url)
+			res, err := cli.Get(ctx, url)
 			attest.Error(t, err)
 			clean(res)
 			attest.False(t, strings.Contains(err.Error(), "is not a public IP address"))
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(url)
+			res, err := cli.Get(ctx, url)
 			attest.Ok(t, err)
 			clean(res)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
@@ -95,7 +103,7 @@ func TestTodo(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := newClient(true, l)
+			cli := new(true, l)
 
 			res, err := cli.Get(ctx, "https://ajmsmsYnns.com")
 
@@ -112,7 +120,7 @@ func TestTodo(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := newClient(true, l)
+			cli := new(true, l)
 
 			res, err := cli.Get(ctx, "https://example.com")
 
