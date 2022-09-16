@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"syscall"
 	"time"
@@ -84,6 +85,19 @@ func new(ssrfSafe bool, l log.Logger) *client {
 	return &client{cli: cli, l: l.WithFields(log.F{"pid": os.Getpid()})}
 }
 
+func (c *client) CloseIdleConnections() {
+	c.cli.CloseIdleConnections()
+}
+
+func (c *client) Do(ctx context.Context, req *http.Request) (resp *http.Response, err error) {
+	end := c.log(ctx, req.URL.EscapedPath(), req.Method)
+	defer func() {
+		end(resp, err)
+	}()
+
+	return c.cli.Do(req)
+}
+
 func (c *client) Get(ctx context.Context, url string) (resp *http.Response, err error) {
 	end := c.log(ctx, url, "GET")
 	defer func() {
@@ -109,6 +123,15 @@ func (c *client) Post(ctx context.Context, url, contentType string, body io.Read
 	}()
 
 	return c.cli.Post(url, contentType, body)
+}
+
+func (c *client) PostForm(ctx context.Context, url string, data url.Values) (resp *http.Response, err error) {
+	end := c.log(ctx, url, "POST")
+	defer func() {
+		end(resp, err)
+	}()
+
+	return c.cli.PostForm(url, data)
 }
 
 func (c *client) log(ctx context.Context, url, method string) func(resp *http.Response, err error) {
