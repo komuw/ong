@@ -33,10 +33,9 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf safe", func(t *testing.T) {
 		t.Parallel()
 
-		ssrfSafe := true
+		cli := SafeClient()
 
 		for _, url := range urlsInPrivate {
-			cli := New(ssrfSafe)
 			res, err := cli.Get(url)
 			attest.Error(t, err)
 			clean(res)
@@ -44,7 +43,6 @@ func TestClient(t *testing.T) {
 		}
 
 		for _, url := range urlsInPublic {
-			cli := New(ssrfSafe)
 			res, err := cli.Get(url)
 			attest.Ok(t, err)
 			clean(res)
@@ -55,10 +53,9 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf unsafe", func(t *testing.T) {
 		t.Parallel()
 
-		ssrfSafe := false
+		cli := UnsafeClient()
 
 		for _, url := range urlsInPrivate {
-			cli := New(ssrfSafe)
 			if strings.Contains(url, "169.254.169.254") {
 				// the following IP when run from laptop resolves to IP of wifi router.
 				// Thus we have to disable it from test, since the test tries making a request to the router
@@ -72,7 +69,6 @@ func TestClient(t *testing.T) {
 		}
 
 		for _, url := range urlsInPublic {
-			cli := New(ssrfSafe)
 			res, err := cli.Get(url)
 			attest.Ok(t, err)
 			clean(res)
