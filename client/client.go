@@ -43,7 +43,11 @@ type Client struct {
 
 // new creates a client. Use [SafeClient] or [UnsafeClient] instead.
 func new(ssrfSafe bool, l log.Logger) *Client {
-	timeout := 10 * time.Second
+	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
+	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
+	// and the p95 response times for http POST requests is ~3seconds:
+	// Thus, we set the timeout to be twice that.
+	timeout := 3 * 2 * time.Second
 
 	dialer := &net.Dialer{
 		Control: ssrfSocketControl(ssrfSafe),
