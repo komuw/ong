@@ -56,7 +56,7 @@ type Enc struct {
 // New returns a [cipher.AEAD]
 // The key should be random. New panics on error.
 // It uses [scrypt] to derive the final key that will be used for encryption.
-func New(key string) *Enc {
+func New(key string) Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
@@ -87,7 +87,7 @@ func New(key string) *Enc {
 		panic(err)
 	}
 
-	return &Enc{
+	return Enc{
 		aead: aead,
 		salt: salt,
 		key:  password,
@@ -95,7 +95,7 @@ func New(key string) *Enc {
 }
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
-func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
+func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncryt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
@@ -121,7 +121,7 @@ func (e *Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 }
 
 // Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
-func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
+func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if len(encryptedMsg) < e.aead.NonceSize() {
 		return nil, errors.New("ciphertext too short")
 	}
@@ -152,12 +152,12 @@ func (e *Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 }
 
 // EncryptEncode is like [Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]
-func (e *Enc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
+func (e Enc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
 	return base64.RawURLEncoding.EncodeToString(e.Encrypt(plainTextMsg))
 }
 
 // DecryptDecode takes an encryptedEncodedMsg that was generated using [EncryptEncode] and returns the original un-encrypted string.
-func (e *Enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
+func (e Enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	encryptedMsg, err := base64.RawURLEncoding.DecodeString(encryptedEncodedMsg)
 	if err != nil {
 		return "", err
