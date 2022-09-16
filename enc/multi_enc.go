@@ -13,12 +13,19 @@ const (
 	separator = ":"
 )
 
+// MultiEnc is an AEAD cipher that also allows for key to be rotated.
+//
+// Use [NewMulti] to get a valid MultiEnc.
 type MultiEnc struct {
 	enc1 Enc
 	enc2 Enc
 }
 
-// TODO: mention that you can only rotate one key at a time.
+// New returns a [cipher.AEAD]
+//
+// It panics on error.
+//
+// It enables rotation of encryption keys. You can only rotate one key at a time.
 func NewMulti(key1, key2 string) MultiEnc {
 	enc1 := New(key1)
 	enc2 := New(key2)
@@ -28,6 +35,7 @@ func NewMulti(key1, key2 string) MultiEnc {
 	}
 }
 
+// EncryptEncode encrypts the plainTextMsg using XChaCha20-Poly1305. It returns a string that is encoded using [base64.RawURLEncoding]
 func (m MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
 	encryptedMsg1, encryptedMsg2 := m.enc1.Encrypt(plainTextMsg), m.enc2.Encrypt(plainTextMsg)
 	encoded1 := base64.RawURLEncoding.EncodeToString(encryptedMsg1)
@@ -35,6 +43,7 @@ func (m MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string
 	return encoded1 + separator + encoded2
 }
 
+// DecryptDecode takes an encryptedEncodedMsg that was generated using [EncryptEncode] and returns the original un-encrypted string.
 func (m MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	encoded := strings.Split(encryptedEncodedMsg, separator)
 	if len(encoded) != 2 {
