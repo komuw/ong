@@ -87,11 +87,6 @@ func TestClient(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
 		}
 	})
-}
-
-// TODO: fix name.
-func TestTodo(t *testing.T) {
-	t.Parallel()
 
 	t.Run("GET", func(t *testing.T) {
 		t.Parallel()
