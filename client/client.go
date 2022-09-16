@@ -43,7 +43,7 @@ type Client struct {
 
 // new creates a client. Use [SafeClient] or [UnsafeClient] instead.
 func new(ssrfSafe bool, l log.Logger) *Client {
-	timeout := 30 * time.Second
+	timeout := 10 * time.Second
 
 	dialer := &net.Dialer{
 		Control: ssrfSocketControl(ssrfSafe),
@@ -52,7 +52,7 @@ func new(ssrfSafe bool, l log.Logger) *Client {
 			// Prefer Go's built-in DNS resolver.
 			PreferGo: true,
 		},
-		// This timeout and keep-alive are similar to the ones used by stdlib.
+		// The timeout and keep-alive in the default http.DefaultTransport are 30seconds.
 		// see; http.DefaultTransport
 		Timeout:   timeout,
 		KeepAlive: timeout,
@@ -65,7 +65,7 @@ func new(ssrfSafe bool, l log.Logger) *Client {
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       3 * timeout,
-		TLSHandshakeTimeout:   10 * time.Second,
+		TLSHandshakeTimeout:   timeout,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 	cli := &http.Client{
