@@ -5,6 +5,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -90,6 +91,24 @@ func (c *client) Get(ctx context.Context, url string) (resp *http.Response, err 
 	}()
 
 	return c.cli.Get(url)
+}
+
+func (c *client) Head(ctx context.Context, url string) (resp *http.Response, err error) {
+	end := c.log(ctx, url, "HEAD")
+	defer func() {
+		end(resp, err)
+	}()
+
+	return c.cli.Head(url)
+}
+
+func (c *client) Post(ctx context.Context, url, contentType string, body io.Reader) (resp *http.Response, err error) {
+	end := c.log(ctx, url, "POST")
+	defer func() {
+		end(resp, err)
+	}()
+
+	return c.cli.Post(url, contentType, body)
 }
 
 func (c *client) log(ctx context.Context, url, method string) func(resp *http.Response, err error) {
