@@ -24,17 +24,6 @@ import (
 // TODO: maybe we need a global var similar to [http.DefaultClient]
 //       or maybe use a func that uses sync.once
 
-/*
-type Client
-	func (c *Client) CloseIdleConnections()
-	func (c *Client) Do(req *Request) (*Response, error)
-	func (c *Client) Get(url string) (resp *Response, err error)
-	func (c *Client) Head(url string) (resp *Response, err error)
-	func (c *Client) Post(url, contentType string, body io.Reader) (resp *Response, err error)
-	func (c *Client) PostForm(url string, data url.Values) (resp *Response, err error)
-*/
-//
-
 // TODO: docs.
 func SafeClient(l log.Logger) *client {
 	return new(true, l)
