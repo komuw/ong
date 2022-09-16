@@ -48,8 +48,8 @@ func TestClient(t *testing.T) {
 
 		for _, url := range urlsInPrivate {
 			res, err := cli.Get(ctx, url)
-			attest.Error(t, err)
 			clean(res)
+			attest.Error(t, err)
 			attest.Subsequence(t, err.Error(), "is not a public IP address")
 		}
 
@@ -75,8 +75,8 @@ func TestClient(t *testing.T) {
 				break
 			}
 			res, err := cli.Get(ctx, url)
-			attest.Error(t, err)
 			clean(res)
+			attest.Error(t, err)
 			attest.False(t, strings.Contains(err.Error(), "is not a public IP address"))
 		}
 
@@ -101,7 +101,7 @@ func TestClient(t *testing.T) {
 			cli := SafeClient(l)
 
 			res, err := cli.Get(ctx, "https://ajmsmsYnns.com")
-
+			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
 			attest.NotZero(t, w.String())
@@ -118,7 +118,7 @@ func TestClient(t *testing.T) {
 			cli := SafeClient(l)
 
 			res, err := cli.Get(ctx, "https://example.com")
-
+			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)
 			attest.Zero(t, w.String())
@@ -140,7 +140,7 @@ func TestClient(t *testing.T) {
 
 			b := strings.NewReader(`{"key":"value"}`)
 			res, err := cli.Post(ctx, "https://ajmsmsYnns.com", "application/json", b)
-
+			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
 			attest.NotZero(t, w.String())
@@ -158,7 +158,7 @@ func TestClient(t *testing.T) {
 
 			b := strings.NewReader(`{"key":"value"}`)
 			res, err := cli.Post(ctx, "https://example.com", "application/json", b)
-
+			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)
 			attest.Zero(t, w.String())
