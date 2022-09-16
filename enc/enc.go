@@ -44,9 +44,9 @@ const (
 	p = 1
 )
 
-// Enc is an AEAD cipher mode providing authenticated encryption with associated data.
+// Enc is an AEAD cipher mode providing authenticated encryption with associated data, ie [cipher.AEAD]
+//
 // Use [New] to get a valid Enc.
-// see [cipher.AEAD]
 type Enc struct {
 	aead cipher.AEAD
 	salt []byte
@@ -54,7 +54,9 @@ type Enc struct {
 }
 
 // New returns a [cipher.AEAD]
+//
 // The key should be random. New panics on error.
+//
 // It uses [scrypt] to derive the final key that will be used for encryption.
 func New(key string) Enc {
 	// I think it is okay for New to panic instead of returning an error.

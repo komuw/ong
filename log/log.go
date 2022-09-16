@@ -38,6 +38,9 @@ const (
 // CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
 const CtxKey = logContextKeyType("Ong-logID")
 
+// Logger represents an active logging object that generates lines of output to an io.Writer.
+//
+// It can be used simultaneously from multiple goroutines.
 type Logger struct {
 	w          io.Writer
 	cBuf       *circleBuf
@@ -130,7 +133,7 @@ func (l Logger) Info(f F) {
 	l.log(infoL, f)
 }
 
-// Error will log at the Info level.
+// Error will log at the Error level.
 func (l Logger) Error(e error, fs ...F) {
 	dst := F{}
 	if e != nil {
@@ -150,9 +153,10 @@ func (l Logger) Error(e error, fs ...F) {
 }
 
 // Write implements the io.Writer interface.
+//
 // This is useful if you want to set this logger as a writer for the standard library log.
 //
-// usage:
+// example usage:
 //
 //	l := log.New(ctx, os.Stdout, 100, true)
 //	stdLogger := stdLog.New(l, "stdlib", stdLog.LstdFlags)
@@ -170,8 +174,10 @@ func (l Logger) Write(p []byte) (n int, err error) {
 }
 
 // StdLogger returns a logger from the Go standard library log package.
+//
 // That logger will use l as its output.
-// usage:
+//
+// example usage:
 //
 //	l := log.New(ctx, os.Stdout, 100, true)
 //	stdLogger := l.StdLogger()

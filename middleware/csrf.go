@@ -165,7 +165,7 @@ func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 
 // GetCsrfToken returns the csrf token was set for that particular request.
 //
-// usage:
+// example usage:
 //
 //	func myHandler(w http.ResponseWriter, r *http.Request) {
 //		csrfToken := middleware.GetCsrfToken(r.Context())

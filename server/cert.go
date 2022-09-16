@@ -38,6 +38,7 @@ var certLogger = log.New( //nolint:gochecknoglobals
 	)
 
 // CreateDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
+//
 // This is only meant to be used for development/local settings.
 // The certificate is self-signed & a best effort is made to add its CA to the OS trust store.
 func CreateDevCertKey() (certFile, keyFile string) {

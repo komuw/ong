@@ -14,6 +14,7 @@ func New() string {
 }
 
 // Random generates a random string made from bytes of size n.
+//
 // If n < 1 or significantly large, it is set to reasonable bounds.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
 func Random(n int) string {

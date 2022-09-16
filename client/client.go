@@ -20,6 +20,7 @@ import (
 //   (a) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang whose license(CC0 Public Domain) can be found here: https://creativecommons.org/publicdomain/zero/1.0
 //   (b) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang/media/ipaddress.go
 // as of 9th/september/2022
+//
 
 // SafeClient creates a client that is safe from Server-side request forgery (SSRF) security vulnerability.
 func SafeClient(l log.Logger) *Client {
@@ -32,7 +33,9 @@ func UnsafeClient(l log.Logger) *Client {
 }
 
 // Client is a [http.Client] that has some good defaults. It also logs requests and responses using [log.Logger]
+//
 // Use either [SafeClient] or [UnsafeClient] to get a valid client.
+//
 // Clients should be reused instead of created as needed. Clients are safe for concurrent use by multiple goroutines.
 //
 // see [http.Client]
@@ -83,10 +86,9 @@ func new(ssrfSafe bool, l log.Logger) *Client {
 	}
 }
 
-// CloseIdleConnections closes any connections on its Transport which
-// were previously connected from previous requests but are now
-// sitting idle in a "keep-alive" state. It does not interrupt any
-// connections currently in use.
+// CloseIdleConnections closes any connections on its Transport which were previously connected from previous requests but are now sitting idle in a "keep-alive" state.
+//
+// It does not interrupt any connections currently in use.
 //
 // see [http.Client.CloseIdleConnections]
 func (c *Client) CloseIdleConnections() {
