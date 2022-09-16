@@ -1,9 +1,13 @@
 package client
 
 import (
+	"bytes"
+	"context"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/komuw/ong/log"
 
 	"github.com/akshayjshah/attest"
 )
@@ -73,6 +77,49 @@ func TestClient(t *testing.T) {
 			attest.Ok(t, err)
 			clean(res)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
+		}
+	})
+}
+
+// TODO: fix name.
+func TestTodo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("GET", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			// error
+			w := &bytes.Buffer{}
+			maxMsgs := 15
+			ctx := context.Background()
+			l := log.New(ctx, w, maxMsgs)
+
+			cli := newClient(true, l)
+
+			res, err := cli.Get(ctx, "https://ajmsmsYnns.com")
+
+			attest.Zero(t, res)
+			attest.Error(t, err)
+			attest.NotZero(t, w.String())
+			attest.Subsequence(t, w.String(), "error")
+		}
+
+		{
+			// success
+			w := &bytes.Buffer{}
+			maxMsgs := 15
+			ctx := context.Background()
+			l := log.New(ctx, w, maxMsgs)
+
+			cli := newClient(true, l)
+
+			res, err := cli.Get(ctx, "https://example.com")
+
+			attest.NotZero(t, res)
+			attest.Ok(t, err)
+			attest.Zero(t, w.String())
+			attest.Equal(t, res.StatusCode, http.StatusOK)
 		}
 	})
 }

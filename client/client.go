@@ -3,11 +3,15 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"syscall"
 	"time"
+
+	"github.com/komuw/ong/log"
 )
 
 // Most of the code here is insipired by(or taken from):
@@ -18,6 +22,73 @@ import (
 // TODO: maybe we need a global var similar to [http.DefaultClient]
 //       or maybe use a func that uses sync.once
 
+/*
+type Client
+	func (c *Client) CloseIdleConnections()
+	func (c *Client) Do(req *Request) (*Response, error)
+	func (c *Client) Get(url string) (resp *Response, err error)
+	func (c *Client) Head(url string) (resp *Response, err error)
+	func (c *Client) Post(url, contentType string, body io.Reader) (resp *Response, err error)
+	func (c *Client) PostForm(url string, data url.Values) (resp *Response, err error)
+*/
+//
+
+type client struct {
+	cli *http.Client
+	l   log.Logger
+}
+
+// todo: rename to new()
+func newClient(ssrfSafe bool, l log.Logger) *client {
+	cli := new(ssrfSafe)
+	return &client{cli: cli, l: l.WithFields(log.F{"pid": os.Getpid()})}
+}
+
+func (c *client) Get(ctx context.Context, url string) (resp *http.Response, err error) {
+	end := c.log(ctx, url, "GET")
+	defer func() {
+		end(resp, err)
+	}()
+
+	return c.cli.Get(url)
+}
+
+func (c *client) log(ctx context.Context, url, method string) func(resp *http.Response, err error) {
+	l := c.l.WithCtx(ctx)
+	l.Info(log.F{
+		"msg":     "http_client",
+		"process": "request",
+		"method":  method,
+		"url":     url,
+	})
+
+	start := time.Now()
+
+	return func(resp *http.Response, err error) {
+		flds := log.F{
+			"msg":        "http_client",
+			"process":    "response",
+			"method":     "GET",
+			"url":        url,
+			"durationMS": time.Since(start).Milliseconds(),
+		}
+		if resp != nil {
+			flds["code"] = resp.StatusCode
+			flds["status"] = resp.Status
+
+			if resp.StatusCode >= http.StatusBadRequest {
+				// both client and server errors.
+				l.Error(err, flds)
+			} else {
+				l.Info(flds)
+			}
+		} else {
+			l.Error(err, flds)
+		}
+	}
+}
+
+// //////////////////////////////////////////////
 var (
 	sslSafeClient   = new(true)
 	sslUnsafeClient = new(false)
