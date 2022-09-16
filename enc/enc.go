@@ -39,7 +39,7 @@ const (
 	// N=32768, r=8 and p=1
 	// https://pkg.go.dev/golang.org/x/crypto/scrypt#Key
 	//
-	N = 32768 // CPU/memory cost parameter.
+	n = 32768 // CPU/memory cost parameter.
 	r = 8     // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
 	p = 1
 )
@@ -70,7 +70,7 @@ func New(key string) Enc {
 	// derive a key.
 	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	password := []byte(key)
-	derivedKey, err := scrypt.Key(password, salt, N, r, p, chacha20poly1305.KeySize)
+	derivedKey, err := scrypt.Key(password, salt, n, r, p, chacha20poly1305.KeySize)
 	if err != nil {
 		panic(err)
 	}
