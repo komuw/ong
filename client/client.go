@@ -23,10 +23,12 @@ var (
 	sslUnsafeClient = new(false)
 )
 
+// TODO: docs.
 func SafeClient() *http.Client {
 	return sslSafeClient
 }
 
+// TODO: docs.
 func UnsafeClient() *http.Client {
 	return sslUnsafeClient
 }
