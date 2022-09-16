@@ -14,8 +14,8 @@ const (
 )
 
 type MultiEnc struct {
-	enc1 *Enc
-	enc2 *Enc
+	enc1 Enc
+	enc2 Enc
 }
 
 // TODO: mention that you can only rotate one key at a time.
@@ -35,7 +35,7 @@ func (m MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string
 	return encoded1 + separator + encoded2
 }
 
-func (m *MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
+func (m MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	encoded := strings.Split(encryptedEncodedMsg, separator)
 	if len(encoded) != 2 {
 		return "", errors.New("message was encoded incorrectly") // TODO: make these errors, constants.
