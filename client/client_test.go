@@ -82,8 +82,8 @@ func TestClient(t *testing.T) {
 
 		for _, url := range urlsInPublic {
 			res, err := cli.Get(ctx, url)
-			attest.Ok(t, err)
 			clean(res)
+			attest.Ok(t, err)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
 		}
 	})
