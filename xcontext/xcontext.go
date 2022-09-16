@@ -15,8 +15,7 @@ import (
 //       https://github.com/golang/go/issues/40221
 //
 
-// Detach returns a context that keeps all the values of its parent context
-// but detaches from the cancellation and error handling.
+// Detach returns a context that keeps all the values of its parent context but detaches from the cancellation and error handling.
 func Detach(ctx context.Context) context.Context { return detachedContext{ctx} }
 
 type detachedContext struct{ parent context.Context }

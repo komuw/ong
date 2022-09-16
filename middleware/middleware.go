@@ -55,7 +55,7 @@ func WithOpts(domain string, httpsPort uint16, secretKey string, l log.Logger) O
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
 //
-// usage:
+// example usage:
 //
 //	allDefaultMiddlewares(wh, opts{"example.com", -1, nil, nil, nil, os.Stdout})
 func allDefaultMiddlewares(

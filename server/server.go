@@ -57,6 +57,7 @@ func (o opts) Equal(other opts) bool {
 }
 
 // NewOpts returns a new opts.
+//
 // If certFile is a non-empty string, this will enable tls from certificates found on disk.
 // If email is a non-empty string, this will enable tls from certificates procured from letsencrypt.
 // domain can be an exact domain, subdomain or wildcard.
@@ -150,10 +151,11 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) opts {
 }
 
 // Run listens on a network address and then calls Serve to handle requests on incoming connections.
+//
 // It sets up a server with the parameters provided by o.
+// If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
 //
 // The server shuts down cleanly after receiving any terminating signal.
-// If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
 func Run(h http.Handler, o opts, l log.Logger) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()

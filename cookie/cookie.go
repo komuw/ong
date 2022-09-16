@@ -17,10 +17,8 @@ const (
 
 // Set creates a cookie on the HTTP response.
 //
-// If domain is an empty string, the cookie is set for the current host(excluding subdomains)
-// else it is set for the given domain and its subdomains.
-// If mAge <= 0, a session cookie is created.
-// If jsAccess is false, the cookie will be in-accesible to Javascript.
+// If domain is an empty string, the cookie is set for the current host(excluding subdomains) else it is set for the given domain and its subdomains.
+// If mAge <= 0, a session cookie is created. If jsAccess is false, the cookie will be in-accesible to Javascript.
 // In most cases you should set it to false(exceptions are rare, like when setting a csrf cookie)
 func Set(
 	w http.ResponseWriter,

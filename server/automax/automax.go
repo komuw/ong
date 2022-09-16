@@ -9,6 +9,7 @@ type config struct {
 }
 
 // SetMem puts GOMEMLIMIT to match the Linux container memory quota (if any), returning an undo function.
+//
 // It is a no-op in environments without a configured memory quota.
 //
 // The optional argument c is only used for test purposes.
@@ -17,6 +18,7 @@ func SetMem(c ...config) func() {
 }
 
 // SetCpu puts GOMAXPROCS to match the Linux container cpu quota (if any), returning an undo function.
+//
 // It is a no-op in environments without a configured cpu quota.
 //
 // The optional argument c is only used for test purposes.

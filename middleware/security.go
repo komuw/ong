@@ -34,7 +34,7 @@ const (
 
 // Security is a middleware that adds some important HTTP security headers and assigns them sensible default values.
 //
-// usage:
+// example usage:
 //
 //	middleware.Security(yourHandler(), "example.com")
 func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
@@ -115,7 +115,7 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 
 // GetCspNonce returns the Content-Security-Policy nonce that was set for that particular request.
 //
-// usage:
+// example usage:
 //
 //	func myHandler(w http.ResponseWriter, r *http.Request) {
 //		cspNonce := middleware.GetCspNonce(r.Context())
