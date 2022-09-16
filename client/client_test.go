@@ -47,16 +47,16 @@ func TestClient(t *testing.T) {
 		cli := SafeClient(getLogger(ctx))
 
 		for _, url := range urlsInPrivate {
-			res, err := cli.Get(ctx, url)
+			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
 			attest.Subsequence(t, err.Error(), "is not a public IP address")
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(ctx, url)
-			attest.Ok(t, err)
+			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
+			attest.Ok(t, err)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
 		}
 	})
@@ -74,14 +74,14 @@ func TestClient(t *testing.T) {
 				// and gets a 404.
 				break
 			}
-			res, err := cli.Get(ctx, url)
+			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
 			attest.False(t, strings.Contains(err.Error(), "is not a public IP address"))
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(ctx, url)
+			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Ok(t, err)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
@@ -100,7 +100,7 @@ func TestClient(t *testing.T) {
 
 			cli := SafeClient(l)
 
-			res, err := cli.Get(ctx, "https://ajmsmsYnns.com")
+			res, err := cli.Get(ctx, "https://ajmsmsYnns.com") // nolint:bodyclose
 			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
@@ -117,7 +117,7 @@ func TestClient(t *testing.T) {
 
 			cli := SafeClient(l)
 
-			res, err := cli.Get(ctx, "https://example.com")
+			res, err := cli.Get(ctx, "https://example.com") // nolint:bodyclose
 			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)
@@ -139,7 +139,7 @@ func TestClient(t *testing.T) {
 			cli := SafeClient(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
-			res, err := cli.Post(ctx, "https://ajmsmsYnns.com", "application/json", b)
+			res, err := cli.Post(ctx, "https://ajmsmsYnns.com", "application/json", b) // nolint:bodyclose
 			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
@@ -157,7 +157,7 @@ func TestClient(t *testing.T) {
 			cli := SafeClient(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
-			res, err := cli.Post(ctx, "https://example.com", "application/json", b)
+			res, err := cli.Post(ctx, "https://example.com", "application/json", b) // nolint:bodyclose
 			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)

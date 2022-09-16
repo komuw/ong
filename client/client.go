@@ -216,7 +216,7 @@ func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall
 	}
 }
 
-func ipv4Net(a, b, c, d byte, subnetPrefixLen int) net.IPNet {
+func ipv4Net(a, b, c, d byte, subnetPrefixLen int) net.IPNet { // nolint:unparam
 	return net.IPNet{
 		IP:   net.IPv4(a, b, c, d),
 		Mask: net.CIDRMask(96+subnetPrefixLen, 128),
