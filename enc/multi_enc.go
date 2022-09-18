@@ -43,7 +43,7 @@ func (m MultiEnc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string
 	return encoded1 + separator + encoded2
 }
 
-// DecryptDecode takes an encryptedEncodedMsg that was generated using [EncryptEncode] and returns the original un-encrypted string.
+// DecryptDecode takes an encryptedEncodedMsg that was generated using [MultiEnc.EncryptEncode] and returns the original un-encrypted string.
 func (m MultiEnc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	encoded := strings.Split(encryptedEncodedMsg, separator)
 	if len(encoded) != 2 {
