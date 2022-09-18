@@ -153,12 +153,12 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	return aead.Open(nil, nonce, ciphertext, nil)
 }
 
-// EncryptEncode is like [Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]
+// EncryptEncode is like [Enc.Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]
 func (e Enc) EncryptEncode(plainTextMsg string) (encryptedEncodedMsg string) {
 	return base64.RawURLEncoding.EncodeToString(e.Encrypt(plainTextMsg))
 }
 
-// DecryptDecode takes an encryptedEncodedMsg that was generated using [EncryptEncode] and returns the original un-encrypted string.
+// DecryptDecode takes an encryptedEncodedMsg that was generated using [Enc.EncryptEncode] and returns the original un-encrypted string.
 func (e Enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err error) {
 	encryptedMsg, err := base64.RawURLEncoding.DecodeString(encryptedEncodedMsg)
 	if err != nil {
