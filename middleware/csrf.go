@@ -53,7 +53,7 @@ const (
 // If a csrf token is not provided(or is not valid), when it ought to have been; this middleware will issue a http GET redirect to the same url.
 func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
 	enc := enc.New(secretKey)
-	msgToEncryt := id.Random(16)
+	msgToEncrypt := id.Random(16)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -135,7 +135,7 @@ func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 			1. http://breachattack.com/
 			2. https://security.stackexchange.com/a/172646
 		*/
-		tokenToIssue := enc.EncryptEncode(msgToEncryt)
+		tokenToIssue := enc.EncryptEncode(msgToEncrypt)
 
 		// 3. create cookie
 		cookie.Set(

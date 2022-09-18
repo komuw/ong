@@ -300,7 +300,7 @@ func TestCsrf(t *testing.T) {
 
 		key := getSecretKey()
 		enc := enc.New(key)
-		reqCsrfTok := enc.EncryptEncode("msgToEncryt")
+		reqCsrfTok := enc.EncryptEncode("msgToEncrypt")
 
 		{
 			// make GET request
@@ -399,7 +399,7 @@ func TestCsrf(t *testing.T) {
 
 		key := getSecretKey()
 		enc := enc.New(key)
-		reqCsrfTok := enc.EncryptEncode("msgToEncryt")
+		reqCsrfTok := enc.EncryptEncode("msgToEncrypt")
 
 		{
 			// make GET request
