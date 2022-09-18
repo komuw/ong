@@ -31,30 +31,30 @@ func TestEnc(t *testing.T) {
 	t.Run("encrypt/decrypt", func(t *testing.T) {
 		t.Parallel()
 
-		msgToEncryt := "hello world!"
+		msgToEncrypt := "hello world!"
 		key := getSecretKey()
 		enc := New(key)
 
-		encryptedMsg := enc.Encrypt(msgToEncryt)
+		encryptedMsg := enc.Encrypt(msgToEncrypt)
 
 		decryptedMsg, err := enc.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
 
-		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
 	})
 
 	t.Run("encrypt/decrypt base64", func(t *testing.T) {
 		t.Parallel()
 
-		msgToEncryt := "hello world!"
+		msgToEncrypt := "hello world!"
 		key := getSecretKey()
 		enc := New(key)
 
-		token := enc.EncryptEncode(msgToEncryt)
+		token := enc.EncryptEncode(msgToEncrypt)
 
 		decryptedMsg, err := enc.DecryptDecode(token)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
 	})
 
 	t.Run("encrypt same msg is unique", func(t *testing.T) {
@@ -63,15 +63,15 @@ func TestEnc(t *testing.T) {
 		// This is a useful property especially in how we use it in csrf protection
 		// against breachattack.
 
-		msgToEncryt := "hello world!"
+		msgToEncrypt := "hello world!"
 		key := getSecretKey()
 		enc := New(key)
 
-		encryptedMsg := enc.Encrypt(msgToEncryt)
+		encryptedMsg := enc.Encrypt(msgToEncrypt)
 
 		var em []byte
 		for i := 0; i < 4; i++ {
-			em = enc.Encrypt(msgToEncryt)
+			em = enc.Encrypt(msgToEncrypt)
 			if slices.Equal(encryptedMsg, em) {
 				t.Fatal("slices should not be equal")
 			}
@@ -79,11 +79,11 @@ func TestEnc(t *testing.T) {
 
 		decryptedMsg, err := enc.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
 
 		decryptedMsgForEm, err := enc.Decrypt(em)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsgForEm), msgToEncryt)
+		attest.Equal(t, string(decryptedMsgForEm), msgToEncrypt)
 	})
 
 	t.Run("same input key will always be able to encrypt and decrypt", func(t *testing.T) {
@@ -93,31 +93,31 @@ func TestEnc(t *testing.T) {
 		// A csrf token that was encrypted today, should be able to be decrypted tomorrow
 		// even if the server was restarted; so long as the same key is re-used.
 
-		msgToEncryt := "hello world!"
+		msgToEncrypt := "hello world!"
 		key := getSecretKey()
 
 		enc1 := New(key)
-		encryptedMsg := enc1.Encrypt(msgToEncryt)
+		encryptedMsg := enc1.Encrypt(msgToEncrypt)
 
 		enc2 := New(key) // server restarted
 		decryptedMsg, err := enc2.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		msgToEncryt := "hello world!"
+		msgToEncrypt := "hello world!"
 
 		run := func() {
 			key := getSecretKey()
 			enc := New(key)
 
-			encryptedMsg := enc.Encrypt(msgToEncryt)
+			encryptedMsg := enc.Encrypt(msgToEncrypt)
 			decryptedMsg, err := enc.Decrypt(encryptedMsg)
 			attest.Ok(t, err)
-			attest.Equal(t, string(decryptedMsg), msgToEncryt)
+			attest.Equal(t, string(decryptedMsg), msgToEncrypt)
 		}
 
 		wg := &sync.WaitGroup{}

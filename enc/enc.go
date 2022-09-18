@@ -98,16 +98,16 @@ func New(key string) Enc {
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
 func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
-	msgToEncryt := []byte(plainTextMsg)
+	msgToEncrypt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
 	nonce := random(
 		e.aead.NonceSize(),
-		e.aead.NonceSize()+len(msgToEncryt)+e.aead.Overhead(),
+		e.aead.NonceSize()+len(msgToEncrypt)+e.aead.Overhead(),
 	)
 
 	// Encrypt the message and append the ciphertext to the nonce.
-	encrypted := e.aead.Seal(nonce, nonce, msgToEncryt, nil)
+	encrypted := e.aead.Seal(nonce, nonce, msgToEncrypt, nil)
 
 	encrypted = append(
 		// "you can send the nonce in the clear before each message; so long as it's unique." - agl
@@ -122,7 +122,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	return encrypted
 }
 
-// Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decryted bytes.
+// Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
 func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if len(encryptedMsg) < e.aead.NonceSize() {
 		return nil, errors.New("ciphertext too short")
