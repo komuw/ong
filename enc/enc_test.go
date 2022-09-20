@@ -1,8 +1,10 @@
 package enc
 
 import (
+	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/akshayjshah/attest"
 	"golang.org/x/exp/slices"
@@ -103,6 +105,47 @@ func TestEnc(t *testing.T) {
 		decryptedMsg, err := enc2.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
 		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
+	})
+
+	t.Run("wipe keys", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncrypt := "hello world!"
+		key := getSecretKey()
+		enc := New(key)
+
+		encryptedMsg := enc.Encrypt(msgToEncrypt)
+
+		decryptedMsg, err := enc.Decrypt(encryptedMsg)
+		attest.Ok(t, err)
+
+		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
+
+		runtime.GC() // force SetFinalizer to run.
+		time.Sleep(100 * time.Millisecond)
+	})
+
+	t.Run("wipe keys II", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncrypt := "hello world!"
+		key := getSecretKey()
+		enc := New(key)
+
+		encryptedMsg := enc.Encrypt(msgToEncrypt)
+
+		decryptedMsg, err := enc.Decrypt(encryptedMsg)
+		attest.Ok(t, err)
+
+		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
+
+		runtime.GC() // force SetFinalizer to run.
+		time.Sleep(100 * time.Millisecond)
+		runtime.GC()
+
+		encryptedMsg2 := enc.Encrypt(msgToEncrypt)
+		decryptedMsg2, err := enc.Decrypt(encryptedMsg2)
+		attest.Equal(t, string(decryptedMsg2), msgToEncrypt)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

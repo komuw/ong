@@ -9,6 +9,8 @@ import (
 	"encoding/base64"
 	"errors"
 	mathRand "math/rand"
+	"reflect"
+	"runtime"
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
@@ -34,6 +36,7 @@ import (
 
 const (
 	saltLen = 8
+	keyLen  = chacha20poly1305.KeySize
 	//
 	// The values recommended as of year 2017 are:
 	// N=32768, r=8 and p=1
@@ -49,8 +52,8 @@ const (
 // Use [New] to get a valid Enc.
 type Enc struct {
 	aead cipher.AEAD
-	salt []byte
-	key  []byte
+	salt [saltLen]byte
+	key  [keyLen]byte
 }
 
 // New returns a [cipher.AEAD]
@@ -70,7 +73,7 @@ func New(key string) Enc {
 	// derive a key.
 	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	password := []byte(key)
-	derivedKey, err := scrypt.Key(password, salt, N, r, p, chacha20poly1305.KeySize)
+	derivedKey, err := scrypt.Key(password, salt, N, r, p, keyLen)
 	if err != nil {
 		panic(err)
 	}
@@ -79,7 +82,7 @@ func New(key string) Enc {
 		Another option would be to use argon2.
 		  import "golang.org/x/crypto/argon2"
 		  salt := rand(16, 16) // 16bytes are recommended
-		  key := argon2.Key( []byte("secretKey"), salt, 3, 32 * 1024, 4, chacha20poly1305.KeySize)
+		  key := argon2.Key( []byte("secretKey"), salt, 3, 32 * 1024, 4, keyLen)
 	*/
 
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
@@ -89,11 +92,47 @@ func New(key string) Enc {
 		panic(err)
 	}
 
-	return Enc{
+	var arrSalt [saltLen]byte
+	var arrKey [keyLen]byte
+	copy(arrSalt[:], salt)
+	copy(arrKey[:], password)
+
+	e := Enc{
 		aead: aead,
-		salt: salt,
-		key:  password,
+		salt: arrSalt,
+		key:  arrKey,
 	}
+
+	wipe(e.aead, e.salt, e.key, derivedKey)
+
+	return e
+}
+
+func wipe(e cipher.AEAD, salt [saltLen]byte, key [keyLen]byte, derivedKey []byte) {
+	runtime.SetFinalizer(e,
+		func(e cipher.AEAD) {
+			val := reflect.ValueOf(e)
+			elm := val.Elem()
+			typ := elm.Type()
+			elm.Set(reflect.Zero(typ))
+			e = nil
+
+			for i := range salt {
+				salt[i] = 0
+			}
+			for i := range key {
+				key[i] = 0
+			}
+
+			runtime.GC() // TODO: run this once. Or remove it completely.
+		},
+	)
+
+	for i := range derivedKey {
+		derivedKey[i] = 0
+	}
+
+	runtime.GC()
 }
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
@@ -115,7 +154,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 		//
 		// "salt does not need to be secret."
 		// see: https://crypto.stackexchange.com/a/99502
-		e.salt,
+		e.salt[:],
 		encrypted...,
 	)
 
@@ -132,10 +171,10 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
 
 	aead := e.aead
-	if !slices.Equal(salt, e.salt) {
+	if !slices.Equal(salt, e.salt[:]) {
 		// The encryptedMsg was encrypted using a different salt.
 		// So, we need to get the derived key for that salt and use it for decryption.
-		derivedKey, errK := scrypt.Key(e.key, salt, N, r, p, chacha20poly1305.KeySize)
+		derivedKey, errK := scrypt.Key(e.key[:], salt, N, r, p, keyLen)
 		if errK != nil {
 			return nil, errK
 		}
