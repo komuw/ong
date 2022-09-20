@@ -123,16 +123,12 @@ func wipe(e cipher.AEAD, salt [saltLen]byte, key [keyLen]byte, derivedKey []byte
 			for i := range key {
 				key[i] = 0
 			}
-
-			runtime.GC() // TODO: run this once. Or remove it completely.
 		},
 	)
 
 	for i := range derivedKey {
 		derivedKey[i] = 0
 	}
-
-	runtime.GC()
 }
 
 // Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
