@@ -131,3 +131,25 @@ func TestEnc(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+var result []byte //nolint:gochecknoglobals
+
+func BenchmarkEnc(b *testing.B) {
+	var r []byte
+	msgToEncrypt := "hello world!"
+	key := getSecretKey()
+	enc := New(key)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		encryptedMsg := enc.Encrypt(msgToEncrypt)
+		decryptedMsg, err := enc.Decrypt(encryptedMsg)
+		r = decryptedMsg
+		attest.Ok(b, err)
+		attest.Equal(b, string(decryptedMsg), msgToEncrypt)
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result = r
+}
