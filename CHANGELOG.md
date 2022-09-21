@@ -2,6 +2,10 @@
 
 Most recent version is listed first.  
 
+
+## v0.0.7
+- support rotating encryption keys: https://github.com/komuw/ong/pull/122
+
 ## v0.0.6
 - Improve documentation.
 
