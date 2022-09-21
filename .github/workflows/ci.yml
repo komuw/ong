@@ -142,6 +142,7 @@ jobs:
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
           go install mvdan.cc/gofumpt@latest
           go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install github.com/mdempsky/unconvert@latest
 
           /home/runner/go/bin/staticcheck -version
         env:
@@ -164,6 +165,7 @@ jobs:
           /home/runner/go/bin/httperroryzer ./...
           # see: https://github.com/golang/go/commit/a98589711da5e9d935e8d690cfca92892e86d557
           /home/runner/go/bin/errcheck -ignoregenerated -ignoretests -asserts ./...
+          /home/runner/go/bin/unconvert -v ./...
           
           # dont use golangci-lint
           # see: https://twitter.com/dominikhonnef/status/1394766501157167112
