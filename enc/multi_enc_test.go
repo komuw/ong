@@ -41,7 +41,7 @@ func TestMultiEnc(t *testing.T) {
 
 		decryptedMsg, err := enc.DecryptDecode(token)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		attest.Equal(t, decryptedMsg, msgToEncryt)
 	})
 
 	t.Run("same key again", func(t *testing.T) {
@@ -57,12 +57,12 @@ func TestMultiEnc(t *testing.T) {
 
 		decryptedMsg, err := tEnc.DecryptDecode(token)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		attest.Equal(t, decryptedMsg, msgToEncryt)
 
 		tEncX := NewMulti(key1, key2)
 		decryptedMsg2, err := tEncX.DecryptDecode(token)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg2), msgToEncryt)
+		attest.Equal(t, decryptedMsg2, msgToEncryt)
 	})
 
 	t.Run("key rotation", func(t *testing.T) {
@@ -78,13 +78,13 @@ func TestMultiEnc(t *testing.T) {
 
 		decryptedMsg, err := tEnc.DecryptDecode(token)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg), msgToEncryt)
+		attest.Equal(t, decryptedMsg, msgToEncryt)
 
 		rotatedKey2 := "brand new key2"
 		tEncX := NewMulti(key1, rotatedKey2)
 		decryptedMsg2, err := tEncX.DecryptDecode(token)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg2), msgToEncryt)
+		attest.Equal(t, decryptedMsg2, msgToEncryt)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -99,7 +99,7 @@ func TestMultiEnc(t *testing.T) {
 			token := enc.EncryptEncode(msgToEncryt)
 			decryptedMsg, err := enc.DecryptDecode(token)
 			attest.Ok(t, err)
-			attest.Equal(t, string(decryptedMsg), msgToEncryt)
+			attest.Equal(t, decryptedMsg, msgToEncryt)
 		}
 
 		wg := &sync.WaitGroup{}

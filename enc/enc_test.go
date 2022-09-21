@@ -54,7 +54,7 @@ func TestEnc(t *testing.T) {
 
 		decryptedMsg, err := enc.DecryptDecode(token)
 		attest.Ok(t, err)
-		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
+		attest.Equal(t, decryptedMsg, msgToEncrypt)
 	})
 
 	t.Run("encrypt same msg is unique", func(t *testing.T) {
