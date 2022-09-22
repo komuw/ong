@@ -2,7 +2,6 @@
 package log
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -212,8 +211,8 @@ func (l Logger) log(lvl level, f F) {
 }
 
 func (l Logger) flush() {
-	b := &bytes.Buffer{}
-	encoder := json.NewEncoder(b)
+	// b := l.w // &bytes.Buffer{}
+	encoder := json.NewEncoder(l.w)
 
 	{
 		l.cBuf.mu.Lock()
@@ -228,9 +227,10 @@ func (l Logger) flush() {
 				continue
 			}
 		}
-		if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			panic(err)
-		}
+
+		// if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
+		// 	panic(err)
+		// }
 		l.cBuf.mu.Unlock()
 	}
 
