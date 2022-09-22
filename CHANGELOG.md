@@ -2,6 +2,10 @@
 
 Most recent version is listed first.  
 
+
+## v0.0.7
+- Do not buffer log flush calls: https://github.com/komuw/ong/pull/130
+
 ## v0.0.6
 - Improve documentation.
 
