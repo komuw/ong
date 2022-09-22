@@ -211,7 +211,6 @@ func (l Logger) log(lvl level, f F) {
 }
 
 func (l Logger) flush() {
-	// b := l.w // &bytes.Buffer{}
 	encoder := json.NewEncoder(l.w)
 
 	{
@@ -227,10 +226,6 @@ func (l Logger) flush() {
 				continue
 			}
 		}
-
-		// if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-		// 	panic(err)
-		// }
 		l.cBuf.mu.Unlock()
 	}
 
