@@ -195,14 +195,6 @@ jobs:
           go test -timeout 4m -v -race ./...
           go mod tidy
 
-          # error shadowing
-          num_err_shadows=$(grep -irSn 'err = ' *.go | wc -l | tr -d ' ')
-          if [ "$num_err_shadows" != "0" ]; then
-              printf "\n\t fix error shadowing \n" && \
-              grep -irSn 'err = ' *.go
-              exit 77
-          fi
-
           # TODO: add https://github.com/system-pclub/GCatch
         env:
           ONG_RUNNING_IN_TESTS: 'YES'
