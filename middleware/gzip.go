@@ -79,7 +79,9 @@ var (
 	_ http.ResponseWriter = &gzipRW{}
 	_ http.Flusher        = &gzipRW{}
 	_ http.Hijacker       = &gzipRW{}
+	_ http.Pusher         = &logRW{}
 	_ io.WriteCloser      = &gzipRW{}
+	_ io.ReaderFrom       = &logRW{}
 	// _ http.CloseNotifier  = &gzipRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
@@ -213,6 +215,24 @@ func (grw *gzipRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		return hj.Hijack()
 	}
 	return nil, nil, fmt.Errorf("http.Hijacker interface is not supported")
+}
+
+// ReadFrom implements io.ReaderFrom
+// It is necessary for the sendfile syscall
+// https://github.com/caddyserver/caddy/pull/5022
+func (grw *gzipRW) ReadFrom(src io.Reader) (n int64, err error) {
+	if rf, ok := grw.ResponseWriter.(io.ReaderFrom); ok {
+		return rf.ReadFrom(src)
+	}
+	return io.Copy(grw.ResponseWriter, src)
+}
+
+// Push implements http.Pusher
+func (grw *gzipRW) Push(target string, opts *http.PushOptions) error {
+	if p, ok := grw.ResponseWriter.(http.Pusher); ok {
+		return p.Push(target, opts)
+	}
+	return fmt.Errorf("http.Pusher interface is not supported")
 }
 
 // shouldGzipReq checks whether the request is eligible to be gzipped.
