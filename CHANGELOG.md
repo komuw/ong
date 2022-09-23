@@ -2,6 +2,10 @@
 
 Most recent version is listed first.  
 
+
+## v0.0.7
+- Implement io.ReaderFrom & http.Pusher: https://github.com/komuw/ong/pull/131
+
 ## v0.0.6
 - Improve documentation.
 
