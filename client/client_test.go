@@ -50,7 +50,7 @@ func TestClient(t *testing.T) {
 			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
-			attest.Subsequence(t, err.Error(), "is not a public IP address")
+			attest.True(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
@@ -77,7 +77,7 @@ func TestClient(t *testing.T) {
 			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
-			attest.False(t, strings.Contains(err.Error(), "is not a public IP address"))
+			attest.False(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
