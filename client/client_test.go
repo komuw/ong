@@ -72,7 +72,6 @@ func TestClient(t *testing.T) {
 			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
-			fmt.Println("\n\t fff: ", err.Error())
 			attest.False(t, strings.Contains(err.Error(), errPrefix))
 		}
 
