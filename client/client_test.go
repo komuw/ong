@@ -44,7 +44,7 @@ func TestClient(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		cli := SafeClient(getLogger(ctx))
+		cli := Safe(getLogger(ctx))
 
 		for _, url := range urlsInPrivate {
 			res, err := cli.Get(ctx, url) // nolint:bodyclose
@@ -65,7 +65,7 @@ func TestClient(t *testing.T) {
 		t.Parallel()
 
 		ctx := context.Background()
-		cli := UnsafeClient(getLogger(ctx))
+		cli := Unsafe(getLogger(ctx))
 
 		for _, url := range urlsInPrivate {
 			if strings.Contains(url, "169.254.169.254") {
@@ -98,7 +98,7 @@ func TestClient(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := SafeClient(l)
+			cli := Safe(l)
 
 			res, err := cli.Get(ctx, "https://ajmsmsYnns.com") // nolint:bodyclose
 			clean(res)
@@ -115,7 +115,7 @@ func TestClient(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := SafeClient(l)
+			cli := Safe(l)
 
 			res, err := cli.Get(ctx, "https://example.com") // nolint:bodyclose
 			clean(res)
@@ -136,7 +136,7 @@ func TestClient(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := SafeClient(l)
+			cli := Safe(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
 			res, err := cli.Post(ctx, "https://ajmsmsYnns.com", "application/json", b) // nolint:bodyclose
@@ -154,7 +154,7 @@ func TestClient(t *testing.T) {
 			ctx := context.Background()
 			l := log.New(ctx, w, maxMsgs)
 
-			cli := SafeClient(l)
+			cli := Safe(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
 			res, err := cli.Post(ctx, "https://example.com", "application/json", b) // nolint:bodyclose

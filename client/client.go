@@ -23,19 +23,19 @@ import (
 // as of 9th/september/2022
 //
 
-// SafeClient creates a client that is safe from Server-side request forgery (SSRF) security vulnerability.
-func SafeClient(l log.Logger) *Client {
+// Safe creates a client that is safe from Server-side request forgery (SSRF) security vulnerability.
+func Safe(l log.Logger) *Client {
 	return new(true, l)
 }
 
-// UnsafeClient creates a client that is NOT safe from Server-side request forgery (SSRF) security vulnerability.
-func UnsafeClient(l log.Logger) *Client {
+// Unsafe creates a client that is NOT safe from Server-side request forgery (SSRF) security vulnerability.
+func Unsafe(l log.Logger) *Client {
 	return new(false, l)
 }
 
 // Client is a [http.Client] that has some good defaults. It also logs requests and responses using [log.Logger]
 //
-// Use either [SafeClient] or [UnsafeClient] to get a valid client.
+// Use either [Safe] or [Unsafe] to get a valid client.
 //
 // Clients should be reused instead of created as needed. Clients are safe for concurrent use by multiple goroutines.
 //
@@ -45,7 +45,7 @@ type Client struct {
 	l   log.Logger
 }
 
-// new creates a client. Use [SafeClient] or [UnsafeClient] instead.
+// new creates a client. Use [Safe] or [Unsafe] instead.
 func new(ssrfSafe bool, l log.Logger) *Client {
 	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
 	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1

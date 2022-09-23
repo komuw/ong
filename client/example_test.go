@@ -12,7 +12,7 @@ func ExampleClient_Get() {
 	ctx := context.Background()
 	l := log.New(ctx, os.Stdout, 7)
 
-	cli := client.SafeClient(l)
+	cli := client.Safe(l)
 	_, _ = cli.Get(ctx, "https://ajmsmsYnns-bad-domain.com")
 
 	// This will log:
