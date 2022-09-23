@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"syscall"
@@ -190,6 +191,8 @@ func (c *Client) log(ctx context.Context, url, method string) func(resp *http.Re
 	}
 }
 
+const errPrefix = "ong"
+
 func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall.RawConn) error {
 	if !ssrfSafe {
 		return nil
@@ -197,73 +200,37 @@ func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall
 
 	return func(network, address string, conn syscall.RawConn) error {
 		if !(network == "tcp4" || network == "tcp6") {
-			return fmt.Errorf("%s is not a safe network type", network)
+			return fmt.Errorf("%s: %s is not a safe network type", errPrefix, network)
 		}
 
-		host, _, err := net.SplitHostPort(address)
-		if err != nil {
-			return fmt.Errorf("%s is not a valid host/port pair: %s", address, err)
-		}
-
-		ipaddress := net.ParseIP(host)
-		if ipaddress == nil {
-			return fmt.Errorf("%s is not a valid IP address", host)
-		}
-
-		if !isPublicIPAddress(ipaddress) {
-			return fmt.Errorf("%s is not a public IP address", ipaddress)
+		if err := isSafeAddress(address); err != nil {
+			return err
 		}
 
 		return nil
 	}
 }
 
-func ipv4Net(a, b, c, d byte, subnetPrefixLen int) net.IPNet { // nolint:unparam
-	return net.IPNet{
-		IP:   net.IPv4(a, b, c, d),
-		Mask: net.CIDRMask(96+subnetPrefixLen, 128),
-	}
-}
-
-func isIPv6GlobalUnicast(address net.IP) bool {
-	globalUnicastIPv6Net := net.IPNet{
-		IP:   net.IP{0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		Mask: net.CIDRMask(3, 128),
-	}
-	return globalUnicastIPv6Net.Contains(address)
-}
-
-func isIPv4Reserved(address net.IP) bool {
-	reservedIPv4Nets := []net.IPNet{
-		ipv4Net(0, 0, 0, 0, 8),       // Current network
-		ipv4Net(10, 0, 0, 0, 8),      // Private
-		ipv4Net(100, 64, 0, 0, 10),   // RFC6598
-		ipv4Net(127, 0, 0, 0, 8),     // Loopback
-		ipv4Net(169, 254, 0, 0, 16),  // Link-local
-		ipv4Net(172, 16, 0, 0, 12),   // Private
-		ipv4Net(192, 0, 0, 0, 24),    // RFC6890
-		ipv4Net(192, 0, 2, 0, 24),    // Test, doc, examples
-		ipv4Net(192, 88, 99, 0, 24),  // IPv6 to IPv4 relay
-		ipv4Net(192, 168, 0, 0, 16),  // Private
-		ipv4Net(198, 18, 0, 0, 15),   // Benchmarking tests
-		ipv4Net(198, 51, 100, 0, 24), // Test, doc, examples
-		ipv4Net(203, 0, 113, 0, 24),  // Test, doc, examples
-		ipv4Net(224, 0, 0, 0, 4),     // Multicast
-		ipv4Net(240, 0, 0, 0, 4),     // Reserved (includes broadcast / 255.255.255.255)
+func isSafeAddress(address string) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return err
 	}
 
-	for _, reservedNet := range reservedIPv4Nets {
-		if reservedNet.Contains(address) {
-			return true
-		}
+	addr, err := netip.ParseAddr(host)
+	if err != nil {
+		return err
 	}
-	return false
-}
 
-func isPublicIPAddress(address net.IP) bool {
-	if address.To4() != nil {
-		return !isIPv4Reserved(address)
-	} else {
-		return isIPv6GlobalUnicast(address)
+	if addr.IsLoopback() {
+		return fmt.Errorf("%s: address %s IsLoopback", errPrefix, addr)
 	}
+	if addr.IsLinkLocalUnicast() {
+		return fmt.Errorf("%s: address %s IsLinkLocalUnicast", errPrefix, addr)
+	}
+	if addr.IsPrivate() {
+		return fmt.Errorf("%s: address %s IsPrivate", errPrefix, addr)
+	}
+
+	return nil
 }

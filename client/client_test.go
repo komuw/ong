@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -50,7 +51,7 @@ func TestClient(t *testing.T) {
 			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
-			attest.Subsequence(t, err.Error(), "is not a public IP address")
+			attest.True(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
@@ -68,16 +69,11 @@ func TestClient(t *testing.T) {
 		cli := UnsafeClient(getLogger(ctx))
 
 		for _, url := range urlsInPrivate {
-			if strings.Contains(url, "169.254.169.254") {
-				// the following IP when run from laptop resolves to IP of wifi router.
-				// Thus we have to disable it from test, since the test tries making a request to the router
-				// and gets a 404.
-				break
-			}
 			res, err := cli.Get(ctx, url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
-			attest.False(t, strings.Contains(err.Error(), "is not a public IP address"))
+			fmt.Println("\n\t fff: ", err.Error())
+			attest.False(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
