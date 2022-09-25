@@ -8,6 +8,7 @@ import (
 	mathRand "math/rand"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/komuw/ong/cookie"
@@ -67,6 +68,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 				"code":        lrw.code,
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
+				"pid":         os.Getpid(),
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				flds["ongError"] = ongError

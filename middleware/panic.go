@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/komuw/ong/log"
 )
@@ -34,6 +35,7 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 					"path":        r.URL.EscapedPath(),
 					"code":        code,
 					"status":      status,
+					"pid":         os.Getpid(),
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 					flds["ongError"] = ongError
