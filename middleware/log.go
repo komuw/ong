@@ -8,6 +8,7 @@ import (
 	mathRand "math/rand"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/komuw/ong/cookie"
@@ -67,6 +68,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 				"code":        lrw.code,
 				"status":      http.StatusText(lrw.code),
 				"durationMS":  time.Since(start).Milliseconds(),
+				"pid":         os.Getpid(),
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				flds["ongError"] = ongError
@@ -103,7 +105,8 @@ type logRW struct {
 	// this might end up being 0, rather than the implicit
 	// http.StatusOK. To get the implicit value, use the Result
 	// method.
-	code int
+	code        int
+	wroteHeader bool
 }
 
 var (
@@ -128,6 +131,14 @@ func (lrw *logRW) Write(b []byte) (int, error) {
 
 // WriteHeader recodes the status code for logging purposes.
 func (lrw *logRW) WriteHeader(statusCode int) {
+	fmt.Println("\n\t header 1111", statusCode)
+	if lrw.wroteHeader {
+		fmt.Println("\n\t header 2222")
+		return
+	}
+
+	fmt.Println("\n\t header 3333")
+	lrw.wroteHeader = true
 	lrw.code = statusCode
 	lrw.ResponseWriter.WriteHeader(statusCode)
 }
