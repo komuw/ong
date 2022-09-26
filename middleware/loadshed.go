@@ -100,9 +100,7 @@ type latencyQueue struct {
 }
 
 func newLatencyQueue() *latencyQueue {
-	return &latencyQueue{
-		sl: []time.Duration{},
-	}
+	return &latencyQueue{sl: []time.Duration{}}
 }
 
 func (lq *latencyQueue) add(durReq time.Duration) {
@@ -129,21 +127,13 @@ func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minS
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
-	_hold := []time.Duration{}
-	for _, lat := range lq.sl {
-		// if elapsed <= samplingPeriod {
-		// is the elapsed time within the samplingPeriod?
-		_hold = append(_hold, lat)
-		// }
-	}
-
-	if len(_hold) < minSampleSize {
+	if len(lq.sl) < minSampleSize {
 		// the number of requests in the last `samplingPeriod` seconds is less than
 		// is neccessary to make a decision
 		return 0 * time.Millisecond
 	}
 
-	return percentile(_hold, 99)
+	return percentile(lq.sl, 99)
 }
 
 func percentile(N []time.Duration, pctl float64) time.Duration {
