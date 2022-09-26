@@ -37,3 +37,15 @@ func ExampleEnc_EncryptEncode() {
 
 	// Output: three little birds.
 }
+
+func ExampleHash() {
+	password := "my NSA-hard password"
+	hashedPasswd := cry.Hash(password) // save hashedPasswd to the database.
+
+	err := cry.Eql(password, hashedPasswd) // retrieve hashedPasswd from database.
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(hashedPasswd)
+}
