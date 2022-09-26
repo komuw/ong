@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -76,7 +77,7 @@ func TestLoadShedder(t *testing.T) {
 		}
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 10; rN++ {
+		for rN := 0; rN <= 50+minSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -95,32 +96,33 @@ func TestPercentile(t *testing.T) {
 
 		{
 			lq := latencyQueue{
-				sl: []latency{
-					{duration: 5 * time.Second},
-					{duration: 6 * time.Second},
-					{duration: 7 * time.Second},
-					{duration: 8 * time.Second},
-					{duration: 9 * time.Second},
-					{duration: 0 * time.Second},
-					{duration: 1 * time.Second},
-					{duration: 2 * time.Second},
-					{duration: 3 * time.Second},
-					{duration: 4 * time.Second},
+				sl: []time.Duration{
+					5 * time.Second,
+					6 * time.Second,
+					7 * time.Second,
+					8 * time.Second,
+					9 * time.Second,
+					0 * time.Second,
+					1 * time.Second,
+					2 * time.Second,
+					3 * time.Second,
+					4 * time.Second,
 				},
 			}
-			got := percentile(lq.sl, 25)
-			attest.Equal(t, got, 2250*time.Millisecond) // ie, 2.25seconds
+
+			got := percentile(lq.sl, 25, len(lq.sl))
+			attest.Equal(t, got, 2000*time.Millisecond) // ie, 2seconds
 		}
 		{
 			lq := latencyQueue{}
 			for i := 1; i <= 1000; i++ {
 				lq.sl = append(
 					lq.sl,
-					newLatency(time.Duration(i)*time.Second, time.Now().UTC()),
+					time.Duration(i)*time.Second,
 				)
 			}
-			got := percentile(lq.sl, 99)
-			attest.Equal(t, got.Seconds(), 990.01)
+			got := percentile(lq.sl, 99, len(lq.sl))
+			attest.Equal(t, got.Seconds(), 991)
 		}
 	})
 }
@@ -128,94 +130,35 @@ func TestPercentile(t *testing.T) {
 func TestLatencyQueue(t *testing.T) {
 	t.Parallel()
 
-	t.Run("all samples taken outside samplingPeriod", func(t *testing.T) {
-		t.Parallel()
-
-		now := time.Now().UTC()
-		samplingPeriod := 10 * time.Millisecond
-		minSampleSize := 10
-
-		lq := latencyQueue{}
-		for i := 1; i <= 1000; i++ {
-			lq.sl = append(
-				lq.sl,
-				newLatency(time.Duration(i)*time.Second, now),
-			)
-		}
-
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
-		attest.Zero(t, got)
-	})
-
 	t.Run("all samples taken within samplingPeriod", func(t *testing.T) {
 		t.Parallel()
 
-		now := time.Now().UTC()
-		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10
-
 		lq := latencyQueue{}
 		for i := 1; i <= 1000; i++ {
 			lq.sl = append(
 				lq.sl,
-				newLatency(
-					time.Duration(i)*time.Second,
-					// negative so that it is in the past.
-					// divide by two so that it is within the samplingPeriod
-					now.Add(-(samplingPeriod/2)),
-				),
+				time.Duration(i)*time.Second,
 			)
 		}
 
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
-		attest.Equal(t, got.Seconds(), 990.01)
+		got := lq.getP99(minSampleSize)
+		attest.Equal(t, got.Seconds(), 991)
 	})
 
 	t.Run("number of samples less than minSampleSize", func(t *testing.T) {
 		t.Parallel()
 
-		now := time.Now().UTC()
-		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10_000
-
 		lq := latencyQueue{}
 		for i := 1; i <= (minSampleSize / 2); i++ {
 			lq.sl = append(
 				lq.sl,
-				newLatency(
-					time.Duration(i)*time.Second,
-					// negative so that it is in the past.
-					// divide by two so that it is within the samplingPeriod
-					now.Add(-(samplingPeriod/2)),
-				),
+				time.Duration(i)*time.Second,
 			)
 		}
 
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
-		attest.Zero(t, got)
-	})
-
-	t.Run("all samples taken in the future", func(t *testing.T) {
-		t.Parallel()
-
-		now := time.Now().UTC()
-		samplingPeriod := 10000 * time.Millisecond
-		minSampleSize := 10
-
-		lq := latencyQueue{}
-		for i := 1; i <= 1000; i++ {
-			lq.sl = append(
-				lq.sl,
-				newLatency(
-					time.Duration(i)*time.Second,
-					// positive so that it is in the future.
-					// divide by two so that it is within the samplingPeriod
-					now.Add(+(samplingPeriod/2)),
-				),
-			)
-		}
-
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
+		got := lq.getP99(minSampleSize)
 		attest.Zero(t, got)
 	})
 
@@ -225,16 +168,46 @@ func TestLatencyQueue(t *testing.T) {
 		lq := newLatencyQueue()
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 20; rN++ {
+		for rN := 0; rN <= 50+minSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
 
-				lq.add(1*time.Second, time.Now().UTC())
+				lq.add(1 * time.Second)
 				lq.reSize()
-				lq.getP99(time.Now().UTC(), 1*time.Second, 3)
+				lq.getP99(3)
 			}()
 		}
 		wg.Wait()
 	})
+}
+
+func loadShedderBenchmarkHandler() http.HandlerFunc {
+	rand.Seed(time.Now().UTC().UnixNano())
+	return func(w http.ResponseWriter, r *http.Request) {
+		latency := time.Duration(rand.Intn(100)+1) * time.Millisecond
+		time.Sleep(latency)
+		fmt.Fprint(w, "hey")
+	}
+}
+
+func BenchmarkLoadShedder(b *testing.B) {
+	var r int
+
+	wrappedHandler := LoadShedder(loadShedderBenchmarkHandler())
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < 100; n++ {
+		wrappedHandler.ServeHTTP(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+		attest.Equal(b, res.StatusCode, http.StatusOK)
+		r = res.StatusCode
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result = r
 }
