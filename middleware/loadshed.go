@@ -26,9 +26,9 @@ const (
 
 	// breachLatency is the p99 latency at which point we start dropping requests.
 	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
-	// 	In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
-	// 	and the p95 response times for http POST requests is ~900ms.
-	// 	Thus, we'll use a `breachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
+	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
+	// and the p95 response times for http POST requests is ~900ms.
+	// Thus, we'll use a `breachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
 	breachLatency = 700 * time.Millisecond
 
 	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
