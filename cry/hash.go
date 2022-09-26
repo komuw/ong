@@ -48,21 +48,21 @@ func eql(password, hash string) error {
 		return errors.New("unable to parse")
 	}
 
-	pv, err := strconv.Atoi(params[0])
+	pVer, err := strconv.Atoi(params[0])
 	if err != nil {
 		return err
 	}
-	if pv != version {
+	if pVer != version {
 		// TODO: better error messages
 		return errors.New("unable to parse")
 	}
 
-	pSalt, err := hex.DecodeString(params[4])
+	pSalt, err := hex.DecodeString(params[1])
 	if err != nil {
 		return err
 	}
 
-	pDerivedKey, err := hex.DecodeString(params[5])
+	pDerivedKey, err := hex.DecodeString(params[2])
 	if err != nil {
 		return err
 	}
