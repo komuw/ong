@@ -16,7 +16,8 @@ import (
 
 const (
 	// this should be increased every time the parameters passed to [scrypt.Key] are changed.
-	version = 1
+	version   = 1
+	separator = "$"
 )
 
 func deriveKey(password, salt []byte) (derivedKey []byte) {
@@ -29,17 +30,20 @@ func deriveKey(password, salt []byte) (derivedKey []byte) {
 }
 
 // Hash returns the scrypt Hash of the password.
+// It is safe to persist the result in your database instead of storing the actual password.
 //
 // It panics on error.
 func Hash(password string) string {
 	salt := random(saltLen, saltLen)
 	derivedKey := deriveKey([]byte(password), salt)
-	// Prepend the params and the salt to the derived key, each separated
-	// by a "$" character. The salt and the derived key are hex encoded.
+	// Add version, salt to the derived key.
+	// The salt and the derived key are hex encoded.
 	return fmt.Sprintf(
-		`%d$%x$%x`,
+		`%d%s%x%s%x`,
 		version,
+		separator,
 		salt,
+		separator,
 		derivedKey,
 	)
 }
