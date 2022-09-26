@@ -49,7 +49,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		defer func() {
 			endReq := time.Now().UTC()
 			durReq := endReq.Sub(startReq)
-			lq.add(durReq, endReq)
+			lq.add(durReq)
 
 			// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > (samplingPeriod + (3 * time.Minute)) {
@@ -85,39 +85,29 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-/*
-unsafe.Sizeof(latency{}) == 8bytes.
-*/
-type latency struct {
-	// duration is how long the operation took(ie latency)
-	duration time.Duration
-	// We do not need to have a field specifying when the latency measurement was taken.
-	// Since [latencyQueue.reSize] is called oftenly; All the latencies in the queue will
-	// aways be within `samplingPeriod` give or take.
-}
-
-func newLatency(d time.Duration, a time.Time) latency {
-	return latency{duration: d}
-}
-
-func (l latency) String() string {
-	return fmt.Sprintf("{dur: %s}", l.duration)
-}
-
 type latencyQueue struct {
 	mu sync.Mutex // protects sl
-	sl []latency
+
+	/*
+		unsafe.Sizeof(sl) == 8bytes.
+		latency is how long the operation took(ie latency)
+
+		We do not need to have a field specifying when the latency measurement was taken.
+		Since [latencyQueue.reSize] is called oftenly; All the latencies in the queue will
+		aways be within `samplingPeriod` give or take.
+	*/
+	sl []time.Duration
 }
 
 func newLatencyQueue() *latencyQueue {
 	return &latencyQueue{
-		sl: []latency{},
+		sl: []time.Duration{},
 	}
 }
 
-func (lq *latencyQueue) add(durReq time.Duration, endReq time.Time) {
+func (lq *latencyQueue) add(durReq time.Duration) {
 	lq.mu.Lock()
-	lq.sl = append(lq.sl, newLatency(durReq, endReq))
+	lq.sl = append(lq.sl, durReq)
 	lq.mu.Unlock()
 }
 
@@ -139,7 +129,7 @@ func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minS
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
-	_hold := []latency{}
+	_hold := []time.Duration{}
 	for _, lat := range lq.sl {
 		// if elapsed <= samplingPeriod {
 		// is the elapsed time within the samplingPeriod?
@@ -156,7 +146,7 @@ func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minS
 	return percentile(_hold, 99)
 }
 
-func percentile(N []latency, pctl float64) time.Duration {
+func percentile(N []time.Duration, pctl float64) time.Duration {
 	// This is taken from:
 	// https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/limit.py#L253-L280
 	//
@@ -165,7 +155,7 @@ func percentile(N []latency, pctl float64) time.Duration {
 	pctl = pctl / 100
 
 	sort.Slice(N, func(i, j int) bool {
-		return N[i].duration < N[j].duration
+		return N[i] < N[j]
 	})
 
 	k := float64((len(N) - 1)) * pctl
@@ -173,11 +163,11 @@ func percentile(N []latency, pctl float64) time.Duration {
 	c := math.Ceil(k)
 
 	if int(f) == int(c) { // golangci-lint complained about comparing floats.
-		return N[int(k)].duration
+		return N[int(k)]
 	}
 
-	d0 := float64(N[int(f)].duration.Nanoseconds()) * (c - k)
-	d1 := float64(N[int(c)].duration.Nanoseconds()) * (k - f)
+	d0 := float64(N[int(f)].Nanoseconds()) * (c - k)
+	d1 := float64(N[int(c)].Nanoseconds()) * (k - f)
 	d2 := d0 + d1
 
 	return time.Duration(d2) * time.Nanosecond
