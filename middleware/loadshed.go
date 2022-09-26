@@ -32,7 +32,7 @@ const (
 	breachLatency = 700 * time.Millisecond
 
 	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
-	retryAfter = samplingPeriod + (3 * time.Minute)
+	retryAfter = samplingPeriod + (5 * time.Minute)
 
 	// resizePeriod is the duration after which we should trim the latencyQueue.
 	// It should always be > samplingPeriod
