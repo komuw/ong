@@ -29,7 +29,7 @@ func deriveKey(password, salt []byte) (derivedKey []byte) {
 	return derivedKey
 }
 
-// Hash returns the scrypt Hash of the password.
+// Hash returns the scrypt hash of the password.
 // It is safe to persist the result in your database instead of storing the actual password.
 //
 // It panics on error.
