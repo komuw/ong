@@ -62,8 +62,7 @@ func Eql(password, hash string) error {
 		return err
 	}
 	if pVer != version {
-		// TODO: better error messages
-		return errors.New("unable to parse")
+		return errors.New("version mismatch")
 	}
 
 	pSalt, err := hex.DecodeString(params[1])
@@ -77,7 +76,6 @@ func Eql(password, hash string) error {
 	}
 
 	dk := deriveKey([]byte(password), pSalt)
-
 	if subtle.ConstantTimeCompare(dk, pDerivedKey) == 1 {
 		return nil
 	}
