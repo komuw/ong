@@ -9,9 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/komuw/ong/enc"
-
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
 )
 
@@ -299,7 +298,7 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		enc := enc.New(key)
+		enc := cry.New(key)
 		reqCsrfTok := enc.EncryptEncode("msgToEncrypt")
 
 		{
@@ -398,7 +397,7 @@ func TestCsrf(t *testing.T) {
 		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		enc := enc.New(key)
+		enc := cry.New(key)
 		reqCsrfTok := enc.EncryptEncode("msgToEncrypt")
 
 		{

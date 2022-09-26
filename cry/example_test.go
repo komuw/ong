@@ -1,14 +1,14 @@
-package enc_test
+package cry_test
 
 import (
 	"fmt"
 
-	"github.com/komuw/ong/enc"
+	"github.com/komuw/ong/cry"
 )
 
 func ExampleEnc_Encrypt() {
 	key := "hard-passwd"
-	e := enc.New(key)
+	e := cry.New(key)
 
 	plainTextMsg := "Muziki asili yake - Remmy Ongala." // English: `What is the origin of music by Remmy Ongala`
 	encryptedMsg := e.Encrypt(plainTextMsg)
@@ -19,7 +19,7 @@ func ExampleEnc_Encrypt() {
 
 func ExampleEnc_EncryptEncode() {
 	key := "hard-passwd"
-	e := enc.New(key)
+	e := cry.New(key)
 
 	originalPlainTextMsg := "three little birds."
 	encryptedEncodedMsg := e.EncryptEncode(originalPlainTextMsg)
