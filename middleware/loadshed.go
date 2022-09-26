@@ -97,7 +97,7 @@ type latencyQueue struct {
 		latency is how long the operation took(ie latency)
 
 		We do not need to have a field specifying when the latency measurement was taken.
-		Since [latencyQueue.reSize] is called oftenly; All the latencies in the queue will
+		Since [latencyQueue.reSize] is called oftenly; all the latencies in the queue will
 		aways be within `samplingPeriod` give or take.
 	*/
 	sl []time.Duration
