@@ -77,7 +77,7 @@ func TestLoadShedder(t *testing.T) {
 		}
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 10; rN++ {
+		for rN := 0; rN <= 50+minSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -211,7 +211,7 @@ func TestLatencyQueue(t *testing.T) {
 		lq := newLatencyQueue()
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 20; rN++ {
+		for rN := 0; rN <= 50+minSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()

@@ -16,32 +16,29 @@ import (
 
 const (
 	retryAfterHeader = "Retry-After"
+
+	// samplingPeriod is the duration over which we will calculate the latency.
+	samplingPeriod = 12 * time.Minute
+
+	// minSampleSize is the minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
+	// If there were fewer requests(than `minSampleSize`) in the `samplingPeriod`, then we do decide to let things continue without load shedding.
+	minSampleSize = 50
+
+	// breachLatency is the p99 latency at which point we start dropping requests.
+	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
+	// 	In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
+	// 	and the p95 response times for http POST requests is ~900ms.
+	// 	Thus, we'll use a `breachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
+	breachLatency = 700 * time.Millisecond
+
+	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
+	retryAfter = samplingPeriod + (3 * time.Minute)
 )
 
 // LoadShedder is a middleware that sheds load based on response latencies.
 func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	mathRand.Seed(time.Now().UTC().UnixNano())
 	lq := newLatencyQueue()
-
-	/*
-		The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
-		In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
-		and the p95 response times for http POST requests is ~900ms.
-
-		Thus, we'll use a `breachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
-	*/
-
-	// samplingPeriod is the duration over which we will calculate the latency.
-	samplingPeriod := 12 * time.Minute
-	// minSampleSize is the minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
-	// If there were fewer requests(than `minSampleSize`) in the `samplingPeriod`, then we do decide to let things continue without load shedding.
-	minSampleSize := 50
-	// breachLatency is the p99 latency at which point we start dropping requests.
-	breachLatency := 700 * time.Millisecond
-
-	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
-	retryAfter := samplingPeriod + (3 * time.Minute)
-
 	loadShedCheckStart := time.Now().UTC()
 
 	return func(w http.ResponseWriter, r *http.Request) {
