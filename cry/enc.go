@@ -69,12 +69,8 @@ func New(key string) Enc {
 	}
 
 	// derive a key.
-	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	password := []byte(key)
-	derivedKey, err := scrypt.Key(password, salt, n, r, p, keyLen)
-	if err != nil {
-		panic(err)
-	}
+	derivedKey, salt := deriveKey(password)
 
 	/*
 		Another option would be to use argon2.
