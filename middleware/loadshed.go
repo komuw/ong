@@ -33,6 +33,11 @@ const (
 
 	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
 	retryAfter = samplingPeriod + (3 * time.Minute)
+
+	// resizePeriod is the duration after which we should trim the latencyQueue.
+	// It should always be > samplingPeriod
+	// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
+	resizePeriod = samplingPeriod + (3 * time.Minute)
 )
 
 // LoadShedder is a middleware that sheds load based on response latencies.
@@ -49,7 +54,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			lq.add(durReq)
 
 			// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
-			if endReq.Sub(loadShedCheckStart) > (samplingPeriod + (3 * time.Minute)) {
+			if endReq.Sub(loadShedCheckStart) > resizePeriod {
 				// lets reduce the size of latencyQueue
 				lq.reSize()
 				loadShedCheckStart = endReq
