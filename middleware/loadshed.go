@@ -71,7 +71,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			sendProbe = mathRand.Intn(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
 		}
 
-		p99 := lq.getP99(startReq, minSampleSize)
+		p99 := lq.getP99(minSampleSize)
 		if p99 > breachLatency && !sendProbe {
 			// drop request
 			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
@@ -127,7 +127,7 @@ func (lq *latencyQueue) reSize() {
 
 // todo: refactor this and its dependents.
 // currently they consume 9.04MB and 80ms as measured by the `BenchmarkAllMiddlewares` benchmark.
-func (lq *latencyQueue) getP99(now time.Time, minSampleSize int) (p99latency time.Duration) {
+func (lq *latencyQueue) getP99(minSampleSize int) (p99latency time.Duration) {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
