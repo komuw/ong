@@ -86,28 +86,22 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 /*
-unsafe.Sizeof(latency{}) == 16bytes.
-
-Note that if `latency.at` was a `time.Time` `unsafe.Sizeof` would report 32bytes.
-However, this wouldn't be the true size since `unsafe.Sizeof` does not 'chase' pointers and time.Time has some.
+unsafe.Sizeof(latency{}) == 8bytes.
 */
 type latency struct {
 	// duration is how long the operation took(ie latency)
 	duration time.Duration
-	// at is the time at which this operation took place.
-	// We could have ideally used a `time.Time` as its type; but we wanted the latency struct to be minimal in size.
-	at int64
+	// We do not need to have a field specifying when the latency measurement was taken.
+	// Since [latencyQueue.reSize] is called oftenly; All the latencies in the queue will
+	// aways be within `samplingPeriod` give or take.
 }
 
 func newLatency(d time.Duration, a time.Time) latency {
-	return latency{
-		duration: d,
-		at:       a.Unix(),
-	}
+	return latency{duration: d}
 }
 
 func (l latency) String() string {
-	return fmt.Sprintf("{dur: %s, at: %s}", l.duration, time.Unix(l.at, 0).UTC())
+	return fmt.Sprintf("{dur: %s}", l.duration)
 }
 
 type latencyQueue struct {
@@ -133,7 +127,7 @@ func (lq *latencyQueue) reSize() {
 
 	size := len(lq.sl)
 	if size > 5_000 {
-		// Each `latency` struct is 16bytes. So we can afford to have 5_000(80KB)
+		// Each `latency` struct is 8bytes. So we can afford to have 5_000(40KB)
 		half := size / 2
 		lq.sl = lq.sl[half:] // retain the latest half.
 	}
@@ -147,16 +141,10 @@ func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minS
 
 	_hold := []latency{}
 	for _, lat := range lq.sl {
-		at := time.Unix(lat.at, 0).UTC()
-		elapsed := now.Sub(at)
-		if elapsed < 0 {
-			// `at` is in the future. Ignore those values
-			break
-		}
-		if elapsed <= samplingPeriod {
-			// is the elapsed time within the samplingPeriod?
-			_hold = append(_hold, lat)
-		}
+		// if elapsed <= samplingPeriod {
+		// is the elapsed time within the samplingPeriod?
+		_hold = append(_hold, lat)
+		// }
 	}
 
 	if len(_hold) < minSampleSize {
