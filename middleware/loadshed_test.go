@@ -130,22 +130,6 @@ func TestPercentile(t *testing.T) {
 func TestLatencyQueue(t *testing.T) {
 	t.Parallel()
 
-	t.Run("all samples taken outside samplingPeriod", func(t *testing.T) {
-		t.Parallel()
-
-		minSampleSize := 10
-		lq := latencyQueue{}
-		for i := 1; i <= 1000; i++ {
-			lq.sl = append(
-				lq.sl,
-				time.Duration(i)*time.Second,
-			)
-		}
-
-		got := lq.getP99(minSampleSize)
-		attest.Zero(t, got)
-	})
-
 	t.Run("all samples taken within samplingPeriod", func(t *testing.T) {
 		t.Parallel()
 
@@ -159,7 +143,7 @@ func TestLatencyQueue(t *testing.T) {
 		}
 
 		got := lq.getP99(minSampleSize)
-		attest.Equal(t, got.Seconds(), 990.01)
+		attest.Equal(t, got.Seconds(), 991)
 	})
 
 	t.Run("number of samples less than minSampleSize", func(t *testing.T) {
@@ -168,22 +152,6 @@ func TestLatencyQueue(t *testing.T) {
 		minSampleSize := 10_000
 		lq := latencyQueue{}
 		for i := 1; i <= (minSampleSize / 2); i++ {
-			lq.sl = append(
-				lq.sl,
-				time.Duration(i)*time.Second,
-			)
-		}
-
-		got := lq.getP99(minSampleSize)
-		attest.Zero(t, got)
-	})
-
-	t.Run("all samples taken in the future", func(t *testing.T) {
-		t.Parallel()
-
-		minSampleSize := 10
-		lq := latencyQueue{}
-		for i := 1; i <= 1000; i++ {
 			lq.sl = append(
 				lq.sl,
 				time.Duration(i)*time.Second,
