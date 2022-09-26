@@ -20,22 +20,24 @@ const (
 	separator = "$"
 )
 
-func deriveKey(password, salt []byte) (derivedKey []byte) {
-	derivedKey, err := scrypt.Key(password, salt, n, r, p, keyLen)
+func deriveKey(password, salt []byte) (derivedKey []byte, err error) {
+	derivedKey, err = scrypt.Key(password, salt, n, r, p, keyLen)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return derivedKey
+	return derivedKey, nil
 }
 
 // Hash returns the scrypt hash of the password.
 // It is safe to persist the result in your database instead of storing the actual password.
-//
-// It panics on error.
-func Hash(password string) string {
+func Hash(password string) (string, error) {
 	salt := random(saltLen, saltLen)
-	derivedKey := deriveKey([]byte(password), salt)
+	derivedKey, err := deriveKey([]byte(password), salt)
+	if err != nil {
+		return "", err
+	}
+
 	// Add version, salt to the derived key.
 	// The salt and the derived key are hex encoded.
 	return fmt.Sprintf(
@@ -45,7 +47,7 @@ func Hash(password string) string {
 		salt,
 		separator,
 		derivedKey,
-	)
+	), nil
 }
 
 // Eql performs a constant-time comparison between the password and the hash.
@@ -75,7 +77,11 @@ func Eql(password, hash string) error {
 		return err
 	}
 
-	dk := deriveKey([]byte(password), pSalt)
+	dk, err := deriveKey([]byte(password), pSalt)
+	if err != nil {
+		return err
+	}
+
 	if subtle.ConstantTimeCompare(dk, pDerivedKey) == 1 {
 		return nil
 	}
