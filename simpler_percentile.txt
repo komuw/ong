@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/komuw/ong/middleware
+cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
+BenchmarkLoadShedder-8   	       1	4950121030 ns/op	   62760 B/op	     935 allocs/op
+BenchmarkLoadShedder-8   	       1	5161659893 ns/op	   60464 B/op	     907 allocs/op
+BenchmarkLoadShedder-8   	       1	5295095822 ns/op	   60688 B/op	     909 allocs/op
+BenchmarkLoadShedder-8   	       1	4864859816 ns/op	   60464 B/op	     907 allocs/op
+BenchmarkLoadShedder-8   	       1	4505806567 ns/op	   60464 B/op	     907 allocs/op
+BenchmarkLoadShedder-8   	       1	5063546292 ns/op	   60464 B/op	     907 allocs/op
+BenchmarkLoadShedder-8   	       1	5607441083 ns/op	   60464 B/op	     907 allocs/op
+BenchmarkLoadShedder-8   	       1	5030089100 ns/op	   60696 B/op	     910 allocs/op
+BenchmarkLoadShedder-8   	       1	5590484101 ns/op	   61144 B/op	     914 allocs/op
+BenchmarkLoadShedder-8   	       1	5111247438 ns/op	   60688 B/op	     909 allocs/op
+BenchmarkLoadShedder-8   	       1	4891751726 ns/op	   62432 B/op	     930 allocs/op
+BenchmarkLoadShedder-8   	       1	4819505972 ns/op	   58960 B/op	     889 allocs/op
+BenchmarkLoadShedder-8   	       1	5008748082 ns/op	   62208 B/op	     928 allocs/op
+BenchmarkLoadShedder-8   	       1	5234555671 ns/op	   60384 B/op	     906 allocs/op
+BenchmarkLoadShedder-8   	       1	5506491985 ns/op	   60624 B/op	     909 allocs/op
+BenchmarkLoadShedder-8   	       1	4574970770 ns/op	   59104 B/op	     890 allocs/op
+BenchmarkLoadShedder-8   	       1	4750718075 ns/op	   62512 B/op	     931 allocs/op
+BenchmarkLoadShedder-8   	       1	5039620642 ns/op	   62064 B/op	     927 allocs/op
+BenchmarkLoadShedder-8   	       1	5059457783 ns/op	   61144 B/op	     914 allocs/op
+BenchmarkLoadShedder-8   	       1	5486475988 ns/op	   60608 B/op	     908 allocs/op
+PASS
+ok  	github.com/komuw/ong/middleware	101.589s

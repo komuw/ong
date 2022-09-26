@@ -109,8 +109,9 @@ func TestPercentile(t *testing.T) {
 					4 * time.Second,
 				},
 			}
-			got := percentile(lq.sl, 25)
-			attest.Equal(t, got, 2250*time.Millisecond) // ie, 2.25seconds
+
+			got := percentile(lq.sl, 25, len(lq.sl))
+			attest.Equal(t, got, 2000*time.Millisecond) // ie, 2seconds
 		}
 		{
 			lq := latencyQueue{}
@@ -120,8 +121,8 @@ func TestPercentile(t *testing.T) {
 					time.Duration(i)*time.Second,
 				)
 			}
-			got := percentile(lq.sl, 99)
-			attest.Equal(t, got.Seconds(), 990.01)
+			got := percentile(lq.sl, 99, len(lq.sl))
+			attest.Equal(t, got.Seconds(), 991)
 		}
 	})
 }
@@ -133,7 +134,6 @@ func TestLatencyQueue(t *testing.T) {
 		t.Parallel()
 
 		now := time.Now().UTC()
-		samplingPeriod := 10 * time.Millisecond
 		minSampleSize := 10
 
 		lq := latencyQueue{}
@@ -144,7 +144,7 @@ func TestLatencyQueue(t *testing.T) {
 			)
 		}
 
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
+		got := lq.getP99(now, minSampleSize)
 		attest.Zero(t, got)
 	})
 
@@ -152,7 +152,6 @@ func TestLatencyQueue(t *testing.T) {
 		t.Parallel()
 
 		now := time.Now().UTC()
-		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10
 
 		lq := latencyQueue{}
@@ -163,7 +162,7 @@ func TestLatencyQueue(t *testing.T) {
 			)
 		}
 
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
+		got := lq.getP99(now, minSampleSize)
 		attest.Equal(t, got.Seconds(), 990.01)
 	})
 
@@ -171,7 +170,6 @@ func TestLatencyQueue(t *testing.T) {
 		t.Parallel()
 
 		now := time.Now().UTC()
-		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10_000
 
 		lq := latencyQueue{}
@@ -182,7 +180,7 @@ func TestLatencyQueue(t *testing.T) {
 			)
 		}
 
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
+		got := lq.getP99(now, minSampleSize)
 		attest.Zero(t, got)
 	})
 
@@ -190,7 +188,6 @@ func TestLatencyQueue(t *testing.T) {
 		t.Parallel()
 
 		now := time.Now().UTC()
-		samplingPeriod := 10000 * time.Millisecond
 		minSampleSize := 10
 
 		lq := latencyQueue{}
@@ -201,7 +198,7 @@ func TestLatencyQueue(t *testing.T) {
 			)
 		}
 
-		got := lq.getP99(now, samplingPeriod, minSampleSize)
+		got := lq.getP99(now, minSampleSize)
 		attest.Zero(t, got)
 	})
 
@@ -218,7 +215,7 @@ func TestLatencyQueue(t *testing.T) {
 
 				lq.add(1 * time.Second)
 				lq.reSize()
-				lq.getP99(time.Now().UTC(), 1*time.Second, 3)
+				lq.getP99(time.Now().UTC(), 3)
 			}()
 		}
 		wg.Wait()

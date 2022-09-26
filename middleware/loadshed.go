@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"fmt"
-	"math"
 	mathRand "math/rand"
 	"net/http"
-	"sort"
 	"sync"
 	"time"
+
+	"golang.org/x/exp/slices"
 )
 
 // Most of the code here is insipired by:
@@ -64,7 +64,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			sendProbe = mathRand.Intn(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
 		}
 
-		p99 := lq.getP99(startReq, samplingPeriod, minSampleSize)
+		p99 := lq.getP99(startReq, minSampleSize)
 		if p99 > breachLatency && !sendProbe {
 			// drop request
 			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
@@ -120,42 +120,22 @@ func (lq *latencyQueue) reSize() {
 
 // todo: refactor this and its dependents.
 // currently they consume 9.04MB and 80ms as measured by the `BenchmarkAllMiddlewares` benchmark.
-func (lq *latencyQueue) getP99(now time.Time, samplingPeriod time.Duration, minSampleSize int) (p99latency time.Duration) {
+func (lq *latencyQueue) getP99(now time.Time, minSampleSize int) (p99latency time.Duration) {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
-	if len(lq.sl) < minSampleSize {
+	lenSl := len(lq.sl)
+	if lenSl < minSampleSize {
 		// the number of requests in the last `samplingPeriod` seconds is less than
 		// is neccessary to make a decision
 		return 0 * time.Millisecond
 	}
 
-	return percentile(lq.sl, 99)
+	return percentile(lq.sl, 99, lenSl)
 }
 
-func percentile(N []time.Duration, pctl float64) time.Duration {
-	// This is taken from:
-	// https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/limit.py#L253-L280
-	//
-	// todo: use something better like: https://github.com/influxdata/tdigest
-	//
-	pctl = pctl / 100
-
-	sort.Slice(N, func(i, j int) bool {
-		return N[i] < N[j]
-	})
-
-	k := float64((len(N) - 1)) * pctl
-	f := math.Floor(k)
-	c := math.Ceil(k)
-
-	if int(f) == int(c) { // golangci-lint complained about comparing floats.
-		return N[int(k)]
-	}
-
-	d0 := float64(N[int(f)].Nanoseconds()) * (c - k)
-	d1 := float64(N[int(c)].Nanoseconds()) * (k - f)
-	d2 := d0 + d1
-
-	return time.Duration(d2) * time.Nanosecond
+func percentile(N []time.Duration, pctl float64, lenSl int) time.Duration {
+	slices.Sort(N)
+	index := int((pctl / 100) * float64(lenSl))
+	return N[index]
 }
