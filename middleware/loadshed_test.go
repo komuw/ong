@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -237,4 +238,34 @@ func TestLatencyQueue(t *testing.T) {
 		}
 		wg.Wait()
 	})
+}
+
+func loadShedderBenchmarkHandler() http.HandlerFunc {
+	rand.Seed(time.Now().UTC().UnixNano())
+	return func(w http.ResponseWriter, r *http.Request) {
+		latency := time.Duration(rand.Intn(100)+1) * time.Millisecond
+		time.Sleep(latency)
+		fmt.Fprint(w, "hey")
+	}
+}
+
+func BenchmarkLoadShedder(b *testing.B) {
+	var r int
+
+	wrappedHandler := LoadShedder(loadShedderBenchmarkHandler())
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < 100; n++ {
+		wrappedHandler.ServeHTTP(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+		attest.Equal(b, res.StatusCode, http.StatusOK)
+		r = res.StatusCode
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result = r
 }
