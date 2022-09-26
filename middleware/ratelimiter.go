@@ -28,7 +28,7 @@ var rateLimiterSendRate = 100.00 //nolint:gochecknoglobals
 // RateLimiter is a middleware that limits requests by IP address.
 func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	rl := newRl()
-	retryAfter := 15 * time.Minute
+	const retryAfter = 15 * time.Minute
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
