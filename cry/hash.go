@@ -15,11 +15,11 @@ import (
 //   (a) https://github.com/elithrar/simple-scrypt whose license(MIT) can be found here: https://github.com/elithrar/simple-scrypt/blob/v1.3.0/LICENSE
 
 const (
+	// this should be increased every time the parameters passed to [scrypt.Key] are changed.
 	version = 1
 )
 
 func deriveKey(password, salt []byte) (derivedKey []byte) {
-	// derive a key.
 	derivedKey, err := scrypt.Key(password, salt, n, r, p, keyLen)
 	if err != nil {
 		panic(err)
@@ -28,7 +28,10 @@ func deriveKey(password, salt []byte) (derivedKey []byte) {
 	return derivedKey
 }
 
-func hash(password string) string {
+// Hash returns the scrypt Hash of the password.
+//
+// It panics on error.
+func Hash(password string) string {
 	salt := random(saltLen, saltLen)
 	derivedKey := deriveKey([]byte(password), salt)
 	// Prepend the params and the salt to the derived key, each separated
@@ -41,7 +44,9 @@ func hash(password string) string {
 	)
 }
 
-func eql(password, hash string) error {
+// Eql performs a constant-time comparison between the password and the hash.
+// The hash ought to have been produced by [Hash]
+func Eql(password, hash string) error {
 	params := strings.Split(hash, "$")
 
 	if len(params) != 3 {
