@@ -1,7 +1,7 @@
-// Package enc provides utilities to carry out encryption and decryption.
+// Package cry provides utilities for cryptography.
 // This library has not been vetted and people are discouraged from using it.
 // Instead use the crypto facilities in the Go standard library and/or golang.org/x/crypto
-package enc
+package cry
 
 import (
 	"crypto/cipher"
@@ -69,9 +69,9 @@ func New(key string) Enc {
 	}
 
 	// derive a key.
-	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	password := []byte(key)
-	derivedKey, err := scrypt.Key(password, salt, n, r, p, keyLen)
+	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
+	derivedKey, err := deriveKey(password, salt)
 	if err != nil {
 		panic(err)
 	}

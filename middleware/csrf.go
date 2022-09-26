@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/komuw/ong/enc"
+	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
 
 	"github.com/komuw/ong/cookie"
@@ -52,7 +52,7 @@ const (
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
 // If a csrf token is not provided(or is not valid), when it ought to have been; this middleware will issue a http GET redirect to the same url.
 func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
-	enc := enc.New(secretKey)
+	enc := cry.New(secretKey)
 	msgToEncrypt := id.Random(16)
 
 	return func(w http.ResponseWriter, r *http.Request) {
