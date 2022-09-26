@@ -1,6 +1,8 @@
 package cry
 
 import (
+	"crypto/subtle"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -16,27 +18,24 @@ const (
 	version = 1
 )
 
-func deriveKey(password []byte) (derivedKey, salt []byte) {
+func deriveKey(password, salt []byte) (derivedKey []byte) {
 	// derive a key.
-	salt = random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	derivedKey, err := scrypt.Key(password, salt, n, r, p, keyLen)
 	if err != nil {
 		panic(err)
 	}
 
-	return derivedKey, salt
+	return derivedKey
 }
 
 func hash(password string) string {
-	derivedKey, salt := deriveKey([]byte(password))
+	salt := random(saltLen, saltLen)
+	derivedKey := deriveKey([]byte(password), salt)
 	// Prepend the params and the salt to the derived key, each separated
 	// by a "$" character. The salt and the derived key are hex encoded.
 	return fmt.Sprintf(
-		`%d$%d$%d$%d$%x$%x`,
+		`%d$%x$%x`,
 		version,
-		n,
-		r,
-		p,
 		salt,
 		derivedKey,
 	)
@@ -45,7 +44,7 @@ func hash(password string) string {
 func eql(password, hash string) error {
 	params := strings.Split(hash, "$")
 
-	if len(params) != 6 {
+	if len(params) != 3 {
 		return errors.New("unable to parse")
 	}
 
@@ -58,21 +57,21 @@ func eql(password, hash string) error {
 		return errors.New("unable to parse")
 	}
 
-	pn, err := strconv.Atoi(params[1])
+	pSalt, err := hex.DecodeString(params[4])
 	if err != nil {
 		return err
 	}
 
-	pr, err := strconv.Atoi(params[2])
+	pDerivedKey, err := hex.DecodeString(params[5])
 	if err != nil {
 		return err
 	}
 
-	pp, err := strconv.Atoi(params[3])
-	if err != nil {
-		return err
+	dk := deriveKey([]byte(password), pSalt)
+
+	if subtle.ConstantTimeCompare(dk, pDerivedKey) == 1 {
+		return nil
 	}
 
-	pSalt := params[4]
-	pDerivedKey := params[5]
+	return errors.New("password mismatch")
 }

@@ -70,7 +70,8 @@ func New(key string) Enc {
 
 	// derive a key.
 	password := []byte(key)
-	derivedKey, salt := deriveKey(password)
+	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
+	derivedKey := deriveKey(password, salt)
 
 	/*
 		Another option would be to use argon2.
