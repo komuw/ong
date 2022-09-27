@@ -31,8 +31,10 @@ func main() {
 			),
 		})
 
-	_, _ = server.CreateDevCertKey()
-	err := server.Run(mux, server.DevOpts(), l)
+	opts := server.DevOpts() // dev options.
+	// alternatively for production:
+	//   opts := server.LetsEncryptOpts("email@email.com", "*.some-domain.com")
+	err := server.Run(mux, opts, l)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

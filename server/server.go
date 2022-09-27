@@ -110,7 +110,9 @@ func NewOpts(
 }
 
 // DevOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
+// It also automatically creates the dev certifiates/key by internally calling [CreateDevCertKey]
 func DevOpts() opts {
+	_, _ = CreateDevCertKey()
 	certFile, keyFile := certKeyPaths()
 	return withOpts(65081, certFile, keyFile, "", "localhost")
 }
