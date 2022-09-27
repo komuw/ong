@@ -24,7 +24,7 @@ type route struct {
 }
 
 func (r route) String() string {
-	return fmt.Sprintf("route{method: %s, segs: %s}", r.method, r.segs)
+	return fmt.Sprintf("route{method: %s, pattern: %s, segs: %s}", r.method, r.pattern, r.segs)
 }
 
 func (r route) match(ctx context.Context, router *Router, segs []string) (context.Context, bool) {
