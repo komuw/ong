@@ -3,6 +3,7 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -21,7 +22,11 @@ type route struct {
 	prefix  bool
 }
 
-func (r *route) match(ctx context.Context, router *Router, segs []string) (context.Context, bool) {
+func (r route) String() string {
+	return fmt.Sprintf("route{method: %s, segs: %s, prefix: %v}", r.method, r.segs, r.prefix)
+}
+
+func (r route) match(ctx context.Context, router *Router, segs []string) (context.Context, bool) {
 	if len(segs) > len(r.segs) && !r.prefix {
 		return nil, false
 	}
@@ -53,7 +58,7 @@ func (r *route) match(ctx context.Context, router *Router, segs []string) (conte
 
 // Router routes HTTP requests.
 type Router struct {
-	routes []*route
+	routes []route
 	// NotFound is the http.Handler to call when no routes
 	// match. By default uses http.NotFoundHandler().
 	NotFound http.Handler
@@ -76,7 +81,7 @@ func (r *Router) pathSegments(p string) []string {
 // accessible via the Param function.
 // If pattern ends with trailing /, it acts as a prefix.
 func (r *Router) Handle(method, pattern string, handler http.Handler) {
-	route := &route{
+	route := route{
 		method:  strings.ToLower(method),
 		segs:    r.pathSegments(pattern),
 		handler: handler,
