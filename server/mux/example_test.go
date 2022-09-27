@@ -17,6 +17,13 @@ func LoginHandler() http.HandlerFunc {
 	}
 }
 
+func BooksByAuthorHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		author := mux.Param(r.Context(), "author")
+		_, _ = fmt.Fprint(w, fmt.Sprintf("fetching books by author: %s", author))
+	}
+}
+
 func ExampleMux() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := mux.NewMux(
@@ -27,6 +34,11 @@ func ExampleMux() {
 				"login/",
 				mux.MethodGet,
 				LoginHandler(),
+			),
+			mux.NewRoute(
+				"/books/:author",
+				mux.MethodAll,
+				BooksByAuthorHandler(),
 			),
 		},
 	)
