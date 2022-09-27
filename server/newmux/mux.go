@@ -40,11 +40,6 @@ func (r route) match(ctx context.Context, router *Router, segs []string) (contex
 			seg = strings.TrimPrefix(seg, ":")
 		}
 		if !isParam { // verbatim check
-			if strings.HasSuffix(seg, "...") {
-				if strings.HasPrefix(segs[i], seg[:len(seg)-3]) {
-					return ctx, true
-				}
-			}
 			if seg != segs[i] {
 				return nil, false
 			}
@@ -85,7 +80,7 @@ func (r *Router) Handle(method, pattern string, handler http.Handler) {
 		method:  strings.ToLower(method),
 		segs:    r.pathSegments(pattern),
 		handler: handler,
-		prefix:  strings.HasSuffix(pattern, "/") || strings.HasSuffix(pattern, "..."),
+		prefix:  strings.HasSuffix(pattern, "/"),
 	}
 	r.routes = append(r.routes, route)
 }
