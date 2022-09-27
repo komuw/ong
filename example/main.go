@@ -12,6 +12,7 @@ import (
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/server"
 )
 
@@ -23,28 +24,28 @@ func main() {
 	api := NewMyApi("someDb")
 	l := log.New(context.Background(), os.Stdout, 1000)
 	secretKey := "hard-password"
-	mux := server.NewMux(
+	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
-		server.Routes{
-			server.NewRoute(
+		mux.Routes{
+			mux.NewRoute(
 				"/api",
-				server.MethodPost,
+				mux.MethodPost,
 				api.handleAPI(),
 			),
-			server.NewRoute(
+			mux.NewRoute(
 				"serveDirectory",
-				server.MethodAll,
+				mux.MethodAll,
 				middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
 			),
-			server.NewRoute(
+			mux.NewRoute(
 				"check/",
-				server.MethodAll,
+				mux.MethodAll,
 				api.check(200),
 			),
-			server.NewRoute(
+			mux.NewRoute(
 				"login",
-				server.MethodAll,
+				mux.MethodAll,
 				api.login(),
 			),
 		})
