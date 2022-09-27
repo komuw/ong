@@ -68,7 +68,7 @@ func NewRouter() *Router {
 	}
 }
 
-func (r *Router) pathSegments(p string) []string {
+func pathSegments(p string) []string {
 	return strings.Split(strings.Trim(p, "/"), "/")
 }
 
@@ -92,7 +92,7 @@ func (r *Router) Handle(method, pattern string, handler http.Handler) {
 
 	route := route{
 		method:  strings.ToLower(method),
-		segs:    r.pathSegments(pattern),
+		segs:    pathSegments(pattern),
 		handler: handler,
 	}
 	r.routes = append(r.routes, route)
@@ -107,7 +107,7 @@ func (r *Router) HandleFunc(method, pattern string, fn http.HandlerFunc) {
 // extracting path parameters as it goes.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	method := strings.ToLower(req.Method)
-	segs := r.pathSegments(req.URL.Path)
+	segs := pathSegments(req.URL.Path)
 	for _, route := range r.routes {
 		if route.method != method {
 			continue
@@ -150,7 +150,7 @@ func (r *Router) detectConflict(method, pattern string, handler http.Handler) {
 	// They can be a source of bugs and confusion.
 	// see: https://www.alexedwards.net/blog/which-go-router-should-i-use
 
-	incomingSegments := r.pathSegments(pattern)
+	incomingSegments := pathSegments(pattern)
 	for _, route := range r.routes {
 		existingSegments := route.segs
 		sameLen := len(incomingSegments) == len(existingSegments)
