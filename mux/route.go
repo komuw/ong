@@ -26,7 +26,7 @@ func (r route) String() string {
 	return fmt.Sprintf("route{method: %s, pattern: %s, segs: %s}", r.method, r.pattern, r.segs)
 }
 
-func (r route) match(ctx context.Context, router *router, segs []string) (context.Context, bool) {
+func (r route) match(ctx context.Context, segs []string) (context.Context, bool) {
 	if len(segs) > len(r.segs) {
 		return nil, false
 	}
@@ -103,7 +103,7 @@ func (r *router) handle(method, pattern string, handler http.HandlerFunc) {
 func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	segs := pathSegments(req.URL.Path)
 	for _, route := range r.routes {
-		if ctx, ok := route.match(req.Context(), r, segs); ok {
+		if ctx, ok := route.match(req.Context(), segs); ok {
 			route.handler.ServeHTTP(w, req.WithContext(ctx))
 			return
 		}
