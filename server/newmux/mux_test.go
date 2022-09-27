@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/akshayjshah/attest"
 )
 
 var tests = []struct {
@@ -340,29 +338,29 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 	}
 }
 
-func TestCool(t *testing.T) {
-	t.Parallel()
+// func TestCool(t *testing.T) {
+// 	t.Parallel()
 
-	r := NewRouter()
-	var match string
+// 	r := NewRouter()
+// 	var match string
 
-	r.Handle(http.MethodGet, "/post/create", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		match = "GET /post/create"
-	}))
+// 	r.Handle(http.MethodGet, "/post/create", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		match = "GET /post/create"
+// 	}))
 
-	r.Handle(http.MethodGet, "/post/:id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		match = "GET /post/:id"
-	}))
+// 	r.Handle(http.MethodGet, "/post/:id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		match = "GET /post/:id"
+// 	}))
 
-	fmt.Println("\n\t r.routes: ", r.routes)
+// 	fmt.Println("\n\t r.routes: ", r.routes)
 
-	req, err := http.NewRequest(http.MethodGet, "/post/create", nil)
-	if err != nil {
-		t.Errorf("NewRequest: %s", err)
-	}
-	r.ServeHTTP(httptest.NewRecorder(), req)
+// 	req, err := http.NewRequest(http.MethodGet, "/post/create", nil)
+// 	if err != nil {
+// 		t.Errorf("NewRequest: %s", err)
+// 	}
+// 	r.ServeHTTP(httptest.NewRecorder(), req)
 
-	expected := "GET /post/create"
+// 	expected := "GET /post/create"
 
-	attest.Equal(t, match, expected)
-}
+// 	attest.Equal(t, match, expected)
+// }

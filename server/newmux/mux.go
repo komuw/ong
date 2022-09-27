@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
+	"runtime"
 	"strings"
 )
 
@@ -85,6 +87,9 @@ func (r *Router) Handle(method, pattern string, handler http.Handler) {
 		pattern = "/" + pattern
 	}
 
+	// Try and detect conflict before adding a new route.
+	r.detectConflict(method, pattern, handler)
+
 	route := route{
 		method:  strings.ToLower(method),
 		segs:    r.pathSegments(pattern),
@@ -124,4 +129,40 @@ func Param(ctx context.Context, param string) string {
 		return ""
 	}
 	return vStr
+}
+
+func (r *Router) detectConflict(method, pattern string, handler http.Handler) {
+	// Conflicting routes are a bad thing.
+	// They can be a source of bugs and confusion.
+	// see: https://www.alexedwards.net/blog/which-go-router-should-i-use
+
+	incomingSegments := r.pathSegments(pattern)
+	for _, route := range r.routes {
+		existingSegments := route.segs
+		sameLen := len(incomingSegments) == len(existingSegments)
+		if !sameLen {
+			// no conflict
+			break
+		}
+
+		panicMsg := fmt.Sprintf("\n\tYou are trying to add a pattern: %s for method: %s and handler: %v \n\tHowever, pattern: %s for method: %s and handler: %v already exists and would conflict.",
+			pattern,
+			method,
+			runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(),
+			strings.Join(route.segs, "/"),
+			strings.ToUpper(route.method),
+			runtime.FuncForPC(reflect.ValueOf(route.handler).Pointer()).Name(),
+		)
+
+		for _, v := range incomingSegments {
+			if strings.Contains(v, ":") {
+				panic(panicMsg)
+			}
+		}
+		for _, v := range existingSegments {
+			if strings.Contains(v, ":") {
+				panic(panicMsg)
+			}
+		}
+	}
 }
