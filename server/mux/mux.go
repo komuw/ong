@@ -2,6 +2,7 @@
 package mux
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/komuw/ong/log"
@@ -42,13 +43,13 @@ func NewRoute(
 // Use [NewMux] to get a valid Mux.
 type Mux struct {
 	l      log.Logger
-	router *Router // some router
+	router *router // some router
 }
 
 func NewMux(l log.Logger, opt middleware.Opts, rts Routes) Mux {
 	m := Mux{
 		l:      l,
-		router: NewRouter(),
+		router: newRouter(),
 	}
 
 	mid := middleware.All //nolint:ineffassign
@@ -82,9 +83,19 @@ func NewMux(l log.Logger, opt middleware.Opts, rts Routes) Mux {
 
 // ServeHTTP implements a http.Handler
 func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	m.router.ServeHTTP(w, r)
+	m.router.serveHTTP(w, r)
 }
 
 func (m Mux) addPattern(method, pattern string, handler http.HandlerFunc) {
-	m.router.Handle(method, pattern, handler)
+	m.router.handle(method, pattern, handler)
+}
+
+// Param gets the path parameter from the specified Context.
+// Returns an empty string if the parameter was not found.
+func Param(ctx context.Context, param string) string {
+	vStr, ok := ctx.Value(muxContextKey(param)).(string)
+	if !ok {
+		return ""
+	}
+	return vStr
 }

@@ -244,17 +244,17 @@ func TestMux(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			r := NewRouter()
+			r := newRouter()
 			match := false
 			var ctx context.Context
-			r.Handle(tt.RouteMethod, tt.RoutePattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.handle(tt.RouteMethod, tt.RoutePattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				match = true
 				ctx = r.Context()
 			}))
 			req, err := http.NewRequest(tt.Method, tt.Path, nil)
 			attest.Ok(t, err)
 			w := httptest.NewRecorder()
-			r.ServeHTTP(w, req)
+			r.serveHTTP(w, req)
 			attest.Equal(
 				t,
 				match,
@@ -280,25 +280,25 @@ func TestMux(t *testing.T) {
 func TestMultipleRoutesDifferentMethods(t *testing.T) {
 	t.Parallel()
 
-	r := NewRouter()
+	r := newRouter()
 	var match string
-	r.Handle(MethodAll, "/route", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.handle(MethodAll, "/route", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		match = r.Method
 	}))
 
 	req, err := http.NewRequest(http.MethodGet, "/route", nil)
 	attest.Ok(t, err)
-	r.ServeHTTP(httptest.NewRecorder(), req)
+	r.serveHTTP(httptest.NewRecorder(), req)
 	attest.Equal(t, match, "GET")
 
 	req, err = http.NewRequest(http.MethodDelete, "/route", nil)
 	attest.Ok(t, err)
-	r.ServeHTTP(httptest.NewRecorder(), req)
+	r.serveHTTP(httptest.NewRecorder(), req)
 	attest.Equal(t, match, "DELETE")
 
 	req, err = http.NewRequest(http.MethodPost, "/route", nil)
 	attest.Ok(t, err)
-	r.ServeHTTP(httptest.NewRecorder(), req)
+	r.serveHTTP(httptest.NewRecorder(), req)
 	attest.Equal(t, match, "POST")
 }
 
@@ -319,19 +319,19 @@ func TestConflicts(t *testing.T) {
 
 	t.Run("conflicts detected", func(t *testing.T) {
 		t.Parallel()
-		r := NewRouter()
+		r := newRouter()
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.Handle(http.MethodGet, "/post/create", firstRoute(msg1))
+		r.handle(http.MethodGet, "/post/create", firstRoute(msg1))
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.Handle(http.MethodGet, "/post/:id", secondRoute(msg2))
+			r.handle(http.MethodGet, "/post/:id", secondRoute(msg2))
 		})
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/post/create", nil)
-		r.ServeHTTP(rec, req)
+		r.serveHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
@@ -345,24 +345,24 @@ func TestConflicts(t *testing.T) {
 
 	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
 		t.Parallel()
-		r := NewRouter()
+		r := newRouter()
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.Handle(http.MethodGet, "/post", firstRoute(msg1))
+		r.handle(http.MethodGet, "/post", firstRoute(msg1))
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.Handle(http.MethodGet, "/post/", secondRoute(msg2))
+			r.handle(http.MethodGet, "/post/", secondRoute(msg2))
 		})
 
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.Handle(http.MethodDelete, "post/", secondRoute(msg2))
+			r.handle(http.MethodDelete, "post/", secondRoute(msg2))
 		})
 
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.Handle(http.MethodPut, "post", secondRoute(msg2))
+			r.handle(http.MethodPut, "post", secondRoute(msg2))
 		})
 	})
 }
