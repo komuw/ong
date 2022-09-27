@@ -19,15 +19,14 @@ type route struct {
 	method  string
 	segs    []string
 	handler http.Handler
-	prefix  bool
 }
 
 func (r route) String() string {
-	return fmt.Sprintf("route{method: %s, segs: %s, prefix: %v}", r.method, r.segs, r.prefix)
+	return fmt.Sprintf("route{method: %s, segs: %s}", r.method, r.segs)
 }
 
 func (r route) match(ctx context.Context, router *Router, segs []string) (context.Context, bool) {
-	if len(segs) > len(r.segs) && !r.prefix {
+	if len(segs) > len(r.segs) {
 		return nil, false
 	}
 	for i, seg := range r.segs {
@@ -74,13 +73,22 @@ func (r *Router) pathSegments(p string) []string {
 // Method can be any HTTP method string or "*" to match all methods.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-// If pattern ends with trailing /, it acts as a prefix.
 func (r *Router) Handle(method, pattern string, handler http.Handler) {
+	if !strings.HasSuffix(pattern, "/") {
+		// this will make the mux send requests for;
+		//   - localhost:80/check
+		//   - localhost:80/check/
+		// to the same handler.
+		pattern = pattern + "/"
+	}
+	if !strings.HasPrefix(pattern, "/") {
+		pattern = "/" + pattern
+	}
+
 	route := route{
 		method:  strings.ToLower(method),
 		segs:    r.pathSegments(pattern),
 		handler: handler,
-		prefix:  strings.HasSuffix(pattern, "/"),
 	}
 	r.routes = append(r.routes, route)
 }
@@ -97,6 +105,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	segs := r.pathSegments(req.URL.Path)
 	for _, route := range r.routes {
 		if route.method != method && route.method != "*" {
+			// TODO: fix how we handle "*" methods.
 			continue
 		}
 		if ctx, ok := route.match(req.Context(), r, segs); ok {

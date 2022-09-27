@@ -182,7 +182,7 @@ var tests = []struct {
 		"/prefix/",
 		"GET",
 		"/prefix/anything/else",
-		true,
+		false,
 		nil,
 	},
 	{
@@ -216,15 +216,23 @@ var tests = []struct {
 	},
 	{
 		"GET",
-		"/path-params-prefix/:era/:group/:member/",
+		"/path-params/:era/:group/:member",
 		"GET",
-		"/path-params-prefix/60s/beatles/lennon/yoko",
+		"/path-params/60s/beatles/lennon/",
 		true,
 		map[string]string{
 			"era":    "60s",
 			"group":  "beatles",
 			"member": "lennon",
 		},
+	},
+	{
+		"GET",
+		"/path-params-prefix/:era/:group/:member/",
+		"GET",
+		"/path-params-prefix/60s/beatles/lennon/yoko",
+		false,
+		nil,
 	},
 	// misc no matches
 	{
