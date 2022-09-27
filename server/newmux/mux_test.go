@@ -75,7 +75,7 @@ var tests = []struct {
 		"/method1",
 		"POST",
 		"/method1",
-		false,
+		true,
 		nil,
 	},
 	{
@@ -83,7 +83,7 @@ var tests = []struct {
 		"/method2",
 		"GET",
 		"/method2",
-		false,
+		true,
 		nil,
 	},
 	{
@@ -91,7 +91,7 @@ var tests = []struct {
 		"/method3",
 		"PUT",
 		"/method3",
-		false,
+		true,
 		nil,
 	},
 	// nested
@@ -282,30 +282,24 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 
 	r := NewRouter()
 	var match string
-	r.Handle(http.MethodGet, "/route", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		match = "GET /route"
-	}))
-	r.Handle(http.MethodDelete, "/route", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		match = "DELETE /route"
-	}))
-	r.Handle(http.MethodPost, "/route", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		match = "POST /route"
+	r.Handle(MethodAll, "/route", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		match = r.Method
 	}))
 
 	req, err := http.NewRequest(http.MethodGet, "/route", nil)
 	attest.Ok(t, err)
 	r.ServeHTTP(httptest.NewRecorder(), req)
-	attest.Equal(t, match, "GET /route")
+	attest.Equal(t, match, "GET")
 
 	req, err = http.NewRequest(http.MethodDelete, "/route", nil)
 	attest.Ok(t, err)
 	r.ServeHTTP(httptest.NewRecorder(), req)
-	attest.Equal(t, match, "DELETE /route")
+	attest.Equal(t, match, "DELETE")
 
 	req, err = http.NewRequest(http.MethodPost, "/route", nil)
 	attest.Ok(t, err)
 	r.ServeHTTP(httptest.NewRecorder(), req)
-	attest.Equal(t, match, "POST /route")
+	attest.Equal(t, match, "POST")
 }
 
 func firstRoute(msg string) http.HandlerFunc {
@@ -347,5 +341,28 @@ func TestConflicts(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg1)
+	})
+
+	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
+		t.Parallel()
+		r := NewRouter()
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+		r.Handle(http.MethodGet, "/post", firstRoute(msg1))
+		attest.Panics(t, func() {
+			// This one panics with a conflict message.
+			r.Handle(http.MethodGet, "/post/", secondRoute(msg2))
+		})
+
+		attest.Panics(t, func() {
+			// This one panics with a conflict message.
+			r.Handle(http.MethodDelete, "post/", secondRoute(msg2))
+		})
+
+		attest.Panics(t, func() {
+			// This one panics with a conflict message.
+			r.Handle(http.MethodPut, "post", secondRoute(msg2))
+		})
 	})
 }

@@ -18,8 +18,9 @@ type muxContextKey string
 
 type route struct {
 	method  string
+	pattern string
 	segs    []string
-	handler http.Handler
+	handler http.HandlerFunc
 }
 
 func (r route) String() string {
@@ -75,7 +76,7 @@ func pathSegments(p string) []string {
 // Handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *Router) Handle(method, pattern string, handler http.Handler) {
+func (r *Router) Handle(method, pattern string, handler http.HandlerFunc) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -92,26 +93,24 @@ func (r *Router) Handle(method, pattern string, handler http.Handler) {
 
 	route := route{
 		method:  strings.ToLower(method),
+		pattern: pattern,
 		segs:    pathSegments(pattern),
 		handler: handler,
 	}
 	r.routes = append(r.routes, route)
 }
 
+// TODO: remove
 // HandleFunc is the http.HandlerFunc alternative to http.Handle.
-func (r *Router) HandleFunc(method, pattern string, fn http.HandlerFunc) {
-	r.Handle(method, pattern, fn)
-}
+// func (r *Router) HandleFunc(method, pattern string, fn http.HandlerFunc) {
+// 	r.Handle(method, pattern, fn)
+// }
 
 // ServeHTTP routes the incoming http.Request based on method and path
 // extracting path parameters as it goes.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	method := strings.ToLower(req.Method)
 	segs := pathSegments(req.URL.Path)
 	for _, route := range r.routes {
-		if route.method != method {
-			continue
-		}
 		if ctx, ok := route.match(req.Context(), r, segs); ok {
 			route.handler.ServeHTTP(w, req.WithContext(ctx))
 			return
@@ -187,6 +186,10 @@ already exists and would conflict.`,
 			if strings.Contains(v, ":") {
 				panic(panicMsg)
 			}
+		}
+
+		if pattern == route.pattern {
+			panic(panicMsg)
 		}
 	}
 }
