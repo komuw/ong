@@ -26,7 +26,7 @@ func BooksByAuthorHandler() http.HandlerFunc {
 
 func ExampleMux() {
 	l := log.New(context.Background(), os.Stdout, 1000)
-	mux := mux.NewMux(
+	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 8080, "secretKey", l),
 		mux.Routes{

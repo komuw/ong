@@ -40,7 +40,7 @@ func TestMux(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		mux := NewMux(
+		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{
@@ -67,7 +67,7 @@ func TestMux(t *testing.T) {
 
 		uri := "/api/" // forward slash at suffix is important.
 		msg := "hello world"
-		mux := NewMux(
+		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{
@@ -113,7 +113,7 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		uri := "/api"
-		mux := NewMux(
+		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{

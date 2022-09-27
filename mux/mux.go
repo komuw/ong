@@ -44,13 +44,14 @@ func NewRoute(
 // patterns and calls the handler for the pattern that most closely matches the URL.
 // It implements http.Handler
 //
-// Use [NewMux] to get a valid Mux.
+// Use [New] to get a valid Mux.
 type Mux struct {
 	l      log.Logger
 	router *router // some router
 }
 
-func NewMux(l log.Logger, opt middleware.Opts, rts Routes) Mux {
+// New return a HTTP request multiplexer that has the routes/paths in rts.
+func New(l log.Logger, opt middleware.Opts, rts Routes) Mux {
 	m := Mux{
 		l:      l,
 		router: newRouter(),

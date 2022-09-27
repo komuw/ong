@@ -175,7 +175,7 @@ func TestServer(t *testing.T) {
 		port := uint16(65081)
 		uri := "/api"
 		msg := "hello world"
-		mux := mux.NewMux(
+		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
 			mux.Routes{
@@ -266,7 +266,7 @@ func TestServer(t *testing.T) {
 		port := math.MaxUint16 - uint16(3)
 		uri := "/api"
 		msg := "hello world"
-		mux := mux.NewMux(
+		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
 			mux.Routes{
