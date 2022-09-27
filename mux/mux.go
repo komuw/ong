@@ -51,6 +51,7 @@ type Mux struct {
 }
 
 // New return a HTTP request multiplexer that has the routes/paths in rts.
+// It panics with a helpful message if it detects conflicting routes.
 func New(l log.Logger, opt middleware.Opts, rts Routes) Mux {
 	m := Mux{
 		l:      l,
