@@ -6,6 +6,7 @@ Most recent version is listed first.
 ## v0.0.9
 - Add password hashing capabilities: https://github.com/komuw/ong/pull/137
 - Simplify loadshedding implementation: https://github.com/komuw/ong/pull/138
+- Make automax to be a stand-alone package: https://github.com/komuw/ong/pull/139
 
 ## v0.0.8
 - Improve documentation.
