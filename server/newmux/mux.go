@@ -54,15 +54,17 @@ func (r route) match(ctx context.Context, router *Router, segs []string) (contex
 // Router routes HTTP requests.
 type Router struct {
 	routes []route
-	// NotFound is the http.Handler to call when no routes
+	// notFoundHandler is the http.Handler to call when no routes
 	// match. By default uses http.NotFoundHandler().
-	NotFound http.Handler
+	notFoundHandler http.Handler
 }
 
 // NewRouter makes a new Router.
 func NewRouter() *Router {
 	return &Router{
-		NotFound: http.NotFoundHandler(),
+		// TODO: add ability for someone to pass in a notFound handler.
+		// If they pass in `nil` we default to `http.NotFoundHandler()`
+		notFoundHandler: http.NotFoundHandler(),
 	}
 }
 
@@ -117,7 +119,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	r.NotFound.ServeHTTP(w, req)
+	r.notFoundHandler.ServeHTTP(w, req)
 }
 
 // Param gets the path parameter from the specified Context.
