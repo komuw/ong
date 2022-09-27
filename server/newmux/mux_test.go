@@ -94,31 +94,6 @@ var tests = []struct {
 		false,
 		nil,
 	},
-	// all methods
-	{
-		"*",
-		"/all-methods",
-		"GET",
-		"/all-methods",
-		true,
-		nil,
-	},
-	{
-		"*",
-		"/all-methods",
-		"POST",
-		"/all-methods",
-		true,
-		nil,
-	},
-	{
-		"*",
-		"/all-methods",
-		"PUT",
-		"/all-methods",
-		true,
-		nil,
-	},
 	// nested
 	{
 		"GET",

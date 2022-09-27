@@ -73,7 +73,6 @@ func (r *Router) pathSegments(p string) []string {
 }
 
 // Handle adds a handler with the specified method and pattern.
-// Method can be any HTTP method string or "*" to match all methods.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
 func (r *Router) Handle(method, pattern string, handler http.Handler) {
@@ -110,8 +109,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	method := strings.ToLower(req.Method)
 	segs := r.pathSegments(req.URL.Path)
 	for _, route := range r.routes {
-		if route.method != method && route.method != "*" {
-			// TODO: fix how we handle "*" methods.
+		if route.method != method {
 			continue
 		}
 		if ctx, ok := route.match(req.Context(), r, segs); ok {
