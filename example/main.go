@@ -12,6 +12,7 @@ import (
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/server"
 )
 
@@ -23,33 +24,32 @@ func main() {
 	api := NewMyApi("someDb")
 	l := log.New(context.Background(), os.Stdout, 1000)
 	secretKey := "hard-password"
-	mux := server.NewMux(
+	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
-		server.Routes{
-			server.NewRoute(
+		mux.Routes{
+			mux.NewRoute(
 				"/api",
-				server.MethodPost,
+				mux.MethodPost,
 				api.handleAPI(),
 			),
-			server.NewRoute(
+			mux.NewRoute(
 				"serveDirectory",
-				server.MethodAll,
+				mux.MethodAll,
 				middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
 			),
-			server.NewRoute(
-				"check/",
-				server.MethodAll,
-				api.check(200),
+			mux.NewRoute(
+				"check/:age/",
+				mux.MethodAll,
+				api.check("world"),
 			),
-			server.NewRoute(
+			mux.NewRoute(
 				"login",
-				server.MethodAll,
+				mux.MethodAll,
 				api.login(),
 			),
 		})
 
-	_, _ = server.CreateDevCertKey()
 	err := server.Run(mux, server.DevOpts(), l)
 	if err != nil {
 		l.Error(err, log.F{"msg": "server.Run error"})
@@ -115,15 +115,15 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 }
 
 // you can take arguments for handler specific dependencies
-func (m myAPI) check(code int) http.HandlerFunc {
+func (m myAPI) check(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
 		m.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
-		_, _ = fmt.Fprint(w, "hello from check/ endpoint")
-		// use code, which is a dependency specific to this handler
-		w.WriteHeader(code)
+		age := mux.Param(r.Context(), "age")
+		// use msg, which is a dependency specific to this handler
+		_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
 	}
 }
 

@@ -110,7 +110,15 @@ func NewOpts(
 }
 
 // DevOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
+// It also automatically creates the dev certifiates/key by internally calling [CreateDevCertKey]
 func DevOpts() opts {
+	if os.Getenv("ONG_RUNNING_IN_TESTS") == "" {
+		// This means we are not in CI. Thus, create dev certificates.
+		//
+		// This function call fails in CI with `permission denied`
+		// since it is trying to create certificates in filesystem.
+		_, _ = CreateDevCertKey()
+	}
 	certFile, keyFile := certKeyPaths()
 	return withOpts(65081, certFile, keyFile, "", "localhost")
 }

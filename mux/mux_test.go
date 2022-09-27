@@ -1,4 +1,4 @@
-package server
+package mux
 
 import (
 	"bytes"
@@ -14,6 +14,11 @@ import (
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 )
+
+func getSecretKey() string {
+	key := "hard-password"
+	return key
+}
 
 func someMuxHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +40,7 @@ func TestMux(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		mux := NewMux(
+		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{
@@ -62,7 +67,7 @@ func TestMux(t *testing.T) {
 
 		uri := "/api/" // forward slash at suffix is important.
 		msg := "hello world"
-		mux := NewMux(
+		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{
@@ -108,7 +113,7 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		uri := "/api"
-		mux := NewMux(
+		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			Routes{

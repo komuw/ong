@@ -16,6 +16,7 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/mux"
 )
 
 func getSecretKey() string {
@@ -174,13 +175,13 @@ func TestServer(t *testing.T) {
 		port := uint16(65081)
 		uri := "/api"
 		msg := "hello world"
-		mux := NewMux(
+		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			Routes{
-				NewRoute(
+			mux.Routes{
+				mux.NewRoute(
 					uri,
-					MethodGet,
+					mux.MethodGet,
 					someServerTestHandler(msg),
 				),
 			})
@@ -265,13 +266,13 @@ func TestServer(t *testing.T) {
 		port := math.MaxUint16 - uint16(3)
 		uri := "/api"
 		msg := "hello world"
-		mux := NewMux(
+		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			Routes{
-				NewRoute(
+			mux.Routes{
+				mux.NewRoute(
 					uri,
-					MethodGet,
+					mux.MethodGet,
 					someServerTestHandler(msg),
 				),
 			})
