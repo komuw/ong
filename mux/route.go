@@ -90,13 +90,13 @@ func (r *router) handle(method, pattern string, handler http.HandlerFunc) {
 	// Try and detect conflict before adding a new route.
 	r.detectConflict(method, pattern, handler)
 
-	route := route{
+	rt := route{
 		method:  strings.ToLower(method),
 		pattern: pattern,
 		segs:    pathSegments(pattern),
 		handler: handler,
 	}
-	r.routes = append(r.routes, route)
+	r.routes = append(r.routes, rt)
 }
 
 // serveHTTP routes the incoming http.Request based on method and path extracting path parameters as it goes.
