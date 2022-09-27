@@ -3,9 +3,12 @@ package mux
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/akshayjshah/attest"
 )
 
 var tests = []struct {
@@ -338,29 +341,44 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 	}
 }
 
-// func TestCool(t *testing.T) {
-// 	t.Parallel()
+func firstRoute(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintf(w, msg)
+	}
+}
 
-// 	r := NewRouter()
-// 	var match string
+func secondRoute(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintf(w, msg)
+	}
+}
 
-// 	r.Handle(http.MethodGet, "/post/create", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		match = "GET /post/create"
-// 	}))
+func TestConflicts(t *testing.T) {
+	t.Parallel()
 
-// 	r.Handle(http.MethodGet, "/post/:id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		match = "GET /post/:id"
-// 	}))
+	t.Run("conflicts detected", func(t *testing.T) {
+		t.Parallel()
+		r := NewRouter()
 
-// 	fmt.Println("\n\t r.routes: ", r.routes)
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+		r.Handle(http.MethodGet, "/post/create", firstRoute(msg1))
+		attest.Panics(t, func() {
+			// This one panics with a conflict message.
+			r.Handle(http.MethodGet, "/post/:id", secondRoute(msg2))
+		})
 
-// 	req, err := http.NewRequest(http.MethodGet, "/post/create", nil)
-// 	if err != nil {
-// 		t.Errorf("NewRequest: %s", err)
-// 	}
-// 	r.ServeHTTP(httptest.NewRecorder(), req)
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/post/create", nil)
+		r.ServeHTTP(rec, req)
 
-// 	expected := "GET /post/create"
+		res := rec.Result()
+		defer res.Body.Close()
 
-// 	attest.Equal(t, match, expected)
-// }
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg1)
+	})
+}
