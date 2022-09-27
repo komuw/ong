@@ -280,12 +280,22 @@ func TestWay(t *testing.T) {
 			attest.Ok(t, err)
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, req)
-			attest.Equal(t, match, tt.Match, attest.Sprintf("expected match %v but was %v: %s %s", tt.Match, match, tt.Method, tt.Path))
+			attest.Equal(
+				t,
+				match,
+				tt.Match,
+				attest.Sprintf("expected match %v but was %v: %s %s", tt.Match, match, tt.Method, tt.Path),
+			)
 			if len(tt.Params) > 0 {
 				for expK, expV := range tt.Params {
 					// check using helper
 					actualValStr := Param(ctx, expK)
-					attest.Equal(t, actualValStr, expV, attest.Sprintf("Param: context value %s expected \"%s\" but was \"%s\"", expK, expV, actualValStr))
+					attest.Equal(
+						t,
+						actualValStr,
+						expV,
+						attest.Sprintf("Param: context value %s expected \"%s\" but was \"%s\"", expK, expV, actualValStr),
+					)
 				}
 			}
 		})
