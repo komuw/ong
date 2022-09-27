@@ -345,3 +345,30 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 		t.Errorf("unexpected: %s", match)
 	}
 }
+
+// func TestCool(t *testing.T) {
+// 	t.Parallel()
+
+// 	r := NewRouter()
+// 	var match string
+
+// 	r.Handle(http.MethodGet, "/post/create", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		match = "GET /post/create"
+// 	}))
+
+// 	r.Handle(http.MethodGet, "/post/:id", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		match = "GET /post/:id"
+// 	}))
+
+// 	fmt.Println("\n\t r.routes: ", r.routes)
+
+// 	req, err := http.NewRequest(http.MethodGet, "/post/create", nil)
+// 	if err != nil {
+// 		t.Errorf("NewRequest: %s", err)
+// 	}
+// 	r.ServeHTTP(httptest.NewRecorder(), req)
+
+// 	expected := "GET /post/create"
+
+// 	attest.Equal(t, match, expected)
+// }

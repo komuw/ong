@@ -14,6 +14,43 @@ import (
 // parameters in context.Context.
 type wayContextKey string
 
+type route struct {
+	method  string
+	segs    []string
+	handler http.Handler
+	prefix  bool
+}
+
+func (r *route) match(ctx context.Context, router *Router, segs []string) (context.Context, bool) {
+	if len(segs) > len(r.segs) && !r.prefix {
+		return nil, false
+	}
+	for i, seg := range r.segs {
+		if i > len(segs)-1 {
+			return nil, false
+		}
+		isParam := false
+		if strings.HasPrefix(seg, ":") {
+			isParam = true
+			seg = strings.TrimPrefix(seg, ":")
+		}
+		if !isParam { // verbatim check
+			if strings.HasSuffix(seg, "...") {
+				if strings.HasPrefix(segs[i], seg[:len(seg)-3]) {
+					return ctx, true
+				}
+			}
+			if seg != segs[i] {
+				return nil, false
+			}
+		}
+		if isParam {
+			ctx = context.WithValue(ctx, wayContextKey(seg), segs[i])
+		}
+	}
+	return ctx, true
+}
+
 // Router routes HTTP requests.
 type Router struct {
 	routes []*route
@@ -78,41 +115,4 @@ func Param(ctx context.Context, param string) string {
 		return ""
 	}
 	return vStr
-}
-
-type route struct {
-	method  string
-	segs    []string
-	handler http.Handler
-	prefix  bool
-}
-
-func (r *route) match(ctx context.Context, router *Router, segs []string) (context.Context, bool) {
-	if len(segs) > len(r.segs) && !r.prefix {
-		return nil, false
-	}
-	for i, seg := range r.segs {
-		if i > len(segs)-1 {
-			return nil, false
-		}
-		isParam := false
-		if strings.HasPrefix(seg, ":") {
-			isParam = true
-			seg = strings.TrimPrefix(seg, ":")
-		}
-		if !isParam { // verbatim check
-			if strings.HasSuffix(seg, "...") {
-				if strings.HasPrefix(segs[i], seg[:len(seg)-3]) {
-					return ctx, true
-				}
-			}
-			if seg != segs[i] {
-				return nil, false
-			}
-		}
-		if isParam {
-			ctx = context.WithValue(ctx, wayContextKey(seg), segs[i])
-		}
-	}
-	return ctx, true
 }
