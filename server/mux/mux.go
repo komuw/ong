@@ -1,4 +1,4 @@
-// TODO: docs.
+// Package mux implements a HTTP request multiplexer.
 package mux
 
 import (
@@ -39,7 +39,11 @@ func NewRoute(
 	}
 }
 
-// Mux implements http.Handler
+// Mux is a HTTP request multiplexer.
+// It matches the URL of each incoming request against a list of registered
+// patterns and calls the handler for the pattern that most closely matches the URL.
+// It implements http.Handler
+//
 // Use [NewMux] to get a valid Mux.
 type Mux struct {
 	l      log.Logger
@@ -82,6 +86,7 @@ func NewMux(l log.Logger, opt middleware.Opts, rts Routes) Mux {
 }
 
 // ServeHTTP implements a http.Handler
+// It routes incoming http requests based on method and path extracting path parameters as it goes.
 func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.serveHTTP(w, r)
 }

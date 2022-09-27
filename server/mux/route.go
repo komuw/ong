@@ -99,8 +99,7 @@ func (r *router) handle(method, pattern string, handler http.HandlerFunc) {
 	r.routes = append(r.routes, route)
 }
 
-// serveHTTP routes the incoming http.Request based on method and path
-// extracting path parameters as it goes.
+// serveHTTP routes the incoming http.Request based on method and path extracting path parameters as it goes.
 func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	segs := pathSegments(req.URL.Path)
 	for _, route := range r.routes {
@@ -153,7 +152,7 @@ However
   handler: %v
 already exists and would conflict.`,
 			pattern,
-			method,
+			strings.ToUpper(method),
 			getfunc(handler),
 			strings.Join(route.segs, "/"),
 			strings.ToUpper(route.method),
