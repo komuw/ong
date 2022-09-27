@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/komuw/ong/automax"
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/server/automax"
 
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
