@@ -13,9 +13,8 @@ import (
 // Most of the code here is insipired by(or taken from):
 //   (a) https://github.com/matryer/way whose license(MIT) can be found here: https://github.com/matryer/way/blob/9632d0c407b008073d19d0c4da1e0fc3e9477508/LICENSE
 
-// wayContextKey is the context key type for storing
-// parameters in context.Context.
-type wayContextKey string
+// muxContextKey is the context key type for storing path parameters in context.Context.
+type muxContextKey string
 
 type route struct {
 	method  string
@@ -46,7 +45,7 @@ func (r route) match(ctx context.Context, router *Router, segs []string) (contex
 			}
 		}
 		if isParam {
-			ctx = context.WithValue(ctx, wayContextKey(seg), segs[i])
+			ctx = context.WithValue(ctx, muxContextKey(seg), segs[i])
 		}
 	}
 	return ctx, true
@@ -124,7 +123,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // Param gets the path parameter from the specified Context.
 // Returns an empty string if the parameter was not found.
 func Param(ctx context.Context, param string) string {
-	vStr, ok := ctx.Value(wayContextKey(param)).(string)
+	vStr, ok := ctx.Value(muxContextKey(param)).(string)
 	if !ok {
 		return ""
 	}

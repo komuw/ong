@@ -254,7 +254,7 @@ var tests = []struct {
 	},
 }
 
-func TestWay(t *testing.T) {
+func TestMux(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range tests {
