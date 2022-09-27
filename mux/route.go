@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path"
 	"reflect"
 	"runtime"
 	"strings"
@@ -154,7 +155,7 @@ already exists and would conflict.`,
 			pattern,
 			strings.ToUpper(method),
 			getfunc(handler),
-			strings.Join(route.segs, "/"),
+			path.Join(route.segs...),
 			strings.ToUpper(route.method),
 			getfunc(route.handler),
 		)
