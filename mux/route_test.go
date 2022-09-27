@@ -304,13 +304,13 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 
 func firstRoute(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, msg)
+		_, _ = fmt.Fprint(w, msg)
 	}
 }
 
 func secondRoute(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, msg)
+		_, _ = fmt.Fprint(w, msg)
 	}
 }
 

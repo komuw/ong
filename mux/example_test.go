@@ -20,7 +20,7 @@ func LoginHandler() http.HandlerFunc {
 func BooksByAuthorHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		author := mux.Param(r.Context(), "author")
-		_, _ = fmt.Fprint(w, fmt.Sprintf("fetching books by author: %s", author))
+		_, _ = fmt.Fprintf(w, "fetching books by author: %s", author)
 	}
 }
 

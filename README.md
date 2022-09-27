@@ -77,7 +77,7 @@ func hello(msg string) http.HandlerFunc {
 func check() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		age := mux.Param(r.Context(), "age")
-		_, _ = fmt.Fprint(w, fmt.Sprintf("Age is %s", age))
+		_, _ = fmt.Fprintf(w, "Age is %s", age)
 	}
 }
 ```

@@ -123,7 +123,7 @@ func (m myAPI) check(msg string) http.HandlerFunc {
 
 		age := mux.Param(r.Context(), "age")
 		// use msg, which is a dependency specific to this handler
-		_, _ = fmt.Fprint(w, fmt.Sprintf("hello %s. Age is %s", msg, age))
+		_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
 	}
 }
 
