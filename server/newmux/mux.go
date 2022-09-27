@@ -145,7 +145,16 @@ func (r *Router) detectConflict(method, pattern string, handler http.Handler) {
 			break
 		}
 
-		panicMsg := fmt.Sprintf("\n\tYou are trying to add a pattern: %s for method: %s and handler: %v \n\tHowever, pattern: %s for method: %s and handler: %v already exists and would conflict.",
+		panicMsg := fmt.Sprintf(`
+You are trying to add
+  pattern: %s
+  method: %s
+  handler: %v
+However
+  pattern: %s
+  method: %s
+  handler: %v
+already exists and would conflict.`,
 			pattern,
 			method,
 			runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(),
