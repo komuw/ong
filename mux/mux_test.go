@@ -1,4 +1,4 @@
-package server
+package mux
 
 import (
 	"bytes"
@@ -14,6 +14,11 @@ import (
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 )
+
+func getSecretKey() string {
+	key := "hard-password"
+	return key
+}
 
 func someMuxHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

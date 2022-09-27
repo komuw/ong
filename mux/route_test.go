@@ -229,7 +229,7 @@ var tests = []struct {
 	},
 }
 
-func TestMux(t *testing.T) {
+func TestRouter(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range tests {
