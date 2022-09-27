@@ -277,21 +277,15 @@ func TestWay(t *testing.T) {
 				ctx = r.Context()
 			}))
 			req, err := http.NewRequest(tt.Method, tt.Path, nil)
-			if err != nil {
-				t.Errorf("NewRequest: %s", err)
-			}
+			attest.Ok(t, err)
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, req)
-			if match != tt.Match {
-				t.Errorf("expected match %v but was %v: %s %s", tt.Match, match, tt.Method, tt.Path)
-			}
+			attest.Equal(t, match, tt.Match, attest.Sprintf("expected match %v but was %v: %s %s", tt.Match, match, tt.Method, tt.Path))
 			if len(tt.Params) > 0 {
 				for expK, expV := range tt.Params {
 					// check using helper
 					actualValStr := Param(ctx, expK)
-					if actualValStr != expV {
-						t.Errorf("Param: context value %s expected \"%s\" but was \"%s\"", expK, expV, actualValStr)
-					}
+					attest.Equal(t, actualValStr, expV, attest.Sprintf("Param: context value %s expected \"%s\" but was \"%s\"", expK, expV, actualValStr))
 				}
 			}
 		})
@@ -314,31 +308,19 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 	}))
 
 	req, err := http.NewRequest(http.MethodGet, "/route", nil)
-	if err != nil {
-		t.Errorf("NewRequest: %s", err)
-	}
+	attest.Ok(t, err)
 	r.ServeHTTP(httptest.NewRecorder(), req)
-	if match != "GET /route" {
-		t.Errorf("unexpected: %s", match)
-	}
+	attest.Equal(t, match, "GET /route")
 
 	req, err = http.NewRequest(http.MethodDelete, "/route", nil)
-	if err != nil {
-		t.Errorf("NewRequest: %s", err)
-	}
+	attest.Ok(t, err)
 	r.ServeHTTP(httptest.NewRecorder(), req)
-	if match != "DELETE /route" {
-		t.Errorf("unexpected: %s", match)
-	}
+	attest.Equal(t, match, "DELETE /route")
 
 	req, err = http.NewRequest(http.MethodPost, "/route", nil)
-	if err != nil {
-		t.Errorf("NewRequest: %s", err)
-	}
+	attest.Ok(t, err)
 	r.ServeHTTP(httptest.NewRecorder(), req)
-	if match != "POST /route" {
-		t.Errorf("unexpected: %s", match)
-	}
+	attest.Equal(t, match, "POST /route")
 }
 
 func firstRoute(msg string) http.HandlerFunc {
