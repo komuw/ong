@@ -39,9 +39,9 @@ func main() {
 				middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
 			),
 			mux.NewRoute(
-				"check/",
+				"check/:age/",
 				mux.MethodAll,
-				api.check(200),
+				api.check("world"),
 			),
 			mux.NewRoute(
 				"login",
@@ -116,15 +116,15 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 }
 
 // you can take arguments for handler specific dependencies
-func (m myAPI) check(code int) http.HandlerFunc {
+func (m myAPI) check(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
 		m.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
-		_, _ = fmt.Fprint(w, "hello from check/ endpoint")
-		// use code, which is a dependency specific to this handler
-		w.WriteHeader(code)
+		age := mux.Param(r.Context(), "age")
+		// use msg, which is a dependency specific to this handler
+		_, _ = fmt.Fprint(w, fmt.Sprintf("hello %s. Age is %s", msg, age))
 	}
 }
 

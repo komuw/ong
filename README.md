@@ -30,20 +30,26 @@ import (
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/server"
 )
 
 func main() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	secretKey := "hard-password"
-	mux := server.NewMux(
+	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
-		server.Routes{
-			server.NewRoute(
+		mux.Routes{
+			mux.NewRoute(
 				"hello/",
-				server.MethodGet,
+				mux.MethodGet,
 				hello("hello world"),
+			),
+			mux.NewRoute(
+				"check/:age/",
+				mux.MethodAll,
+				check(),
 			),
 		})
 
@@ -63,6 +69,13 @@ func hello(msg string) http.HandlerFunc {
 
 		// use msg, which is a dependency specific to this handler
 		fmt.Fprint(w, msg)
+	}
+}
+
+func check() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		age := mux.Param(r.Context(), "age")
+		_, _ = fmt.Fprint(w, fmt.Sprintf("Age is %s", msg, age))
 	}
 }
 ```
