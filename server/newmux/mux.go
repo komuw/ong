@@ -161,6 +161,7 @@ func (r *Router) detectConflict(method, pattern string, handler http.Handler) {
 		}
 
 		panicMsg := fmt.Sprintf(`
+
 You are trying to add
   pattern: %s
   method: %s
