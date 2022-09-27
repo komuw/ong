@@ -8,7 +8,7 @@ import (
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
-	"github.com/komuw/ong/server/mux"
+	"github.com/komuw/ong/mux"
 )
 
 func LoginHandler() http.HandlerFunc {
