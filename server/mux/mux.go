@@ -1,3 +1,4 @@
+// TODO: docs.
 package mux
 
 import (
