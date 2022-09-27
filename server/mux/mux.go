@@ -136,11 +136,11 @@ func Param(ctx context.Context, param string) string {
 //	You are trying to add
 //	  pattern: /post/:id/
 //	  method: GET
-//	  handler: github.com/komuw/ong/server/newmux.secondRoute.func1 - /home/komuw/mystuff/ong/server/newmux/mux_test.go:351
+//	  handler: github.com/myAPp/server/main.loginHandler - /home/server/main.go:351
 //	However
 //	  pattern: post/create
 //	  method: GET
-//	  handler: github.com/komuw/ong/server/newmux.firstRoute.func1 - /home/komuw/mystuff/ong/server/newmux/mux_test.go:345
+//	  handler: github.com/myAPp/server/main.logoutHandler - /home/server/main.go:345
 //	already exists and would conflict.
 //
 // /
