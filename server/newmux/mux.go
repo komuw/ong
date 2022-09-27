@@ -131,6 +131,21 @@ func Param(ctx context.Context, param string) string {
 	return vStr
 }
 
+// detectConflict panics with a diagnostic message when you try to add a route that would conflict with an already existing one.
+//
+// The panic message looks like:
+//
+//	You are trying to add
+//	  pattern: /post/:id/
+//	  method: GET
+//	  handler: github.com/komuw/ong/server/newmux.secondRoute.func1 - /home/komuw/mystuff/ong/server/newmux/mux_test.go:351
+//	However
+//	  pattern: post/create
+//	  method: GET
+//	  handler: github.com/komuw/ong/server/newmux.firstRoute.func1 - /home/komuw/mystuff/ong/server/newmux/mux_test.go:345
+//	already exists and would conflict.
+//
+// /
 func (r *Router) detectConflict(method, pattern string, handler http.Handler) {
 	// Conflicting routes are a bad thing.
 	// They can be a source of bugs and confusion.
@@ -157,10 +172,10 @@ However
 already exists and would conflict.`,
 			pattern,
 			method,
-			runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(),
+			getfunc(handler),
 			strings.Join(route.segs, "/"),
 			strings.ToUpper(route.method),
-			runtime.FuncForPC(reflect.ValueOf(route.handler).Pointer()).Name(),
+			getfunc(route.handler),
 		)
 
 		for _, v := range incomingSegments {
@@ -174,4 +189,10 @@ already exists and would conflict.`,
 			}
 		}
 	}
+}
+
+func getfunc(handler interface{}) string {
+	fn := runtime.FuncForPC(reflect.ValueOf(handler).Pointer())
+	file, line := fn.FileLine(fn.Entry())
+	return fmt.Sprintf("%s - %s:%d", fn.Name(), file, line)
 }
