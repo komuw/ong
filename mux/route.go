@@ -160,18 +160,15 @@ already exists and would conflict.`,
 			getfunc(route.handler),
 		)
 
-		for _, v := range incomingSegments {
-			if strings.Contains(v, ":") {
-				panic(panicMsg)
-			}
-		}
-		for _, v := range existingSegments {
-			if strings.Contains(v, ":") {
-				panic(panicMsg)
-			}
+		if pattern == route.pattern {
+			panic(panicMsg)
 		}
 
-		if pattern == route.pattern {
+		if strings.Contains(pattern, ":") {
+			panic(panicMsg)
+		}
+
+		if strings.Contains(route.pattern, ":") {
 			panic(panicMsg)
 		}
 	}
