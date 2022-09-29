@@ -97,7 +97,7 @@ func New(key string) Enc {
 	}
 }
 
-// Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
+// Encrypt, encrypts and authenticates the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
 func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncrypt := []byte(plainTextMsg)
 
@@ -123,7 +123,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	return encrypted
 }
 
-// Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
+// Decrypt authenticates and un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
 func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if len(encryptedMsg) < e.aead.NonceSize() {
 		return nil, errors.New("ciphertext too short")
