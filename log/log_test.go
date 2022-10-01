@@ -157,6 +157,7 @@ func TestLogger(t *testing.T) {
 			l.Error(errors.New("bad"))
 
 			id := l.logId
+			attest.NotZero(t, id)
 			attest.Subsequence(t, w.String(), id)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "stack")
@@ -171,6 +172,7 @@ func TestLogger(t *testing.T) {
 			l.Error(errors.New(errMsg))
 
 			id := l.logId
+			attest.NotZero(t, id)
 			attest.Subsequence(t, w.String(), id)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "stack")
@@ -368,7 +370,7 @@ func TestLogger(t *testing.T) {
 			l := New(w, 2)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "ong/log/log_test.go:369")
+			attest.Subsequence(t, w.String(), "ong/log/log_test.go:371")
 		}
 
 		{
