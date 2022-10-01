@@ -156,7 +156,7 @@ func TestLogger(t *testing.T) {
 			l.Info(F{"what": infoMsg})
 			l.Error(errors.New("bad"))
 
-			id := GetId(l.ctx)
+			id := l.logId
 			attest.Subsequence(t, w.String(), id)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "stack")
@@ -170,7 +170,7 @@ func TestLogger(t *testing.T) {
 			errMsg := "kimeumana"
 			l.Error(errors.New(errMsg))
 
-			id := GetId(l.ctx)
+			id := l.logId
 			attest.Subsequence(t, w.String(), id)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "stack")
