@@ -71,12 +71,10 @@ func New(
 
 // WithCtx return a new logger, based on l, with the given ctx.
 func (l Logger) WithCtx(ctx context.Context) Logger {
-	logID := GetId(ctx)
-
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		logId:      logID,
+		logId:      GetId(ctx),
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  l.immediate,
