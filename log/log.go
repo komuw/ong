@@ -63,6 +63,7 @@ func New(
 	return Logger{
 		w:          w,
 		cBuf:       newCirleBuf(maxMsgs),
+		logId:      id.New(),
 		addCallers: false,
 		flds:       nil,
 		immediate:  false,
