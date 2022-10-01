@@ -314,17 +314,19 @@ func TestGetLogId(t *testing.T) {
 		}
 
 		{
-			// cookies take precedence.
-			expected := "cookie-expected-three"
+			// header take precedence.
 			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 			req.AddCookie(&http.Cookie{
 				Name:  logIDKey,
-				Value: expected,
+				Value: "cookie-expected-three",
 			})
+
+			expected := "header-logID"
+			req.Header.Add(logIDKey, expected)
+
 			req = req.WithContext(
 				context.WithValue(context.Background(), log.CtxKey, "context-logID"),
 			)
-			req.Header.Add(logIDKey, "header-logID")
 
 			id := getLogId(req)
 			attest.Equal(t, id, expected)

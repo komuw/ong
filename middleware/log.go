@@ -199,15 +199,15 @@ func getLogId(req *http.Request) string {
 	}
 
 	// get logid in order of preference;
-	// - cookie
 	// - http headers
+	// - cookie
 	// - context.Context
 
-	if logID := fromCookie(req); logID != "" {
+	if logID := fromHeader(req); logID != "" {
 		return logID
 	}
 
-	if logID := fromHeader(req); logID != "" {
+	if logID := fromCookie(req); logID != "" {
 		return logID
 	}
 
