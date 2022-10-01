@@ -54,13 +54,9 @@ type Logger struct {
 
 // New creates a new logger.
 func New(
-	// TODO: remove this argument.
-	ctx context.Context,
 	w io.Writer,
 	maxMsgs int,
 ) Logger {
-	logID := GetId(ctx)
-	ctx = context.WithValue(ctx, CtxKey, logID)
 	if maxMsgs < 1 {
 		maxMsgs = 10
 	}

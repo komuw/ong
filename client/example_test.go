@@ -9,11 +9,10 @@ import (
 )
 
 func ExampleClient_Get() {
-	ctx := context.Background()
-	l := log.New(ctx, os.Stdout, 7)
+	l := log.New(os.Stdout, 7)
 
 	cli := client.Safe(l)
-	_, _ = cli.Get(ctx, "https://ajmsmsYnns-bad-domain.com")
+	_, _ = cli.Get(context.Background(), "https://ajmsmsYnns-bad-domain.com")
 
 	// This will log:
 	// {"level":"info","logID":"D2MH3e3BqZmRgm3WK8yK7Q","method":"GET","msg":"http_client","pid":2102616,"process":"request","timestamp":"2022-09-16T09:39:55.423743309Z","url":"https://ajmsmsYnns-bad-domain.com"}

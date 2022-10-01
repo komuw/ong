@@ -1,7 +1,6 @@
 package log_test
 
 import (
-	"context"
 	"errors"
 	"os"
 
@@ -9,7 +8,7 @@ import (
 )
 
 func ExampleLogger_Error() {
-	l := log.New(context.Background(), os.Stdout, 1000)
+	l := log.New(os.Stdout, 1000)
 
 	l.Info(log.F{"msg": "sending email", "email": "jane@example.com"})
 	l.Error(errors.New("sending email failed."), log.F{"email": "jane@example.com"})

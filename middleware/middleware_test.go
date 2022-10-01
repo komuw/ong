@@ -4,7 +4,6 @@ package middleware
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -44,7 +43,7 @@ func TestAllMiddleware(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)
 
 	msg := "hello world"
 	errMsg := "not allowed. only allows http"
@@ -231,7 +230,7 @@ func TestMiddlewareServer(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)
 
 	t.Run("integration with server succeds", func(t *testing.T) {
 		t.Parallel()
@@ -361,7 +360,7 @@ var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
-	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)
 	o := WithOpts("localhost", 443, getSecretKey(), l)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 	ts := httptest.NewTLSServer(

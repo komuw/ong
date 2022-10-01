@@ -1,7 +1,6 @@
 package server_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,7 +12,7 @@ import (
 )
 
 func ExampleRun() {
-	l := log.New(context.Background(), os.Stdout, 1000)
+	l := log.New(os.Stdout, 1000)
 	secretKey := "hard-password"
 	mux := mux.New(
 		l,

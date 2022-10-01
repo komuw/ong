@@ -2,7 +2,6 @@ package mux
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -34,7 +33,7 @@ func TestMux(t *testing.T) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)
 
 	t.Run("unknown uri", func(t *testing.T) {
 		t.Parallel()
