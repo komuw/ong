@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -162,7 +161,7 @@ func TestServer(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)
 
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()

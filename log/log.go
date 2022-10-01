@@ -44,7 +44,7 @@ const CtxKey = logContextKeyType("Ong-logID")
 type Logger struct {
 	w          io.Writer
 	cBuf       *circleBuf
-	ctx        context.Context
+	logId      string // this is the id that was got from ctx and should be added in all logs.
 	addCallers bool
 	flds       F
 	immediate  bool // log without buffering. important especially when using logger as an output for the stdlib logger.
@@ -54,19 +54,16 @@ type Logger struct {
 
 // New creates a new logger.
 func New(
-	ctx context.Context,
 	w io.Writer,
 	maxMsgs int,
 ) Logger {
-	logID := GetId(ctx)
-	ctx = context.WithValue(ctx, CtxKey, logID)
 	if maxMsgs < 1 {
 		maxMsgs = 10
 	}
 	return Logger{
 		w:          w,
 		cBuf:       newCirleBuf(maxMsgs),
-		ctx:        ctx,
+		logId:      id.New(),
 		addCallers: false,
 		flds:       nil,
 		immediate:  false,
@@ -75,13 +72,10 @@ func New(
 
 // WithCtx return a new logger, based on l, with the given ctx.
 func (l Logger) WithCtx(ctx context.Context) Logger {
-	logID := GetId(ctx)
-	ctx = context.WithValue(ctx, CtxKey, logID)
-
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        ctx,
+		logId:      GetId(ctx),
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -97,7 +91,7 @@ func (l Logger) withcaller(add bool) Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        l.ctx,
+		logId:      l.logId,
 		addCallers: add,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -109,7 +103,7 @@ func (l Logger) WithFields(f F) Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        l.ctx,
+		logId:      l.logId,
 		addCallers: l.addCallers,
 		flds:       f,
 		immediate:  l.immediate,
@@ -121,7 +115,7 @@ func (l Logger) WithImmediate() Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        l.ctx,
+		logId:      l.logId,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  true,
@@ -190,7 +184,7 @@ func (l Logger) StdLogger() *stdLog.Logger {
 func (l Logger) log(lvl level, f F) {
 	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
-	f["logID"] = GetId(l.ctx)
+	f["logID"] = l.logId
 	if l.addCallers {
 		// the caller is the line where `.Info` or `.Error` is called.
 		if _, file, line, ok := runtime.Caller(2); ok {

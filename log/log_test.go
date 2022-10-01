@@ -110,7 +110,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 		l.Info(F{"one": "one"})
 
 		attest.Zero(t, w.String())
@@ -121,7 +121,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
 		l.Error(errors.New(msg))
 
@@ -133,7 +133,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 
 		infoMsg := "hello world"
 		l.Info(F{"what": infoMsg})
@@ -149,14 +149,15 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 
 		{
 			infoMsg := "hello world"
 			l.Info(F{"what": infoMsg})
 			l.Error(errors.New("bad"))
 
-			id := GetId(l.ctx)
+			id := l.logId
+			attest.NotZero(t, id)
 			attest.Subsequence(t, w.String(), id)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "stack")
@@ -170,7 +171,8 @@ func TestLogger(t *testing.T) {
 			errMsg := "kimeumana"
 			l.Error(errors.New(errMsg))
 
-			id := GetId(l.ctx)
+			id := l.logId
+			attest.NotZero(t, id)
 			attest.Subsequence(t, w.String(), id)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "stack")
@@ -184,7 +186,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 
 		for i := 0; i <= (maxMsgs + 4); i++ {
 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -206,7 +208,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 		msg := "some-error"
 		err := errors.New(msg)
 
@@ -228,7 +230,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 		{
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -258,7 +260,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 		{
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -288,7 +290,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 		flds := F{"version": "v0.1.2", "env": "prod", "service": "web-commerce"}
 		l = l.WithFields(flds)
 
@@ -330,7 +332,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		msg := "hello world"
-		l := New(context.Background(), w, 2).WithImmediate()
+		l := New(w, 2).WithImmediate()
 		l.Info(F{"msg": msg})
 
 		attest.Subsequence(t, w.String(), msg)
@@ -341,7 +343,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		msg := "hello world"
-		l := New(context.Background(), w, 2)
+		l := New(w, 2)
 		stdLogger := stdLog.New(l, "stdlib", stdLog.Lshortfile)
 		stdLogger.Println(msg)
 
@@ -353,7 +355,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		msg := "hey what up?"
-		l := New(context.Background(), w, 2)
+		l := New(w, 2)
 		stdLogger := l.StdLogger()
 		stdLogger.Println(msg)
 		attest.Subsequence(t, w.String(), msg)
@@ -365,10 +367,10 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(context.Background(), w, 2)
+			l := New(w, 2)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "ong/log/log_test.go:369")
+			attest.Subsequence(t, w.String(), "ong/log/log_test.go:371")
 		}
 
 		{
@@ -376,7 +378,7 @@ func TestLogger(t *testing.T) {
 			// point to `ong/log/log.go` as the caller.
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(context.Background(), w, 2)
+			l := New(w, 2)
 			l.WithCaller().StdLogger().Println(msg)
 			attest.Subsequence(t, w.String(), msg)
 			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
@@ -385,7 +387,7 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(context.Background(), w, 2).WithCaller()
+			l := New(w, 2).WithCaller()
 			stdLogger := stdLog.New(l, "stdlib", 0)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
@@ -398,7 +400,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(context.Background(), w, maxMsgs)
+		l := New(w, maxMsgs)
 
 		tokens := []string{
 			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
@@ -511,7 +513,6 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 func newOngLogger() Logger {
 	maxMsgs := 50_000
 	return New(
-		context.Background(),
 		io.Discard,
 		maxMsgs,
 	)

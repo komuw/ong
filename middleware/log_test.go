@@ -40,7 +40,7 @@ func TestLogMiddleware(t *testing.T) {
 	t.Parallel()
 
 	getLogger := func(w io.Writer) log.Logger {
-		return log.New(context.Background(), w, 500)
+		return log.New(w, 500)
 	}
 
 	t.Run("success", func(t *testing.T) {
@@ -314,17 +314,19 @@ func TestGetLogId(t *testing.T) {
 		}
 
 		{
-			// cookies take precedence.
-			expected := "cookie-expected-three"
+			// header take precedence.
 			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 			req.AddCookie(&http.Cookie{
 				Name:  logIDKey,
-				Value: expected,
+				Value: "cookie-expected-three",
 			})
+
+			expected := "header-logID"
+			req.Header.Add(logIDKey, expected)
+
 			req = req.WithContext(
 				context.WithValue(context.Background(), log.CtxKey, "context-logID"),
 			)
-			req.Header.Add(logIDKey, "header-logID")
 
 			id := getLogId(req)
 			attest.Equal(t, id, expected)

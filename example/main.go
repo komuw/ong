@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"html/template"
 	"io"
@@ -22,7 +21,7 @@ import (
 
 func main() {
 	api := NewMyApi("someDb")
-	l := log.New(context.Background(), os.Stdout, 1000)
+	l := log.New(os.Stdout, 1000)
 	secretKey := "hard-password"
 	mux := mux.New(
 		l,
@@ -66,7 +65,7 @@ type myAPI struct {
 func NewMyApi(db string) myAPI {
 	return myAPI{
 		db: db,
-		l:  log.New(context.Background(), os.Stdout, 1000),
+		l:  log.New(os.Stdout, 1000),
 	}
 }
 
