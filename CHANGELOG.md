@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.11
+- Add secure/encrypted cookies: https://github.com/komuw/ong/pull/143
+
 ## v0.0.10
 - Remove ctx from log.Logger struct: https://github.com/komuw/ong/pull/142
 
