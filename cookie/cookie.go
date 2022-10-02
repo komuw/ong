@@ -80,8 +80,8 @@ func Set(
 }
 
 var (
-	enc  cry.Enc
-	once sync.Once
+	enc  cry.Enc   //nolint:gochecknoglobals
+	once sync.Once //nolint:gochecknoglobals
 )
 
 // SetEncrypted creates a cookie on the HTTP response.
