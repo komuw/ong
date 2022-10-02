@@ -111,27 +111,41 @@ func SetEncrypted(
 	)
 }
 
-// GetEncrypted authenticates, un-encrypts and returns the named cookie.
+// GetEncrypted authenticates, un-encrypts and returns a copy of the named cookie.
 func GetEncrypted(
 	r *http.Request,
 	name string,
 	key string,
-) (string, error) {
+) (*http.Cookie, error) {
 	once.Do(func() {
 		enc = cry.New(key)
 	})
 
 	c, err := r.Cookie(name)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	val, err := enc.DecryptDecode(c.Value)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return val, nil
+	c2 := &http.Cookie{
+		Name:     c.Name,
+		Value:    val,
+		Path:     c.Path,
+		Domain:   c.Domain,
+		Expires:  c.Expires,
+		MaxAge:   c.MaxAge,
+		Secure:   c.Secure,
+		HttpOnly: c.HttpOnly,
+		SameSite: c.SameSite,
+		Raw:      c.Raw,
+		// do not add c.Unparsed since it is a slice of strings and caller of GetEncrypted may manipulate it.
+	}
+
+	return c2, nil
 }
 
 // Delete removes the named cookie.

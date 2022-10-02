@@ -58,7 +58,8 @@ func TestSet(t *testing.T) {
 		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 		val, err := GetEncrypted(req, cookie.Name, key)
 		attest.Ok(t, err)
-		attest.Equal(t, val, value)
+		attest.Equal(t, val.Value, value)
+		attest.Equal(t, val.Name, cookie.Name)
 	})
 
 	t.Run("set succeds", func(t *testing.T) {
