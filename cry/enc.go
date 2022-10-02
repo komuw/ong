@@ -97,7 +97,7 @@ func New(key string) Enc {
 	}
 }
 
-// Encrypt, encrypts and authenticates the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
+// Encrypt, encrypts and authenticates(tamper-proofs) the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
 func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncrypt := []byte(plainTextMsg)
 

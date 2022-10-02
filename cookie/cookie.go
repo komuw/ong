@@ -3,7 +3,10 @@ package cookie
 
 import (
 	"net/http"
+	"sync"
 	"time"
+
+	"github.com/komuw/ong/cry"
 )
 
 const (
@@ -73,7 +76,81 @@ func Set(
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#session_cookie
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_the_lifetime_of_a_cookie
 
+	if len(c.String()) > 4096 {
+		// Most brosers cap the size of cookies that can be set at 4KB
+		return
+	}
+
 	http.SetCookie(w, c)
+}
+
+var (
+	enc  cry.Enc   //nolint:gochecknoglobals
+	once sync.Once //nolint:gochecknoglobals
+)
+
+// SetEncrypted creates a cookie on the HTTP response.
+// The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
+//
+// Also see [Set]
+func SetEncrypted(
+	w http.ResponseWriter,
+	name string,
+	value string,
+	domain string,
+	mAge time.Duration,
+	key string,
+) {
+	once.Do(func() {
+		enc = cry.New(key)
+	})
+
+	encryptedEncodedVal := enc.EncryptEncode(value)
+	Set(
+		w,
+		name,
+		encryptedEncodedVal,
+		domain,
+		mAge,
+		false,
+	)
+}
+
+// GetEncrypted authenticates, un-encrypts and returns a copy of the named cookie.
+func GetEncrypted(
+	r *http.Request,
+	name string,
+	key string,
+) (*http.Cookie, error) {
+	once.Do(func() {
+		enc = cry.New(key)
+	})
+
+	c, err := r.Cookie(name)
+	if err != nil {
+		return nil, err
+	}
+
+	val, err := enc.DecryptDecode(c.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	c2 := &http.Cookie{
+		Name:     c.Name,
+		Value:    val,
+		Path:     c.Path,
+		Domain:   c.Domain,
+		Expires:  c.Expires,
+		MaxAge:   c.MaxAge,
+		Secure:   c.Secure,
+		HttpOnly: c.HttpOnly,
+		SameSite: c.SameSite,
+		Raw:      c.Raw,
+		// do not add c.Unparsed since it is a slice of strings and caller of GetEncrypted may manipulate it.
+	}
+
+	return c2, nil
 }
 
 // Delete removes the named cookie.
