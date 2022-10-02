@@ -3,7 +3,10 @@ package cookie
 
 import (
 	"net/http"
+	"sync"
 	"time"
+
+	"github.com/komuw/ong/cry"
 )
 
 const (
@@ -74,6 +77,82 @@ func Set(
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_the_lifetime_of_a_cookie
 
 	http.SetCookie(w, c)
+}
+
+var (
+	enc  cry.Enc
+	once sync.Once
+)
+
+// SetEncrypted creates a cookie on the HTTP response.
+// The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
+//
+// Also see [Set]
+func SetEncrypted(
+	w http.ResponseWriter,
+	name string,
+	value string,
+	domain string,
+	mAge time.Duration,
+	key string,
+) {
+	once.Do(func() {
+		enc = cry.New(key)
+	})
+
+	encryptedEncodedVal := enc.EncryptEncode(value)
+	Set(
+		w,
+		name,
+		encryptedEncodedVal,
+		domain,
+		mAge,
+		false,
+	)
+}
+
+type reqRes interface {
+	*http.Request | *http.Response
+}
+
+// GetEncrypted authenticates, un-encrypts and returns the named cookie.
+func GetEncrypted[reqORres reqRes](
+	rw reqORres,
+	name string,
+	key string,
+) (string, error) {
+	once.Do(func() {
+		enc = cry.New(key)
+	})
+
+	var c *http.Cookie
+
+outer:
+	switch concrete := any(rw).(type) {
+	case *http.Request:
+		c1, err := concrete.Cookie(name)
+		if err != nil {
+			return "", err
+		}
+		c = c1
+	case *http.Response:
+		for _, v := range concrete.Cookies() {
+			if v.Name == name {
+				c = v
+				break outer
+			}
+		}
+		return "", http.ErrNoCookie
+	default:
+		return "", http.ErrNoCookie
+	}
+
+	val, err := enc.DecryptDecode(c.Value)
+	if err != nil {
+		return "", err
+	}
+
+	return val, nil
 }
 
 // Delete removes the named cookie.
