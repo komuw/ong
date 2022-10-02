@@ -111,13 +111,9 @@ func SetEncrypted(
 	)
 }
 
-type reqRes interface {
-	*http.Request | *http.Response
-}
-
 // GetEncrypted authenticates, un-encrypts and returns the named cookie.
-func GetEncrypted[reqORres reqRes](
-	rw reqORres,
+func GetEncrypted(
+	r *http.Request,
 	name string,
 	key string,
 ) (string, error) {
@@ -125,26 +121,9 @@ func GetEncrypted[reqORres reqRes](
 		enc = cry.New(key)
 	})
 
-	var c *http.Cookie
-
-outer:
-	switch concrete := any(rw).(type) {
-	case *http.Request:
-		c1, err := concrete.Cookie(name)
-		if err != nil {
-			return "", err
-		}
-		c = c1
-	case *http.Response:
-		for _, v := range concrete.Cookies() {
-			if v.Name == name {
-				c = v
-				break outer
-			}
-		}
-		return "", http.ErrNoCookie
-	default:
-		return "", http.ErrNoCookie
+	c, err := r.Cookie(name)
+	if err != nil {
+		return "", err
 	}
 
 	val, err := enc.DecryptDecode(c.Value)

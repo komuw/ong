@@ -55,7 +55,8 @@ func TestSet(t *testing.T) {
 		attest.True(t, cookie.Expires.Sub(now) > 1)
 		attest.Equal(t, cookie.HttpOnly, true)
 
-		val, err := GetEncrypted(res, cookie.Name, key)
+		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
+		val, err := GetEncrypted(req, cookie.Name, key)
 		attest.Ok(t, err)
 		attest.Equal(t, val, value)
 	})
