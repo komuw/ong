@@ -119,7 +119,8 @@ func SetEncrypted(
 		return
 	}
 
-	encryptedEncodedVal := enc.EncryptEncode(value) + sep + enc.EncryptEncode(ip) // TODO: maybe add `mAge` in future?
+	// todo: maybe add `mAge` in future?
+	encryptedEncodedVal := enc.EncryptEncode(value) + sep + enc.EncryptEncode(ip)
 	Set(
 		w,
 		name,
