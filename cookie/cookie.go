@@ -92,7 +92,14 @@ var (
 // SetEncrypted creates a cookie on the HTTP response.
 // The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
 //
+// Note: While encrypted cookies can guarantee that the data has not been tampered with,
+// that it is all there and correct, and that the clients cannot read its raw value.
+// They cannot guarantee freshness i.e. that you are being sent back the last thing you sent to the client.
+// This means that (similar to plain-text cookies), it is still susceptible to [replay attacks]
+//
 // Also see [Set]
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
 func SetEncrypted(
 	w http.ResponseWriter,
 	name string,
