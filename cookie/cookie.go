@@ -120,7 +120,13 @@ func SetEncrypted(
 	}
 
 	// todo: maybe add `mAge` in future?
-	encryptedEncodedVal := enc.EncryptEncode(value) + sep + enc.EncryptEncode(ip)
+	encryptedEncodedVal := fmt.Sprintf(
+		"%s%s%s",
+		enc.EncryptEncode(value),
+		sep,
+		enc.EncryptEncode(ip),
+	)
+
 	Set(
 		w,
 		name,
