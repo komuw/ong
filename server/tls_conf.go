@@ -63,7 +63,7 @@ func getTlsConfig(o opts) (*tls.Config, error) {
 		// 2. get from disk.
 		//
 		if len(o.tls.keyFile) < 1 {
-			return nil, ongErrors.New("keyFile cannot be empty if certFile is also specified")
+			return nil, ongErrors.New("ong/server: keyFile cannot be empty if certFile is also specified")
 		}
 		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
 		if err != nil {
@@ -88,21 +88,21 @@ func getTlsConfig(o opts) (*tls.Config, error) {
 	}
 
 	// 3. non-tls traffic.
-	return nil, ongErrors.New("ong only serves https")
+	return nil, ongErrors.New("ong/server: ong only serves https")
 }
 
 func validateDomain(domain string) error {
 	if len(domain) < 1 {
-		return ongErrors.New("domain cannot be empty")
+		return ongErrors.New("ong/server: domain cannot be empty")
 	}
 	if strings.Count(domain, "*") > 1 {
-		return ongErrors.New("domain can only contain one wildcard character")
+		return ongErrors.New("ong/server: domain can only contain one wildcard character")
 	}
 	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
-		return ongErrors.New("wildcard character should be a prefix")
+		return ongErrors.New("ong/server: wildcard character should be a prefix")
 	}
 	if strings.Contains(domain, "*") && domain[1] != '.' {
-		return ongErrors.New("wildcard character should be followed by a `.` character")
+		return ongErrors.New("ong/server: wildcard character should be followed by a `.` character")
 	}
 
 	if !strings.Contains(domain, "*") {

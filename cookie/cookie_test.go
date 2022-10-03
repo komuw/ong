@@ -19,7 +19,7 @@ func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) h
 
 func setEncryptedHandler(name, value, domain string, mAge time.Duration, key string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SetEncrypted(w, name, value, domain, mAge, key)
+		SetEncrypted(r, w, name, value, domain, mAge, key)
 		fmt.Fprint(w, "hello")
 	}
 }
@@ -57,6 +57,7 @@ func TestSet(t *testing.T) {
 
 		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 		val, err := GetEncrypted(req, cookie.Name, key)
+
 		attest.Ok(t, err)
 		attest.Equal(t, val.Value, value)
 		attest.Equal(t, val.Name, cookie.Name)

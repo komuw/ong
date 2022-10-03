@@ -2,7 +2,11 @@
 package cookie
 
 import (
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -79,6 +83,8 @@ func Set(
 	http.SetCookie(w, c)
 }
 
+const sep = ":" // the value of this should not be changed without thinking about it.
+
 var (
 	enc  cry.Enc   //nolint:gochecknoglobals
 	once sync.Once //nolint:gochecknoglobals
@@ -96,6 +102,7 @@ var (
 //
 // [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
 func SetEncrypted(
+	r *http.Request,
 	w http.ResponseWriter,
 	name string,
 	value string,
@@ -107,7 +114,12 @@ func SetEncrypted(
 		enc = cry.New(key)
 	})
 
-	encryptedEncodedVal := enc.EncryptEncode(value)
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return
+	}
+
+	encryptedEncodedVal := enc.EncryptEncode(value) + sep + enc.EncryptEncode(ip) // TODO: maybe add `mAge` in future?
 	Set(
 		w,
 		name,
@@ -133,11 +145,40 @@ func GetEncrypted(
 		return nil, err
 	}
 
-	val, err := enc.DecryptDecode(c.Value)
+	fmt.Println("\n\t c.Value: ", c.Value)
+	subs := strings.Split(c.Value, sep)
+	if len(subs) != 2 {
+		return nil, errors.New("ong/cookie: invalid cookie")
+	}
+
+	value, ip := subs[0], subs[1]
+
+	ip, err = enc.DecryptDecode(ip)
 	if err != nil {
 		return nil, err
 	}
 
+	{
+		// Try and prevent replay attacks.
+		// This does not completely stop them, but it is better than nothing.
+		incomingIP, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println("\n\t ip, incomingIP: ", ip, incomingIP)
+		if ip != incomingIP {
+			return nil, errors.New("ong/cookie: mismatched IP addresses")
+		}
+	}
+
+	fmt.Println("\n\t value, ip: ", value, ip)
+	val, err := enc.DecryptDecode(value)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("\n\t val: ", val)
 	c2 := &http.Cookie{
 		Name:     c.Name,
 		Value:    val,
