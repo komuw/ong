@@ -76,11 +76,6 @@ func Set(
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#session_cookie
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_the_lifetime_of_a_cookie
 
-	if len(c.String()) > 4096 {
-		// Most brosers cap the size of cookies that can be set at 4KB
-		return
-	}
-
 	http.SetCookie(w, c)
 }
 
