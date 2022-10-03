@@ -152,7 +152,6 @@ func GetEncrypted(
 		return nil, err
 	}
 
-	fmt.Println("\n\t c.Value: ", c.Value)
 	subs := strings.Split(c.Value, sep)
 	if len(subs) != 2 {
 		return nil, errors.New("ong/cookie: invalid cookie")
@@ -168,24 +167,21 @@ func GetEncrypted(
 	{
 		// Try and prevent replay attacks.
 		// This does not completely stop them, but it is better than nothing.
-		incomingIP, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			return nil, err
+		incomingIP, _, errS := net.SplitHostPort(r.RemoteAddr)
+		if errS != nil {
+			return nil, errS
 		}
 
-		fmt.Println("\n\t ip, incomingIP: ", ip, incomingIP)
 		if ip != incomingIP {
 			return nil, errors.New("ong/cookie: mismatched IP addresses")
 		}
 	}
 
-	fmt.Println("\n\t value, ip: ", value, ip)
 	val, err := enc.DecryptDecode(value)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("\n\t val: ", val)
 	c2 := &http.Cookie{
 		Name:     c.Name,
 		Value:    val,
