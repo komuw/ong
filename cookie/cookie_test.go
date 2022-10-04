@@ -145,6 +145,38 @@ func TestCookies(t *testing.T) {
 		attest.Equal(t, val.Value, value)
 		attest.Equal(t, val.Name, cookie.Name)
 	})
+
+	t.Run("encrypted expired", func(t *testing.T) {
+		t.Parallel()
+
+		name := "logId"
+		value := "hello world are you okay"
+		domain := "localhost"
+		mAge := -23 * time.Hour
+		key := "my secret key"
+		handler := setEncryptedHandler(name, value, domain, mAge, key)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, len(res.Cookies()), 1)
+		attest.Equal(t, res.Cookies()[0].Name, name)
+
+		cookie := res.Cookies()[0]
+
+		attest.Equal(t, cookie.HttpOnly, true)
+
+		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
+		val, err := GetEncrypted(req, cookie.Name, key)
+
+		attest.Zero(t, val)
+		attest.Error(t, err)
+	})
 }
 
 func deleteHandler(name, value, domain string, mAge time.Duration) http.HandlerFunc {
