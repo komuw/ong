@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/komuw/ong/automax"
-	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
 
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -268,7 +267,6 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			redirectSrvCfg := listenerConfig()
 			redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
 			if errL != nil {
-				errL = ongErrors.Wrap(errL)
 				logger.Error(errL, log.F{"msg": "redirect server, unable to create listener"})
 				return
 			}
@@ -278,7 +276,6 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			})
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
-				errRedirectSrv = ongErrors.Wrap(errRedirectSrv)
 				logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
 			}
 		}()
@@ -289,7 +286,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 		if err != nil {
-			return ongErrors.Wrap(err)
+			return err
 		}
 		logger.Info(log.F{
 			"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
@@ -300,7 +297,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			"",
 			"",
 		); errS != nil {
-			return ongErrors.Wrap(errS)
+			return errS
 		}
 	}
 
