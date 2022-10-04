@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.12
+- Prefix errors produced by ong with a constant string: https://github.com/komuw/ong/pull/147
+
 ## v0.0.11
 - Add secure/encrypted cookies: https://github.com/komuw/ong/pull/143
 

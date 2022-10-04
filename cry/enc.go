@@ -65,7 +65,7 @@ func New(key string) Enc {
 	//
 
 	if len(key) < 4 {
-		panic(errors.New("short key"))
+		panic(errors.New("ong/cry: short key"))
 	}
 
 	// derive a key.
@@ -126,7 +126,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 // Decrypt authenticates and un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
 func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if len(encryptedMsg) < e.aead.NonceSize() {
-		return nil, errors.New("ciphertext too short")
+		return nil, errors.New("ong/cry: ciphertext too short")
 	}
 
 	// get salt

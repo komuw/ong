@@ -56,7 +56,7 @@ func Eql(password, hash string) error {
 	params := strings.Split(hash, "$")
 
 	if len(params) != 3 {
-		return errors.New("unable to parse")
+		return errors.New("ong/cry: unable to parse")
 	}
 
 	pVer, err := strconv.Atoi(params[0])
@@ -64,7 +64,7 @@ func Eql(password, hash string) error {
 		return err
 	}
 	if pVer != version {
-		return errors.New("version mismatch")
+		return errors.New("ong/cry: version mismatch")
 	}
 
 	pSalt, err := hex.DecodeString(params[1])
@@ -86,5 +86,5 @@ func Eql(password, hash string) error {
 		return nil
 	}
 
-	return errors.New("password mismatch")
+	return errors.New("ong/cry: password mismatch")
 }

@@ -19,7 +19,7 @@ import (
 
 // errCsrfTokenNotFound is returned when a request using a non-safe http method
 // either does not supply a csrf token, or the supplied token is not recognized by the server.
-var errCsrfTokenNotFound = errors.New("csrf token not found")
+var errCsrfTokenNotFound = errors.New("ong/middleware: csrf token not found")
 
 type csrfContextKey string
 
