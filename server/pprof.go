@@ -8,7 +8,6 @@ import (
 	"net/http/pprof"
 	"time"
 
-	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
 )
 
@@ -50,7 +49,6 @@ func startPprofServer(logger log.Logger) {
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
 		if err != nil {
-			err = ongErrors.Wrap(err)
 			logger.Error(err, log.F{"msg": "pprof server, unable to create listener"})
 			return
 		}
@@ -60,7 +58,6 @@ func startPprofServer(logger log.Logger) {
 		})
 		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
-			errPprofSrv = ongErrors.Wrap(errPprofSrv)
 			logger.Error(errPprofSrv, log.F{"msg": "unable to start pprof server"})
 		}
 	}()
