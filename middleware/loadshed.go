@@ -74,7 +74,7 @@ func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		p99 := lq.getP99(minSampleSize)
 		if p99 > breachLatency && !sendProbe {
 			// drop request
-			err := fmt.Errorf("server is overloaded, retry after %s", retryAfter)
+			err := fmt.Errorf("ong/middleware: server is overloaded, retry after %s", retryAfter)
 			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. breachLatency: %s", err.Error(), p99, breachLatency))
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(

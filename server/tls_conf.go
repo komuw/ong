@@ -166,7 +166,7 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 			}
 		}
 
-		return errors.New(fmt.Sprintf("ong/acme: host %q not configured in HostWhitelist", host))
+		return fmt.Errorf("ong/server: host %q not configured in HostWhitelist", host)
 	}
 }
 
