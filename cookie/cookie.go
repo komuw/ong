@@ -185,9 +185,9 @@ func GetEncrypted(
 			return nil, errors.New("ong/cookie: mismatched IP addresses")
 		}
 
-		expires, err := strconv.ParseInt(expiresStr, 10, 64)
-		if err != nil {
-			return nil, err
+		expires, errP := strconv.ParseInt(expiresStr, 10, 64)
+		if errP != nil {
+			return nil, errP
 		}
 
 		// You cannot trust anything about the incoing cookie except its value.
