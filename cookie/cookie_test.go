@@ -24,7 +24,7 @@ func setEncryptedHandler(name, value, domain string, mAge time.Duration, key str
 	}
 }
 
-func TestSet(t *testing.T) {
+func TestCookies(t *testing.T) {
 	t.Parallel()
 
 	t.Run("set succeds", func(t *testing.T) {
