@@ -4,6 +4,7 @@ Most recent version is listed first.
 
 
 ## v0.0.12
+- Prefix errors produced by ong with a constant string: https://github.com/komuw/ong/pull/147
 - Try and mitigate cookie replay attacks: https://github.com/komuw/ong/pull/146
 
 ## v0.0.11

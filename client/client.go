@@ -191,7 +191,7 @@ func (c *Client) log(ctx context.Context, url, method string) func(resp *http.Re
 	}
 }
 
-const errPrefix = "ong"
+const errPrefix = "ong/client:"
 
 func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall.RawConn) error {
 	if !ssrfSafe {
@@ -200,7 +200,7 @@ func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall
 
 	return func(network, address string, conn syscall.RawConn) error {
 		if !(network == "tcp4" || network == "tcp6") {
-			return fmt.Errorf("%s: %s is not a safe network type", errPrefix, network)
+			return fmt.Errorf("%s %s is not a safe network type", errPrefix, network)
 		}
 
 		if err := isSafeAddress(address); err != nil {
@@ -223,13 +223,13 @@ func isSafeAddress(address string) error {
 	}
 
 	if addr.IsLoopback() {
-		return fmt.Errorf("%s: address %s IsLoopback", errPrefix, addr)
+		return fmt.Errorf("%s address %s IsLoopback", errPrefix, addr)
 	}
 	if addr.IsLinkLocalUnicast() {
-		return fmt.Errorf("%s: address %s IsLinkLocalUnicast", errPrefix, addr)
+		return fmt.Errorf("%s address %s IsLinkLocalUnicast", errPrefix, addr)
 	}
 	if addr.IsPrivate() {
-		return fmt.Errorf("%s: address %s IsPrivate", errPrefix, addr)
+		return fmt.Errorf("%s address %s IsPrivate", errPrefix, addr)
 	}
 
 	return nil

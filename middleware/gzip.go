@@ -214,7 +214,7 @@ func (grw *gzipRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if hj, ok := grw.ResponseWriter.(http.Hijacker); ok {
 		return hj.Hijack()
 	}
-	return nil, nil, fmt.Errorf("http.Hijacker interface is not supported")
+	return nil, nil, fmt.Errorf("ong/middleware: http.Hijacker interface is not supported")
 }
 
 // ReadFrom implements io.ReaderFrom
@@ -232,7 +232,7 @@ func (grw *gzipRW) Push(target string, opts *http.PushOptions) error {
 	if p, ok := grw.ResponseWriter.(http.Pusher); ok {
 		return p.Push(target, opts)
 	}
-	return fmt.Errorf("http.Pusher interface is not supported")
+	return fmt.Errorf("ong/middleware: http.Pusher interface is not supported")
 }
 
 // shouldGzipReq checks whether the request is eligible to be gzipped.
