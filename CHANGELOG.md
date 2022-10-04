@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.13
+- Fix bug in parsing cgroup mem values from files: https://github.com/komuw/ong/pull/148
+
 ## v0.0.12
 - Prefix errors produced by ong with a constant string: https://github.com/komuw/ong/pull/147
 - Try and mitigate cookie replay attacks: https://github.com/komuw/ong/pull/146

@@ -35,7 +35,7 @@ import (
 )
 
 func main() {
-	l := log.New(context.Background(), os.Stdout, 1000)
+    l := log.New(os.Stdout, 1000)
 	secretKey := "hard-password"
 	mux := mux.New(
 		l,
