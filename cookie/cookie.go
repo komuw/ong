@@ -2,7 +2,12 @@
 package cookie
 
 import (
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -76,13 +81,10 @@ func Set(
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#session_cookie
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_the_lifetime_of_a_cookie
 
-	if len(c.String()) > 4096 {
-		// Most brosers cap the size of cookies that can be set at 4KB
-		return
-	}
-
 	http.SetCookie(w, c)
 }
+
+const sep = ":" // the value of this should not be changed without thinking about it.
 
 var (
 	enc  cry.Enc   //nolint:gochecknoglobals
@@ -92,8 +94,15 @@ var (
 // SetEncrypted creates a cookie on the HTTP response.
 // The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
 //
+// Note: While encrypted cookies can guarantee that the data has not been tampered with,
+// that it is all there and correct, and that the clients cannot read its raw value; they cannot guarantee freshness.
+// This means that (similar to plain-text cookies), they are still susceptible to [replay attacks]
+//
 // Also see [Set]
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
 func SetEncrypted(
+	r *http.Request,
 	w http.ResponseWriter,
 	name string,
 	value string,
@@ -105,7 +114,22 @@ func SetEncrypted(
 		enc = cry.New(key)
 	})
 
-	encryptedEncodedVal := enc.EncryptEncode(value)
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return
+	}
+
+	expires := time.Now().UTC().Add(mAge).Unix()
+
+	encryptedEncodedVal := fmt.Sprintf(
+		"%s%s%s%s%s",
+		enc.EncryptEncode(value),
+		sep,
+		enc.EncryptEncode(ip),
+		sep,
+		enc.EncryptEncode(strconv.Itoa(int(expires))), // expiration date.
+	)
+
 	Set(
 		w,
 		name,
@@ -131,7 +155,50 @@ func GetEncrypted(
 		return nil, err
 	}
 
-	val, err := enc.DecryptDecode(c.Value)
+	subs := strings.Split(c.Value, sep)
+	if len(subs) != 3 {
+		return nil, errors.New("ong/cookie: invalid cookie")
+	}
+
+	value, ip, expires := subs[0], subs[1], subs[2]
+
+	ip, err = enc.DecryptDecode(ip)
+	if err != nil {
+		return nil, err
+	}
+
+	expiresStr, err := enc.DecryptDecode(expires)
+	if err != nil {
+		return nil, err
+	}
+
+	{
+		// Try and prevent replay attacks.
+		// This does not completely stop them, but it is better than nothing.
+		incomingIP, _, errS := net.SplitHostPort(r.RemoteAddr)
+		if errS != nil {
+			return nil, errS
+		}
+
+		if ip != incomingIP {
+			return nil, errors.New("ong/cookie: mismatched IP addresses")
+		}
+
+		expires, errP := strconv.ParseInt(expiresStr, 10, 64)
+		if errP != nil {
+			return nil, errP
+		}
+
+		// You cannot trust anything about the incoing cookie except its value.
+		// This is because, it is the only thing that was encrypted/authenticated.
+		// So we cannot use `c.MaxAge` here, since a client could have modified that.
+		diff := expires - time.Now().UTC().Unix()
+		if diff <= 0 {
+			return nil, errors.New("ong/cookie: cookie should be expired")
+		}
+	}
+
+	val, err := enc.DecryptDecode(value)
 	if err != nil {
 		return nil, err
 	}
