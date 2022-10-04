@@ -116,7 +116,7 @@ func TestCookies(t *testing.T) {
 		name := "logId"
 		value := "hello world are you okay"
 		domain := "localhost"
-		mAge := 1 * time.Minute
+		mAge := 23 * time.Hour
 		key := "my secret key"
 		handler := setEncryptedHandler(name, value, domain, mAge, key)
 

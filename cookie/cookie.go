@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -119,12 +120,15 @@ func SetEncrypted(
 		return
 	}
 
-	// todo: maybe add `mAge` in future?
+	expires := time.Now().UTC().Add(mAge).Unix()
+
 	encryptedEncodedVal := fmt.Sprintf(
-		"%s%s%s",
+		"%s%s%s%s%s",
 		enc.EncryptEncode(value),
 		sep,
 		enc.EncryptEncode(ip),
+		sep,
+		enc.EncryptEncode(strconv.Itoa(int(expires))), // expiration date.
 	)
 
 	Set(
@@ -153,13 +157,18 @@ func GetEncrypted(
 	}
 
 	subs := strings.Split(c.Value, sep)
-	if len(subs) != 2 {
+	if len(subs) != 3 {
 		return nil, errors.New("ong/cookie: invalid cookie")
 	}
 
-	value, ip := subs[0], subs[1]
+	value, ip, expires := subs[0], subs[1], subs[2]
 
 	ip, err = enc.DecryptDecode(ip)
+	if err != nil {
+		return nil, err
+	}
+
+	expiresStr, err := enc.DecryptDecode(expires)
 	if err != nil {
 		return nil, err
 	}
@@ -174,6 +183,19 @@ func GetEncrypted(
 
 		if ip != incomingIP {
 			return nil, errors.New("ong/cookie: mismatched IP addresses")
+		}
+
+		expires, err := strconv.ParseInt(expiresStr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		// You cannot trust anything about the incoing cookie except its value.
+		// This is because, it is the only thing that was encrypted/authenticated.
+		// So we cannot use `c.MaxAge` here, since a client could have modified that.
+		diff := expires - time.Now().UTC().Unix()
+		if diff <= 0 {
+			return nil, errors.New("ong/cookie: cookie should be expired")
 		}
 	}
 

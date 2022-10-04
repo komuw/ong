@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
@@ -19,10 +21,11 @@ import (
 // 1. https://www.youtube.com/watch?v=rWBSMsLG8po
 // 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
 
+const secretKey = "hard-password"
+
 func main() {
 	api := NewMyApi("someDb")
 	l := log.New(os.Stdout, 1000)
-	secretKey := "hard-password"
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
@@ -152,6 +155,11 @@ func (m myAPI) login() http.HandlerFunc {
 		panic(err)
 	}
 
+	type User struct {
+		Email string
+		Name  string
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			data := struct {
@@ -173,6 +181,34 @@ func (m myAPI) login() http.HandlerFunc {
 		if err = r.ParseForm(); err != nil {
 			panic(err)
 		}
+
+		email := r.FormValue("email")
+		firstName := r.FormValue("firstName")
+
+		u := &User{Email: email, Name: firstName}
+
+		s, err := json.Marshal(u)
+		if err != nil {
+			panic(err)
+		}
+
+		cookieName := "session_cookie"
+		c, err := cookie.GetEncrypted(r, cookieName, secretKey)
+		m.l.WithImmediate().Info(log.F{
+			"msg":    "login handler log cookie",
+			"err":    err,
+			"cookie": c,
+		})
+
+		cookie.SetEncrypted(
+			r,
+			w,
+			cookieName,
+			string(s),
+			"localhost",
+			23*24*time.Hour,
+			secretKey,
+		)
 
 		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
 	}
