@@ -27,7 +27,7 @@ func TestSetMem(t *testing.T) {
 	})
 
 	cgroupV1Value := 125 * 1024 * 1024 // 125 MB
-	_, err = io.WriteString(f1, fmt.Sprint(cgroupV1Value))
+	_, err = io.WriteString(f1, fmt.Sprintln(cgroupV1Value))
 	attest.Ok(t, err)
 
 	cgroupV2Value := 456 * 1024 * 1024 // 456 MB
