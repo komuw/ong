@@ -187,16 +187,16 @@ func (m myAPI) login() http.HandlerFunc {
 
 		u := &User{Email: email, Name: firstName}
 
-		s, err := json.Marshal(u)
-		if err != nil {
-			panic(err)
+		s, errM := json.Marshal(u)
+		if errM != nil {
+			panic(errM)
 		}
 
 		cookieName := "session_cookie"
-		c, err := cookie.GetEncrypted(r, cookieName, secretKey)
+		c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
 		m.l.WithImmediate().Info(log.F{
 			"msg":    "login handler log cookie",
-			"err":    err,
+			"err":    errM,
 			"cookie": c,
 		})
 
