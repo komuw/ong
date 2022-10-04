@@ -132,7 +132,28 @@ func (m myAPI) check(msg string) http.HandlerFunc {
 func (m myAPI) login() http.HandlerFunc {
 	tmpl, err := template.New("myTpl").Parse(`<!DOCTYPE html>
 <html>
-
+<head>
+<link rel="stylesheet" href="https://unpkg.com/mvp.css@1.12/mvp.css">
+<style>
+	:root{
+		/* ovverive variables from mvp.css */
+		--line-height: 1.0;
+		--font-family: system-ui;
+	}
+	html {
+	/*
+	from:
+	  - https://www.swyx.io/css-100-bytes
+	  - https://news.ycombinator.com/item?id=32972768
+	  - https://github.com/andybrewer/mvp
+	*/
+		max-width: 70ch;
+		padding: 3em 1em;
+		margin: auto;
+		font-size: 1.0em;
+	}
+</style>
+</head>
 <body>
     <script nonce="{{.CspNonceValue}}">
 	    console.log("hello world");
