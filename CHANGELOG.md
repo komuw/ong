@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.14
+- Update documentation: https://github.com/komuw/ong/pull/151
+
 ## v0.0.13
 - Fix bug in parsing cgroup mem values from files: https://github.com/komuw/ong/pull/148
 
