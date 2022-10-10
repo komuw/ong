@@ -49,9 +49,9 @@ type Mux struct {
 	router *router // some router
 }
 
-// New return a HTTP request multiplexer that has the routes/paths in routes.
+// New return a HTTP request multiplexer that has the paths in routes.
 //
-// All the routes/paths of an application should be added as part of the routes slice argument.
+// All the paths of an application should be added as part of the routes slice argument.
 // Typically, an application should only have one Mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
