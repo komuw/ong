@@ -9,6 +9,9 @@ import (
 )
 
 // HttpsRedirector is a middleware that redirects http requests to https.
+//
+// domain is the domain name of your website.
+// httpsPort is the tls port where http requests will be redirected to.
 func HttpsRedirector(wrappedHandler http.HandlerFunc, httpsPort uint16, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
