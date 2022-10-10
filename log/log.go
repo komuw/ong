@@ -24,23 +24,29 @@ import (
 //   (b) https://github.com/sirupsen/logrus whose license(MIT) can be found here: https://github.com/sirupsen/logrus/blob/v1.8.1/LICENSE
 
 type (
-	level             string
+	// Level indicates the severity of a log event/message.
+	Level string
+	// F is the fields to use as a log event/message.
+	F                 map[string]interface{}
 	logContextKeyType string
-	// F is the fields to use as a log message.
-	F map[string]interface{}
 )
 
 const (
-	infoL  level = "info"
-	errorL level = "error"
+	// INFO is the log severity indicating an issue that is informational in nature.
+	INFO Level = "info"
+	// ERROR is the log severity indicating an issue that should definitely be noted.
+	ERROR Level = "error"
+	// CtxKey is the name of the context key used to store the logID.
+	CtxKey = logContextKeyType("Ong-logID")
 )
 
-// CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
-const CtxKey = logContextKeyType("Ong-logID")
-
 // Logger represents an active logging object that generates lines of output to an io.Writer.
+// It stores log messages into a [circular buffer]. All those log events are only flushed to the underlying io.Writer when
+// a message with level [ERROR] is logged.
 //
-// It can be used simultaneously from multiple goroutines.
+// It can be used simultaneously from multiple goroutines. Use [New] to get a valid Logger.
+//
+// [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 type Logger struct {
 	w          io.Writer
 	cBuf       *circleBuf
@@ -52,11 +58,8 @@ type Logger struct {
 
 // todo: add heartbeat in the future.
 
-// New creates a new logger.
-func New(
-	w io.Writer,
-	maxMsgs int,
-) Logger {
+// New creates a new logger. The returned logger buffers upto maxMsgs log messages in a circular buffer.
+func New(w io.Writer, maxMsgs int) Logger {
 	if maxMsgs < 1 {
 		maxMsgs = 10
 	}
@@ -122,12 +125,12 @@ func (l Logger) WithImmediate() Logger {
 	}
 }
 
-// Info will log at the Info level.
+// Info will log at the [INFO] level.
 func (l Logger) Info(f F) {
-	l.log(infoL, f)
+	l.log(INFO, f)
 }
 
-// Error will log at the Error level.
+// Error will log at the [ERROR] level.
 func (l Logger) Error(e error, fs ...F) {
 	dst := F{}
 	if e != nil {
@@ -143,7 +146,7 @@ func (l Logger) Error(e error, fs ...F) {
 		}
 	}
 
-	l.log(errorL, dst)
+	l.log(ERROR, dst)
 }
 
 // Write implements the io.Writer interface.
@@ -181,7 +184,7 @@ func (l Logger) StdLogger() *stdLog.Logger {
 	return stdLog.New(l, "", 0)
 }
 
-func (l Logger) log(lvl level, f F) {
+func (l Logger) log(lvl Level, f F) {
 	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
 	f["logID"] = l.logId
@@ -199,7 +202,7 @@ func (l Logger) log(lvl level, f F) {
 
 	l.cBuf.store(f)
 
-	if lvl == errorL || l.immediate {
+	if lvl == ERROR || l.immediate {
 		// flush
 		l.flush()
 	}

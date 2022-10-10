@@ -26,7 +26,7 @@ const (
 // Set creates a cookie on the HTTP response.
 //
 // If domain is an empty string, the cookie is set for the current host(excluding subdomains) else it is set for the given domain and its subdomains.
-// If mAge <= 0, a session cookie is created. If jsAccess is false, the cookie will be in-accesible to Javascript.
+// If mAge == 0, a session cookie is created. If jsAccess is false, the cookie will be in-accesible to Javascript.
 // In most cases you should set it to false(exceptions are rare, like when setting a csrf cookie)
 func Set(
 	w http.ResponseWriter,
@@ -42,7 +42,7 @@ func Set(
 	expires := time.Now().UTC().Add(mAge)
 	maxAge := int(mAge.Seconds())
 
-	if mAge <= 0 {
+	if mAge == 0 {
 		// this is a session cookie
 		expires = time.Time{}
 		maxAge = 0
@@ -93,7 +93,6 @@ var (
 
 // SetEncrypted creates a cookie on the HTTP response.
 // The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
-// If mAge <= 0, the cookie is set to expire in 1 hours time.
 //
 // Note: While encrypted cookies can guarantee that the data has not been tampered with,
 // that it is all there and correct, and that the clients cannot read its raw value; they cannot guarantee freshness.
@@ -120,9 +119,6 @@ func SetEncrypted(
 		return
 	}
 
-	if mAge <= 0 {
-		mAge = 1 * time.Hour
-	}
 	expires := time.Now().UTC().Add(mAge).Unix()
 
 	encryptedEncodedVal := fmt.Sprintf(
