@@ -177,13 +177,12 @@ func TestServer(t *testing.T) {
 		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			mux.Routes{
-				mux.NewRoute(
-					uri,
-					mux.MethodGet,
-					someServerTestHandler(msg),
-				),
-			})
+			mux.NewRoute(
+				uri,
+				mux.MethodGet,
+				someServerTestHandler(msg),
+			),
+		)
 
 		go func() {
 			_, _ = CreateDevCertKey()
@@ -268,13 +267,12 @@ func TestServer(t *testing.T) {
 		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			mux.Routes{
-				mux.NewRoute(
-					uri,
-					mux.MethodGet,
-					someServerTestHandler(msg),
-				),
-			})
+			mux.NewRoute(
+				uri,
+				mux.MethodGet,
+				someServerTestHandler(msg),
+			),
+		)
 
 		go func() {
 			certFile, keyFile := CreateDevCertKey()

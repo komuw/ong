@@ -42,13 +42,11 @@ func TestMux(t *testing.T) {
 		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
-			Routes{
-				NewRoute(
-					"/api",
-					MethodGet,
-					someMuxHandler(msg),
-				),
-			},
+			NewRoute(
+				"/api",
+				MethodGet,
+				someMuxHandler(msg),
+			),
 		)
 
 		rec := httptest.NewRecorder()
@@ -69,13 +67,11 @@ func TestMux(t *testing.T) {
 		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
-			Routes{
-				NewRoute(
-					uri,
-					MethodGet,
-					someMuxHandler(msg),
-				),
-			},
+			NewRoute(
+				uri,
+				MethodGet,
+				someMuxHandler(msg),
+			),
 		)
 
 		ts := httptest.NewTLSServer(
@@ -115,13 +111,11 @@ func TestMux(t *testing.T) {
 		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
-			Routes{
-				NewRoute(
-					uri,
-					MethodGet,
-					someMuxHandler(msg),
-				),
-			},
+			NewRoute(
+				uri,
+				MethodGet,
+				someMuxHandler(msg),
+			),
 		)
 
 		ts := httptest.NewTLSServer(

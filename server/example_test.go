@@ -17,18 +17,17 @@ func ExampleRun() {
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
-		mux.Routes{
-			mux.NewRoute(
-				"hello/",
-				mux.MethodGet,
-				hello("hello world"),
-			),
-			mux.NewRoute(
-				"check/:age/",
-				mux.MethodAll,
-				check(),
-			),
-		})
+		mux.NewRoute(
+			"hello/",
+			mux.MethodGet,
+			hello("hello world"),
+		),
+		mux.NewRoute(
+			"check/:age/",
+			mux.MethodAll,
+			check(),
+		),
+	)
 
 	opts := server.DevOpts() // dev options.
 	// alternatively for production:
