@@ -93,6 +93,7 @@ var (
 
 // SetEncrypted creates a cookie on the HTTP response.
 // The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
+// If mAge <= 0, the cookie is set to expire in 1 hours time.
 //
 // Note: While encrypted cookies can guarantee that the data has not been tampered with,
 // that it is all there and correct, and that the clients cannot read its raw value; they cannot guarantee freshness.
@@ -119,6 +120,9 @@ func SetEncrypted(
 		return
 	}
 
+	if mAge <= 0 {
+		mAge = 1 * time.Hour
+	}
 	expires := time.Now().UTC().Add(mAge).Unix()
 
 	encryptedEncodedVal := fmt.Sprintf(
