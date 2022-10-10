@@ -35,7 +35,7 @@ import (
 )
 
 func main() {
-    l := log.New(os.Stdout, 1000)
+	l := log.New(os.Stdout, 1000)
 	secretKey := "hard-password"
 	mux := mux.New(
 		l,
@@ -50,7 +50,7 @@ func main() {
 			mux.MethodAll,
 			check(),
 		),
-		)
+	)
 
 	opts := server.DevOpts() // dev options.
 	// alternatively for production:
@@ -82,14 +82,6 @@ func check() http.HandlerFunc {
 ```
 
 `go run -race ./...`     
-
-
-To use tls with certificates from letsencrypt:
-```go
-email := "admin@example.com"
-domain := "*.example.com"
-err := server.Run(mux, server.LetsEncryptOpts(email, domain), l)
-```
 
 
 1. https://www.youtube.com/watch?v=rWBSMsLG8po     
