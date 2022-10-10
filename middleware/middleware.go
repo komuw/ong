@@ -129,7 +129,7 @@ func allDefaultMiddlewares(
 // All is a middleware that allows all http methods.
 //
 // It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
-// As such it provides the features and functionalities of all those middlewares.
+// As such, it provides the features and functionalities of all those middlewares.
 func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
@@ -146,7 +146,7 @@ func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 //
 // It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
-// As such it provides the features and functionalities of all those middlewares.
+// As such, it provides the features and functionalities of all those middlewares.
 func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
@@ -177,7 +177,7 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
 //
 // It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
-// As such it provides the features and functionalities of all those middlewares.
+// As such, it provides the features and functionalities of all those middlewares.
 func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
@@ -206,7 +206,7 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
 //
 // It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
-// As such it provides the features and functionalities of all those middlewares.
+// As such, it provides the features and functionalities of all those middlewares.
 func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
@@ -235,7 +235,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 //
 // It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
-// As such it provides the features and functionalities of all those middlewares.
+// As such, it provides the features and functionalities of all those middlewares.
 func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		put(wrappedHandler),
@@ -264,7 +264,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 //
 // It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
-// As such it provides the features and functionalities of all those middlewares.
+// As such, it provides the features and functionalities of all those middlewares.
 func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		deleteH(wrappedHandler),
