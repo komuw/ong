@@ -34,7 +34,7 @@ type (
 const (
 	// INFO is the log severity indicating an issue that is informational in nature.
 	INFO Level = "info"
-	// ERROR is the log severity indicating an issue that should definitely be noted.
+	// ERROR is the log severity indicating an issue that is critical in nature.
 	ERROR Level = "error"
 	// CtxKey is the name of the context key used to store the logID.
 	CtxKey = logContextKeyType("Ong-logID")
