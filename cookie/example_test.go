@@ -11,15 +11,15 @@ import (
 )
 
 type shoppingCart struct {
-	itemName string
-	price    uint8
+	ItemName string
+	Price    uint8
 }
 
 func shoppingCartHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookieName := "cart"
 		key := "superSecret"
-		item := shoppingCart{itemName: "shoe", price: 89}
+		item := shoppingCart{ItemName: "shoe", Price: 89}
 
 		b, err := json.Marshal(item)
 		if err != nil {
