@@ -67,7 +67,7 @@ func (o Opts) Equal(other Opts) bool {
 // idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
 // certFile is a path to a tls certificate.
 // keyFile is a path to a tls key.
-// email is the e-address that will be used if/when procuring certificats from [letsencrypt]
+// email is the e-address that will be used if/when procuring certificates from [letsencrypt].
 // domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
 //
 // If certFile is a non-empty string, this will enable tls using certificates found on disk.
