@@ -322,8 +322,6 @@ func BenchmarkOngGzip(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// always record the result of Fib to prevent
-		// the compiler eliminating the function call.
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -347,8 +345,6 @@ func BenchmarkKlauspostGzip(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// always record the result of Fib to prevent
-		// the compiler eliminating the function call.
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -372,8 +368,6 @@ func BenchmarkNytimesGzip(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// always record the result of Fib to prevent
-		// the compiler eliminating the function call.
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -397,8 +391,6 @@ func BenchmarkTmthrgdGzip(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// always record the result of Fib to prevent
-		// the compiler eliminating the function call.
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -422,8 +414,6 @@ func BenchmarkNoGzip(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// always record the result of Fib to prevent
-		// the compiler eliminating the function call.
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, deflate;q=0.8, *;q=0.1")
