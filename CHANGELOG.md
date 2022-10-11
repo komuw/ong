@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.15
+- make encrypted cookies more performant: https://github.com/komuw/ong/pull/152
+
 ## v0.0.14
 - Update documentation: https://github.com/komuw/ong/pull/151
 

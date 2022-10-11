@@ -30,6 +30,12 @@ func (e *stackError) Unwrap() error {
 
 // New returns an error with the supplied message.
 // It also records the stack trace at the point it was called.
+//
+// Error values implement [fmt.Formatter] and can be formatted by the fmt package. The following verbs are supported:
+//
+//	%s   print the error.
+//	%v   see %s
+//	%+v  print the error and stacktrace.
 func New(text string) error {
 	return wrap(errors.New(text), 3)
 }

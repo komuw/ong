@@ -384,8 +384,6 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// always record the result of Fib to prevent
-		// the compiler eliminating the function call.
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
 		attest.Ok(b, err)
 		req.Header.Set(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")

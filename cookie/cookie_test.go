@@ -212,3 +212,26 @@ func TestDelete(t *testing.T) {
 		attest.True(t, cookie.MaxAge < 0)
 	})
 }
+
+var result int //nolint:gochecknoglobals
+
+func BenchmarkSetEncrypted(b *testing.B) {
+	var r int
+	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	res := httptest.NewRecorder()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		r = testSetEncrypted(req, res)
+	}
+
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result = r
+}
+
+func testSetEncrypted(req *http.Request, res http.ResponseWriter) int {
+	SetEncrypted(req, res, "name", "value", "example.com", 2*time.Hour, "some-key")
+	return 3
+}
