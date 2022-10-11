@@ -28,7 +28,7 @@ const (
 	thisMiddlewareEncoding = "gzip"
 )
 
-// Gzip is a middleware that transparently gzips the response body, for clients which support.
+// Gzip is a middleware that transparently gzips the http response body, for clients that support it.
 func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(varyHeader, acceptEncodingHeader)
