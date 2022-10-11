@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: github.com/komuw/ong/cookie
+cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
+BenchmarkSetEncrypted-8   	  305152	      3948 ns/op	    1669 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  305966	      3881 ns/op	    1668 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  306534	      3869 ns/op	    1668 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  292366	      3988 ns/op	    1673 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  306198	      3896 ns/op	    1668 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  303842	      3891 ns/op	    1669 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  309238	      3881 ns/op	    1667 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  302335	      3878 ns/op	    1670 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  305617	      3899 ns/op	    1669 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  303602	      3900 ns/op	    1669 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  279028	      3926 ns/op	    1657 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  280240	      3890 ns/op	    1656 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  301453	      3910 ns/op	    1670 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  288308	      3907 ns/op	    1654 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  280924	      3988 ns/op	    1656 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  278877	      3895 ns/op	    1657 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  278376	      3945 ns/op	    1657 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  276313	      3922 ns/op	    1657 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  305874	      3965 ns/op	    1668 B/op	      21 allocs/op
+BenchmarkSetEncrypted-8   	  274051	      3945 ns/op	    1658 B/op	      21 allocs/op
+PASS
+ok  	github.com/komuw/ong/cookie	24.641s
