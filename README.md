@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/komuw/ong.svg)](https://pkg.go.dev/github.com/komuw/ong)     
 [![ci](https://github.com/komuw/ong/workflows/ong%20ci/badge.svg)](https://github.com/komuw/ong/actions)     
-[![codecov](https://codecov.io/gh/komuw/ong/branch/main/graph/badge.svg)](https://codecov.io/gh/komuw/ong)     
+[![codecov](https://codecov.io/gh/komuw/ong/branch/main/graph/badge.svg?token=KMX47WCNK0)](https://codecov.io/gh/komuw/ong)     
 
 
 Ong is a small http toolkit. 
