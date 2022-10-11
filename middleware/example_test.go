@@ -56,7 +56,7 @@ func Example_all() {
 	opts := middleware.WithOpts("example.com", 443, "secretKey", l)
 
 	myHandler := func(w http.ResponseWriter, _ *http.Request) {
-		io.WriteString(w, "Hello from a HandleFunc \n")
+		_, _ = io.WriteString(w, "Hello from a HandleFunc \n")
 	}
 
 	handler := middleware.All(myHandler, opts)
