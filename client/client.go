@@ -1,5 +1,5 @@
-// Package client provides HTTP client implementation.
-// The client provided in here is opinionated and comes with good defaults.
+// Package client provides a HTTP client implementation.
+// This client is opinionated and comes with good defaults.
 package client
 
 import (
@@ -23,12 +23,12 @@ import (
 // as of 9th/september/2022
 //
 
-// Safe creates a client that is safe from Server-side request forgery (SSRF) security vulnerability.
+// Safe creates a client that is safe from the server-side request forgery (SSRF) security vulnerability.
 func Safe(l log.Logger) *Client {
 	return new(true, l)
 }
 
-// Unsafe creates a client that is NOT safe from Server-side request forgery (SSRF) security vulnerability.
+// Unsafe creates a client that is NOT safe from the server-side request forgery (SSRF) security vulnerability.
 func Unsafe(l log.Logger) *Client {
 	return new(false, l)
 }

@@ -50,6 +50,7 @@ const (
 )
 
 // Csrf is a middleware that provides protection against Cross Site Request Forgeries.
+//
 // If a csrf token is not provided(or is not valid), when it ought to have been; this middleware will issue a http GET redirect to the same url.
 func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
 	enc := cry.New(secretKey)
@@ -163,14 +164,7 @@ func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 	}
 }
 
-// GetCsrfToken returns the csrf token was set for that particular request.
-//
-// example usage:
-//
-//	func myHandler(w http.ResponseWriter, r *http.Request) {
-//		csrfToken := middleware.GetCsrfToken(r.Context())
-//		_ = csrfToken
-//	}
+// GetCsrfToken returns the csrf token that was set for the http request in question.
 func GetCsrfToken(c context.Context) string {
 	v := c.Value(csrfCtxKey)
 	if v != nil {

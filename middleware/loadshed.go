@@ -40,7 +40,7 @@ const (
 	resizePeriod = samplingPeriod + (3 * time.Minute)
 )
 
-// LoadShedder is a middleware that sheds load based on response latencies.
+// LoadShedder is a middleware that sheds load based on http response latencies.
 func LoadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	mathRand.Seed(time.Now().UTC().UnixNano())
 	// lq should not be a global variable, we want it to be per handler.

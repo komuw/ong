@@ -28,18 +28,16 @@ func ExampleMux() {
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 8080, "secretKey", l),
-		mux.Routes{
-			mux.NewRoute(
-				"login/",
-				mux.MethodGet,
-				LoginHandler(),
-			),
-			mux.NewRoute(
-				"/books/:author",
-				mux.MethodAll,
-				BooksByAuthorHandler(),
-			),
-		},
+		mux.NewRoute(
+			"login/",
+			mux.MethodGet,
+			LoginHandler(),
+		),
+		mux.NewRoute(
+			"/books/:author",
+			mux.MethodAll,
+			BooksByAuthorHandler(),
+		),
 	)
 
 	server := &http.Server{

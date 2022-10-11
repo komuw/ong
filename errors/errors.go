@@ -83,7 +83,7 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 	}
 }
 
-// StackTrace returns the stack trace contained in err, if it is a stackError, else an empty string.
+// StackTrace returns the stack trace contained in err, if any, else an empty string.
 func StackTrace(err error) string {
 	sterr, ok := err.(*stackError)
 	if !ok {

@@ -12,7 +12,7 @@ import (
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here: https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 
 // Panic is a middleware that recovers from panics in wrappedHandler.
-// It logs the stack trace and returns an InternalServerError response.
+// When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
 func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {

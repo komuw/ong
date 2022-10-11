@@ -29,28 +29,27 @@ func main() {
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
-		mux.Routes{
-			mux.NewRoute(
-				"/api",
-				mux.MethodPost,
-				api.handleAPI(),
-			),
-			mux.NewRoute(
-				"serveDirectory",
-				mux.MethodAll,
-				middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
-			),
-			mux.NewRoute(
-				"check/:age/",
-				mux.MethodAll,
-				api.check("world"),
-			),
-			mux.NewRoute(
-				"login",
-				mux.MethodAll,
-				api.login(),
-			),
-		})
+		mux.NewRoute(
+			"/api",
+			mux.MethodPost,
+			api.handleAPI(),
+		),
+		mux.NewRoute(
+			"serveDirectory",
+			mux.MethodAll,
+			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
+		),
+		mux.NewRoute(
+			"check/:age/",
+			mux.MethodAll,
+			api.check("world"),
+		),
+		mux.NewRoute(
+			"login",
+			mux.MethodAll,
+			api.login(),
+		),
+	)
 
 	err := server.Run(mux, server.DevOpts(), l)
 	if err != nil {

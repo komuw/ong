@@ -30,7 +30,7 @@ func TestDrainDuration(t *testing.T) {
 		t.Parallel()
 
 		handlerTimeout := 170 * time.Second
-		o := opts{
+		o := Opts{
 			port:              65080,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -49,7 +49,7 @@ func TestDrainDuration(t *testing.T) {
 		t.Parallel()
 
 		writeTimeout := 3 * time.Minute
-		o := opts{
+		o := Opts{
 			port:              65080,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -72,7 +72,7 @@ func TestOpts(t *testing.T) {
 		t.Parallel()
 
 		got := DevOpts()
-		want := opts{
+		want := Opts{
 			port:              65081,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -99,7 +99,7 @@ func TestOpts(t *testing.T) {
 		certFile, keyFile := certKeyPaths()
 		got := withOpts(80, certFile, keyFile, "", "*.example.com")
 
-		want := opts{
+		want := Opts{
 			port:              80,
 			host:              "0.0.0.0",
 			network:           "tcp",
@@ -124,7 +124,7 @@ func TestOpts(t *testing.T) {
 		t.Parallel()
 
 		got := DevOpts()
-		want := opts{
+		want := Opts{
 			port:              65081,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -177,13 +177,12 @@ func TestServer(t *testing.T) {
 		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			mux.Routes{
-				mux.NewRoute(
-					uri,
-					mux.MethodGet,
-					someServerTestHandler(msg),
-				),
-			})
+			mux.NewRoute(
+				uri,
+				mux.MethodGet,
+				someServerTestHandler(msg),
+			),
+		)
 
 		go func() {
 			_, _ = CreateDevCertKey()
@@ -268,13 +267,12 @@ func TestServer(t *testing.T) {
 		mux := mux.New(
 			l,
 			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			mux.Routes{
-				mux.NewRoute(
-					uri,
-					mux.MethodGet,
-					someServerTestHandler(msg),
-				),
-			})
+			mux.NewRoute(
+				uri,
+				mux.MethodGet,
+				someServerTestHandler(msg),
+			),
+		)
 
 		go func() {
 			certFile, keyFile := CreateDevCertKey()

@@ -1,5 +1,5 @@
 // Package middleware provides helpful functions that implement some common functionalities in http servers.
-// A middleware is a func that returns a http.HandlerFunc
+// A middleware is a function that returns a [http.HandlerFunc]
 package middleware
 
 import (
@@ -17,6 +17,9 @@ import (
 // Or when the Csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
 const ongMiddlewareErrorHeader = "Ong-Middleware-Error"
 
+// Opts are the various parameters(optionals) that can be used to configure middlewares.
+//
+// Use either [New] or [WithOpts] to get a valid Opts.
 type Opts struct {
 	domain         string
 	httpsPort      uint16
@@ -27,8 +30,15 @@ type Opts struct {
 	l              log.Logger
 }
 
-// NewOpts returns a new opts.
-func NewOpts(
+// New returns a new Opts.
+//
+// domain is the domain name of your website.
+// httpsPort is the tls port where http requests will be redirected to.
+// allowedOrigins, allowedMethods, & allowedHeaders are used by the [Cors] middleware.
+//
+// The secretKey should be kept secret and should not be shared.
+// If it becomes compromised, generate a new one and restart your application using the new one.
+func New(
 	domain string,
 	httpsPort uint16,
 	allowedOrigins []string,
@@ -48,9 +58,9 @@ func NewOpts(
 	}
 }
 
-// WithOpts returns a new opts that has sensible defaults.
+// WithOpts returns a new Opts that has sensible defaults.
 func WithOpts(domain string, httpsPort uint16, secretKey string, l log.Logger) Opts {
-	return NewOpts(domain, httpsPort, nil, nil, nil, secretKey, l)
+	return New(domain, httpsPort, nil, nil, nil, secretKey, l)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -76,12 +86,12 @@ func allDefaultMiddlewares(
 	// 3. RateLimiter since we want bad traffic to be filtered early.
 	// 4. LoadShedder for the same reason.
 	// 5. HttpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
-	// 6. Security since we want some minimum level of security.
+	// 6. SecurityHeaders since we want some minimum level of security.
 	// 7. Cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
 	// 8. Csrf since this one is a bit more involved perf-wise.
 	// 9. Gzip since it is very involved perf-wise.
 	//
-	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> HttpsRedirector -> Security -> Cors -> Csrf -> Gzip -> actual-handler
+	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> HttpsRedirector -> SecurityHeaders -> Cors -> Csrf -> Gzip -> actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
@@ -91,7 +101,7 @@ func allDefaultMiddlewares(
 			RateLimiter(
 				LoadShedder(
 					HttpsRedirector(
-						Security(
+						SecurityHeaders(
 							Cors(
 								Csrf(
 									wrappedHandler,
@@ -117,6 +127,9 @@ func allDefaultMiddlewares(
 }
 
 // All is a middleware that allows all http methods.
+//
+// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
+// As such, it provides the features and functionalities of all those middlewares.
 func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
@@ -131,6 +144,9 @@ func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
+//
+// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
+// As such, it provides the features and functionalities of all those middlewares.
 func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
@@ -159,6 +175,9 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
+//
+// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
+// As such, it provides the features and functionalities of all those middlewares.
 func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
@@ -185,6 +204,9 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
+//
+// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
+// As such, it provides the features and functionalities of all those middlewares.
 func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
@@ -211,6 +233,9 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
+//
+// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
+// As such, it provides the features and functionalities of all those middlewares.
 func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		put(wrappedHandler),
@@ -237,6 +262,9 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
+//
+// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors] & [Csrf] middleware.
+// As such, it provides the features and functionalities of all those middlewares.
 func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		deleteH(wrappedHandler),

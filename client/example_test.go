@@ -12,9 +12,11 @@ func ExampleClient_Get() {
 	l := log.New(os.Stdout, 7)
 
 	cli := client.Safe(l)
-	_, _ = cli.Get(context.Background(), "https://ajmsmsYnns-bad-domain.com")
+	// This is the AWS metadata url.
+	url := "http://169.254.169.254/latest/meta-data"
+	_, _ = cli.Get(context.Background(), url)
 
-	// This will log:
-	// {"level":"info","logID":"D2MH3e3BqZmRgm3WK8yK7Q","method":"GET","msg":"http_client","pid":2102616,"process":"request","timestamp":"2022-09-16T09:39:55.423743309Z","url":"https://ajmsmsYnns-bad-domain.com"}
-	// {"durationMS":339,"err":"Get \"https://ajmsmsYnns-bad-domain.com\": dial tcp: lookup ajmsmsYnns-bad-domain.com on 127.0.0.53:53: no such host","level":"error","logID":"D2MH3e3BqZmRgm3WK8yK7Q","method":"GET","msg":"http_client","pid":2102616,"process":"response","timestamp":"2022-09-16T09:39:55.762989726Z","url":"https://ajmsmsYnns-bad-domain.com"}
+	// This will log something like:
+	// {"level":"info","logID":"Z5X7qXm8HkT8kZ83xQyrrQ","method":"GET","msg":"http_client","pid":11776,"process":"request","timestamp":"2022-10-09T12:03:33.851543383Z","url":"http://169.254.169.254/latest/meta-data"}
+	// {"durationMS":0,"err":"Get \"http://169.254.169.254/latest/meta-data\": dial tcp 169.254.169.254:80: ong/client: address 169.254.169.254 IsLinkLocalUnicast","level":"error","logID":"Z5X7qXm8HkT8kZ83xQyrrQ","method":"GET","msg":"http_client","pid":11776,"process":"response","timestamp":"2022-10-09T12:03:33.851889217Z","url":"http://169.254.169.254/latest/meta-data"}
 }

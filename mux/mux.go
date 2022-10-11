@@ -9,6 +9,7 @@ import (
 	"github.com/komuw/ong/middleware"
 )
 
+// Common HTTP methods.
 const (
 	MethodAll     = "ALL"
 	MethodGet     = http.MethodGet
@@ -22,16 +23,13 @@ const (
 	MethodTrace   = http.MethodTrace
 )
 
-// Routes is a list of all the route for an application.
-type Routes []route
-
-// NewRoute creates a new route.
+// NewRoute creates a new Route.
 func NewRoute(
 	pattern string,
 	method string,
 	handler http.HandlerFunc,
-) route {
-	return route{
+) Route {
+	return Route{
 		method:  method,
 		pattern: pattern,
 		segs:    pathSegments(pattern),
@@ -40,6 +38,7 @@ func NewRoute(
 }
 
 // Mux is a HTTP request multiplexer.
+//
 // It matches the URL of each incoming request against a list of registered
 // patterns and calls the handler for the pattern that most closely matches the URL.
 // It implements http.Handler
@@ -50,16 +49,20 @@ type Mux struct {
 	router *router // some router
 }
 
-// New return a HTTP request multiplexer that has the routes/paths in rts.
-// It panics with a helpful message if it detects conflicting routes.
-func New(l log.Logger, opt middleware.Opts, rts Routes) Mux {
+// New return a HTTP request multiplexer that has the paths in routes.
+//
+// All the paths of an application should be added as part of the routes slice argument.
+// Typically, an application should only have one Mux.
+//
+// It panics with a helpful error message if it detects conflicting routes.
+func New(l log.Logger, opt middleware.Opts, routes ...Route) Mux {
 	m := Mux{
 		l:      l,
 		router: newRouter(),
 	}
 
 	mid := middleware.All //nolint:ineffassign
-	for _, rt := range rts {
+	for _, rt := range routes {
 		switch rt.method {
 		case MethodAll:
 			mid = middleware.All
@@ -88,6 +91,7 @@ func New(l log.Logger, opt middleware.Opts, rts Routes) Mux {
 }
 
 // ServeHTTP implements a http.Handler
+//
 // It routes incoming http requests based on method and path extracting path parameters as it goes.
 func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.serveHTTP(w, r)
@@ -97,8 +101,8 @@ func (m Mux) addPattern(method, pattern string, handler http.HandlerFunc) {
 	m.router.handle(method, pattern, handler)
 }
 
-// Param gets the path parameter from the specified Context.
-// Returns an empty string if the parameter was not found.
+// Param gets the path/url parameter from the specified Context.
+// It returns an empty string if the parameter was not found.
 func Param(ctx context.Context, param string) string {
 	vStr, ok := ctx.Value(muxContextKey(param)).(string)
 	if !ok {

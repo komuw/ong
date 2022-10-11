@@ -23,7 +23,7 @@ import (
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
-func getTlsConfig(o opts) (*tls.Config, error) {
+func getTlsConfig(o Opts) (*tls.Config, error) {
 	if err := validateDomain(o.tls.domain); err != nil {
 		return nil, err
 	}

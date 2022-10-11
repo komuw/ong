@@ -282,21 +282,21 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 
 	r := newRouter()
 	var match string
-	r.handle(MethodAll, "/route", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		match = r.Method
 	}))
 
-	req, err := http.NewRequest(http.MethodGet, "/route", nil)
+	req, err := http.NewRequest(http.MethodGet, "/path", nil)
 	attest.Ok(t, err)
 	r.serveHTTP(httptest.NewRecorder(), req)
 	attest.Equal(t, match, "GET")
 
-	req, err = http.NewRequest(http.MethodDelete, "/route", nil)
+	req, err = http.NewRequest(http.MethodDelete, "/path", nil)
 	attest.Ok(t, err)
 	r.serveHTTP(httptest.NewRecorder(), req)
 	attest.Equal(t, match, "DELETE")
 
-	req, err = http.NewRequest(http.MethodPost, "/route", nil)
+	req, err = http.NewRequest(http.MethodPost, "/path", nil)
 	attest.Ok(t, err)
 	r.serveHTTP(httptest.NewRecorder(), req)
 	attest.Equal(t, match, "POST")

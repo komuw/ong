@@ -1,7 +1,8 @@
 # ong
 
-[![ci](https://github.com/komuw/ong/workflows/ong%20ci/badge.svg)](https://github.com/komuw/ong/actions)
-[![codecov](https://codecov.io/gh/komuw/ong/branch/main/graph/badge.svg)](https://codecov.io/gh/komuw/ong)
+[![Go Reference](https://pkg.go.dev/badge/github.com/komuw/ong.svg)](https://pkg.go.dev/github.com/komuw/ong)     
+[![ci](https://github.com/komuw/ong/workflows/ong%20ci/badge.svg)](https://github.com/komuw/ong/actions)     
+[![codecov](https://codecov.io/gh/komuw/ong/branch/main/graph/badge.svg)](https://codecov.io/gh/komuw/ong)     
 
 
 Ong is a small http toolkit. 
@@ -35,23 +36,22 @@ import (
 )
 
 func main() {
-    l := log.New(os.Stdout, 1000)
+	l := log.New(os.Stdout, 1000)
 	secretKey := "hard-password"
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
-		mux.Routes{
-			mux.NewRoute(
-				"hello/",
-				mux.MethodGet,
-				hello("hello world"),
-			),
-			mux.NewRoute(
-				"check/:age/",
-				mux.MethodAll,
-				check(),
-			),
-		})
+		mux.NewRoute(
+			"hello/",
+			mux.MethodGet,
+			hello("hello world"),
+		),
+		mux.NewRoute(
+			"check/:age/",
+			mux.MethodAll,
+			check(),
+		),
+	)
 
 	opts := server.DevOpts() // dev options.
 	// alternatively for production:
@@ -83,14 +83,6 @@ func check() http.HandlerFunc {
 ```
 
 `go run -race ./...`     
-
-
-To use tls with certificates from letsencrypt:
-```go
-email := "admin@example.com"
-domain := "*.example.com"
-err := server.Run(mux, server.LetsEncryptOpts(email, domain), l)
-```
 
 
 1. https://www.youtube.com/watch?v=rWBSMsLG8po     

@@ -16,18 +16,27 @@ import (
 // muxContextKey is the context key type for storing path parameters in context.Context.
 type muxContextKey string
 
-type route struct {
+// Route represents the pattern & http method that will be served by a particular http handler.
+//
+// Use [NewRoute] to get a valid Route.
+type Route struct {
 	method  string
 	pattern string
 	segs    []string
 	handler http.HandlerFunc
 }
 
-func (r route) String() string {
-	return fmt.Sprintf("route{method: %s, pattern: %s, segs: %s}", r.method, r.pattern, r.segs)
+func (r Route) String() string {
+	return fmt.Sprintf(`
+Route{
+  method: %s,
+  pattern: %s,
+  segs: %s,
+  handler: %s
+}`, r.method, r.pattern, r.segs, getfunc(r.handler))
 }
 
-func (r route) match(ctx context.Context, segs []string) (context.Context, bool) {
+func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
 	if len(segs) > len(r.segs) {
 		return nil, false
 	}
@@ -54,7 +63,7 @@ func (r route) match(ctx context.Context, segs []string) (context.Context, bool)
 
 // router routes HTTP requests.
 type router struct {
-	routes []route
+	routes []Route
 	// notFoundHandler is the http.Handler to call when no routes
 	// match. By default uses http.NotFoundHandler().
 	notFoundHandler http.Handler
@@ -91,7 +100,7 @@ func (r *router) handle(method, pattern string, handler http.HandlerFunc) {
 	// Try and detect conflict before adding a new route.
 	r.detectConflict(method, pattern, handler)
 
-	rt := route{
+	rt := Route{
 		method:  strings.ToLower(method),
 		pattern: pattern,
 		segs:    pathSegments(pattern),
@@ -103,9 +112,9 @@ func (r *router) handle(method, pattern string, handler http.HandlerFunc) {
 // serveHTTP routes the incoming http.Request based on method and path extracting path parameters as it goes.
 func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	segs := pathSegments(req.URL.Path)
-	for _, route := range r.routes {
-		if ctx, ok := route.match(req.Context(), segs); ok {
-			route.handler.ServeHTTP(w, req.WithContext(ctx))
+	for _, rt := range r.routes {
+		if ctx, ok := rt.match(req.Context(), segs); ok {
+			rt.handler.ServeHTTP(w, req.WithContext(ctx))
 			return
 		}
 	}
@@ -133,8 +142,8 @@ func (r *router) detectConflict(method, pattern string, handler http.Handler) {
 	// see: https://www.alexedwards.net/blog/which-go-router-should-i-use
 
 	incomingSegments := pathSegments(pattern)
-	for _, route := range r.routes {
-		existingSegments := route.segs
+	for _, rt := range r.routes {
+		existingSegments := rt.segs
 		sameLen := len(incomingSegments) == len(existingSegments)
 		if !sameLen {
 			// no conflict
@@ -155,12 +164,12 @@ already exists and would conflict.`,
 			pattern,
 			strings.ToUpper(method),
 			getfunc(handler),
-			path.Join(route.segs...),
-			strings.ToUpper(route.method),
-			getfunc(route.handler),
+			path.Join(rt.segs...),
+			strings.ToUpper(rt.method),
+			getfunc(rt.handler),
 		)
 
-		if pattern == route.pattern {
+		if pattern == rt.pattern {
 			panic(panicMsg)
 		}
 
@@ -168,7 +177,7 @@ already exists and would conflict.`,
 			panic(panicMsg)
 		}
 
-		if strings.Contains(route.pattern, ":") {
+		if strings.Contains(rt.pattern, ":") {
 			panic(panicMsg)
 		}
 	}

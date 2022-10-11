@@ -12,7 +12,7 @@ type config struct {
 //
 // It is a no-op in environments without a configured memory quota.
 //
-// The optional argument c is only used for test purposes.
+// The optional argument c is only used for internal test purposes.
 func SetMem(c ...config) func() {
 	return setMem(c...)
 }
@@ -21,7 +21,7 @@ func SetMem(c ...config) func() {
 //
 // It is a no-op in environments without a configured cpu quota.
 //
-// The optional argument c is only used for test purposes.
+// The optional argument c is only used for internal test purposes.
 func SetCpu(c ...config) func() {
 	return setCpu(c...)
 }
