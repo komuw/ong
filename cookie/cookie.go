@@ -85,7 +85,10 @@ func Set(
 	http.SetCookie(w, c)
 }
 
-const sep = ":" // the value of this should not be changed without thinking about it.
+// This value should not be changed without thinking about it.
+// The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
+// So `sep` should not be any of those.
+const sep = ":"
 
 var (
 	enc  cry.Enc   //nolint:gochecknoglobals
@@ -120,15 +123,20 @@ func SetEncrypted(
 		return
 	}
 
-	expires := time.Now().UTC().Add(mAge).Unix()
+	expires := strconv.Itoa(
+		int(
+			time.Now().UTC().Add(mAge).Unix(),
+		),
+	)
 
+	combined := ip + expires + value
 	encryptedEncodedVal := fmt.Sprintf(
-		"%s%s%s%s%s",
-		enc.EncryptEncode(value),
+		"%d%s%d%s%s",
+		len(ip),
 		sep,
-		enc.EncryptEncode(ip),
+		len(expires),
 		sep,
-		enc.EncryptEncode(strconv.Itoa(int(expires))), // expiration date.
+		enc.EncryptEncode(combined),
 	)
 
 	Set(
@@ -161,17 +169,24 @@ func GetEncrypted(
 		return nil, errors.New("ong/cookie: invalid cookie")
 	}
 
-	value, ip, expires := subs[0], subs[1], subs[2]
-
-	ip, err = enc.DecryptDecode(ip)
+	lenOfIp, err := strconv.Atoi(subs[0])
 	if err != nil {
 		return nil, err
 	}
 
-	expiresStr, err := enc.DecryptDecode(expires)
+	lenOfExpires, err := strconv.Atoi(subs[1])
 	if err != nil {
 		return nil, err
 	}
+
+	decryptedVal, err := enc.DecryptDecode(subs[2])
+	if err != nil {
+		return nil, err
+	}
+
+	ip, expiresStr, val := decryptedVal[:lenOfIp],
+		decryptedVal[lenOfIp:lenOfIp+lenOfExpires],
+		decryptedVal[lenOfIp+lenOfExpires:]
 
 	{
 		// Try and prevent replay attacks.
@@ -197,11 +212,6 @@ func GetEncrypted(
 		if diff <= 0 {
 			return nil, errors.New("ong/cookie: cookie should be expired")
 		}
-	}
-
-	val, err := enc.DecryptDecode(value)
-	if err != nil {
-		return nil, err
 	}
 
 	c2 := &http.Cookie{
