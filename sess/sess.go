@@ -101,10 +101,8 @@ func Session(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			r = r.WithContext(ctx)
 		}
 
-		defer func() {
-			// 1. Save session cookie to response.
-			Save(r, w, domain, mAge, secretKey)
-		}()
+		// 1. Save session cookie to response.
+		defer Save(r, w, domain, mAge, secretKey)
 
 		wrappedHandler(w, r)
 	}
