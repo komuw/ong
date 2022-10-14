@@ -71,10 +71,9 @@ func Session(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Read from cookies and check for session cookie.
 		// 2. get that cookie and save it to r.context
-
-		var sessVal map[string]string
-
 		ctx := r.Context()
+		var sessVal map[string]string // should be per request.
+
 		c, err := cookie.GetEncrypted(r, cookieName, secretKey)
 		if err == nil && c.Value != "" {
 			if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
