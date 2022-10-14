@@ -11,42 +11,23 @@ import (
 	"github.com/komuw/ong/cookie"
 )
 
-/*
-
-session.get(req, "name")
-
-session.put("name" : "komu")
-
-*/
-
 type sessionContextKeyType string
 
 const sessCtxKey = sessionContextKeyType("ong-session-key")
 
-// // TODO: doc comment
-// func Get(r *http.Request, key string) string {
-// 	getFromCtx := func(ctx context.Context) string {
-// 		if ctx != nil {
-// 			if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
-// 				if s, ok := vCtx.(string); ok {
-// 					return s
-// 				}
-// 			}
-// 		}
-// 		return ""
-// 	}
+// TODO: doc comment
+func Get(r *http.Request, key string) string {
+	ctx := r.Context()
+	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
+		if s, ok := vCtx.(map[string]string); ok {
+			if val, ok := s[key]; ok {
+				return val
+			}
+		}
+	}
 
-// 	val := getFromCtx(r.Context())
-// 	if val == "" {
-// 		return val
-// 	}
-// }
-
-// type sess struct {
-// 	s map[string]string
-// }
-
-// var sessVar = sess{s: map[string]string{}}
+	return ""
+}
 
 // TODO: doc comment
 func Set(r *http.Request, key, value string) {
@@ -92,7 +73,7 @@ func Session(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		defer func() {
 			// 1. Save session cookie to response.
 			ctx := r.Context()
-			fmt.Println("3: ", ctx.Value(sessCtxKey))
+			fmt.Println("4: ", ctx.Value(sessCtxKey))
 			if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
 				if s, ok := vCtx.(map[string]string); ok {
 					fmt.Println("save: s: ", s)

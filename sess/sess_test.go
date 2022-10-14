@@ -16,6 +16,7 @@ func someTestHandler(msg string) http.HandlerFunc {
 		fmt.Println("1: ", r.Context().Value(sessCtxKey))
 		Set(r, "name", "Komu Wairagu")
 		fmt.Println("2: ", r.Context().Value(sessCtxKey))
+		fmt.Println("3: ", Get(r, "name"))
 		fmt.Fprint(w, msg)
 	}
 }
