@@ -103,19 +103,33 @@ func Session(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		defer func() {
 			// 1. Save session cookie to response.
-			ctx := r.Context()
-			fmt.Println("4: ", ctx.Value(sessCtxKey))
-			if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
-				if s, ok := vCtx.(map[string]string); ok {
-					fmt.Println("save: s: ", s)
-					if value, err := json.Marshal(s); err == nil && value != nil {
-						fmt.Println("set cookie: string(value): ", string(value))
-						cookie.SetEncrypted(r, w, cookieName, string(value), domain, mAge, secretKey)
-					}
-				}
-			}
+			Save(r, w, domain, mAge, secretKey)
 		}()
 
 		wrappedHandler(w, r)
+	}
+}
+
+// TODO: doc comment
+// TODO: remind people they don't need to call it if they are also using [middleware.Session]
+func Save(
+	r *http.Request,
+	w http.ResponseWriter,
+	domain string,
+	mAge time.Duration,
+	secretKey string,
+) {
+	cookieName := "ong_sess"
+
+	ctx := r.Context()
+	fmt.Println("4: ", ctx.Value(sessCtxKey))
+	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
+		if s, ok := vCtx.(map[string]string); ok {
+			fmt.Println("save: s: ", s)
+			if value, err := json.Marshal(s); err == nil && value != nil {
+				fmt.Println("set cookie: string(value): ", string(value))
+				cookie.SetEncrypted(r, w, cookieName, string(value), domain, mAge, secretKey)
+			}
+		}
 	}
 }
