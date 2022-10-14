@@ -30,6 +30,18 @@ func Get(r *http.Request, key string) string {
 	return ""
 }
 
+// TODO: doc comment. gets all/multiple.
+func GetM(r *http.Request) map[string]string {
+	ctx := r.Context()
+	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
+		if s, ok := vCtx.(map[string]string); ok {
+			return s
+		}
+	}
+
+	return nil
+}
+
 // TODO: doc comment
 func Set(r *http.Request, key, value string) {
 	ctx := r.Context()
