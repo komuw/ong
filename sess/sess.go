@@ -14,7 +14,10 @@ import (
 
 type sessionContextKeyType string
 
-const sessCtxKey = sessionContextKeyType("ong-session-key")
+const (
+	sessCtxKey = sessionContextKeyType("ong-session-key")
+	cookieName = "ong_sess"
+)
 
 // TODO: doc comment
 func Get(r *http.Request, key string) string {
@@ -79,8 +82,6 @@ func Save(
 	mAge time.Duration,
 	secretKey string,
 ) {
-	cookieName := "ong_sess"
-
 	ctx := r.Context()
 	fmt.Println("4: ", ctx.Value(sessCtxKey))
 	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
@@ -99,34 +100,39 @@ func Save(
 // TODO: should this middleware should take some options(like cookie max-age) as arguments??
 func Session(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	// TODO: make this variables
-	cookieName := "ong_sess"
 	secretKey := "secretKey"
 	domain := "localhost"
 	mAge := 2 * time.Hour
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Read from cookies and check for session cookie.
-		// 2. get that cookie and save it to r.context
-		ctx := r.Context()
-		var sessVal map[string]string // should be per request.
+		{
+			// 1. Read from cookies and check for session cookie.
+			// 2. get that cookie and save it to r.context
 
-		c, err := cookie.GetEncrypted(r, cookieName, secretKey)
-		if err == nil && c.Value != "" {
-			if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
+			ctx := r.Context()
+			var sessVal map[string]string // should be per request.
+
+			c, err := cookie.GetEncrypted(r, cookieName, secretKey)
+			if err == nil && c.Value != "" {
+				if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
+					ctx = context.WithValue(ctx, sessCtxKey, sessVal)
+					r = r.WithContext(ctx)
+				}
+			}
+
+			if sessVal == nil {
+				// The process above might have failed; maybe `json.Unmarshal` failed.
+				sessVal = map[string]string{}
 				ctx = context.WithValue(ctx, sessCtxKey, sessVal)
 				r = r.WithContext(ctx)
 			}
 		}
 
-		if sessVal == nil {
-			// The process above might have failed; maybe `json.Unmarshal` failed.
-			sessVal = map[string]string{}
-			ctx = context.WithValue(ctx, sessCtxKey, sessVal)
-			r = r.WithContext(ctx)
-		}
+		{
+			// 1. Save session cookie to response.
 
-		// 1. Save session cookie to response.
-		defer Save(r, w, domain, mAge, secretKey)
+			defer Save(r, w, domain, mAge, secretKey)
+		}
 
 		wrappedHandler(w, r)
 	}
