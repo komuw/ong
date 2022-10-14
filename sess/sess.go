@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/cookie"
+	"golang.org/x/exp/maps"
 )
 
 type sessionContextKeyType string
@@ -41,6 +42,21 @@ func Set(r *http.Request, key, value string) {
 		}
 	}
 }
+
+// TODO: doc comment: sets multiple.
+func SetM(r *http.Request, m M) {
+	ctx := r.Context()
+	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
+		if s, ok := vCtx.(map[string]string); ok {
+			maps.Copy(s, m)
+			ctx = context.WithValue(ctx, sessCtxKey, s)
+			r = r.WithContext(ctx)
+		}
+	}
+}
+
+// TODO: doc comment
+type M map[string]string
 
 // TODO: doc comment
 // TODO: move to middleware/
