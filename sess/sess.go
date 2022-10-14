@@ -72,17 +72,21 @@ func Session(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// 1. Read from cookies and check for session cookie.
 		// 2. get that cookie and save it to r.context
 
+		var sessVal map[string]string
+
 		ctx := r.Context()
 		c, err := cookie.GetEncrypted(r, cookieName, secretKey)
 		if err == nil && c.Value != "" {
-			v := map[string]string{}
-			if err := json.Unmarshal([]byte(c.Value), &v); err == nil {
-				ctx = context.WithValue(ctx, sessCtxKey, v)
+			if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
+				ctx = context.WithValue(ctx, sessCtxKey, sessVal)
 				r = r.WithContext(ctx)
 			}
-		} else {
-			v := map[string]string{}
-			ctx = context.WithValue(ctx, sessCtxKey, v)
+		}
+
+		if sessVal == nil {
+			// The process above might have failed; maybe `json.Unmarshal` failed.
+			sessVal = map[string]string{}
+			ctx = context.WithValue(ctx, sessCtxKey, sessVal)
 			r = r.WithContext(ctx)
 		}
 
