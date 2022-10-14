@@ -145,6 +145,8 @@ func (m myAPI) login() http.HandlerFunc {
 	  - https://www.swyx.io/css-100-bytes
 	  - https://news.ycombinator.com/item?id=32972768
 	  - https://github.com/andybrewer/mvp
+	  - https://www.joshwcomeau.com/css/full-bleed/
+	  - https://www.joshwcomeau.com/css/custom-css-reset/
 	*/
 		max-width: 70ch;
 		padding: 3em 1em;
