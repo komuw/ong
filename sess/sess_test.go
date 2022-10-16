@@ -2,99 +2,105 @@ package sess
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
+	"time"
 
 	"github.com/akshayjshah/attest"
 )
 
-func someTestHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("1: ", r.Context().Value(sessCtxKey))
-		Set(r, "name", "Komu Wairagu")
-		fmt.Println("2: ", r.Context().Value(sessCtxKey))
-		fmt.Println("3: ", Get(r, "name"))
-		fmt.Fprint(w, msg)
-	}
-}
-
-func TestSession(t *testing.T) {
+func TestSess(t *testing.T) {
 	t.Parallel()
 
-	t.Run("middleware succeds", func(t *testing.T) {
+	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := Session(someTestHandler(msg))
+		k := "name"
+		v := "John Keypoole"
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, req)
-
-		res := rec.Result()
-		defer res.Body.Close()
-
-		rb, err := io.ReadAll(res.Body)
+		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
+		req = Initialise(req, "secretKey")
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
+		Set(req, k, v)
+		res := req.Context().Value(CtxKey).(map[string]string)
+		attest.Equal(t, res, map[string]string{k: v})
 	})
 
-	t.Run("middleware set succeds", func(t *testing.T) {
+	t.Run("setM", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := Session(someTestHandler(msg))
+		m := M{"name": "John Doe", "age": "99"}
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, req)
-
-		res := rec.Result()
-		defer res.Body.Close()
-
-		rb, err := io.ReadAll(res.Body)
+		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
+		req = Initialise(req, "secretKey")
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
-
-		fmt.Println("res.Cookies(): ", res.Cookies())
+		SetM(req, m)
+		res := req.Context().Value(CtxKey).(map[string]string)
+		attest.Equal(t, res, m)
 	})
 
-	t.Run("concurrency safe", func(t *testing.T) {
+	t.Run("get", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := Session(someTestHandler(msg))
+		k := "name"
+		v := "John Keypoole"
+		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
+		attest.Ok(t, err)
+		req = Initialise(req, "secretKey")
 
-		runhandler := func() {
-			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			wrappedHandler.ServeHTTP(rec, req)
-
-			res := rec.Result()
-			defer res.Body.Close()
-
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
-
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
+		{
+			Set(req, k, v)
+			res := req.Context().Value(CtxKey).(map[string]string)
+			attest.Equal(t, res, map[string]string{k: v})
 		}
 
-		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 10; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				runhandler()
-			}()
+		{
+			res := Get(req, k)
+			attest.Equal(t, res, v)
 		}
-		wg.Wait()
+	})
+
+	t.Run("getM", func(t *testing.T) {
+		t.Parallel()
+
+		m := M{"name": "John Doe", "age": "99"}
+		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
+		attest.Ok(t, err)
+		req = Initialise(req, "secretKey")
+
+		{
+			SetM(req, m)
+			res := req.Context().Value(CtxKey).(map[string]string)
+			attest.Equal(t, res, m)
+		}
+		{
+			res := GetM(req)
+			attest.Equal(t, res, m)
+		}
+	})
+
+	t.Run("save", func(t *testing.T) {
+		t.Parallel()
+
+		m := M{"name": "John Doe", "age": "99"}
+		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
+		attest.Ok(t, err)
+		rec := httptest.NewRecorder()
+		req = Initialise(req, "secretKey")
+
+		{
+			SetM(req, m)
+			res := req.Context().Value(CtxKey).(map[string]string)
+			attest.Equal(t, res, m)
+		}
+		{
+			Save(req, rec, "localhost", 2*time.Hour, "secretKey")
+			// res := GetM(req)
+			// attest.Equal(t, res, m)
+			fmt.Println("rec.Header(): ", rec.Header())
+		}
 	})
 }

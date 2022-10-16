@@ -1,4 +1,5 @@
 // TODO: doc comment
+// TODO: comment that they are backed by cookies(encrypted)
 package sess
 
 import (
@@ -12,22 +13,87 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type sessionContextKeyType string
+type (
+	sessionContextKeyType string
+	// M is an alias of map[string]string
+	M = map[string]string
+)
 
 const (
-	sessCtxKey = sessionContextKeyType("ong-session-key")
-	cookieName = "ong_sess"
+	// TODO: doc comment
+	CtxKey = sessionContextKeyType("ong-session-key")
+	// TODO: doc comment
+	CookieName = "ong_sess"
 )
+
+// TODO: doc comment
+// TODO: remind people they don't need to call it if they are also using [middleware.Session]
+func Initialise(r *http.Request, secretKey string) *http.Request {
+	ctx := r.Context()
+	var sessVal map[string]string // should be per request.
+
+	c, err := cookie.GetEncrypted(r, CookieName, secretKey)
+	if err == nil && c.Value != "" {
+		if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
+			ctx = context.WithValue(ctx, CtxKey, sessVal)
+			r = r.WithContext(ctx)
+		}
+	}
+
+	if sessVal == nil {
+		// The process above might have failed; maybe `json.Unmarshal` failed.
+		sessVal = map[string]string{}
+		ctx = context.WithValue(ctx, CtxKey, sessVal)
+		r = r.WithContext(ctx)
+	}
+
+	return r
+}
+
+// TODO: doc comment
+func Set(r *http.Request, key, value string) {
+	ctx := r.Context()
+	if vCtx := ctx.Value(CtxKey); vCtx != nil {
+		if s, ok := vCtx.(map[string]string); ok {
+			s[key] = value
+			ctx = context.WithValue(ctx, CtxKey, s)
+			r = r.WithContext(ctx)
+		}
+	} else {
+		s := map[string]string{key: value}
+		ctx = context.WithValue(ctx, CtxKey, s)
+		r = r.WithContext(ctx)
+	}
+}
+
+// TODO: doc comment: sets multiple.
+func SetM(r *http.Request, m M) {
+	ctx := r.Context()
+	if vCtx := ctx.Value(CtxKey); vCtx != nil {
+		if s, ok := vCtx.(map[string]string); ok {
+			maps.Copy(s, m)
+			ctx = context.WithValue(ctx, CtxKey, s)
+			r = r.WithContext(ctx)
+		}
+	} else {
+		ctx = context.WithValue(ctx, CtxKey, m)
+		r = r.WithContext(ctx)
+	}
+}
 
 // TODO: doc comment
 func Get(r *http.Request, key string) string {
 	ctx := r.Context()
-	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
+	if vCtx := ctx.Value(CtxKey); vCtx != nil {
 		if s, ok := vCtx.(map[string]string); ok {
 			if val, ok := s[key]; ok {
 				return val
 			}
 		}
+	} else {
+		s := map[string]string{}
+		ctx = context.WithValue(ctx, CtxKey, s)
+		r = r.WithContext(ctx)
 	}
 
 	return ""
@@ -36,41 +102,17 @@ func Get(r *http.Request, key string) string {
 // TODO: doc comment. gets all/multiple.
 func GetM(r *http.Request) map[string]string {
 	ctx := r.Context()
-	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
+	if vCtx := ctx.Value(CtxKey); vCtx != nil {
 		if s, ok := vCtx.(map[string]string); ok {
 			return s
 		}
+	} else {
+		s := map[string]string{}
+		ctx = context.WithValue(ctx, CtxKey, s)
+		r = r.WithContext(ctx)
 	}
 
 	return nil
-}
-
-// TODO: doc comment
-func Set(r *http.Request, key, value string) {
-	ctx := r.Context()
-	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
-		fmt.Println("aaaaaaaaa")
-		if s, ok := vCtx.(map[string]string); ok {
-			s[key] = value
-			ctx = context.WithValue(ctx, sessCtxKey, s)
-			r = r.WithContext(ctx)
-		}
-	}
-}
-
-// TODO: doc comment
-type M map[string]string
-
-// TODO: doc comment: sets multiple.
-func SetM(r *http.Request, m M) {
-	ctx := r.Context()
-	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
-		if s, ok := vCtx.(map[string]string); ok {
-			maps.Copy(s, m)
-			ctx = context.WithValue(ctx, sessCtxKey, s)
-			r = r.WithContext(ctx)
-		}
-	}
 }
 
 // TODO: doc comment
@@ -83,57 +125,18 @@ func Save(
 	secretKey string,
 ) {
 	ctx := r.Context()
-	fmt.Println("4: ", ctx.Value(sessCtxKey))
-	if vCtx := ctx.Value(sessCtxKey); vCtx != nil {
+	fmt.Println("4: ", ctx.Value(CtxKey))
+	if vCtx := ctx.Value(CtxKey); vCtx != nil {
 		if s, ok := vCtx.(map[string]string); ok {
 			fmt.Println("save: s: ", s)
 			if value, err := json.Marshal(s); err == nil && value != nil {
 				fmt.Println("set cookie: string(value): ", string(value))
-				cookie.SetEncrypted(r, w, cookieName, string(value), domain, mAge, secretKey)
+				cookie.SetEncrypted(r, w, CookieName, string(value), domain, mAge, secretKey)
 			}
 		}
-	}
-}
-
-// TODO: doc comment
-// TODO: move to middleware/
-// TODO: should this middleware should take some options(like cookie max-age) as arguments??
-func Session(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	// TODO: make this variables
-	secretKey := "secretKey"
-	domain := "localhost"
-	mAge := 2 * time.Hour
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		{
-			// 1. Read from cookies and check for session cookie.
-			// 2. get that cookie and save it to r.context
-
-			ctx := r.Context()
-			var sessVal map[string]string // should be per request.
-
-			c, err := cookie.GetEncrypted(r, cookieName, secretKey)
-			if err == nil && c.Value != "" {
-				if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
-					ctx = context.WithValue(ctx, sessCtxKey, sessVal)
-					r = r.WithContext(ctx)
-				}
-			}
-
-			if sessVal == nil {
-				// The process above might have failed; maybe `json.Unmarshal` failed.
-				sessVal = map[string]string{}
-				ctx = context.WithValue(ctx, sessCtxKey, sessVal)
-				r = r.WithContext(ctx)
-			}
-		}
-
-		{
-			// 1. Save session cookie to response.
-
-			defer Save(r, w, domain, mAge, secretKey)
-		}
-
-		wrappedHandler(w, r)
+	} else {
+		s := map[string]string{}
+		ctx = context.WithValue(ctx, CtxKey, s)
+		r = r.WithContext(ctx)
 	}
 }
