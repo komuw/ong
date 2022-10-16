@@ -1,5 +1,6 @@
 // TODO: doc comment
 // TODO: comment that they are backed by cookies(encrypted)
+// TODO: mention importance of using session middleware.
 package sess
 
 import (
@@ -125,10 +126,8 @@ func Save(
 	secretKey string,
 ) {
 	ctx := r.Context()
-	fmt.Println("4: ", ctx.Value(CtxKey))
 	if vCtx := ctx.Value(CtxKey); vCtx != nil {
 		if s, ok := vCtx.(map[string]string); ok {
-			fmt.Println("save: s: ", s)
 			if value, err := json.Marshal(s); err == nil && value != nil {
 				fmt.Println("set cookie: string(value): ", string(value))
 				cookie.SetEncrypted(r, w, CookieName, string(value), domain, mAge, secretKey)
