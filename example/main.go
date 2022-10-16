@@ -15,6 +15,7 @@ import (
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/server"
+	"github.com/komuw/ong/sess"
 )
 
 // Taken mainly from the talk; "How I Write HTTP Web Services after Eight Years" by Mat Ryer
@@ -122,6 +123,20 @@ func (m myAPI) check(msg string) http.HandlerFunc {
 		csrfToken := middleware.GetCsrfToken(r.Context())
 		m.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
+		cartID := "afakHda8eqL"
+		sess.SetM(r, sess.M{
+			"name":    "John Doe",
+			"age":     "88",
+			"cart_id": cartID,
+		})
+
+		m.l.WithImmediate().Info(log.F{"cart_id": sess.Get(r, "cart_id")})
+		if sess.Get(r, "cart_id") != "" {
+			if sess.Get(r, "cart_id") != cartID {
+				panic("wrong cartID")
+			}
+		}
+
 		age := mux.Param(r.Context(), "age")
 		// use msg, which is a dependency specific to this handler
 		_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
@@ -214,7 +229,7 @@ func (m myAPI) login() http.HandlerFunc {
 			panic(errM)
 		}
 
-		cookieName := "session_cookie"
+		cookieName := "ong_example_session_cookie"
 		c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
 		m.l.WithImmediate().Info(log.F{
 			"msg":    "login handler log cookie",
