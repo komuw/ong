@@ -65,6 +65,9 @@ func TestSession(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 
 		fmt.Println("res.Cookies(): ", res.Cookies())
+		attest.Equal(t, len(res.Cookies()), 1)
+		attest.Equal(t, res.Cookies()[0].Name, sess.CookieName)
+		attest.NotZero(t, res.Cookies()[0].Value)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
