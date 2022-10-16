@@ -31,7 +31,7 @@ const (
 // TODO: remind people they don't need to call it if they are also using [middleware.Session]
 func Initialise(r *http.Request, secretKey string) *http.Request {
 	ctx := r.Context()
-	var sessVal map[string]string // should be per request.
+	var sessVal M // should be per request.
 
 	c, err := cookie.GetEncrypted(r, CookieName, secretKey)
 	if err == nil && c.Value != "" {
@@ -43,7 +43,7 @@ func Initialise(r *http.Request, secretKey string) *http.Request {
 
 	if sessVal == nil {
 		// The process above might have failed; maybe `json.Unmarshal` failed.
-		sessVal = map[string]string{}
+		sessVal = M{}
 		ctx = context.WithValue(ctx, CtxKey, sessVal)
 		r = r.WithContext(ctx)
 	}
@@ -55,13 +55,13 @@ func Initialise(r *http.Request, secretKey string) *http.Request {
 func Set(r *http.Request, key, value string) {
 	ctx := r.Context()
 	if vCtx := ctx.Value(CtxKey); vCtx != nil {
-		if s, ok := vCtx.(map[string]string); ok {
+		if s, ok := vCtx.(M); ok {
 			s[key] = value
 			ctx = context.WithValue(ctx, CtxKey, s)
 			r = r.WithContext(ctx)
 		}
 	} else {
-		s := map[string]string{key: value}
+		s := M{key: value}
 		ctx = context.WithValue(ctx, CtxKey, s)
 		r = r.WithContext(ctx)
 	}
@@ -71,7 +71,7 @@ func Set(r *http.Request, key, value string) {
 func SetM(r *http.Request, m M) {
 	ctx := r.Context()
 	if vCtx := ctx.Value(CtxKey); vCtx != nil {
-		if s, ok := vCtx.(map[string]string); ok {
+		if s, ok := vCtx.(M); ok {
 			maps.Copy(s, m)
 			ctx = context.WithValue(ctx, CtxKey, s)
 			r = r.WithContext(ctx)
@@ -86,13 +86,13 @@ func SetM(r *http.Request, m M) {
 func Get(r *http.Request, key string) string {
 	ctx := r.Context()
 	if vCtx := ctx.Value(CtxKey); vCtx != nil {
-		if s, ok := vCtx.(map[string]string); ok {
+		if s, ok := vCtx.(M); ok {
 			if val, ok := s[key]; ok {
 				return val
 			}
 		}
 	} else {
-		s := map[string]string{}
+		s := M{}
 		ctx = context.WithValue(ctx, CtxKey, s)
 		r = r.WithContext(ctx)
 	}
@@ -101,14 +101,14 @@ func Get(r *http.Request, key string) string {
 }
 
 // TODO: doc comment. gets all/multiple.
-func GetM(r *http.Request) map[string]string {
+func GetM(r *http.Request) M {
 	ctx := r.Context()
 	if vCtx := ctx.Value(CtxKey); vCtx != nil {
-		if s, ok := vCtx.(map[string]string); ok {
+		if s, ok := vCtx.(M); ok {
 			return s
 		}
 	} else {
-		s := map[string]string{}
+		s := M{}
 		ctx = context.WithValue(ctx, CtxKey, s)
 		r = r.WithContext(ctx)
 	}
@@ -127,14 +127,14 @@ func Save(
 ) {
 	ctx := r.Context()
 	if vCtx := ctx.Value(CtxKey); vCtx != nil {
-		if s, ok := vCtx.(map[string]string); ok {
+		if s, ok := vCtx.(M); ok {
 			if value, err := json.Marshal(s); err == nil && value != nil {
 				fmt.Println("set cookie: string(value): ", string(value))
 				cookie.SetEncrypted(r, w, CookieName, string(value), domain, mAge, secretKey)
 			}
 		}
 	} else {
-		s := map[string]string{}
+		s := M{}
 		ctx = context.WithValue(ctx, CtxKey, s)
 		r = r.WithContext(ctx)
 	}
