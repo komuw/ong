@@ -56,8 +56,6 @@ func Set(r *http.Request, key, value string) {
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			s[key] = value
-			ctx = context.WithValue(ctx, ctxKey, s)
-			r = r.WithContext(ctx)
 		}
 	}
 }
@@ -68,8 +66,6 @@ func SetM(r *http.Request, m M) {
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			maps.Copy(s, m)
-			ctx = context.WithValue(ctx, ctxKey, s)
-			r = r.WithContext(ctx)
 		}
 	}
 }
