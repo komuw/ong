@@ -69,7 +69,13 @@ func newSessRW(
 
 // Write recodes the size of bytes sent for logging purposes.
 func (srw *sessRW) Write(b []byte) (int, error) {
-	// Save session cookie to response.
+	// 3. Save session cookie to response.
+
+	// We have to call `sess.Save` here.
+	//
+	// According to: https://pkg.go.dev/net/http#ResponseWriter
+	// Changing the header map after a call to WriteHeader/Write has no effect unless in some specific cases.
+	// Thus, we call sess.Save here just before any call to `ResponseWriter.Write` goes through.
 	sess.Save(
 		srw.r,
 		srw.ResponseWriter,
