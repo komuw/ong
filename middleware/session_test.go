@@ -13,9 +13,20 @@ import (
 	"github.com/komuw/ong/sess"
 )
 
+func bigMap() map[string]string {
+	y := map[string]string{}
+	for i := 0; i < 100; i++ {
+		k := fmt.Sprintf("key:%d", i)
+		v := fmt.Sprintf("val:%d", i)
+		y[k] = v
+	}
+	return y
+}
+
 func someTestHandler(msg, key, value string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess.Set(r, key, value)
+		sess.SetM(r, bigMap())
 		fmt.Fprint(w, msg)
 	}
 }
