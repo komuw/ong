@@ -42,6 +42,7 @@ func TestMux(t *testing.T) {
 		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			nil,
 			NewRoute(
 				"/api",
 				MethodGet,
@@ -67,6 +68,7 @@ func TestMux(t *testing.T) {
 		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			nil,
 			NewRoute(
 				uri,
 				MethodGet,
@@ -111,6 +113,7 @@ func TestMux(t *testing.T) {
 		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			nil,
 			NewRoute(
 				uri,
 				MethodGet,

@@ -30,6 +30,7 @@ func main() {
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
+		nil,
 		mux.NewRoute(
 			"/api",
 			mux.MethodPost,

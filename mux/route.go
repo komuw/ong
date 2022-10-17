@@ -64,18 +64,17 @@ func (r Route) match(ctx context.Context, segs []string) (context.Context, bool)
 // router routes HTTP requests.
 type router struct {
 	routes []Route
-	// notFoundHandler is the http.Handler to call when no routes
-	// match. By default uses http.NotFoundHandler().
-	notFoundHandler http.Handler
+	// notFoundHandler is the handler to call when no routes match.
+	notFoundHandler http.HandlerFunc
 }
 
 // NewRouter makes a new Router.
-func newRouter() *router {
-	return &router{
-		// TODO: add ability for someone to pass in a notFound handler.
-		// If they pass in `nil` we default to `http.NotFoundHandler()`
-		notFoundHandler: http.NotFoundHandler(),
+func newRouter(notFoundHandler http.HandlerFunc) *router {
+	if notFoundHandler == nil {
+		notFoundHandler = http.NotFound
 	}
+
+	return &router{notFoundHandler: notFoundHandler}
 }
 
 func pathSegments(p string) []string {
@@ -118,6 +117,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+
 	r.notFoundHandler.ServeHTTP(w, req)
 }
 
