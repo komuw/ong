@@ -1,5 +1,5 @@
 // Package sess provides an implementation of http sessions that is backed by tamper-proof & encrypted cookies.
-// This package should ideally be used together with the [middleware.Session]
+// This package should ideally be used together with the [middleware.Session] middleware.
 package sess
 
 import (
@@ -50,7 +50,7 @@ func Initialise(r *http.Request, secretKey string) *http.Request {
 	return r
 }
 
-// Set saves the key-value pair to the current http session.
+// Set adds the key-value pair to the current http session.
 func Set(r *http.Request, key, value string) {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
@@ -66,7 +66,7 @@ func Set(r *http.Request, key, value string) {
 	}
 }
 
-// SetM saves multiple key-value pairs to the current http session.
+// SetM adds multiple key-value pairs to the current http session.
 func SetM(r *http.Request, m M) {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
