@@ -1,6 +1,5 @@
-// TODO: doc comment
-// TODO: comment that they are backed by cookies(encrypted)
-// TODO: mention importance of using session middleware.
+// Package sess provides an implementation of http sessions that is backed by tamper-proof & encrypted cookies.
+// This package should ideally be used together with the [middleware.Session]
 package sess
 
 import (
@@ -20,14 +19,15 @@ type (
 )
 
 const (
-	// TODO: doc comment
-	CtxKey = sessionContextKeyType("ong-session-key")
-	// TODO: doc comment
+	ctxKey = sessionContextKeyType("ong-session-key")
+	// CookieName is the name of the http cookie under which sessions are stored.
 	CookieName = "ong_sess"
 )
 
-// TODO: doc comment
-// TODO: remind people they don't need to call it if they are also using [middleware.Session]
+// Initialise returns a new http.Request (based on r) that has sessions properly setup.
+//
+// You do not need to call this function, if you are also using the [middleware.Session] middleware.
+// That middleware does so automatically for you.
 func Initialise(r *http.Request, secretKey string) *http.Request {
 	ctx := r.Context()
 	var sessVal M // should be per request.
@@ -35,7 +35,7 @@ func Initialise(r *http.Request, secretKey string) *http.Request {
 	c, err := cookie.GetEncrypted(r, CookieName, secretKey)
 	if err == nil && c.Value != "" {
 		if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
-			ctx = context.WithValue(ctx, CtxKey, sessVal)
+			ctx = context.WithValue(ctx, ctxKey, sessVal)
 			r = r.WithContext(ctx)
 		}
 	}
@@ -43,48 +43,49 @@ func Initialise(r *http.Request, secretKey string) *http.Request {
 	if sessVal == nil {
 		// The process above might have failed; maybe `json.Unmarshal` failed.
 		sessVal = M{}
-		ctx = context.WithValue(ctx, CtxKey, sessVal)
+		ctx = context.WithValue(ctx, ctxKey, sessVal)
 		r = r.WithContext(ctx)
 	}
 
 	return r
 }
 
-// TODO: doc comment
+// Set saves the key-value pair to the current http session.
 func Set(r *http.Request, key, value string) {
 	ctx := r.Context()
-	if vCtx := ctx.Value(CtxKey); vCtx != nil {
+	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			s[key] = value
-			ctx = context.WithValue(ctx, CtxKey, s)
+			ctx = context.WithValue(ctx, ctxKey, s)
 			r = r.WithContext(ctx)
 		}
 	} else {
 		s := M{key: value}
-		ctx = context.WithValue(ctx, CtxKey, s)
+		ctx = context.WithValue(ctx, ctxKey, s)
 		r = r.WithContext(ctx)
 	}
 }
 
-// TODO: doc comment: sets multiple.
+// SetM saves multiple key-value pairs to the current http session.
 func SetM(r *http.Request, m M) {
 	ctx := r.Context()
-	if vCtx := ctx.Value(CtxKey); vCtx != nil {
+	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			maps.Copy(s, m)
-			ctx = context.WithValue(ctx, CtxKey, s)
+			ctx = context.WithValue(ctx, ctxKey, s)
 			r = r.WithContext(ctx)
 		}
 	} else {
-		ctx = context.WithValue(ctx, CtxKey, m)
+		ctx = context.WithValue(ctx, ctxKey, m)
 		r = r.WithContext(ctx)
 	}
 }
 
-// TODO: doc comment
+// Get retrieves the value corresponding to the given key from the current http session.
+// It returns an empty string if key is not found in the session.
 func Get(r *http.Request, key string) string {
 	ctx := r.Context()
-	if vCtx := ctx.Value(CtxKey); vCtx != nil {
+	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			if val, ok := s[key]; ok {
 				return val
@@ -92,31 +93,34 @@ func Get(r *http.Request, key string) string {
 		}
 	} else {
 		s := M{}
-		ctx = context.WithValue(ctx, CtxKey, s)
+		ctx = context.WithValue(ctx, ctxKey, s)
 		r = r.WithContext(ctx)
 	}
 
 	return ""
 }
 
-// TODO: doc comment. gets all/multiple.
+// GetM retrieves all the key-value pairs found from the current http session.
+// It returns nil if none is found.
 func GetM(r *http.Request) M {
 	ctx := r.Context()
-	if vCtx := ctx.Value(CtxKey); vCtx != nil {
+	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			return s
 		}
 	} else {
 		s := M{}
-		ctx = context.WithValue(ctx, CtxKey, s)
+		ctx = context.WithValue(ctx, ctxKey, s)
 		r = r.WithContext(ctx)
 	}
 
 	return nil
 }
 
-// TODO: doc comment
-// TODO: remind people they don't need to call it if they are also using [middleware.Session]
+// Save writes(to http cookies) any key-value pairs that have already been added to the current http session.
+//
+// You do not need to call this function, if you are also using the [middleware.Session] middleware.
+// That middleware does so automatically for you.
 func Save(
 	r *http.Request,
 	w http.ResponseWriter,
@@ -125,7 +129,7 @@ func Save(
 	secretKey string,
 ) {
 	ctx := r.Context()
-	if vCtx := ctx.Value(CtxKey); vCtx != nil {
+	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			if value, err := json.Marshal(s); err == nil && value != nil {
 				cookie.SetEncrypted(
@@ -141,7 +145,7 @@ func Save(
 		}
 	} else {
 		s := M{}
-		ctx = context.WithValue(ctx, CtxKey, s)
+		ctx = context.WithValue(ctx, ctxKey, s)
 		r = r.WithContext(ctx)
 	}
 }

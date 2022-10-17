@@ -24,7 +24,7 @@ func TestSess(t *testing.T) {
 		req = Initialise(req, "secretKey")
 
 		Set(req, k, v)
-		res := req.Context().Value(CtxKey).(map[string]string)
+		res := req.Context().Value(ctxKey).(map[string]string)
 		attest.Equal(t, res, map[string]string{k: v})
 	})
 
@@ -38,7 +38,7 @@ func TestSess(t *testing.T) {
 		req = Initialise(req, "secretKey")
 
 		SetM(req, m)
-		res := req.Context().Value(CtxKey).(map[string]string)
+		res := req.Context().Value(ctxKey).(map[string]string)
 		attest.Equal(t, res, m)
 	})
 
@@ -53,7 +53,7 @@ func TestSess(t *testing.T) {
 
 		{
 			Set(req, k, v)
-			res := req.Context().Value(CtxKey).(map[string]string)
+			res := req.Context().Value(ctxKey).(map[string]string)
 			attest.Equal(t, res, map[string]string{k: v})
 		}
 
@@ -73,7 +73,7 @@ func TestSess(t *testing.T) {
 
 		{
 			SetM(req, m)
-			res := req.Context().Value(CtxKey).(map[string]string)
+			res := req.Context().Value(ctxKey).(map[string]string)
 			attest.Equal(t, res, m)
 		}
 		{
@@ -93,7 +93,7 @@ func TestSess(t *testing.T) {
 
 		{
 			SetM(req, m)
-			res := req.Context().Value(CtxKey).(map[string]string)
+			res := req.Context().Value(ctxKey).(map[string]string)
 			attest.Equal(t, res, m)
 		}
 		{
