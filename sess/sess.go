@@ -34,7 +34,7 @@ func Initialise(r *http.Request, secretKey string) *http.Request {
 
 	c, err := cookie.GetEncrypted(r, CookieName, secretKey)
 	if err == nil && c.Value != "" {
-		if err := json.Unmarshal([]byte(c.Value), &sessVal); err == nil {
+		if errM := json.Unmarshal([]byte(c.Value), &sessVal); errM == nil {
 			ctx = context.WithValue(ctx, ctxKey, sessVal)
 			r = r.WithContext(ctx)
 		}
@@ -87,7 +87,7 @@ func Get(r *http.Request, key string) string {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
-			if val, ok := s[key]; ok {
+			if val, okM := s[key]; okM {
 				return val
 			}
 		}

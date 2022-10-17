@@ -86,8 +86,8 @@ func TestSession(t *testing.T) {
 				Value: res.Cookies()[0].Value,
 			})
 
-			c, err := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
-			attest.Ok(t, err)
+			c, errG := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
+			attest.Ok(t, errG)
 			attest.Subsequence(t, c.Value, key)
 			attest.Subsequence(t, c.Value, value)
 		}
