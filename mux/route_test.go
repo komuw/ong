@@ -384,7 +384,9 @@ func TestNotFound(t *testing.T) {
 		rec := httptest.NewRecorder()
 		r.serveHTTP(rec, req)
 		attest.Equal(t, match, "GET")
-		attest.Equal(t, rec.Result().StatusCode, http.StatusOK)
+		res := rec.Result()
+		t.Cleanup(func() { res.Body.Close() })
+		attest.Equal(t, res.StatusCode, http.StatusOK)
 	})
 
 	t.Run("path not exists", func(t *testing.T) {
@@ -401,7 +403,9 @@ func TestNotFound(t *testing.T) {
 		rec := httptest.NewRecorder()
 		r.serveHTTP(rec, req)
 		attest.Equal(t, match, "")
-		attest.Equal(t, rec.Result().StatusCode, http.StatusNotFound)
+		res := rec.Result()
+		t.Cleanup(func() { res.Body.Close() })
+		attest.Equal(t, res.StatusCode, http.StatusNotFound)
 	})
 
 	t.Run("custom notFoundHandler", func(t *testing.T) {
@@ -422,6 +426,8 @@ func TestNotFound(t *testing.T) {
 		rec := httptest.NewRecorder()
 		r.serveHTTP(rec, req)
 		attest.Equal(t, match, "notFoundHandler")
-		attest.Equal(t, rec.Result().StatusCode, http.StatusOK)
+		res := rec.Result()
+		t.Cleanup(func() { res.Body.Close() })
+		attest.Equal(t, res.StatusCode, http.StatusOK)
 	})
 }
