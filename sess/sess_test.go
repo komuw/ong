@@ -1,7 +1,6 @@
 package sess
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -125,9 +124,6 @@ func TestSess(t *testing.T) {
 		}
 		{
 			Save(req, rec, "localhost", 2*time.Hour, "secretKey")
-			// res := GetM(req)
-			// attest.Equal(t, res, m)
-			fmt.Println("rec.Header(): ", rec.Header())
 		}
 	})
 }
