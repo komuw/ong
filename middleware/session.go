@@ -33,7 +33,7 @@ func Session(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Han
 	}
 }
 
-// sessRW provides an http.ResponseWriter interface, which provides session functionality.
+// sessRW provides an http.ResponseWriter interface, which provides http session functionality.
 type sessRW struct {
 	http.ResponseWriter
 	r         *http.Request
