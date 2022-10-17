@@ -51,14 +51,17 @@ type Mux struct {
 
 // New return a HTTP request multiplexer that has the paths in routes.
 //
+// notFoundHandler is the handler that will be used if a url is not found.
+// If it is nil, [http.NotFound] is used instead.
+//
 // All the paths of an application should be added as part of the routes slice argument.
 // Typically, an application should only have one Mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(l log.Logger, opt middleware.Opts, routes ...Route) Mux {
+func New(l log.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, routes ...Route) Mux {
 	m := Mux{
 		l:      l,
-		router: newRouter(),
+		router: newRouter(notFoundHandler),
 	}
 
 	mid := middleware.All //nolint:ineffassign

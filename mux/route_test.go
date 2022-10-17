@@ -244,7 +244,7 @@ func TestRouter(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			r := newRouter()
+			r := newRouter(nil)
 			match := false
 			var ctx context.Context
 			r.handle(tt.RouteMethod, tt.RoutePattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -280,7 +280,7 @@ func TestRouter(t *testing.T) {
 func TestMultipleRoutesDifferentMethods(t *testing.T) {
 	t.Parallel()
 
-	r := newRouter()
+	r := newRouter(nil)
 	var match string
 	r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		match = r.Method
@@ -319,7 +319,7 @@ func TestConflicts(t *testing.T) {
 
 	t.Run("conflicts detected", func(t *testing.T) {
 		t.Parallel()
-		r := newRouter()
+		r := newRouter(nil)
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
@@ -345,7 +345,7 @@ func TestConflicts(t *testing.T) {
 
 	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
 		t.Parallel()
-		r := newRouter()
+		r := newRouter(nil)
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
@@ -370,28 +370,58 @@ func TestConflicts(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	t.Parallel()
 
-	r := newRouter()
-	var match string = "INITIAL"
-	r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		match = r.Method
-	}))
+	t.Run("path exists", func(t *testing.T) {
+		t.Parallel()
 
-	{
+		r := newRouter(nil)
+		var match string
+		r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			match = r.Method
+		}))
+
 		req, err := http.NewRequest(http.MethodGet, "/path", nil)
 		attest.Ok(t, err)
 		rec := httptest.NewRecorder()
 		r.serveHTTP(rec, req)
 		attest.Equal(t, match, "GET")
 		attest.Equal(t, rec.Result().StatusCode, http.StatusOK)
-		match = "INITIAL"
-	}
+	})
 
-	{
+	t.Run("path not exists", func(t *testing.T) {
+		t.Parallel()
+
+		r := newRouter(nil)
+		var match string
+		r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			match = r.Method
+		}))
+
 		req, err := http.NewRequest(http.MethodGet, "/not-found-path", nil)
 		attest.Ok(t, err)
 		rec := httptest.NewRecorder()
 		r.serveHTTP(rec, req)
-		attest.Equal(t, match, "INITIAL")
+		attest.Equal(t, match, "")
 		attest.Equal(t, rec.Result().StatusCode, http.StatusNotFound)
-	}
+	})
+
+	t.Run("custom notFoundHandler", func(t *testing.T) {
+		t.Parallel()
+
+		var match string
+		notFoundHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			match = "notFoundHandler"
+		})
+
+		r := newRouter(notFoundHandler)
+		r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			match = r.Method
+		}))
+
+		req, err := http.NewRequest(http.MethodGet, "/not-found-path", nil)
+		attest.Ok(t, err)
+		rec := httptest.NewRecorder()
+		r.serveHTTP(rec, req)
+		attest.Equal(t, match, "notFoundHandler")
+		attest.Equal(t, rec.Result().StatusCode, http.StatusOK)
+	})
 }

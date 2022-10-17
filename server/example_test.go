@@ -17,6 +17,7 @@ func ExampleRun() {
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, l),
+		nil,
 		mux.NewRoute(
 			"hello/",
 			mux.MethodGet,
