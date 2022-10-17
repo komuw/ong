@@ -51,6 +51,7 @@ func Initialise(r *http.Request, secretKey string) *http.Request {
 }
 
 // Set adds the key-value pair to the current http session.
+// r ought to be a request that was created by [Initialise]
 func Set(r *http.Request, key, value string) {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
@@ -61,6 +62,7 @@ func Set(r *http.Request, key, value string) {
 }
 
 // SetM adds multiple key-value pairs to the current http session.
+// r ought to be a request that was created by [Initialise]
 func SetM(r *http.Request, m M) {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
@@ -72,6 +74,7 @@ func SetM(r *http.Request, m M) {
 
 // Get retrieves the value corresponding to the given key from the current http session.
 // It returns an empty string if key is not found in the session.
+// r ought to be a request that was created by [Initialise]
 func Get(r *http.Request, key string) string {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
@@ -87,6 +90,7 @@ func Get(r *http.Request, key string) string {
 
 // GetM retrieves all the key-value pairs found from the current http session.
 // It returns a zero-length map if none is found.
+// r ought to be a request that was created by [Initialise]
 func GetM(r *http.Request) map[string]string {
 	newMap := M{}
 
