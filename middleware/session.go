@@ -17,9 +17,12 @@ const (
 	sessionMaxAge = 14 * time.Hour
 )
 
-// TODO: doc comment
-// TODO: move to middleware/
-// TODO: should this middleware should take some options(like cookie max-age) as arguments??
+// Session is a middleware that implements http sessions.
+// It lets you store and retrieve arbitrary data on a per-site-visitor basis.
+//
+// This middleware works best when used together with [ong/sess] package
+//
+// [ong/sess]: github.com/komuw/ong/sess
 func Session(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Read from cookies and check for session cookie.
