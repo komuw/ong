@@ -64,8 +64,7 @@ func (r Route) match(ctx context.Context, segs []string) (context.Context, bool)
 // router routes HTTP requests.
 type router struct {
 	routes []Route
-	// notFoundHandler is the handler to call when no routes
-	// match.
+	// notFoundHandler is the handler to call when no routes match.
 	notFoundHandler http.HandlerFunc
 }
 
