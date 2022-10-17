@@ -385,7 +385,7 @@ func TestNotFound(t *testing.T) {
 		r.serveHTTP(rec, req)
 		attest.Equal(t, match, "GET")
 		res := rec.Result()
-		t.Cleanup(func() { res.Body.Close() })
+		defer res.Body.Close()
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 	})
 
@@ -404,7 +404,7 @@ func TestNotFound(t *testing.T) {
 		r.serveHTTP(rec, req)
 		attest.Equal(t, match, "")
 		res := rec.Result()
-		t.Cleanup(func() { res.Body.Close() })
+		defer res.Body.Close()
 		attest.Equal(t, res.StatusCode, http.StatusNotFound)
 	})
 
@@ -427,7 +427,7 @@ func TestNotFound(t *testing.T) {
 		r.serveHTTP(rec, req)
 		attest.Equal(t, match, "notFoundHandler")
 		res := rec.Result()
-		t.Cleanup(func() { res.Body.Close() })
+		defer res.Body.Close()
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 	})
 }
