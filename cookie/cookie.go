@@ -112,10 +112,10 @@ func SetEncrypted(
 	value string,
 	domain string,
 	mAge time.Duration,
-	key string,
+	secretKey string,
 ) {
 	once.Do(func() {
-		enc = cry.New(key)
+		enc = cry.New(secretKey)
 	})
 
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -149,14 +149,14 @@ func SetEncrypted(
 	)
 }
 
-// GetEncrypted authenticates, un-encrypts and returns a copy of the named cookie.
+// GetEncrypted authenticates, un-encrypts and returns a copy of the named cookie with the value decrypted.
 func GetEncrypted(
 	r *http.Request,
 	name string,
-	key string,
+	secretKey string,
 ) (*http.Cookie, error) {
 	once.Do(func() {
-		enc = cry.New(key)
+		enc = cry.New(secretKey)
 	})
 
 	c, err := r.Cookie(name)

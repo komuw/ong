@@ -18,7 +18,7 @@ type shoppingCart struct {
 func shoppingCartHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookieName := "cart"
-		key := "superSecret"
+		secretKey := "superSecret"
 		item := shoppingCart{ItemName: "shoe", Price: 89}
 
 		b, err := json.Marshal(item)
@@ -33,7 +33,7 @@ func shoppingCartHandler() http.HandlerFunc {
 			string(b),
 			"example.com",
 			2*time.Hour,
-			key,
+			secretKey,
 		)
 
 		fmt.Fprint(w, "thanks for shopping!")

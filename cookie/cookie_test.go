@@ -17,9 +17,9 @@ func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) h
 	}
 }
 
-func setEncryptedHandler(name, value, domain string, mAge time.Duration, key string) http.HandlerFunc {
+func setEncryptedHandler(name, value, domain string, mAge time.Duration, secretKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SetEncrypted(r, w, name, value, domain, mAge, key)
+		SetEncrypted(r, w, name, value, domain, mAge, secretKey)
 		fmt.Fprint(w, "hello")
 	}
 }
@@ -117,8 +117,8 @@ func TestCookies(t *testing.T) {
 		value := "hello world are you okay"
 		domain := "localhost"
 		mAge := 23 * time.Hour
-		key := "my secret key"
-		handler := setEncryptedHandler(name, value, domain, mAge, key)
+		secretKey := "my secret key"
+		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -139,7 +139,7 @@ func TestCookies(t *testing.T) {
 		attest.Equal(t, cookie.HttpOnly, true)
 
 		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
-		val, err := GetEncrypted(req, cookie.Name, key)
+		val, err := GetEncrypted(req, cookie.Name, secretKey)
 
 		attest.Ok(t, err)
 		attest.Equal(t, val.Value, value)
@@ -153,8 +153,8 @@ func TestCookies(t *testing.T) {
 		value := "hello world are you okay"
 		domain := "localhost"
 		mAge := -23 * time.Hour
-		key := "my secret key"
-		handler := setEncryptedHandler(name, value, domain, mAge, key)
+		secretKey := "my secret key"
+		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -172,7 +172,7 @@ func TestCookies(t *testing.T) {
 		attest.Equal(t, cookie.HttpOnly, true)
 
 		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
-		val, err := GetEncrypted(req, cookie.Name, key)
+		val, err := GetEncrypted(req, cookie.Name, secretKey)
 
 		attest.Zero(t, val)
 		attest.Error(t, err)
