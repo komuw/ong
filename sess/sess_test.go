@@ -13,6 +13,17 @@ import (
 func TestSess(t *testing.T) {
 	t.Parallel()
 
+	t.Run("initialise", func(t *testing.T) {
+		t.Parallel()
+
+		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
+		attest.Ok(t, err)
+		req = Initialise(req, "secretKey")
+
+		res := req.Context().Value(ctxKey).(map[string]string)
+		attest.Equal(t, res, map[string]string{})
+	})
+
 	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 
