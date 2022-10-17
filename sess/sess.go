@@ -59,10 +59,6 @@ func Set(r *http.Request, key, value string) {
 			ctx = context.WithValue(ctx, ctxKey, s)
 			r = r.WithContext(ctx)
 		}
-	} else {
-		s := M{key: value}
-		ctx = context.WithValue(ctx, ctxKey, s)
-		r = r.WithContext(ctx)
 	}
 }
 
@@ -75,9 +71,6 @@ func SetM(r *http.Request, m M) {
 			ctx = context.WithValue(ctx, ctxKey, s)
 			r = r.WithContext(ctx)
 		}
-	} else {
-		ctx = context.WithValue(ctx, ctxKey, m)
-		r = r.WithContext(ctx)
 	}
 }
 
@@ -91,10 +84,6 @@ func Get(r *http.Request, key string) string {
 				return val
 			}
 		}
-	} else {
-		s := M{}
-		ctx = context.WithValue(ctx, ctxKey, s)
-		r = r.WithContext(ctx)
 	}
 
 	return ""
@@ -108,10 +97,6 @@ func GetM(r *http.Request) M {
 		if s, ok := vCtx.(M); ok {
 			return s
 		}
-	} else {
-		s := M{}
-		ctx = context.WithValue(ctx, ctxKey, s)
-		r = r.WithContext(ctx)
 	}
 
 	return nil
@@ -143,9 +128,5 @@ func Save(
 				)
 			}
 		}
-	} else {
-		s := M{}
-		ctx = context.WithValue(ctx, ctxKey, s)
-		r = r.WithContext(ctx)
 	}
 }
