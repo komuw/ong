@@ -5,19 +5,16 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/sess"
 )
 
-func someTestHandler(msg string) http.HandlerFunc {
+func someTestHandler(msg, key, value string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("1: ", r.Context().Value(sess.CtxKey))
-		sess.Set(r, "name", "Komu Wairagu")
-		fmt.Println("2: ", r.Context().Value(sess.CtxKey))
-		fmt.Println("3: ", sess.Get(r, "name"))
+		sess.Set(r, key, value)
 		fmt.Fprint(w, msg)
 	}
 }
@@ -29,7 +26,11 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Session(someTestHandler(msg))
+		secretKey := "secretKey"
+		domain := "localhost"
+		key := "name"
+		value := "John Doe"
+		wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -48,15 +49,22 @@ func TestSession(t *testing.T) {
 	t.Run("middleware set succeds", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := Session(someTestHandler(msg))
+		msg := "hello world wide."
+		secretKey := "secretKey"
+		domain := "localhost"
+		key := "name"
+		value := "John Doe"
+		wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, req)
+		ts := httptest.NewServer(
+			wrappedHandler,
+		)
+		t.Cleanup(func() {
+			ts.Close()
+		})
 
-		res := rec.Result()
-		defer res.Body.Close()
+		res, err := ts.Client().Get(ts.URL)
+		attest.Ok(t, err)
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
@@ -64,41 +72,59 @@ func TestSession(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
 
-		fmt.Println("res.Cookies(): ", res.Cookies())
 		attest.Equal(t, len(res.Cookies()), 1)
 		attest.Equal(t, res.Cookies()[0].Name, sess.CookieName)
 		attest.NotZero(t, res.Cookies()[0].Value)
-	})
 
-	t.Run("concurrency safe", func(t *testing.T) {
-		t.Parallel()
+		{
+			req2 := httptest.NewRequest(http.MethodGet, "/hey-uri", nil)
+			// very important to do this assignment, since `cookie.GetEncrypted()` checks for IP mismatch.
+			req2.RemoteAddr = ts.Listener.Addr().String()
+			req2.AddCookie(&http.Cookie{
+				Name:  res.Cookies()[0].Name,
+				Value: res.Cookies()[0].Value,
+			})
 
-		msg := "hello"
-		wrappedHandler := Session(someTestHandler(msg))
-
-		runhandler := func() {
-			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			wrappedHandler.ServeHTTP(rec, req)
-
-			res := rec.Result()
-			defer res.Body.Close()
-
-			rb, err := io.ReadAll(res.Body)
+			c, err := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
 			attest.Ok(t, err)
-
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
+			attest.Subsequence(t, c.Value, key)
+			attest.Subsequence(t, c.Value, value)
 		}
-
-		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 10; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				runhandler()
-			}()
-		}
-		wg.Wait()
 	})
+
+	// t.Run("concurrency safe", func(t *testing.T) {
+	// 	t.Parallel()
+
+	// 	msg := "hello"
+	// 	secretKey := "secretKey"
+	// 	domain := "localhost"
+	// 	key := "name"
+	// 	value := "John Doe"
+	// 	wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
+
+	// 	runhandler := func() {
+	// 		rec := httptest.NewRecorder()
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		wrappedHandler.ServeHTTP(rec, req)
+
+	// 		res := rec.Result()
+	// 		defer res.Body.Close()
+
+	// 		rb, err := io.ReadAll(res.Body)
+	// 		attest.Ok(t, err)
+
+	// 		attest.Equal(t, res.StatusCode, http.StatusOK)
+	// 		attest.Equal(t, string(rb), msg)
+	// 	}
+
+	// 	wg := &sync.WaitGroup{}
+	// 	for rN := 0; rN <= 10; rN++ {
+	// 		wg.Add(1)
+	// 		go func() {
+	// 			defer wg.Done()
+	// 			runhandler()
+	// 		}()
+	// 	}
+	// 	wg.Wait()
+	// })
 }

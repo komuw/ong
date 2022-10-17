@@ -6,7 +6,6 @@ package sess
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -129,8 +128,15 @@ func Save(
 	if vCtx := ctx.Value(CtxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
 			if value, err := json.Marshal(s); err == nil && value != nil {
-				fmt.Println("set cookie: string(value): ", string(value))
-				cookie.SetEncrypted(r, w, CookieName, string(value), domain, mAge, secretKey)
+				cookie.SetEncrypted(
+					r,
+					w,
+					CookieName,
+					string(value),
+					domain,
+					mAge,
+					secretKey,
+				)
 			}
 		}
 	} else {
