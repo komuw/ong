@@ -97,6 +97,16 @@ func TestSess(t *testing.T) {
 			res := GetM(req)
 			attest.Equal(t, res, m)
 		}
+		{
+			// returned map does not mutate the original.
+			res := GetM(req)
+			attest.Equal(t, res, m)
+			newKey := "JJ-Masiga"
+			res[newKey] = "footballer"
+
+			newRes := Get(req, newKey)
+			attest.Zero(t, newRes)
+		}
 	})
 
 	t.Run("save", func(t *testing.T) {

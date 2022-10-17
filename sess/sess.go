@@ -87,15 +87,20 @@ func Get(r *http.Request, key string) string {
 
 // GetM retrieves all the key-value pairs found from the current http session.
 // It returns a zero-length map if none is found.
-func GetM(r *http.Request) M {
+func GetM(r *http.Request) map[string]string {
+	newMap := M{}
+
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
-			return s
+			for k, v := range s {
+				newMap[k] = v
+			}
+			return newMap
 		}
 	}
 
-	return nil
+	return newMap
 }
 
 // Save writes(to http cookies) any key-value pairs that have already been added to the current http session.
