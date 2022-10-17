@@ -52,6 +52,9 @@ func TestSess(t *testing.T) {
 		req = Initialise(req, "secretKey")
 
 		{
+			one := Get(req, k)
+			attest.Zero(t, one)
+
 			Set(req, k, v)
 			res := req.Context().Value(ctxKey).(map[string]string)
 			attest.Equal(t, res, map[string]string{k: v})
@@ -72,6 +75,9 @@ func TestSess(t *testing.T) {
 		req = Initialise(req, "secretKey")
 
 		{
+			one := GetM(req)
+			attest.Equal(t, len(one), 0)
+
 			SetM(req, m)
 			res := req.Context().Value(ctxKey).(map[string]string)
 			attest.Equal(t, res, m)

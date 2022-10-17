@@ -90,7 +90,7 @@ func Get(r *http.Request, key string) string {
 }
 
 // GetM retrieves all the key-value pairs found from the current http session.
-// It returns nil if none is found.
+// It returns a zero-length map if none is found.
 func GetM(r *http.Request) M {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
