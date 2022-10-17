@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -92,39 +93,39 @@ func TestSession(t *testing.T) {
 		}
 	})
 
-	// t.Run("concurrency safe", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
 
-	// 	msg := "hello"
-	// 	secretKey := "secretKey"
-	// 	domain := "localhost"
-	// 	key := "name"
-	// 	value := "John Doe"
-	// 	wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
+		msg := "hello"
+		secretKey := "secretKey"
+		domain := "localhost"
+		key := "name"
+		value := "John Doe"
+		wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
 
-	// 	runhandler := func() {
-	// 		rec := httptest.NewRecorder()
-	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-	// 		wrappedHandler.ServeHTTP(rec, req)
+		runhandler := func() {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			wrappedHandler.ServeHTTP(rec, req)
 
-	// 		res := rec.Result()
-	// 		defer res.Body.Close()
+			res := rec.Result()
+			defer res.Body.Close()
 
-	// 		rb, err := io.ReadAll(res.Body)
-	// 		attest.Ok(t, err)
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
 
-	// 		attest.Equal(t, res.StatusCode, http.StatusOK)
-	// 		attest.Equal(t, string(rb), msg)
-	// 	}
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
 
-	// 	wg := &sync.WaitGroup{}
-	// 	for rN := 0; rN <= 10; rN++ {
-	// 		wg.Add(1)
-	// 		go func() {
-	// 			defer wg.Done()
-	// 			runhandler()
-	// 		}()
-	// 	}
-	// 	wg.Wait()
-	// })
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 10; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				runhandler()
+			}()
+		}
+		wg.Wait()
+	})
 }
