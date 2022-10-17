@@ -20,9 +20,7 @@ const (
 // Session is a middleware that implements http sessions.
 // It lets you store and retrieve arbitrary data on a per-site-visitor basis.
 //
-// This middleware works best when used together with [ong/sess] package
-//
-// [ong/sess]: github.com/komuw/ong/sess
+// This middleware works best when used together with the [sess] package.
 func Session(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Read from cookies and check for session cookie.
