@@ -77,6 +77,9 @@ func TestSession(t *testing.T) {
 
 		res, err := ts.Client().Get(ts.URL)
 		attest.Ok(t, err)
+		t.Cleanup(func() {
+			res.Body.Close()
+		})
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
