@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 ## v0.0.16
 - Add support for http sessions: https://github.com/komuw/ong/pull/154
+- Add ability to specify a custom 404 handler: https://github.com/komuw/ong/pull/155
 
 ## v0.0.15
 - Make encrypted cookies more performant: https://github.com/komuw/ong/pull/152
