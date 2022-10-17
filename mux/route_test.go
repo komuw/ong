@@ -366,3 +366,32 @@ func TestConflicts(t *testing.T) {
 		})
 	})
 }
+
+func TestNotFound(t *testing.T) {
+	t.Parallel()
+
+	r := newRouter()
+	var match string = "INITIAL"
+	r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		match = r.Method
+	}))
+
+	{
+		req, err := http.NewRequest(http.MethodGet, "/path", nil)
+		attest.Ok(t, err)
+		rec := httptest.NewRecorder()
+		r.serveHTTP(rec, req)
+		attest.Equal(t, match, "GET")
+		attest.Equal(t, rec.Result().StatusCode, http.StatusOK)
+		match = "INITIAL"
+	}
+
+	{
+		req, err := http.NewRequest(http.MethodGet, "/not-found-path", nil)
+		attest.Ok(t, err)
+		rec := httptest.NewRecorder()
+		r.serveHTTP(rec, req)
+		attest.Equal(t, match, "INITIAL")
+		attest.Equal(t, rec.Result().StatusCode, http.StatusNotFound)
+	}
+}

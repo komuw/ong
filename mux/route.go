@@ -66,7 +66,8 @@ type router struct {
 	routes []Route
 	// notFoundHandler is the http.Handler to call when no routes
 	// match. By default uses http.NotFoundHandler().
-	notFoundHandler http.Handler
+	// notFoundHandler http.Handler
+	notFoundHandler http.HandlerFunc
 }
 
 // NewRouter makes a new Router.
@@ -74,7 +75,7 @@ func newRouter() *router {
 	return &router{
 		// TODO: add ability for someone to pass in a notFound handler.
 		// If they pass in `nil` we default to `http.NotFoundHandler()`
-		notFoundHandler: http.NotFoundHandler(),
+		notFoundHandler: http.NotFound,
 	}
 }
 
@@ -118,6 +119,8 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+
+	fmt.Println("\n\n\t NOTFOUND. ", "\n\n.")
 	r.notFoundHandler.ServeHTTP(w, req)
 }
 
