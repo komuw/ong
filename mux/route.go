@@ -75,11 +75,7 @@ func newRouter(notFoundHandler http.HandlerFunc) *router {
 		notFoundHandler = http.NotFound
 	}
 
-	return &router{
-		// TODO: add ability for someone to pass in a notFound handler.
-		// If they pass in `nil` we default to `http.NotFoundHandler()`
-		notFoundHandler: notFoundHandler,
-	}
+	return &router{notFoundHandler: notFoundHandler}
 }
 
 func pathSegments(p string) []string {
