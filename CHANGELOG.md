@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.17
+- Update documentation
+
 ## v0.0.16
 - Add support for http sessions: https://github.com/komuw/ong/pull/154
 - Add ability to specify a custom 404 handler: https://github.com/komuw/ong/pull/155
