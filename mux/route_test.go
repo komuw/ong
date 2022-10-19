@@ -365,6 +365,17 @@ func TestConflicts(t *testing.T) {
 			r.handle(http.MethodPut, "post", secondRoute(msg2))
 		})
 	})
+
+	t.Run("no conflict", func(t *testing.T) {
+		t.Parallel()
+		r := newRouter(nil)
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+		r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1))
+		// This one should not conflict.
+		r.handle(http.MethodGet, "/index.php", secondRoute(msg2))
+	})
 }
 
 func TestNotFound(t *testing.T) {
