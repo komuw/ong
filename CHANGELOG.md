@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.21
+- Improve performance of calling Csrf middleware multiple times: https://github.com/komuw/ong/pull/161
+
 ## v0.0.20
 - Bugfix: When a route conflict is detected, report the correct file & line number: https://github.com/komuw/ong/pull/160
 
