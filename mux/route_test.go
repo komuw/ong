@@ -370,8 +370,8 @@ func TestConflicts(t *testing.T) {
 		t.Parallel()
 		r := newRouter(nil)
 
-		msg1 := "firstRoute"
-		msg2 := "secondRoute"
+		msg1 := "firstRoute-one"
+		msg2 := "secondRoute-two"
 		r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
 		// This one should not conflict.
 		r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
