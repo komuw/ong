@@ -25,6 +25,12 @@ func someMuxHandler(msg string) http.HandlerFunc {
 	}
 }
 
+func thisIsAnitherMuxHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "thisIsAnitherMuxHandler")
+	}
+}
+
 func TestMux(t *testing.T) {
 	t.Parallel()
 
@@ -135,5 +141,28 @@ func TestMux(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("conflict detected", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		uri1 := "/api/hi"
+		uri2 := "/api/:someId"
+		_ = New(
+			l,
+			middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			nil,
+			NewRoute(
+				uri1,
+				MethodGet,
+				someMuxHandler(msg),
+			),
+			NewRoute(
+				uri2,
+				MethodGet,
+				thisIsAnitherMuxHandler(),
+			),
+		)
 	})
 }
