@@ -2,15 +2,15 @@ goos: linux
 goarch: amd64
 pkg: github.com/komuw/ong/mux
 cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
-BenchmarkMuxNew-8   	      42	  32050712 ns/op	14961466 B/op	  328281 allocs/op
-BenchmarkMuxNew-8   	      39	  25928809 ns/op	14961376 B/op	  328280 allocs/op
-BenchmarkMuxNew-8   	      48	  26977142 ns/op	14961731 B/op	  328282 allocs/op
-BenchmarkMuxNew-8   	      46	  28722907 ns/op	14961589 B/op	  328281 allocs/op
-BenchmarkMuxNew-8   	      40	  27121250 ns/op	14961516 B/op	  328281 allocs/op
-BenchmarkMuxNew-8   	      43	  27603544 ns/op	14961686 B/op	  328282 allocs/op
-BenchmarkMuxNew-8   	      44	  27603817 ns/op	14961588 B/op	  328281 allocs/op
-BenchmarkMuxNew-8   	      45	  24991266 ns/op	14961501 B/op	  328281 allocs/op
-BenchmarkMuxNew-8   	      46	  26390631 ns/op	14961720 B/op	  328282 allocs/op
-BenchmarkMuxNew-8   	      46	  25976697 ns/op	14961977 B/op	  328283 allocs/op
+BenchmarkMuxNew-8   	      40	  27839089 ns/op	14961517 B/op	  328281 allocs/op
+BenchmarkMuxNew-8   	      37	  27950318 ns/op	14961218 B/op	  328279 allocs/op
+BenchmarkMuxNew-8   	      38	  27892140 ns/op	14961817 B/op	  328282 allocs/op
+BenchmarkMuxNew-8   	      44	  30909512 ns/op	14961661 B/op	  328281 allocs/op
+BenchmarkMuxNew-8   	      38	  30251572 ns/op	14961839 B/op	  328283 allocs/op
+BenchmarkMuxNew-8   	      38	  31194604 ns/op	14962015 B/op	  328283 allocs/op
+BenchmarkMuxNew-8   	      39	  31302975 ns/op	14961567 B/op	  328281 allocs/op
+BenchmarkMuxNew-8   	      39	  30004629 ns/op	14961853 B/op	  328282 allocs/op
+BenchmarkMuxNew-8   	      37	  31078331 ns/op	14961805 B/op	  328282 allocs/op
+BenchmarkMuxNew-8   	      39	  31844434 ns/op	14961881 B/op	  328283 allocs/op
 PASS
-ok  	github.com/komuw/ong/mux	13.606s
+ok  	github.com/komuw/ong/mux	12.371s
