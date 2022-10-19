@@ -323,10 +323,10 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/post/create", nil, firstRoute(msg1))
+		r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.handle(http.MethodGet, "/post/:id", nil, secondRoute(msg2))
+			r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
 		})
 
 		rec := httptest.NewRecorder()
