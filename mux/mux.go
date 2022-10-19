@@ -29,11 +29,12 @@ func NewRoute(
 	method string,
 	handler http.HandlerFunc,
 ) Route {
+	// TODO: detect if it is already wrapped with ong/middleware and fail.
 	return Route{
-		method:  method,
-		pattern: pattern,
-		segs:    pathSegments(pattern),
-		handler: handler,
+		method:          method,
+		pattern:         pattern,
+		segs:            pathSegments(pattern),
+		originalHandler: handler,
 	}
 }
 
@@ -86,7 +87,8 @@ func New(l log.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, ro
 		m.addPattern(
 			rt.method,
 			rt.pattern,
-			mid(rt.handler, opt),
+			rt.originalHandler,
+			mid(rt.originalHandler, opt),
 		)
 	}
 
@@ -100,8 +102,8 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.serveHTTP(w, r)
 }
 
-func (m Mux) addPattern(method, pattern string, handler http.HandlerFunc) {
-	m.router.handle(method, pattern, handler)
+func (m Mux) addPattern(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
+	m.router.handle(method, pattern, originalHandler, wrappedHandler)
 }
 
 // Param gets the path/url parameter from the specified Context.

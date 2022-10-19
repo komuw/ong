@@ -20,10 +20,11 @@ type muxContextKey string
 //
 // Use [NewRoute] to get a valid Route.
 type Route struct {
-	method  string
-	pattern string
-	segs    []string
-	handler http.HandlerFunc
+	method          string
+	pattern         string
+	segs            []string
+	originalHandler http.HandlerFunc // This is only needed to enhance the debug/panic message when conflicting routes are detected.
+	wrappedHandler  http.HandlerFunc
 }
 
 func (r Route) String() string {
@@ -32,8 +33,9 @@ Route{
   method: %s,
   pattern: %s,
   segs: %s,
-  handler: %s
-}`, r.method, r.pattern, r.segs, getfunc(r.handler))
+  originalHandler: %s,
+  wrappedHandler: %s,
+}`, r.method, r.pattern, r.segs, getfunc(r.originalHandler), getfunc(r.wrappedHandler))
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
@@ -84,7 +86,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, handler http.HandlerFunc) {
+func (r *router) handle(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -97,13 +99,14 @@ func (r *router) handle(method, pattern string, handler http.HandlerFunc) {
 	}
 
 	// Try and detect conflict before adding a new route.
-	r.detectConflict(method, pattern, handler)
+	r.detectConflict(method, pattern, originalHandler)
 
 	rt := Route{
-		method:  strings.ToLower(method),
-		pattern: pattern,
-		segs:    pathSegments(pattern),
-		handler: handler,
+		method:          strings.ToLower(method),
+		pattern:         pattern,
+		segs:            pathSegments(pattern),
+		originalHandler: originalHandler,
+		wrappedHandler:  wrappedHandler,
 	}
 	r.routes = append(r.routes, rt)
 }
@@ -113,7 +116,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	segs := pathSegments(req.URL.Path)
 	for _, rt := range r.routes {
 		if ctx, ok := rt.match(req.Context(), segs); ok {
-			rt.handler.ServeHTTP(w, req.WithContext(ctx))
+			rt.wrappedHandler.ServeHTTP(w, req.WithContext(ctx))
 			return
 		}
 	}
@@ -136,7 +139,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 //	already exists and would conflict.
 //
 // /
-func (r *router) detectConflict(method, pattern string, handler http.Handler) {
+func (r *router) detectConflict(method, pattern string, originalHandler http.Handler) {
 	// Conflicting routes are a bad thing.
 	// They can be a source of bugs and confusion.
 	// see: https://www.alexedwards.net/blog/which-go-router-should-i-use
@@ -163,10 +166,10 @@ However
 already exists and would conflict.`,
 			pattern,
 			strings.ToUpper(method),
-			getfunc(handler),
+			getfunc(originalHandler),
 			path.Join(rt.segs...),
 			strings.ToUpper(rt.method),
-			getfunc(rt.handler),
+			getfunc(rt.originalHandler),
 		)
 
 		if pattern == rt.pattern {

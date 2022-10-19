@@ -247,7 +247,7 @@ func TestRouter(t *testing.T) {
 			r := newRouter(nil)
 			match := false
 			var ctx context.Context
-			r.handle(tt.RouteMethod, tt.RoutePattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.handle(tt.RouteMethod, tt.RoutePattern, nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				match = true
 				ctx = r.Context()
 			}))
@@ -282,7 +282,7 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 
 	r := newRouter(nil)
 	var match string
-	r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		match = r.Method
 	}))
 
@@ -323,10 +323,10 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/post/create", firstRoute(msg1))
+		r.handle(http.MethodGet, "/post/create", nil, firstRoute(msg1))
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.handle(http.MethodGet, "/post/:id", secondRoute(msg2))
+			r.handle(http.MethodGet, "/post/:id", nil, secondRoute(msg2))
 		})
 
 		rec := httptest.NewRecorder()
@@ -349,20 +349,20 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/post", firstRoute(msg1))
+		r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.handle(http.MethodGet, "/post/", secondRoute(msg2))
+			r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
 		})
 
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.handle(http.MethodDelete, "post/", secondRoute(msg2))
+			r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
 		})
 
 		attest.Panics(t, func() {
 			// This one panics with a conflict message.
-			r.handle(http.MethodPut, "post", secondRoute(msg2))
+			r.handle(http.MethodPut, "post", secondRoute(msg2), secondRoute(msg2))
 		})
 	})
 
@@ -372,9 +372,9 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1))
+		r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
 		// This one should not conflict.
-		r.handle(http.MethodGet, "/index.php", secondRoute(msg2))
+		r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
 	})
 }
 
@@ -386,7 +386,7 @@ func TestNotFound(t *testing.T) {
 
 		r := newRouter(nil)
 		var match string
-		r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
 
@@ -405,7 +405,7 @@ func TestNotFound(t *testing.T) {
 
 		r := newRouter(nil)
 		var match string
-		r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
 
@@ -428,7 +428,7 @@ func TestNotFound(t *testing.T) {
 		})
 
 		r := newRouter(notFoundHandler)
-		r.handle(MethodAll, "/path", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
 
