@@ -206,3 +206,44 @@ func TestMux(t *testing.T) {
 		)
 	})
 }
+
+func getManyRoutes() []Route {
+	routes := []Route{}
+
+	for i := 0; i <= 200; i++ {
+		uri := fmt.Sprintf("uri-%d", i)
+		routes = append(
+			routes,
+			NewRoute(
+				uri,
+				MethodAll,
+				someMuxHandler(uri),
+			),
+		)
+	}
+
+	return routes
+}
+
+var result Mux //nolint:gochecknoglobals
+
+func BenchmarkMuxNew(b *testing.B) {
+	var r Mux
+
+	l := log.New(&bytes.Buffer{}, 500)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		mux := New(
+			l,
+			middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			nil,
+			getManyRoutes()...,
+		)
+		r = mux
+	}
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result = r
+}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"mime"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/komuw/ong/cry"
@@ -17,9 +18,13 @@ import (
 //   (a) https://github.com/gofiber/fiber whose license(MIT) can be found here:            https://github.com/gofiber/fiber/blob/v2.34.1/LICENSE
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
-// errCsrfTokenNotFound is returned when a request using a non-safe http method
-// either does not supply a csrf token, or the supplied token is not recognized by the server.
-var errCsrfTokenNotFound = errors.New("ong/middleware: csrf token not found")
+var (
+	// errCsrfTokenNotFound is returned when a request using a non-safe http method
+	// either does not supply a csrf token, or the supplied token is not recognized by the server.
+	errCsrfTokenNotFound = errors.New("ong/middleware: csrf token not found")
+	once                 sync.Once //nolint:gochecknoglobals
+	enc                  cry.Enc   //nolint:gochecknoglobals
+)
 
 type csrfContextKey string
 
@@ -53,7 +58,9 @@ const (
 //
 // If a csrf token is not provided(or is not valid), when it ought to have been; this middleware will issue a http GET redirect to the same url.
 func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
-	enc := cry.New(secretKey)
+	once.Do(func() {
+		enc = cry.New(secretKey)
+	})
 	msgToEncrypt := id.Random(16)
 
 	return func(w http.ResponseWriter, r *http.Request) {
