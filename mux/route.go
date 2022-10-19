@@ -173,11 +173,11 @@ already exists and would conflict.`,
 			panic(panicMsg)
 		}
 
-		if strings.Contains(pattern, ":") {
+		if strings.Contains(pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
 			panic(panicMsg)
 		}
 
-		if strings.Contains(rt.pattern, ":") {
+		if strings.Contains(rt.pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
 			panic(panicMsg)
 		}
 	}
