@@ -31,6 +31,31 @@ func thisIsAnitherMuxHandler() http.HandlerFunc {
 	}
 }
 
+func TestNewRoute(t *testing.T) {
+	t.Parallel()
+
+	l := log.New(&bytes.Buffer{}, 500)
+
+	// succeds
+	_ = NewRoute(
+		"/api",
+		MethodGet,
+		someMuxHandler("msg"),
+	)
+
+	// fails
+	attest.Panics(t, func() {
+		_ = NewRoute(
+			"/api",
+			MethodGet,
+			middleware.Get(
+				someMuxHandler("msg"),
+				middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			),
+		)
+	})
+}
+
 func TestMux(t *testing.T) {
 	t.Parallel()
 
