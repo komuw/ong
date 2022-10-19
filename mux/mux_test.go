@@ -25,6 +25,37 @@ func someMuxHandler(msg string) http.HandlerFunc {
 	}
 }
 
+func thisIsAnitherMuxHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "thisIsAnitherMuxHandler")
+	}
+}
+
+func TestNewRoute(t *testing.T) {
+	t.Parallel()
+
+	l := log.New(&bytes.Buffer{}, 500)
+
+	// succeds
+	_ = NewRoute(
+		"/api",
+		MethodGet,
+		someMuxHandler("msg"),
+	)
+
+	// fails
+	attest.Panics(t, func() {
+		_ = NewRoute(
+			"/api",
+			MethodGet,
+			middleware.Get(
+				someMuxHandler("msg"),
+				middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			),
+		)
+	})
+}
+
 func TestMux(t *testing.T) {
 	t.Parallel()
 
@@ -135,5 +166,43 @@ func TestMux(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("conflict detected", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		uri1 := "/api/hi"
+		uri2 := "/api/:someId"
+		method := MethodGet
+
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Fatal("expected a panic, yet did not panic.")
+			}
+
+			rStr := fmt.Sprintf("%v", r)
+			attest.Subsequence(t, rStr, uri2)
+			attest.Subsequence(t, rStr, method)
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:23") // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:29") // location where `thisIsAnitherMuxHandler` is declared.
+		}()
+
+		_ = New(
+			l,
+			middleware.WithOpts("localhost", 443, getSecretKey(), l),
+			nil,
+			NewRoute(
+				uri1,
+				method,
+				someMuxHandler(msg),
+			),
+			NewRoute(
+				uri2,
+				method,
+				thisIsAnitherMuxHandler(),
+			),
+		)
 	})
 }
