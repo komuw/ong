@@ -183,7 +183,6 @@ func TestMux(t *testing.T) {
 			}
 
 			rStr := fmt.Sprintf("%v", r)
-			fmt.Println("Recovered. Error:\n", rStr)
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
 			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:23") // location where `someMuxHandler` is declared.
