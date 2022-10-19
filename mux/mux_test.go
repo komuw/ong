@@ -149,18 +149,34 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		uri1 := "/api/hi"
 		uri2 := "/api/:someId"
+		method := MethodGet
+
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Fatal("expected a panic, yet did not panic.")
+			}
+
+			rStr := fmt.Sprintf("%v", r)
+			fmt.Println("Recovered. Error:\n", rStr)
+			attest.Subsequence(t, rStr, uri2)
+			attest.Subsequence(t, rStr, method)
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:23") // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:29") // location where `thisIsAnitherMuxHandler` is declared.
+		}()
+
 		_ = New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), l),
 			nil,
 			NewRoute(
 				uri1,
-				MethodGet,
+				method,
 				someMuxHandler(msg),
 			),
 			NewRoute(
 				uri2,
-				MethodGet,
+				method,
 				thisIsAnitherMuxHandler(),
 			),
 		)
