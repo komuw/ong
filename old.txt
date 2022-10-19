@@ -1,0 +1,9 @@
+goos: linux
+goarch: amd64
+pkg: github.com/komuw/ong/mux
+cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
+BenchmarkMuxNew-8   	       1	14129902261 ns/op	6760593232 B/op	  333926 allocs/op
+BenchmarkMuxNew-8   	       1	14211832300 ns/op	6760589728 B/op	  333900 allocs/op
+BenchmarkMuxNew-8   	       1	14034770396 ns/op	6760597104 B/op	  333948 allocs/op
+PASS
+ok  	github.com/komuw/ong/mux	42.382s
