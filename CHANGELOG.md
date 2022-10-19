@@ -3,7 +3,10 @@
 Most recent version is listed first.  
 
 
-## ## v0.0.19
+## v0.0.20
+- Bugfix: When a route conflict is detected, report the correct file & line number: https://github.com/komuw/ong/pull/160
+
+## v0.0.19
 - Fix false positive/negative/whatever route conflict: https://github.com/komuw/ong/pull/157
 
 ## v0.0.18
