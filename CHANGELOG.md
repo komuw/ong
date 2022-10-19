@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.18
+- Update documentation
+
 ## v0.0.17
 - Update documentation
 

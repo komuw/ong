@@ -97,10 +97,8 @@ func GetM(r *http.Request) map[string]string {
 	ctx := r.Context()
 	if vCtx := ctx.Value(ctxKey); vCtx != nil {
 		if s, ok := vCtx.(M); ok {
-			for k, v := range s {
-				// we need to return a distinct new map.
-				newMap[k] = v
-			}
+			//  we need to return a distinct new map.
+			maps.Copy(newMap, s)
 			return newMap
 		}
 	}
