@@ -30,13 +30,13 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 				)
 
 				flds := log.F{
-					"err":         fmt.Sprint(errR),
-					"requestAddr": r.RemoteAddr,
-					"method":      r.Method,
-					"path":        r.URL.EscapedPath(),
-					"code":        code,
-					"status":      status,
-					"pid":         os.Getpid(),
+					"err":           fmt.Sprint(errR),
+					"clientAddress": r.RemoteAddr,
+					"method":        r.Method,
+					"path":          r.URL.EscapedPath(),
+					"code":          code,
+					"status":        status,
+					"pid":           os.Getpid(),
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 					flds["ongError"] = ongError

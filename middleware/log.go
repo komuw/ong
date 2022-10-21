@@ -62,13 +62,13 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 		}
 		defer func() {
 			flds := log.F{
-				"requestAddr": r.RemoteAddr,
-				"method":      r.Method,
-				"path":        r.URL.EscapedPath(),
-				"code":        lrw.code,
-				"status":      http.StatusText(lrw.code),
-				"durationMS":  time.Since(start).Milliseconds(),
-				"pid":         os.Getpid(),
+				"clientAddress": r.RemoteAddr,
+				"method":        r.Method,
+				"path":          r.URL.EscapedPath(),
+				"code":          lrw.code,
+				"status":        http.StatusText(lrw.code),
+				"durationMS":    time.Since(start).Milliseconds(),
+				"pid":           os.Getpid(),
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				flds["ongError"] = ongError
