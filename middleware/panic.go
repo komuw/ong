@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
 )
 
@@ -43,7 +44,7 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
 				if e, ok := errR.(error); ok {
-					reqL.Error(e, flds)
+					reqL.Error(errors.Wrap(e), flds) // wrap with ong/errors so that the log will have a stacktrace.
 				} else {
 					reqL.Error(nil, flds)
 				}

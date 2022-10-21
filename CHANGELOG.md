@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.22
+- Panic middleware should include correct stack trace: https://github.com/komuw/ong/pull/164
+
 ## v0.0.21
 - Improve performance of calling Csrf middleware multiple times: https://github.com/komuw/ong/pull/161
 
