@@ -32,6 +32,17 @@ func handlerThatPanics(msg string, shouldPanic bool, err error) http.HandlerFunc
 	}
 }
 
+func anotherHandlerThatPanics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_ = 90
+		someSlice := []string{"zero", "one", "two"}
+		_ = "kilo"
+		_ = someSlice[16] // panic
+
+		fmt.Fprint(w, "anotherHandlerThatPanics")
+	}
+}
+
 func TestPanic(t *testing.T) {
 	t.Parallel()
 
@@ -113,6 +124,22 @@ func TestPanic(t *testing.T) {
 			attest.Subsequence(t, logOutput.String(), v, attest.Sprintf("`%s` was not found", v))
 		}
 		attest.Subsequence(t, logOutput.String(), "stack")
+	})
+
+	t.Run("stacktrace has correct line", func(t *testing.T) {
+		t.Parallel()
+
+		logOutput := &bytes.Buffer{}
+		wrappedHandler := Panic(anotherHandlerThatPanics(), getLogger(logOutput))
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
+		attest.Subsequence(t, logOutput.String(), "middleware/panic_test.go:40") // line where panic happened.
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
