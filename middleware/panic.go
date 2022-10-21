@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 
@@ -29,9 +30,14 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 					code,
 				)
 
+				clientAddress := r.RemoteAddr
+				if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+					clientAddress = host
+				}
+
 				flds := log.F{
 					"err":           fmt.Sprint(errR),
-					"clientAddress": r.RemoteAddr,
+					"clientAddress": clientAddress,
 					"method":        r.Method,
 					"path":          r.URL.EscapedPath(),
 					"code":          code,

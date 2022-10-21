@@ -61,8 +61,13 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 			ResponseWriter: w,
 		}
 		defer func() {
+			clientAddress := r.RemoteAddr
+			if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+				clientAddress = host
+			}
+
 			flds := log.F{
-				"clientAddress": r.RemoteAddr,
+				"clientAddress": clientAddress,
 				"method":        r.Method,
 				"path":          r.URL.EscapedPath(),
 				"code":          lrw.code,
