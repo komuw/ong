@@ -61,14 +61,19 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 			ResponseWriter: w,
 		}
 		defer func() {
+			clientAddress := r.RemoteAddr
+			if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+				clientAddress = host
+			}
+
 			flds := log.F{
-				"requestAddr": r.RemoteAddr,
-				"method":      r.Method,
-				"path":        r.URL.EscapedPath(),
-				"code":        lrw.code,
-				"status":      http.StatusText(lrw.code),
-				"durationMS":  time.Since(start).Milliseconds(),
-				"pid":         os.Getpid(),
+				"clientAddress": clientAddress,
+				"method":        r.Method,
+				"path":          r.URL.Redacted(),
+				"code":          lrw.code,
+				"status":        http.StatusText(lrw.code),
+				"durationMS":    time.Since(start).Milliseconds(),
+				"pid":           os.Getpid(),
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				flds["ongError"] = ongError
