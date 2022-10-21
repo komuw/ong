@@ -39,7 +39,7 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 					"err":           fmt.Sprint(errR),
 					"clientAddress": clientAddress,
 					"method":        r.Method,
-					"path":          r.URL.EscapedPath(),
+					"path":          r.URL.Redacted(),
 					"code":          code,
 					"status":        status,
 					"pid":           os.Getpid(),

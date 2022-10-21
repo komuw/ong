@@ -69,7 +69,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 			flds := log.F{
 				"clientAddress": clientAddress,
 				"method":        r.Method,
-				"path":          r.URL.EscapedPath(),
+				"path":          r.URL.Redacted(),
 				"code":          lrw.code,
 				"status":        http.StatusText(lrw.code),
 				"durationMS":    time.Since(start).Milliseconds(),
