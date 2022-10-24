@@ -79,9 +79,11 @@ func (m myAPI) handleFileServer() http.HandlerFunc {
 	// instead create a folder that only has your templates and server that.
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
-	return func(w http.ResponseWriter, req *http.Request) {
-		m.l.Info(log.F{"msg": "handleFileServer", "redactedURL": req.URL.Redacted()})
-		realHandler(w, req)
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
+		reqL.Info(log.F{"msg": "handleFileServer", "redactedURL": r.URL.Redacted()})
+		realHandler(w, r)
 	}
 }
 
@@ -99,9 +101,11 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 	var serverStart time.Time
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
 		// intialize somethings only once for perf
 		once.Do(func() {
-			m.l.Info(log.F{"msg": "called only once during the first request"})
+			reqL.Info(log.F{"msg": "called only once during the first request"})
 			serverStart = time.Now()
 		})
 
@@ -120,9 +124,11 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 // you can take arguments for handler specific dependencies
 func (m myAPI) check(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
-		m.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
+		reqL.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
 		cartID := "afakHda8eqL"
 		sess.SetM(r, sess.M{
@@ -131,7 +137,7 @@ func (m myAPI) check(msg string) http.HandlerFunc {
 			"cart_id": cartID,
 		})
 
-		m.l.WithImmediate().Info(log.F{"cart_id": sess.Get(r, "cart_id")})
+		reqL.WithImmediate().Info(log.F{"cart_id": sess.Get(r, "cart_id")})
 		if sess.Get(r, "cart_id") != "" {
 			if sess.Get(r, "cart_id") != cartID {
 				panic("wrong cartID")
@@ -199,6 +205,8 @@ func (m myAPI) login() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
 		if r.Method != http.MethodPost {
 			data := struct {
 				CsrfTokenName  string
@@ -232,7 +240,7 @@ func (m myAPI) login() http.HandlerFunc {
 
 		cookieName := "ong_example_session_cookie"
 		c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
-		m.l.WithImmediate().Info(log.F{
+		reqL.WithImmediate().Info(log.F{
 			"msg":    "login handler log cookie",
 			"err":    errM,
 			"cookie": c,
