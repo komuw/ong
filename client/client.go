@@ -11,11 +11,14 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/komuw/ong/log"
 )
+
+const logIDHeader = string(log.CtxKey)
 
 // Most of the code here is insipired by(or taken from):
 //   (a) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang whose license(CC0 Public Domain) can be found here: https://creativecommons.org/publicdomain/zero/1.0
@@ -105,6 +108,8 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (resp *http.Response
 		end(resp, err)
 	}()
 
+	req = req.WithContext(ctx)
+	req.Header.Set(logIDHeader, log.GetId(ctx))
 	return c.cli.Do(req)
 }
 
@@ -112,48 +117,44 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (resp *http.Response
 //
 // see [http.Client.Get]
 func (c *Client) Get(ctx context.Context, url string) (resp *http.Response, err error) {
-	end := c.log(ctx, url, "GET")
-	defer func() {
-		end(resp, err)
-	}()
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return c.cli.Get(url)
+	return c.Do(ctx, req)
 }
 
 // Head issues a HEAD to the specified URL.
 //
 // see [http.Client.Head]
 func (c *Client) Head(ctx context.Context, url string) (resp *http.Response, err error) {
-	end := c.log(ctx, url, "HEAD")
-	defer func() {
-		end(resp, err)
-	}()
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return c.cli.Head(url)
+	return c.Do(ctx, req)
 }
 
 // Post issues a POST to the specified URL.
 //
 // see [http.Client.Post]
 func (c *Client) Post(ctx context.Context, url, contentType string, body io.Reader) (resp *http.Response, err error) {
-	end := c.log(ctx, url, "POST")
-	defer func() {
-		end(resp, err)
-	}()
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
 
-	return c.cli.Post(url, contentType, body)
+	return c.Do(ctx, req)
 }
 
 // PostForm issues a POST to the specified URL, with data's keys and values URL-encoded as the request body.
 //
 // see [http.Client.PostForm]
 func (c *Client) PostForm(ctx context.Context, url string, data url.Values) (resp *http.Response, err error) {
-	end := c.log(ctx, url, "POST")
-	defer func() {
-		end(resp, err)
-	}()
-
-	return c.cli.PostForm(url, data)
+	return c.Post(ctx, url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
 
 func (c *Client) log(ctx context.Context, url, method string) func(resp *http.Response, err error) {
