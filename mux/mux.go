@@ -3,6 +3,7 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/komuw/ong/log"
@@ -39,6 +40,9 @@ func NewRoute(
 	// 	panic("the handler should not be wrapped with ong middleware")
 	// }
 
+	fmt.Println("\n\n\t ")
+	fmt.Println(getfunc(handler))
+	fmt.Println("\n\n\t ")
 	return Route{
 		method:          method,
 		pattern:         pattern,
