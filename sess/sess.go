@@ -117,20 +117,25 @@ func Save(
 	mAge time.Duration,
 	secretKey string,
 ) {
-	ctx := r.Context()
-	if vCtx := ctx.Value(ctxKey); vCtx != nil {
-		if s, ok := vCtx.(M); ok {
-			if value, err := json.Marshal(s); err == nil && value != nil {
-				cookie.SetEncrypted(
-					r,
-					w,
-					CookieName,
-					string(value),
-					domain,
-					mAge,
-					secretKey,
-				)
-			}
-		}
+	savedSess := GetM(r)
+	if len(savedSess) <= 0 {
+		// If GetM returns a zero-length map, then we do not have to write any session.
+		return
 	}
+
+	value, err := json.Marshal(savedSess)
+	if err != nil || value == nil {
+		// Technically, err can never be non-nil and value can never be nil.
+		// This is because, at this point; we know for sure that savedSess is a non zero-length map[string]string
+		return
+	}
+	cookie.SetEncrypted(
+		r,
+		w,
+		CookieName,
+		string(value),
+		domain,
+		mAge,
+		secretKey,
+	)
 }
