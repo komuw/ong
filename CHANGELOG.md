@@ -6,6 +6,7 @@ Most recent version is listed first.
 ## v0.0.24
 - Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
 - Add ReloadProtector middleware: https://github.com/komuw/ong/pull/171
+- Creating a new route should panic if handler is already wrapped in an ong middleware: https://github.com/komuw/ong/pull/172
 
 ## v0.0.23
 - ong/client: Add log id http header: https://github.com/komuw/ong/pull/166

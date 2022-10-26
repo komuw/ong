@@ -4,6 +4,7 @@ package mux
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -24,20 +25,19 @@ const (
 )
 
 // NewRoute creates a new Route.
+//
+// It panics if handler has already been wrapped with ong/middleware
 func NewRoute(
 	pattern string,
 	method string,
 	handler http.HandlerFunc,
 ) Route {
-	// todo: restore this logic.
-	// Right now the logic is disabled because of `BasicAuth`
-	//
-	// if strings.Contains(
-	// 	getfunc(handler),
-	// 	"ong/middleware/",
-	// ) {
-	// 	panic("the handler should not be wrapped with ong middleware")
-	// }
+	h := getfunc(handler)
+	if strings.Contains(h, "ong/middleware/") &&
+		!strings.Contains(h, "ong/middleware.BasicAuth") {
+		// BasicAuth is allowed.
+		panic("the handler should not be wrapped with ong middleware")
+	}
 
 	return Route{
 		method:          method,
