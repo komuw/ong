@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -28,32 +27,30 @@ const secretKey = "hard-password"
 func main() {
 	api := NewMyApi("someDb")
 	l := log.New(os.Stdout, 1000)
-
-	midOpts := middleware.WithOpts("localhost", 65081, secretKey, l)
 	mux := mux.New(
 		l,
-		midOpts,
+		middleware.WithOpts("localhost", 65081, secretKey, l),
 		nil,
-		// mux.NewRoute(
-		// 	"/api",
-		// 	mux.MethodPost,
-		// 	middleware.Post(api.handleAPI(), midOpts),
-		// ),
-		// mux.NewRoute(
-		// 	"serveDirectory",
-		// 	mux.MethodAll,
-		// 	middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
-		// ),
+		mux.NewRoute(
+			"/api",
+			mux.MethodPost,
+			api.handleAPI(),
+		),
+		mux.NewRoute(
+			"serveDirectory",
+			mux.MethodAll,
+			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
+		),
 		mux.NewRoute(
 			"check/:age/",
 			mux.MethodAll,
-			middleware.All(api.check("world"), midOpts),
+			api.check("world"),
 		),
-		// mux.NewRoute(
-		// 	"login",
-		// 	mux.MethodAll,
-		// 	middleware.All(api.login(), midOpts),
-		// ),
+		mux.NewRoute(
+			"login",
+			mux.MethodAll,
+			api.login(),
+		),
 	)
 
 	err := server.Run(mux, server.DevOpts(), l)
@@ -127,8 +124,6 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 // you can take arguments for handler specific dependencies
 func (m myAPI) check(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		debug.PrintStack()
-
 		reqL := m.l.WithCtx(r.Context())
 
 		cspNonce := middleware.GetCspNonce(r.Context())
