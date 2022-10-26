@@ -11,7 +11,7 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
-func someReloadProtectHandler(msg, expectedFormName, expectedFormValue string) http.HandlerFunc {
+func someReloadProtectorHandler(msg, expectedFormName, expectedFormValue string) http.HandlerFunc {
 	// count is state that is affected by form submission.
 	// eg, when a form is submitted; we create a new user.
 	count := 0
@@ -37,7 +37,7 @@ func someReloadProtectHandler(msg, expectedFormName, expectedFormValue string) h
 	}
 }
 
-func TestReloadProtect(t *testing.T) {
+func TestReloadProtector(t *testing.T) {
 	t.Parallel()
 
 	t.Run("middleware succeds", func(t *testing.T) {
@@ -47,7 +47,7 @@ func TestReloadProtect(t *testing.T) {
 		domain := "localhost"
 		expectedFormName := "user_name"
 		expectedFormValue := "John Doe"
-		wrappedHandler := ReloadProtect(someReloadProtectHandler(msg, expectedFormName, expectedFormValue), domain)
+		wrappedHandler := ReloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -70,7 +70,7 @@ func TestReloadProtect(t *testing.T) {
 		domain := "localhost"
 		expectedFormName := "user_name"
 		expectedFormValue := "John Doe"
-		wrappedHandler := ReloadProtect(someReloadProtectHandler(msg, expectedFormName, expectedFormValue), domain)
+		wrappedHandler := ReloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
 
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		err := req.ParseForm()
@@ -123,7 +123,7 @@ func TestReloadProtect(t *testing.T) {
 		domain := "localhost"
 		expectedFormName := "user_name"
 		expectedFormValue := "John Doe"
-		wrappedHandler := ReloadProtect(someReloadProtectHandler(msg, expectedFormName, expectedFormValue), domain)
+		wrappedHandler := ReloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

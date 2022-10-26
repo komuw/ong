@@ -13,8 +13,8 @@ import (
 const reloadProtectCookiePrefix = "ong_form_reload_protect"
 
 // TODO: docs.
-// ReloadProtect blah against Form blah
-func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
+// ReloadProtector blah against Form blah
+func ReloadProtector(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	safeMethods := []string{
 		// safe methods under rfc7231: https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.1
 		http.MethodGet,
