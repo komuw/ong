@@ -34,7 +34,7 @@ func NewRoute(
 ) Route {
 	h := getfunc(handler)
 	if strings.Contains(h, "ong/middleware/") &&
-		!strings.Contains(h, "BasicAuth") {
+		!strings.Contains(h, "middleware.BasicAuth") {
 		// BasicAuth is allowed.
 		panic("the handler should not be wrapped with ong middleware")
 	}
