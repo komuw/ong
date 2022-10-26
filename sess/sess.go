@@ -123,21 +123,19 @@ func Save(
 		return
 	}
 
-	// TODO: use savedSess here.
-	ctx := r.Context()
-	if vCtx := ctx.Value(ctxKey); vCtx != nil {
-		if s, ok := vCtx.(M); ok {
-			if value, err := json.Marshal(s); err == nil && value != nil {
-				cookie.SetEncrypted(
-					r,
-					w,
-					CookieName,
-					string(value),
-					domain,
-					mAge,
-					secretKey,
-				)
-			}
-		}
+	value, err := json.Marshal(savedSess)
+	if err != nil || value == nil {
+		// Technically, err can never be non-nil and value can never be nil.
+		// This is because, at this point; we know for sure that savedSess is a non zero-length map[string]string
+		return
 	}
+	cookie.SetEncrypted(
+		r,
+		w,
+		CookieName,
+		string(value),
+		domain,
+		mAge,
+		secretKey,
+	)
 }
