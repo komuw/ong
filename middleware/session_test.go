@@ -23,7 +23,7 @@ func bigMap() map[string]string {
 	return y
 }
 
-func someTestHandler(msg, key, value string) http.HandlerFunc {
+func someSessionHandler(msg, key, value string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sess.Set(r, key, value)
 		sess.SetM(r, bigMap())
@@ -42,7 +42,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
+		wrappedHandler := Session(someSessionHandler(msg, key, value), secretKey, domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -66,7 +66,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
+		wrappedHandler := Session(someSessionHandler(msg, key, value), secretKey, domain)
 
 		ts := httptest.NewServer(
 			wrappedHandler,
@@ -115,7 +115,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := Session(someTestHandler(msg, key, value), secretKey, domain)
+		wrappedHandler := Session(someSessionHandler(msg, key, value), secretKey, domain)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
