@@ -10,6 +10,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+const reloadProtectCookiePrefix = "ong_form_reload_protect"
+
 // TODO: docs.
 // ReloadProtect blah against Form blah
 func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
@@ -21,26 +23,22 @@ func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerF
 		http.MethodTrace,
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		theCookie := fmt.Sprintf(
-			"ong_form_reload_protect-%s",
-			strings.ReplaceAll(r.URL.EscapedPath(), "/", ""),
-		)
-
+		// It is possible for one to send a form without having added the requiste form http header.
 		if !slices.Contains(safeMethods, r.Method) {
 			// This could be a http POST/DELETE/etc
-			defer func() {
-				cookie.Set(
-					w,
-					theCookie,
-					"YES",
-					domain,
-					3*time.Hour,
-					false,
-				)
-			}()
 
-			gotCookie, _ := r.Cookie(theCookie)
+			theCookie := fmt.Sprintf("%s-%s",
+				reloadProtectCookiePrefix,
+				strings.ReplaceAll(r.URL.EscapedPath(), "/", ""),
+			)
+
+			gotCookie, err := r.Cookie(theCookie)
 			if gotCookie != nil {
+				fmt.Println("\t gotCookie.MaxAge: ", gotCookie.MaxAge, " :: ", gotCookie)
+			}
+
+			// TODO: && gotCookie.MaxAge > 0
+			if err == nil && gotCookie != nil {
 				// It means that the form had been submitted before.
 
 				cookie.Delete(
@@ -57,6 +55,16 @@ func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerF
 					http.StatusSeeOther,
 				)
 				return
+			} else {
+				fmt.Println("setting cookie.")
+				cookie.Set(
+					w,
+					theCookie,
+					"YES",
+					domain,
+					1*time.Hour,
+					false,
+				)
 			}
 		}
 
@@ -74,6 +82,7 @@ func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerF
 		// 	break
 		// }
 
+		fmt.Println("\t handler called.....")
 		wrappedHandler(w, r)
 	}
 }
