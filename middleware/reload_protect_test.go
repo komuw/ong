@@ -86,8 +86,8 @@ func TestReloadProtector(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+			rb, errR := io.ReadAll(res.Body)
+			attest.Ok(t, errR)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
@@ -106,8 +106,8 @@ func TestReloadProtector(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+			rb, errR := io.ReadAll(res.Body)
+			attest.Ok(t, errR)
 
 			attest.Equal(t, res.StatusCode, http.StatusSeeOther)
 			attest.Equal(t, string(rb), "")
