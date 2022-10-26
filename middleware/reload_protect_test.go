@@ -63,7 +63,7 @@ func TestReloadProtect(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 	})
 
-	t.Run("todo", func(t *testing.T) {
+	t.Run("re-submission protected", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
@@ -112,6 +112,7 @@ func TestReloadProtect(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusSeeOther)
 			attest.Equal(t, string(rb), "")
 			attest.Equal(t, len(res.Cookies()), 0)
+			addedCookie = nil
 		}
 	})
 
