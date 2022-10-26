@@ -208,7 +208,6 @@ func (m myAPI) login() http.HandlerFunc {
 		reqL := m.l.WithCtx(r.Context())
 
 		if r.Method != http.MethodPost {
-			// Show html page with login form.
 			data := struct {
 				CsrfTokenName  string
 				CsrfTokenValue string
@@ -224,25 +223,6 @@ func (m myAPI) login() http.HandlerFunc {
 			}
 			return
 		}
-		refreshCookie := "ong_refresh_akja_cookie"
-		cookieOne, err := r.Cookie(refreshCookie)
-		if cookieOne != nil && cookieOne.Name == refreshCookie {
-			cookie.Delete(w, refreshCookie, "localhost")
-			reqL.WithImmediate().Info(log.F{"msg": "already submitted", "cookieOne": cookieOne})
-			http.Redirect(
-				w,
-				r,
-				r.URL.String(),
-				// http 303(StatusSeeOther) is guaranteed by the spec to always use http GET.
-				// https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
-				http.StatusSeeOther,
-			)
-			return
-		}
-
-		defer func() {
-			cookie.Set(w, refreshCookie, "YES", "localhost", 1*time.Hour, false)
-		}()
 
 		if err = r.ParseForm(); err != nil {
 			panic(err)
