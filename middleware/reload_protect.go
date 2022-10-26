@@ -32,12 +32,8 @@ func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerF
 				strings.ReplaceAll(r.URL.EscapedPath(), "/", ""),
 			)
 
+			// todo: should we check if gotCookie.MaxAge > 0
 			gotCookie, err := r.Cookie(theCookie)
-			if gotCookie != nil {
-				fmt.Println("\t gotCookie.MaxAge: ", gotCookie.MaxAge, " :: ", gotCookie)
-			}
-
-			// TODO: && gotCookie.MaxAge > 0
 			if err == nil && gotCookie != nil {
 				// It means that the form had been submitted before.
 
@@ -56,7 +52,6 @@ func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerF
 				)
 				return
 			} else {
-				fmt.Println("setting cookie.")
 				cookie.Set(
 					w,
 					theCookie,
@@ -68,21 +63,6 @@ func ReloadProtect(wrappedHandler http.HandlerFunc, domain string) http.HandlerF
 			}
 		}
 
-		// // TODO: check if request method is safe
-
-		// ct, _, err := mime.ParseMediaType(r.Header.Get(ctHeader))
-		// if err == nil && (ct == formUrlEncoded || ct == multiformData) {
-		// 	// For POST requests that;
-		// 	// - are not form data.
-		// 	// - have no cookies.
-		// 	// - are not using http authentication.
-		// 	// then it is okay to not validate csrf for them.
-		// 	// This is especially useful for REST API endpoints.
-		// 	// see: https://github.com/komuw/ong/issues/76
-		// 	break
-		// }
-
-		fmt.Println("\t handler called.....")
 		wrappedHandler(w, r)
 	}
 }
