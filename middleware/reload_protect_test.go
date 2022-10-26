@@ -112,7 +112,6 @@ func TestReloadProtector(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusSeeOther)
 			attest.Equal(t, string(rb), "")
 			attest.Equal(t, len(res.Cookies()), 0)
-			addedCookie = nil
 		}
 	})
 
