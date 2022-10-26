@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.24
+- Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
+
 ## v0.0.23
 - ong/client: Add log id http header: https://github.com/komuw/ong/pull/166
 
