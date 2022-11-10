@@ -85,6 +85,30 @@ func Set(
 	http.SetCookie(w, c)
 }
 
+// Get returns a copy of the named cookie.
+func Get(r *http.Request, name string) (*http.Cookie, error) {
+	c, err := r.Cookie(name)
+	if err != nil {
+		return nil, err
+	}
+
+	c2 := &http.Cookie{
+		Name:     c.Name,
+		Value:    c.Value,
+		Path:     c.Path,
+		Domain:   c.Domain,
+		Expires:  c.Expires,
+		MaxAge:   c.MaxAge,
+		Secure:   c.Secure,
+		HttpOnly: c.HttpOnly,
+		SameSite: c.SameSite,
+		Raw:      c.Raw,
+		// do not add c.Unparsed since it is a slice of strings and caller of GetEncrypted may manipulate it.
+	}
+
+	return c2, nil
+}
+
 // This value should not be changed without thinking about it.
 // The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
 // So `sep` should not be any of those.
@@ -159,7 +183,7 @@ func GetEncrypted(
 		enc = cry.New(secretKey)
 	})
 
-	c, err := r.Cookie(name)
+	c, err := Get(r, name)
 	if err != nil {
 		return nil, err
 	}
@@ -210,25 +234,12 @@ func GetEncrypted(
 		// So we cannot use `c.MaxAge` here, since a client could have modified that.
 		diff := expires - time.Now().UTC().Unix()
 		if diff <= 0 {
-			return nil, errors.New("ong/cookie: cookie should be expired")
+			return nil, errors.New("ong/cookie: cookie is expired")
 		}
 	}
 
-	c2 := &http.Cookie{
-		Name:     c.Name,
-		Value:    val,
-		Path:     c.Path,
-		Domain:   c.Domain,
-		Expires:  c.Expires,
-		MaxAge:   c.MaxAge,
-		Secure:   c.Secure,
-		HttpOnly: c.HttpOnly,
-		SameSite: c.SameSite,
-		Raw:      c.Raw,
-		// do not add c.Unparsed since it is a slice of strings and caller of GetEncrypted may manipulate it.
-	}
-
-	return c2, nil
+	c.Value = val
+	return c, nil
 }
 
 // Delete removes the named cookie.
