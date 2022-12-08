@@ -3,6 +3,11 @@
 Most recent version is listed first.  
 
 
+## v0.0.26
+- Create middleware that adds the "real" client IP address: https://github.com/komuw/ong/pull/187        
+  Note that this is on a best effort basis.       
+  Finding the true client IP address is a precarious process [1](https://adam-p.ca/blog/2022/03/x-forwarded-for/)      
+
 ## v0.0.25
 - ong/client: Use roundTripper for logging: https://github.com/komuw/ong/pull/185
 - Make most middleware private: https://github.com/komuw/ong/pull/186
