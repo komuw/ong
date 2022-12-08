@@ -69,7 +69,9 @@ const (
 
 // SingleIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 // It derives the client IP from http header headerName.
-// headerName MUST not be either `X-Forwarded-For` or `Forwarded`
+//
+// headerName MUST not be either `X-Forwarded-For` or `Forwarded`.
+// It can be something like `CF-Connecting-IP`, `Fastly-Client-IP`, `Fly-Client-IP`, etc; depending on your usecase.
 func SingleIpStrategy(headerName string) clientIPstrategy {
 	return clientIPstrategy(headerName)
 }
