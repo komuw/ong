@@ -56,6 +56,8 @@ type Opts struct {
 // If it becomes compromised, generate a new one and restart your application using the new one.
 //
 // strategy is the algorithm to use when fetching the client's IP address.
+// It is important to choose your strategy well, see the warning in [GetClientIP].
+// Also see [DirectIpStrategy], [LeftIpStrategy], [RightIpStrategy] & [SingleIpStrategy]
 func New(
 	domain string,
 	httpsPort uint16,
