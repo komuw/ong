@@ -1,5 +1,5 @@
 // Package sess provides an implementation of http sessions that is backed by tamper-proof & encrypted cookies.
-// This package should ideally be used together with the [github.com/komuw/ong/middleware.Session] middleware.
+// This package should ideally be used together with the ong [github.com/komuw/ong/middleware] middlewares.
 package sess
 
 import (
@@ -26,8 +26,8 @@ const (
 
 // Initialise returns a new http.Request (based on r) that has sessions properly setup.
 //
-// You do not need to call this function, if you are also using the [github.com/komuw/ong/middleware.Session] middleware.
-// That middleware does so automatically for you.
+// You do not need to call this function, if you are also using the ong [github.com/komuw/ong/middleware] middleware.
+// Those middleware does so automatically for you.
 func Initialise(r *http.Request, secretKey string) *http.Request {
 	ctx := r.Context()
 	var sessVal M // should be per request.
@@ -108,8 +108,8 @@ func GetM(r *http.Request) map[string]string {
 
 // Save writes(to http cookies) any key-value pairs that have already been added to the current http session.
 //
-// You do not need to call this function, if you are also using the [github.com/komuw/ong/middleware.Session] middleware.
-// That middleware does so automatically for you.
+// You do not need to call this function, if you are also using the ong [github.com/komuw/ong/middleware] middleware.
+// Those middleware does so automatically for you.
 func Save(
 	r *http.Request,
 	w http.ResponseWriter,
