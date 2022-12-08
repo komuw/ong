@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bufio"
-	"compress/gzip"
+	stdGzip "compress/gzip"
 	"fmt"
 	"io"
 	"net"
@@ -28,8 +28,8 @@ const (
 	thisMiddlewareEncoding = "gzip"
 )
 
-// Gzip is a middleware that transparently gzips the http response body, for clients that support it.
-func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+// gzip is a middleware that transparently gzips the http response body, for clients that support it.
+func gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(varyHeader, acceptEncodingHeader)
 
@@ -38,7 +38,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		gzipWriter, _ := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		gzipWriter, _ := stdGzip.NewWriterLevel(w, stdGzip.BestSpeed)
 		grw := &gzipRW{
 			ResponseWriter: w,
 			// Bytes written during ServeHTTP are redirected to this gzip writer
@@ -65,7 +65,7 @@ func Gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 // writers, so don't forget to do that.
 type gzipRW struct {
 	http.ResponseWriter
-	gw *gzip.Writer
+	gw *stdGzip.Writer
 
 	buf []byte // Holds the first part of the write before reaching the minSize or the end of the write.
 
@@ -176,7 +176,7 @@ func (grw *gzipRW) handleGzipped(ct string, lenB int) (int, error) {
 	return lenB, nil
 }
 
-// Close will close the gzip.Writer.
+// Close will close the stdGzip.Writer.
 func (grw *gzipRW) Close() error {
 	if !grw.handledZip {
 		// GZIP not triggered yet, write out regular response.
@@ -187,7 +187,7 @@ func (grw *gzipRW) Close() error {
 	return grw.gw.Close() // will also call gzip flush()
 }
 
-// Flush flushes the underlying *gzip.Writer and then the
+// Flush flushes the underlying *stdGzip.Writer and then the
 // underlying http.ResponseWriter if it is an http.Flusher.
 // This makes gzipRW an http.Flusher.
 func (grw *gzipRW) Flush() {
