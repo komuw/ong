@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 ## v0.0.25
 - ong/client: Use roundTripper for logging: https://github.com/komuw/ong/pull/185
+- Make most middleware private: https://github.com/komuw/ong/pull/186
 
 ## v0.0.24
 - Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
