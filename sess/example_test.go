@@ -11,11 +11,6 @@ import (
 	"github.com/komuw/ong/sess"
 )
 
-const (
-	secretKey = "some-secretKey"
-	domain    = "example.com"
-)
-
 func loginHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mySession := map[string]string{
