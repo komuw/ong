@@ -111,7 +111,6 @@ func TestClientIP(t *testing.T) {
 				attest.Equal(t, res.StatusCode, http.StatusOK)
 				attest.Subsequence(t, string(rb), msg)
 				attest.Subsequence(t, string(rb), tt.expected)
-				fmt.Println("\n\t res: ", string(rb))
 			})
 		}
 	})
@@ -149,7 +148,6 @@ func TestClientIP(t *testing.T) {
 	})
 }
 
-// TODO: use table-driven tests.
 func TestClientIPstrategy(t *testing.T) {
 	t.Parallel()
 

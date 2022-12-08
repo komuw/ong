@@ -110,13 +110,11 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 	// last header instance if there are multiple. (Using the last is arbitrary, but
 	// in theory it should be the newest value.)
 	ipStr := lastHeader(headers, headerName)
-	fmt.Println("\n\t ipStr: ", ipStr) // TODO: remove all print statements
 	if ipStr == "" {
 		// There is no header
 		return ""
 	}
 
-	fmt.Println("\n ipStr: ", ipStr)
 	ipAddr := goodIPAddr(ipStr)
 	if ipAddr == nil {
 		// The header value is invalid
@@ -144,7 +142,6 @@ func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	}
 
 	ipAddrs := getIPAddrList(headers, headerName)
-	fmt.Println("\t ipAddrs: ", ipAddrs)
 	for _, ip := range ipAddrs {
 		if isSafeIp(ip) {
 			// This is the leftmost valid, non-private IP
@@ -199,16 +196,15 @@ func goodIPAddr(ipStr string) *netip.Addr {
 
 	ipAddr, err := netip.ParseAddr(ipStr)
 	if err != nil {
-		fmt.Println("\t err: ", err)
 		return nil
 	}
 
-	if !isSafeIp(&ipAddr) {
-		fmt.Println("\t isSafeIp: ", "notSafe")
+	theIp := &ipAddr
+	if !isSafeIp(theIp) {
 		return nil
 	}
 
-	return &ipAddr
+	return theIp
 }
 
 func isSafeIp(addr *netip.Addr) bool {
@@ -307,7 +303,6 @@ func getIPAddrList(headers http.Header, headerName string) []*netip.Addr {
 				ipAddr = goodIPAddr(rawListItem)
 			} else {
 				ipAddr = parseForwardedListItem(rawListItem)
-				fmt.Println("\n\t ipAddr::: ", rawListItem, ipAddr)
 			}
 
 			// ipAddr is nil if not valid
