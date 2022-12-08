@@ -150,8 +150,7 @@ func TestClientIP(t *testing.T) {
 }
 
 // TODO: use table-driven tests.
-// TODO: rename.
-func TestTodo(t *testing.T) {
+func TestClientIPstrategy(t *testing.T) {
 	t.Parallel()
 
 	awsMetadataApiPrivateIP := "169.254.169.254" // AWS metadata api IP address.
