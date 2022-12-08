@@ -110,6 +110,7 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 	// last header instance if there are multiple. (Using the last is arbitrary, but
 	// in theory it should be the newest value.)
 	ipStr := lastHeader(headers, headerName)
+	fmt.Println("\n\t ipStr: ", ipStr) // TODO: remove all print statements
 	if ipStr == "" {
 		// There is no header
 		return ""

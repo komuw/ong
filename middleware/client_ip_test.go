@@ -156,192 +156,226 @@ func TestClientIPstrategy(t *testing.T) {
 	awsMetadataApiPrivateIP := "169.254.169.254" // AWS metadata api IP address.
 	publicIP := "93.184.216.34"                  // example.com IP address
 
-	t.Run("remoteAddrStrategy", func(t *testing.T) {
-		t.Parallel()
+	tests := []struct {
+		name        string
+		updateReq   func(*http.Request) string
+		runStrategy func(remoteAddr, headerName string, headers http.Header) string
+		assert      func(ip string)
+	}{
+		{
+			name: "remoteAddrStrategy",
+			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
+				return directAddrStrategy(remoteAddr)
+			},
+			assert: func(ip string) {
+				attest.NotZero(t, ip)
+			},
+		},
+		{
+			name: "singleIPHeaderStrategy/bad-header",
+			updateReq: func(req *http.Request) string {
+				headerName := xForwardedForHeader
+				req.Header.Add(headerName, publicIP)
+				return headerName
+			},
+			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
+				return singleIPHeaderStrategy(headerName, headers)
+			},
+			assert: func(ip string) {
+				attest.Zero(t, ip)
+			},
+		},
+		{
+			name: "singleIPHeaderStrategy/private-ip",
+			updateReq: func(req *http.Request) string {
+				headerName := "Fly-Client-IP"
+				req.Header.Add(headerName, awsMetadataApiPrivateIP)
+				return headerName
+			},
+			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
+				return singleIPHeaderStrategy(headerName, headers)
+			},
+			assert: func(ip string) {
+				attest.Zero(t, ip)
+			},
+		},
+		{
+			name: "singleIPHeaderStrategy/not-private-ip",
+			updateReq: func(req *http.Request) string {
+				headerName := "Fly-Client-IP"
+				req.Header.Add(headerName, publicIP)
+				return headerName
+			},
+			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
+				return singleIPHeaderStrategy(headerName, headers)
+			},
+			assert: func(ip string) {
+				attest.NotZero(t, ip)
+				attest.Equal(t, ip, publicIP)
+			},
+		},
+		{
+			name: "singleIPHeaderStrategy/not-private-ip-with-port",
+			updateReq: func(req *http.Request) string {
+				headerName := "Fly-Client-IP"
+				req.Header.Add(headerName, fmt.Sprintf("%s:%d", publicIP, 9093))
+				return headerName
+			},
+			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
+				return singleIPHeaderStrategy(headerName, headers)
+			},
+			assert: func(ip string) {
+				attest.NotZero(t, ip)
+				attest.Equal(t, ip, publicIP)
+			},
+		},
+	}
 
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	for _, tt := range tests {
+		tt := tt
 
-		ip := directAddrStrategy(req.RemoteAddr)
-		attest.NotZero(t, ip)
-		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
-	})
-
-	t.Run("singleIPHeaderStrategy", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("bad header", func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			headerName := ""
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
+			if tt.updateReq != nil {
+				headerName = tt.updateReq(req)
+			}
 
-			ip := singleIPHeaderStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
+			remoteAddr := req.RemoteAddr
+			headers := req.Header
+			ip := tt.runStrategy(remoteAddr, headerName, headers)
+
+			tt.assert(ip)
 		})
-		t.Run("privateIp", func(t *testing.T) {
-			t.Parallel()
+	}
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := "Fly-Client-IP"
-			hdrVal := awsMetadataApiPrivateIP
-			req.Header.Add(headerName, hdrVal)
+	// t.Run("leftmostNonPrivateStrategy", func(t *testing.T) {
+	// 	t.Parallel()
 
-			ip := singleIPHeaderStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
-		t.Run("not privateIp", func(t *testing.T) {
-			t.Parallel()
+	// 	t.Run("bad header", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := "Fly-Client-IP"
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := "Fly-Client-IP"
+	// 		hdrVal := publicIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := singleIPHeaderStrategy(headerName, req.Header)
-			attest.NotZero(t, ip)
-			attest.Equal(t, ip, hdrVal)
-		})
-		t.Run("not privateIp with port", func(t *testing.T) {
-			t.Parallel()
+	// 		ip := leftmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.Zero(t, ip)
+	// 	})
+	// 	t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := "Fly-Client-IP"
-			hdrVal := publicIP
-			req.Header.Add(headerName, fmt.Sprintf("%s:%d", hdrVal, 9093))
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := xForwardedForHeader
+	// 		hdrVal := awsMetadataApiPrivateIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := singleIPHeaderStrategy(headerName, req.Header)
-			attest.NotZero(t, ip)
-			attest.Equal(t, ip, hdrVal)
-		})
-	})
+	// 		ip := leftmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.Zero(t, ip)
+	// 	})
+	// 	t.Run("privateIp forwardedHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-	t.Run("leftmostNonPrivateStrategy", func(t *testing.T) {
-		t.Parallel()
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := forwardedHeader
+	// 		hdrVal := awsMetadataApiPrivateIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-		t.Run("bad header", func(t *testing.T) {
-			t.Parallel()
+	// 		ip := leftmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.Zero(t, ip)
+	// 	})
+	// 	t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := "Fly-Client-IP"
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := xForwardedForHeader
+	// 		hdrVal := publicIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := leftmostNonPrivateStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
-		t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
-			t.Parallel()
+	// 		ip := leftmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.NotZero(t, ip)
+	// 		attest.Equal(t, ip, hdrVal)
+	// 		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
+	// 	})
+	// 	t.Run("not privateIp forwardedHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := awsMetadataApiPrivateIP
-			req.Header.Add(headerName, hdrVal)
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := xForwardedForHeader
+	// 		hdrVal := publicIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := leftmostNonPrivateStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
-		t.Run("privateIp forwardedHeader", func(t *testing.T) {
-			t.Parallel()
+	// 		ip := leftmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.NotZero(t, ip)
+	// 		attest.Equal(t, ip, hdrVal)
+	// 		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
+	// 	})
+	// })
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := forwardedHeader
-			hdrVal := awsMetadataApiPrivateIP
-			req.Header.Add(headerName, hdrVal)
+	// t.Run("rightmostNonPrivateStrategy", func(t *testing.T) {
+	// 	t.Parallel()
 
-			ip := leftmostNonPrivateStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
-		t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
-			t.Parallel()
+	// 	t.Run("bad header", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := "Fly-Client-IP"
+	// 		hdrVal := publicIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := leftmostNonPrivateStrategy(headerName, req.Header)
-			attest.NotZero(t, ip)
-			attest.Equal(t, ip, hdrVal)
-			fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
-		})
-		t.Run("not privateIp forwardedHeader", func(t *testing.T) {
-			t.Parallel()
+	// 		ip := rightmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.Zero(t, ip)
+	// 	})
+	// 	t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := xForwardedForHeader
+	// 		hdrVal := awsMetadataApiPrivateIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := leftmostNonPrivateStrategy(headerName, req.Header)
-			attest.NotZero(t, ip)
-			attest.Equal(t, ip, hdrVal)
-			fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
-		})
-	})
+	// 		ip := rightmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.Zero(t, ip)
+	// 	})
+	// 	t.Run("privateIp forwardedHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-	t.Run("rightmostNonPrivateStrategy", func(t *testing.T) {
-		t.Parallel()
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := forwardedHeader
+	// 		hdrVal := awsMetadataApiPrivateIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-		t.Run("bad header", func(t *testing.T) {
-			t.Parallel()
+	// 		ip := rightmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.Zero(t, ip)
+	// 	})
+	// 	t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := "Fly-Client-IP"
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := xForwardedForHeader
+	// 		hdrVal := publicIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := rightmostNonPrivateStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
-		t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
-			t.Parallel()
+	// 		ip := rightmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.NotZero(t, ip)
+	// 		attest.Equal(t, ip, hdrVal)
+	// 		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
+	// 	})
+	// 	t.Run("not privateIp forwardedHeader", func(t *testing.T) {
+	// 		t.Parallel()
 
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := awsMetadataApiPrivateIP
-			req.Header.Add(headerName, hdrVal)
+	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	// 		headerName := xForwardedForHeader
+	// 		hdrVal := publicIP
+	// 		req.Header.Add(headerName, hdrVal)
 
-			ip := rightmostNonPrivateStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
-		t.Run("privateIp forwardedHeader", func(t *testing.T) {
-			t.Parallel()
-
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := forwardedHeader
-			hdrVal := awsMetadataApiPrivateIP
-			req.Header.Add(headerName, hdrVal)
-
-			ip := rightmostNonPrivateStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
-		t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
-			t.Parallel()
-
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
-
-			ip := rightmostNonPrivateStrategy(headerName, req.Header)
-			attest.NotZero(t, ip)
-			attest.Equal(t, ip, hdrVal)
-			fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
-		})
-		t.Run("not privateIp forwardedHeader", func(t *testing.T) {
-			t.Parallel()
-
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := publicIP
-			req.Header.Add(headerName, hdrVal)
-
-			ip := rightmostNonPrivateStrategy(headerName, req.Header)
-			attest.NotZero(t, ip)
-			attest.Equal(t, ip, hdrVal)
-			fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
-		})
-	})
+	// 		ip := rightmostNonPrivateStrategy(headerName, req.Header)
+	// 		attest.NotZero(t, ip)
+	// 		attest.Equal(t, ip, hdrVal)
+	// 		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
+	// 	})
+	// })
 }
