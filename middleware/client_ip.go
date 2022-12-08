@@ -307,6 +307,7 @@ func getIPAddrList(headers http.Header, headerName string) []*netip.Addr {
 				ipAddr = goodIPAddr(rawListItem)
 			} else {
 				ipAddr = parseForwardedListItem(rawListItem)
+				fmt.Println("\n\t ipAddr::: ", rawListItem, ipAddr)
 			}
 
 			// ipAddr is nil if not valid
