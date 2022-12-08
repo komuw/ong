@@ -46,12 +46,9 @@ func GetClientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 
-func clientIP(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-
-		// TODO: make it part of this middleware's args.
-		var strategy clientIPstrategy
 
 		var clientAddr string
 		switch v := strategy; v {

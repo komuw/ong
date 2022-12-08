@@ -118,6 +118,7 @@ func SetEncrypted(
 		enc = cry.New(secretKey)
 	})
 
+	// TODO: fix this. If `RemoteAddr` does not have a port, `SplitHostPort` complains.
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return
@@ -189,6 +190,8 @@ func GetEncrypted(
 		decryptedVal[lenOfIp+lenOfExpires:]
 
 	{
+		// TODO: fix this. If `RemoteAddr` does not have a port, `SplitHostPort` complains.
+		//
 		// Try and prevent replay attacks.
 		// This does not completely stop them, but it is better than nothing.
 		incomingIP, _, errS := net.SplitHostPort(r.RemoteAddr)
