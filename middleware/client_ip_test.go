@@ -22,6 +22,9 @@ func someClientIpHandler(msg string) http.HandlerFunc {
 func TestClientIP(t *testing.T) {
 	t.Parallel()
 
+	// awsMetadataApiPrivateIP := "169.254.169.254" // AWS metadata api IP address.
+	publicIP := "93.184.216.34" // example.com IP address
+
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
@@ -47,10 +50,23 @@ func TestClientIP(t *testing.T) {
 		tests := []struct {
 			name     string
 			strategy clientIPstrategy
+			req      func() *http.Request
+			expected string
 		}{
 			{
 				name:     "DirectIpStrategy",
 				strategy: DirectIpStrategy,
+				req:      func() *http.Request { return httptest.NewRequest(http.MethodGet, "/someUri", nil) },
+			},
+			{
+				name:     "SingleIpStrategy",
+				strategy: SingleIpStrategy("Fly-Client-IP"),
+				req: func() *http.Request {
+					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+					r.Header.Add("Fly-Client-IP", publicIP)
+					return r
+				},
+				expected: publicIP,
 			},
 		}
 
@@ -63,7 +79,7 @@ func TestClientIP(t *testing.T) {
 				msg := "hello"
 				wrappedHandler := clientIP(someClientIpHandler(msg), tt.strategy)
 				rec := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+				req := tt.req()
 				wrappedHandler.ServeHTTP(rec, req)
 
 				res := rec.Result()
@@ -74,6 +90,8 @@ func TestClientIP(t *testing.T) {
 
 				attest.Equal(t, res.StatusCode, http.StatusOK)
 				attest.Subsequence(t, string(rb), msg)
+				attest.Subsequence(t, string(rb), tt.expected)
+				fmt.Println("\n\t res: ", string(rb))
 			})
 		}
 	})
