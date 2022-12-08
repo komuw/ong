@@ -27,12 +27,12 @@ const (
 	// clientIPctxKey is the name of the context key used to store the client IP address.
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 
-	remoteAddress = clientIPstrategy("remoteAddress")
-	left          = clientIPstrategy("left")
-	right         = clientIPstrategy("right")
+	DirectIpStrategy = clientIPstrategy("DirectIpStrategy")
+	LeftIpStrategy   = clientIPstrategy("LeftIpStrategy")
+	RightIpStrategy  = clientIPstrategy("RightIpStrategy")
 )
 
-func singleIP(headerName string) clientIPstrategy {
+func singleIpStrategy(headerName string) clientIPstrategy {
 	return clientIPstrategy(headerName)
 }
 
@@ -52,11 +52,11 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 
 		var clientAddr string
 		switch v := strategy; v {
-		case remoteAddress:
-			clientAddr = remoteAddrStrategy(r.RemoteAddr)
-		case left:
+		case DirectIpStrategy:
+			clientAddr = directAddrStrategy(r.RemoteAddr)
+		case LeftIpStrategy:
 			clientAddr = leftmostNonPrivateStrategy(xForwardedForHeader, r.Header)
-		case right:
+		case RightIpStrategy:
 			clientAddr = rightmostNonPrivateStrategy(xForwardedForHeader, r.Header)
 		default:
 			// treat everything else as a `singleIP` strategy
@@ -70,9 +70,9 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 	}
 }
 
-// remoteAddrStrategy returns the client socket IP, stripped of port.
+// directAddrStrategy returns the client socket IP, stripped of port.
 // This strategy should be used if the server accept direct connections, rather than through a proxy.
-func remoteAddrStrategy(remoteAddr string) string {
+func directAddrStrategy(remoteAddr string) string {
 	if ipAddr := goodIPAddr(remoteAddr); ipAddr != nil {
 		return ipAddr.String()
 	}

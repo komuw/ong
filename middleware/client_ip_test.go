@@ -26,7 +26,7 @@ func TestClientIP(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := clientIP(someClientIpHandler(msg))
+		wrappedHandler := clientIP(someClientIpHandler(msg), DirectIpStrategy)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -45,7 +45,7 @@ func TestClientIP(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := clientIP(someClientIpHandler(msg))
+		wrappedHandler := clientIP(someClientIpHandler(msg), DirectIpStrategy)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -84,7 +84,7 @@ func TestTodo(t *testing.T) {
 	t.Run("remoteAddrStrategy", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 
-		ip := remoteAddrStrategy(req.RemoteAddr)
+		ip := directAddrStrategy(req.RemoteAddr)
 		attest.NotZero(t, ip)
 		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
 	})
