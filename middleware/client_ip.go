@@ -21,11 +21,10 @@ const (
 	errPrefix           = "ong/middleware:"
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
+
 	// clientIPctxKey is the name of the context key used to store the client IP address.
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
-)
 
-var (
 	remoteAddress = clientIPstrategy("remoteAddress")
 	left          = clientIPstrategy("left")
 	right         = clientIPstrategy("right")
