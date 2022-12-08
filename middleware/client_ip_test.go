@@ -149,6 +149,7 @@ func TestClientIP(t *testing.T) {
 	})
 }
 
+// TODO: use table-driven tests.
 // TODO: rename.
 func TestTodo(t *testing.T) {
 	t.Parallel()
@@ -157,6 +158,8 @@ func TestTodo(t *testing.T) {
 	publicIP := "93.184.216.34"                  // example.com IP address
 
 	t.Run("remoteAddrStrategy", func(t *testing.T) {
+		t.Parallel()
+
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 
 		ip := directAddrStrategy(req.RemoteAddr)
@@ -165,7 +168,11 @@ func TestTodo(t *testing.T) {
 	})
 
 	t.Run("singleIPHeaderStrategy", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("bad header", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
 			hdrVal := publicIP
@@ -175,6 +182,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("privateIp", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
 			hdrVal := awsMetadataApiPrivateIP
@@ -184,6 +193,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("not privateIp", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
 			hdrVal := publicIP
@@ -194,6 +205,8 @@ func TestTodo(t *testing.T) {
 			attest.Equal(t, ip, hdrVal)
 		})
 		t.Run("not privateIp with port", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
 			hdrVal := publicIP
@@ -206,7 +219,11 @@ func TestTodo(t *testing.T) {
 	})
 
 	t.Run("leftmostNonPrivateStrategy", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("bad header", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
 			hdrVal := publicIP
@@ -216,6 +233,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
 			hdrVal := awsMetadataApiPrivateIP
@@ -225,6 +244,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("privateIp forwardedHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := forwardedHeader
 			hdrVal := awsMetadataApiPrivateIP
@@ -234,6 +255,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
 			hdrVal := publicIP
@@ -245,6 +268,8 @@ func TestTodo(t *testing.T) {
 			fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
 		})
 		t.Run("not privateIp forwardedHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
 			hdrVal := publicIP
@@ -258,7 +283,11 @@ func TestTodo(t *testing.T) {
 	})
 
 	t.Run("rightmostNonPrivateStrategy", func(t *testing.T) {
+		t.Parallel()
+
 		t.Run("bad header", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
 			hdrVal := publicIP
@@ -268,6 +297,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
 			hdrVal := awsMetadataApiPrivateIP
@@ -277,6 +308,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("privateIp forwardedHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := forwardedHeader
 			hdrVal := awsMetadataApiPrivateIP
@@ -286,6 +319,8 @@ func TestTodo(t *testing.T) {
 			attest.Zero(t, ip)
 		})
 		t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
 			hdrVal := publicIP
@@ -297,6 +332,8 @@ func TestTodo(t *testing.T) {
 			fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
 		})
 		t.Run("not privateIp forwardedHeader", func(t *testing.T) {
+			t.Parallel()
+
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
 			hdrVal := publicIP
