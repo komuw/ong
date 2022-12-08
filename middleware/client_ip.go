@@ -18,16 +18,40 @@ const (
 	forwardedHeader     = "Forwarded"
 )
 
+type clientIPstrategy string
+
+var (
+	remoteAddress = clientIPstrategy("remoteAddress")
+	singleIP      = clientIPstrategy("singleIP")
+	left          = clientIPstrategy("left")
+	right         = clientIPstrategy("right")
+)
+
 func clientIP(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() { wrappedHandler(w, r) }()
 
-		host, port, err := net.SplitHostPort(r.RemoteAddr)
+		// TODO: make it part of this middleware's args.
+		var strategy clientIPstrategy
+
+		var clientAddr string
+		switch strategy {
+		case remoteAddress:
+			clientAddr = remoteAddrStrategy(r.RemoteAddr)
+		case singleIP:
+			// TODO
+		case left:
+			clientAddr = leftmostNonPrivateStrategy(xForwardedForHeader, r.Header)
+		case right:
+			clientAddr = rightmostNonPrivateStrategy(xForwardedForHeader, r.Header)
+		}
+
+		_, port, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			return
 		}
 
-		r.RemoteAddr = fmt.Sprintf("%s:%s", host, port)
+		r.RemoteAddr = fmt.Sprintf("%s:%s", clientAddr, port)
 	}
 }
 

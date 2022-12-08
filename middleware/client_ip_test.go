@@ -116,6 +116,16 @@ func TestTodo(t *testing.T) {
 			attest.NotZero(t, ip)
 			attest.Equal(t, ip, hdrVal)
 		})
+		t.Run("not privateIp with port", func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			headerName := "Fly-Client-IP"
+			hdrVal := publicIP
+			req.Header.Add(headerName, fmt.Sprintf("%s:%d", hdrVal, 9093))
+
+			ip := singleIPHeaderStrategy(headerName, req.Header)
+			attest.NotZero(t, ip)
+			attest.Equal(t, ip, hdrVal)
+		})
 	})
 
 	t.Run("leftmostNonPrivateStrategy", func(t *testing.T) {
