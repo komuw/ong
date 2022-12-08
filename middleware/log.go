@@ -26,6 +26,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 
 	mathRand.Seed(time.Now().UTC().UnixNano())
+	pid := os.Getpid()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -73,7 +74,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 				"code":          lrw.code,
 				"status":        http.StatusText(lrw.code),
 				"durationMS":    time.Since(start).Milliseconds(),
-				"pid":           os.Getpid(),
+				"pid":           pid,
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				flds["ongError"] = ongError
