@@ -27,16 +27,12 @@ const (
 
 // Safe creates a http client that has some good defaults & is safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-//
-// Clients should be reused instead of created as needed. Clients are safe for concurrent use by multiple goroutines.
 func Safe(l log.Logger) *http.Client {
 	return new(true, l)
 }
 
 // Unsafe creates a http client that has some good defaults & is NOT safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-//
-// Clients should be reused instead of created as needed. Clients are safe for concurrent use by multiple goroutines.
 func Unsafe(l log.Logger) *http.Client {
 	return new(false, l)
 }
