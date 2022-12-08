@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.25
+- ong/client: Use roundTripper for logging: https://github.com/komuw/ong/pull/185
+
 ## v0.0.24
 - Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
 - Add ReloadProtector middleware: https://github.com/komuw/ong/pull/171
