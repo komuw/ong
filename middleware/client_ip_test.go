@@ -13,9 +13,9 @@ import (
 
 func someClientIpHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ippp := GetClientIP(r)
-		fmt.Println("\t ippp: ", ippp)
-		fmt.Fprint(w, msg)
+		ip := GetClientIP(r)
+		res := fmt.Sprintf("message: %s, ip: %s", msg, ip)
+		fmt.Fprint(w, res)
 	}
 }
 
@@ -38,7 +38,7 @@ func TestClientIP(t *testing.T) {
 		attest.Ok(t, err)
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg)
+		attest.Subsequence(t, string(rb), msg)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestClientIP(t *testing.T) {
 			attest.Ok(t, err)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
+			attest.Subsequence(t, string(rb), msg)
 		}
 
 		wg := &sync.WaitGroup{}
