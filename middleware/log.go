@@ -17,8 +17,8 @@ import (
 
 const logIDKey = string(log.CtxKey)
 
-// Log is a middleware that logs http requests and responses using [log.Logger].
-func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.HandlerFunc {
+// logger is a middleware that logs http requests and responses using [log.Logger].
+func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
