@@ -119,6 +119,8 @@ func SetEncrypted(
 	})
 
 	// TODO: fix this. If `RemoteAddr` does not have a port, `SplitHostPort` complains.
+	//
+	// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return
@@ -191,6 +193,8 @@ func GetEncrypted(
 
 	{
 		// TODO: fix this. If `RemoteAddr` does not have a port, `SplitHostPort` complains.
+		//
+		// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
 		//
 		// Try and prevent replay attacks.
 		// This does not completely stop them, but it is better than nothing.
