@@ -44,7 +44,8 @@ func GetClientIP(r *http.Request) string {
 		}
 	}
 
-	return r.RemoteAddr
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr) // ignore error.
+	return ip
 }
 
 // TODO: add proper warning.
