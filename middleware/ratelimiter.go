@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"math"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -33,13 +32,7 @@ func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
 
-		// if `SplitHostPort` returns an error, host will be empty string; which is okay with us.
-		host, _, _ := net.SplitHostPort(
-			// the documentation of `http.Request.RemoteAddr` says:
-			// RemoteAddr is not filled in by ReadRequest and has no defined format.
-			// So we cant rely on it been present, or having a given format.
-			r.RemoteAddr,
-		)
+		host := GetClientIP(r)
 		tb := rl.get(host, rateLimiterSendRate)
 
 		if !tb.allow() {

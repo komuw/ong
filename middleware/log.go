@@ -62,13 +62,8 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.H
 			ResponseWriter: w,
 		}
 		defer func() {
-			clientAddress := r.RemoteAddr
-			if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-				clientAddress = host
-			}
-
 			flds := log.F{
-				"clientAddress": clientAddress,
+				"clientAddress": GetClientIP(r),
 				"method":        r.Method,
 				"path":          r.URL.Redacted(),
 				"code":          lrw.code,
