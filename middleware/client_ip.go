@@ -27,16 +27,39 @@ const (
 	// clientIPctxKey is the name of the context key used to store the client IP address.
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 
+	// DirectIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
+	// This strategy should be used if the server accepts direct connections, rather than through a proxy.
+	//
+	// See the warning in [GetClientIP]
 	DirectIpStrategy = clientIPstrategy("DirectIpStrategy")
-	LeftIpStrategy   = clientIPstrategy("LeftIpStrategy")
-	RightIpStrategy  = clientIPstrategy("RightIpStrategy")
+
+	// LeftIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
+	// It derives the client IP from the leftmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	// Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
+	//
+	// See the warning in [GetClientIP]
+	LeftIpStrategy = clientIPstrategy("LeftIpStrategy")
+
+	// RightIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
+	// It derives the client IP from the rightmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	RightIpStrategy = clientIPstrategy("RightIpStrategy")
 )
 
+// SingleIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
+// It derives the client IP from http header headerName.
+// headerName MUST not be either `X-Forwarded-For` or `Forwarded`
 func SingleIpStrategy(headerName string) clientIPstrategy {
 	return clientIPstrategy(headerName)
 }
 
-// TODO: add proper warning.
+// GetClientIP fetches the "real" client IP address from r.
+//
+// Warning: This should be used with care. Clients CAN easily spoof IP addresses.
+// Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
+// You should especially heed this warning if you intend to use the IP addresses for security related activities.
+// Proceed at your own peril.
+//
+// [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
 func GetClientIP(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {
@@ -48,11 +71,10 @@ func GetClientIP(r *http.Request) string {
 	return ip
 }
 
-// TODO: add proper warning.
 // clientIP is a middleware that adds the "real" client IP address to the request context.
 // The IP can then be fetched using [GetClientIP]
 //
-// Warning: This middleware should be used with care. Clients CAN easily spoof the client IPs.
+// Warning: This middleware should be used with care. Clients CAN easily spoof IP addresses.
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
 //
 // [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
@@ -83,7 +105,7 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 }
 
 // directAddrStrategy returns the client socket IP, stripped of port.
-// This strategy should be used if the server accept direct connections, rather than through a proxy.
+// This strategy should be used if the server accepts direct connections, rather than through a proxy.
 func directAddrStrategy(remoteAddr string) string {
 	if ipAddr := goodIPAddr(remoteAddr); ipAddr != nil {
 		return ipAddr.String()
@@ -106,7 +128,7 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
 	if headerName == xForwardedForHeader || headerName == forwardedHeader {
-		// TODO: check this.
+		// This is because those headers are actually list of values.
 		return ""
 	}
 
@@ -131,7 +153,7 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 	return ipAddr.String()
 }
 
-// leftmostNonPrivateStrategy  derives the client IP from the leftmost valid and
+// leftmostNonPrivateStrategy derives the client IP from the leftmost valid and
 // non-private IP address in the X-Fowarded-For or Forwarded header.
 // This strategy should be used when a valid, non-private IP closest to the client is desired.
 // Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
@@ -142,8 +164,7 @@ func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
 	if headerName != xForwardedForHeader && headerName != forwardedHeader {
-		// TODO: check this.
-		fmt.Println("\t checkkk")
+		// This is because the header we expect here is one that is a list of values(which xForwardedForHeader and forwardedHeader are.)
 		return ""
 	}
 
@@ -169,8 +190,7 @@ func rightmostNonPrivateStrategy(headerName string, headers http.Header) string 
 	headerName = http.CanonicalHeaderKey(headerName)
 
 	if headerName != xForwardedForHeader && headerName != forwardedHeader {
-		// TODO: check this.
-		fmt.Println("\t checkkk")
+		// This is because the header we expect here is one that is a list of values(which xForwardedForHeader and forwardedHeader are.)
 		return ""
 	}
 
