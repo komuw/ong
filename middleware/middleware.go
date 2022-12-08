@@ -1,5 +1,20 @@
 // Package middleware provides helpful functions that implement some common functionalities in http servers.
 // A middleware is a function that returns a [http.HandlerFunc]
+//
+// The middlewares [All], [Get], [Post], [Head], [Put] & [Delete] wrap other internal middleware.
+// The effect of this is that the aforementioned middleware, in addition to their specialised functionality, will:
+//
+//  1. Add the "real" client IP address to the request context.
+//  2. Recover from panics in the wrappedHandler.
+//  3. Log http requests and responses.
+//  4. Rate limit requests by IP address.
+//  5. Shed load based on http response latencies.
+//  6. Redirect http requests to https.
+//  7. Add some important HTTP security headers and assign them sensible default values.
+//  8. Implement Cross-Origin Resource Sharing support(CORS).
+//  9. Provide protection against Cross Site Request Forgeries(CSRF).
+//  10. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
+//  11. Implement http sessions.
 package middleware
 
 import (
@@ -27,6 +42,7 @@ type Opts struct {
 	allowedMethods []string
 	allowedHeaders []string
 	secretKey      string
+	strategy       clientIPstrategy
 	l              log.Logger
 }
 
@@ -38,6 +54,8 @@ type Opts struct {
 //
 // The secretKey should be kept secret and should not be shared.
 // If it becomes compromised, generate a new one and restart your application using the new one.
+//
+// strategy is the algorithm to use when fetching the client's IP address.
 func New(
 	domain string,
 	httpsPort uint16,
@@ -45,6 +63,7 @@ func New(
 	allowedMethods []string,
 	allowedHeaders []string,
 	secretKey string,
+	strategy clientIPstrategy,
 	l log.Logger,
 ) Opts {
 	return Opts{
@@ -54,20 +73,28 @@ func New(
 		allowedMethods: allowedMethods,
 		allowedHeaders: allowedHeaders,
 		secretKey:      secretKey,
+		strategy:       strategy,
 		l:              l,
 	}
 }
 
 // WithOpts returns a new Opts that has sensible defaults.
-func WithOpts(domain string, httpsPort uint16, secretKey string, l log.Logger) Opts {
-	return New(domain, httpsPort, nil, nil, nil, secretKey, l)
+// See [New]
+func WithOpts(
+	domain string,
+	httpsPort uint16,
+	secretKey string,
+	strategy clientIPstrategy,
+	l log.Logger,
+) Opts {
+	return New(domain, httpsPort, nil, nil, nil, secretKey, strategy, l)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
 //
 // example usage:
 //
-//	allDefaultMiddlewares(wh, opts{"example.com", -1, nil, nil, nil, os.Stdout})
+//	allDefaultMiddlewares(wh, WithOpts("example.com", 443, "secretKey", RightIpStrategy, log.New(os.Stdout, 10)))
 func allDefaultMiddlewares(
 	wrappedHandler http.HandlerFunc,
 	o Opts,
@@ -78,67 +105,84 @@ func allDefaultMiddlewares(
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
 	secretKey := o.secretKey
+	strategy := o.strategy
 	l := o.l
 
 	// The way the middlewares are layered is:
-	// 1.  recoverer on the outer since we want it to watch all other middlewares.
-	// 2.  logger since we would like to get logs as early in the lifecycle as possible.
-	// 3.  rateLimiter since we want bad traffic to be filtered early.
-	// 4.  loadShedder for the same reason.
-	// 5.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
-	// 6.  securityHeaders since we want some minimum level of security.
-	// 7.  cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 8.  csrf since this one is a bit more involved perf-wise.
-	// 9.  Gzip since it is very involved perf-wise.
-	// 10. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
-	// 11. session since we want sessions to saved as soon as possible.
+	// 1.  clientIP on outer most since client IP is needed by a couple of inner middlewares.
+	// 2.  recoverer on the outer since we want it to watch all other middlewares.
+	// 3.  logger since we would like to get logs as early in the lifecycle as possible.
+	// 4.  rateLimiter since we want bad traffic to be filtered early.
+	// 5.  loadShedder for the same reason.
+	// 6.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
+	// 7.  securityHeaders since we want some minimum level of security.
+	// 8.  cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 9.  csrf since this one is a bit more involved perf-wise.
+	// 10. Gzip since it is very involved perf-wise.
+	// 11. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
+	// 12. session since we want sessions to saved as soon as possible.
 	//
-	// user -> recoverer -> logger -> rateLimiter -> loadShedder -> httpsRedirector -> securityHeaders -> cors -> csrf -> Gzip -> reloadProtector -> session -> actual-handler
+	// user ->
+	//  clientIP ->
+	//   recoverer ->
+	//    logger ->
+	//     rateLimiter ->
+	//      loadShedder ->
+	//       httpsRedirector ->
+	//        securityHeaders ->
+	//         cors ->
+	//          csrf ->
+	//           Gzip ->
+	//            reloadProtector ->
+	//             session ->
+	//              actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
 
-	return recoverer(
-		logger(
-			rateLimiter(
-				loadShedder(
-					httpsRedirector(
-						securityHeaders(
-							cors(
-								csrf(
-									reloadProtector(
-										session(
-											wrappedHandler,
-											secretKey,
+	return clientIP(
+		recoverer(
+			logger(
+				rateLimiter(
+					loadShedder(
+						httpsRedirector(
+							securityHeaders(
+								cors(
+									csrf(
+										reloadProtector(
+											session(
+												wrappedHandler,
+												secretKey,
+												domain,
+											),
 											domain,
 										),
+										secretKey,
 										domain,
 									),
-									secretKey,
-									domain,
+									allowedOrigins,
+									allowedMethods,
+									allowedHeaders,
 								),
-								allowedOrigins,
-								allowedMethods,
-								allowedHeaders,
+								domain,
 							),
+							httpsPort,
 							domain,
 						),
-						httpsPort,
-						domain,
 					),
 				),
+				domain,
+				l,
 			),
-			domain,
 			l,
 		),
-		l,
+		strategy,
 	)
 }
 
 // All is a middleware that allows all http methods.
 //
-// It is composed of the [recoverer], [logger], [rateLimiter], [loadShedder], [httpsRedirector], [securityHeaders], [cors], [csrf], [reloadProtector] & [session] middleware.
-// As such, it provides the features and functionalities of all those middlewares.
+// See the package documentation for the additional functionality provided by this middleware.
 func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
@@ -154,8 +198,7 @@ func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 //
-// It is composed of the [recoverer], [logger], [rateLimiter], [loadShedder], [httpsRedirector], [securityHeaders], [cors], [csrf], [reloadProtector] & [session] middleware.
-// As such, it provides the features and functionalities of all those middlewares.
+// See the package documentation for the additional functionality provided by this middleware.
 func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
@@ -185,8 +228,7 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
 //
-// It is composed of the [recoverer], [logger], [rateLimiter], [loadShedder], [httpsRedirector], [securityHeaders], [cors], [csrf], [reloadProtector] & [session] middleware.
-// As such, it provides the features and functionalities of all those middlewares.
+// See the package documentation for the additional functionality provided by this middleware.
 func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
@@ -214,8 +256,7 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
 //
-// It is composed of the [recoverer], [logger], [rateLimiter], [loadShedder], [httpsRedirector], [securityHeaders], [cors], [csrf], [reloadProtector] & [session] middleware.
-// As such, it provides the features and functionalities of all those middlewares.
+// See the package documentation for the additional functionality provided by this middleware.
 func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
@@ -243,8 +284,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 //
-// It is composed of the [recoverer], [logger], [rateLimiter], [loadShedder], [httpsRedirector], [securityHeaders], [cors], [csrf], [reloadProtector] & [session] middleware.
-// As such, it provides the features and functionalities of all those middlewares.
+// See the package documentation for the additional functionality provided by this middleware.
 func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		put(wrappedHandler),
@@ -272,8 +312,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 //
-// It is composed of the [recoverer], [logger], [rateLimiter], [loadShedder], [httpsRedirector], [securityHeaders], [cors], [csrf], [reloadProtector] & [session] middleware.
-// As such, it provides the features and functionalities of all those middlewares.
+// See the package documentation for the additional functionality provided by this middleware.
 func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		deleteH(wrappedHandler),

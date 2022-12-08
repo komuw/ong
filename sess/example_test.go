@@ -29,7 +29,7 @@ func ExampleSetM() {
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	handler := middleware.Get(
 		loginHandler(),
-		middleware.WithOpts("example.com", 443, "secretKey", log.New(os.Stdout, 100)),
+		middleware.WithOpts("example.com", 443, "secretKey", middleware.DirectIpStrategy, log.New(os.Stdout, 100)),
 	)
 	handler.ServeHTTP(rec, req)
 
