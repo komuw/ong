@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -9,49 +10,60 @@ import (
 )
 
 // Most of the code here is insipired by(or taken from):
-//   (a) https://github.com/realclientip/realclientip-go whose license(BSD Zero Clause License) can be found here: https://github.com/realclientip/realclientip-go/blob/v1.0.0/LICENSE
 //
+//	(a) https://github.com/realclientip/realclientip-go whose license(BSD Zero Clause License) can be found here: https://github.com/realclientip/realclientip-go/blob/v1.0.0/LICENSE
+type (
+	clientIPstrategy       string
+	clientIPcontextKeyType string
+)
 
 const (
 	errPrefix           = "ong/middleware:"
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
+	// clientIPctxKey is the name of the context key used to store the client IP address.
+	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 )
-
-type clientIPstrategy string
 
 var (
 	remoteAddress = clientIPstrategy("remoteAddress")
-	singleIP      = clientIPstrategy("singleIP")
 	left          = clientIPstrategy("left")
 	right         = clientIPstrategy("right")
 )
 
+func singleIP(headerName string) clientIPstrategy {
+	return clientIPstrategy(headerName)
+}
+
 func clientIP(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		defer func() { wrappedHandler(w, r) }()
 
 		// TODO: make it part of this middleware's args.
 		var strategy clientIPstrategy
 
 		var clientAddr string
-		switch strategy {
+		switch v := strategy; v {
 		case remoteAddress:
 			clientAddr = remoteAddrStrategy(r.RemoteAddr)
-		case singleIP:
-			// TODO
 		case left:
 			clientAddr = leftmostNonPrivateStrategy(xForwardedForHeader, r.Header)
 		case right:
 			clientAddr = rightmostNonPrivateStrategy(xForwardedForHeader, r.Header)
+		default:
+			// treat everything else as a `singleIP` strategy
+			clientAddr = singleIPHeaderStrategy(string(v), r.Header)
 		}
 
-		_, port, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			return
-		}
-
-		r.RemoteAddr = fmt.Sprintf("%s:%s", clientAddr, port)
+		ctx = context.WithValue(
+			ctx,
+			// using this custom key is important, instead of using `logIDKey`
+			clientIPctxKey,
+			clientAddr,
+		)
+		r = r.WithContext(ctx)
 	}
 }
 
