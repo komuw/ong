@@ -76,6 +76,9 @@ func TestClientIP(t *testing.T) {
 func TestTodo(t *testing.T) {
 	t.Parallel()
 
+	awsMetadataApiPrivateIP := "169.254.169.254" // AWS metadata api IP address.
+	publicIP := "93.184.216.34"                  // example.com IP address
+
 	t.Run("remoteAddrStrategy", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 
@@ -88,7 +91,7 @@ func TestTodo(t *testing.T) {
 		t.Run("bad header", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
-			hdrVal := "93.184.216.34"
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := singleIPHeaderStrategy(headerName, req.Header)
@@ -97,7 +100,7 @@ func TestTodo(t *testing.T) {
 		t.Run("privateIp", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
-			hdrVal := "169.254.169.254" // AWS metadata api IP address.
+			hdrVal := awsMetadataApiPrivateIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := singleIPHeaderStrategy(headerName, req.Header)
@@ -106,7 +109,7 @@ func TestTodo(t *testing.T) {
 		t.Run("not privateIp", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
-			hdrVal := "93.184.216.34"
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := singleIPHeaderStrategy(headerName, req.Header)
@@ -128,7 +131,7 @@ func TestTodo(t *testing.T) {
 		t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
-			hdrVal := "169.254.169.254" // AWS metadata api IP address.
+			hdrVal := awsMetadataApiPrivateIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := leftmostNonPrivateStrategy(headerName, req.Header)
@@ -137,7 +140,7 @@ func TestTodo(t *testing.T) {
 		t.Run("privateIp forwardedHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := forwardedHeader
-			hdrVal := "169.254.169.254" // AWS metadata api IP address.
+			hdrVal := awsMetadataApiPrivateIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := leftmostNonPrivateStrategy(headerName, req.Header)
@@ -146,7 +149,7 @@ func TestTodo(t *testing.T) {
 		t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
-			hdrVal := "93.184.216.34"
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := leftmostNonPrivateStrategy(headerName, req.Header)
@@ -157,7 +160,7 @@ func TestTodo(t *testing.T) {
 		t.Run("not privateIp forwardedHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
-			hdrVal := "93.184.216.34"
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := leftmostNonPrivateStrategy(headerName, req.Header)
@@ -180,7 +183,7 @@ func TestTodo(t *testing.T) {
 		t.Run("privateIp xForwardedForHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
-			hdrVal := "169.254.169.254" // AWS metadata api IP address.
+			hdrVal := awsMetadataApiPrivateIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := rightmostNonPrivateStrategy(headerName, req.Header)
@@ -189,7 +192,7 @@ func TestTodo(t *testing.T) {
 		t.Run("privateIp forwardedHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := forwardedHeader
-			hdrVal := "169.254.169.254" // AWS metadata api IP address.
+			hdrVal := awsMetadataApiPrivateIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := rightmostNonPrivateStrategy(headerName, req.Header)
@@ -198,7 +201,7 @@ func TestTodo(t *testing.T) {
 		t.Run("not privateIp xForwardedForHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
-			hdrVal := "93.184.216.34"
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := rightmostNonPrivateStrategy(headerName, req.Header)
@@ -209,7 +212,7 @@ func TestTodo(t *testing.T) {
 		t.Run("not privateIp forwardedHeader", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := xForwardedForHeader
-			hdrVal := "93.184.216.34"
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := rightmostNonPrivateStrategy(headerName, req.Header)
