@@ -32,10 +32,11 @@ const (
 	RightIpStrategy  = clientIPstrategy("RightIpStrategy")
 )
 
-func singleIpStrategy(headerName string) clientIPstrategy {
+func SingleIpStrategy(headerName string) clientIPstrategy {
 	return clientIPstrategy(headerName)
 }
 
+// TODO: add proper warning.
 func GetClientIP(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {
@@ -46,6 +47,7 @@ func GetClientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 
+// TODO: add proper warning.
 func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -56,8 +58,10 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 			clientAddr = directAddrStrategy(r.RemoteAddr)
 		case LeftIpStrategy:
 			clientAddr = leftmostNonPrivateStrategy(xForwardedForHeader, r.Header)
+			// TODO: also look for forwardedHeader
 		case RightIpStrategy:
 			clientAddr = rightmostNonPrivateStrategy(xForwardedForHeader, r.Header)
+			// TODO: also look for forwardedHeader
 		default:
 			// treat everything else as a `singleIP` strategy
 			clientAddr = singleIPHeaderStrategy(string(v), r.Header)
