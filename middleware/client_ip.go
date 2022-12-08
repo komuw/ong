@@ -90,6 +90,11 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
 func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
+	headerName = http.CanonicalHeaderKey(headerName)
+
+	// if headerName != xForwardedForHeader && headerName != forwardedHdr {
+	// }
+
 	ipAddrs := getIPAddrList(headers, headerName)
 	for _, ip := range ipAddrs {
 		if isSafeIp(ip) {
@@ -302,8 +307,10 @@ func parseForwardedListItem(fwd string) *netip.Addr {
 	// This behaviour is debatable.
 	// It also means that we will accept IPv4 addresses with quotes, which is correct.
 	forPart, err := trimMatchedEnds(forPart, `"`)
-
-	if forPart == "" || err != nil {
+	if err != nil {
+		return nil
+	}
+	if forPart == "" {
 		// We failed to find a "for=" part
 		return nil
 	}
