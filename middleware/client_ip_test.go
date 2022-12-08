@@ -263,7 +263,11 @@ func TestClientIPstrategy(t *testing.T) {
 			name: "leftmostNonPrivateStrategy/privateIp-forwardedHeader",
 			updateReq: func(req *http.Request) string {
 				headerName := forwardedHeader
-				req.Header.Add(headerName, awsMetadataApiPrivateIP)
+				req.Header.Add(
+					headerName,
+					// see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded#transitioning_from_x-forwarded-for_to_forwarded
+					fmt.Sprintf("for=%s", awsMetadataApiPrivateIP),
+				)
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
