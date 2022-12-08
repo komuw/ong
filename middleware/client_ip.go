@@ -14,6 +14,28 @@ import (
 //	(a) https://github.com/realclientip/realclientip-go whose license(BSD Zero Clause License) can be found here: https://github.com/realclientip/realclientip-go/blob/v1.0.0/LICENSE
 //
 
+/*
+Algorithm:
+==========
+1. Collect all of the IPs:
+   Make a single list of all the IPs in all of the X-Forwarded-For headers. Also have the RemoteAddr available.
+2. Decide your security needs:
+   Default to using the rightmost-ish approach. Only use the leftmost-ish if you have to, and make sure you do so carefully.
+3. Leftmost-ish:
+   Closest to the "real IP", but utterly untrustworthy
+   If your server is directly connected to the internet, there might be an XFF header or there might not be (depending on whether the client used a proxy).
+   If there is an XFF header, pick the leftmost IP address that is a valid, non-private IPv4 or IPv6 address.
+   If there is no XFF header, use the RemoteAddr.
+   If your server is behind one or more reverse proxies, pick the leftmost XFF IP address that is a valid, non-private IPv4 or IPv6 address. (If there’s no XFF header, you need to fix your network configuration problem right now.)
+   And never forget the security implications!
+4. Rightmost-ish:
+   The only useful IP you can trust
+   If your server is directly connected to the internet, the XFF header cannot be trusted, period. Use the RemoteAddr.
+   There are more details here...
+
+- https://adam-p.ca/blog/2022/03/x-forwarded-for/#algorithms
+*/
+
 type (
 	clientIPstrategy       string
 	clientIPcontextKeyType string
