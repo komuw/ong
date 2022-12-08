@@ -111,6 +111,36 @@ func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	return ""
 }
 
+// rightmostNonPrivateStrategy derives the client IP from the rightmost valid,
+// non-private/non-internal IP address in the X-Fowarded-For for Forwarded header. This
+// strategy should be used when all reverse proxies between the internet and the
+// server have private-space IP addresses.
+//
+// The returned IP may contain a zone identifier.
+// If no valid IP can be derived, empty string will be returned.
+func rightmostNonPrivateStrategy(headerName string, headers http.Header) string {
+	headerName = http.CanonicalHeaderKey(headerName)
+
+	if headerName != xForwardedForHeader && headerName != forwardedHeader {
+		// TODO: check this.
+		fmt.Println("\t checkkk")
+		return ""
+	}
+
+	ipAddrs := getIPAddrList(headers, headerName)
+	// Look backwards through the list of IP addresses
+	for i := len(ipAddrs) - 1; i >= 0; i-- {
+		ip := ipAddrs[i]
+		if isSafeIp(ip) {
+			// This is the rightmost non-private IP
+			return ip.String()
+		}
+	}
+
+	// We failed to find any valid, non-private IP
+	return ""
+}
+
 // goodIPAddr wraps ParseIPAddr and adds a check for unspecified (like "::") and zero-value
 // addresses (like "0.0.0.0"). These are nominally valid IPs (net.ParseIP will accept them),
 // but they are undesirable for the purposes of this library.
