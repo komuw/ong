@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 
+	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/sess"
-)
-
-const (
-	secretKey = "some-secretKey"
-	domain    = "example.com"
 )
 
 func loginHandler() http.HandlerFunc {
@@ -30,7 +27,10 @@ func loginHandler() http.HandlerFunc {
 func ExampleSetM() {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
-	handler := middleware.Session(loginHandler(), secretKey, domain)
+	handler := middleware.Get(
+		loginHandler(),
+		middleware.WithOpts("example.com", 443, "secretKey", log.New(os.Stdout, 100)),
+	)
 	handler.ServeHTTP(rec, req)
 
 	res := rec.Result()

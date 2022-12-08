@@ -25,8 +25,8 @@ import (
 // rateLimiterSendRate is the rate limit in requests/sec.
 var rateLimiterSendRate = 100.00 //nolint:gochecknoglobals
 
-// RateLimiter is a middleware that limits requests by IP address.
-func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+// rateLimiter is a middleware that limits requests by IP address.
+func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	rl := newRl()
 	const retryAfter = 15 * time.Minute
 

@@ -17,8 +17,8 @@ import (
 
 const logIDKey = string(log.CtxKey)
 
-// Log is a middleware that logs http requests and responses using [log.Logger].
-func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.HandlerFunc {
+// logger is a middleware that logs http requests and responses using [log.Logger].
+func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
@@ -26,6 +26,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 
 	mathRand.Seed(time.Now().UTC().UnixNano())
+	pid := os.Getpid()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -73,7 +74,7 @@ func Log(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.Hand
 				"code":          lrw.code,
 				"status":        http.StatusText(lrw.code),
 				"durationMS":    time.Since(start).Milliseconds(),
-				"pid":           os.Getpid(),
+				"pid":           pid,
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				flds["ongError"] = ongError

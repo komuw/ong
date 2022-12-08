@@ -24,7 +24,7 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -44,7 +44,7 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"})
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"})
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, http.MethodGet) // preflight request header set
@@ -75,7 +75,7 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		// preflight request header NOT set
@@ -132,7 +132,7 @@ func TestCorsPreflight(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := Cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"})
+				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"})
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -206,7 +206,7 @@ func TestCorsPreflight(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"})
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"})
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(originHeader, "http://some-origin.com")
@@ -270,7 +270,7 @@ func TestCorsPreflight(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, tt.allowedHeaders)
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, tt.allowedHeaders)
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -302,7 +302,7 @@ func TestCorsActualRequest(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -321,7 +321,7 @@ func TestCorsActualRequest(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"})
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"})
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(originHeader, "http://example.com")
@@ -381,7 +381,7 @@ func TestCorsActualRequest(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := Cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"})
+				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"})
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 				req.Header.Add(originHeader, tt.origin)
@@ -445,7 +445,7 @@ func TestCorsActualRequest(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := Cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"})
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"})
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(tt.method, "/someUri", nil)
 				req.Header.Add(originHeader, "http://some-origin.com")
@@ -474,7 +474,7 @@ func TestCorsActualRequest(t *testing.T) {
 		msg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Cors(someCorsHandler(msg), nil, nil, nil)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

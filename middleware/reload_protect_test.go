@@ -47,7 +47,7 @@ func TestReloadProtector(t *testing.T) {
 		domain := "localhost"
 		expectedFormName := "user_name"
 		expectedFormValue := "John Doe"
-		wrappedHandler := ReloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
+		wrappedHandler := reloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -70,7 +70,7 @@ func TestReloadProtector(t *testing.T) {
 		domain := "localhost"
 		expectedFormName := "user_name"
 		expectedFormValue := "John Doe"
-		wrappedHandler := ReloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
+		wrappedHandler := reloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
 
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		err := req.ParseForm()
@@ -122,7 +122,7 @@ func TestReloadProtector(t *testing.T) {
 		domain := "localhost"
 		expectedFormName := "user_name"
 		expectedFormValue := "John Doe"
-		wrappedHandler := ReloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
+		wrappedHandler := reloadProtector(someReloadProtectorHandler(msg, expectedFormName, expectedFormValue), domain)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

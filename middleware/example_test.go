@@ -20,7 +20,10 @@ func loginHandler() http.HandlerFunc {
 }
 
 func Example_getCspNonce() {
-	handler := middleware.SecurityHeaders(loginHandler(), "example.com")
+	handler := middleware.Get(
+		loginHandler(),
+		middleware.WithOpts("example.com", 443, "secretKey", log.New(os.Stdout, 100)),
+	)
 	_ = handler // use handler
 
 	// Output:
@@ -36,7 +39,10 @@ func welcomeHandler() http.HandlerFunc {
 }
 
 func Example_getCsrfToken() {
-	handler := middleware.Csrf(welcomeHandler(), "some-secret-key", "example.com")
+	handler := middleware.Get(
+		welcomeHandler(),
+		middleware.WithOpts("example.com", 443, "secretKey", log.New(os.Stdout, 100)),
+	)
 	_ = handler // use handler
 
 	// Output:

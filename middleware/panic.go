@@ -13,9 +13,11 @@ import (
 // Most of the code here is insipired(or taken from) by:
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here: https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 
-// Panic is a middleware that recovers from panics in wrappedHandler.
+// recoverer is a middleware that recovers from panics in wrappedHandler.
 // When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
-func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
+func recoverer(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
+	pid := os.Getpid()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			errR := recover()
@@ -42,7 +44,7 @@ func Panic(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 					"path":          r.URL.Redacted(),
 					"code":          code,
 					"status":        status,
-					"pid":           os.Getpid(),
+					"pid":           pid,
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 					flds["ongError"] = ongError
