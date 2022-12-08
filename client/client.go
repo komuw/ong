@@ -14,7 +14,10 @@ import (
 	"github.com/komuw/ong/log"
 )
 
-const logIDHeader = string(log.CtxKey)
+const (
+	logIDHeader = string(log.CtxKey)
+	errPrefix   = "ong/client:"
+)
 
 // Most of the code here is insipired by(or taken from):
 //   (a) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang whose license(CC0 Public Domain) can be found here: https://creativecommons.org/publicdomain/zero/1.0
@@ -36,34 +39,6 @@ func Safe(l log.Logger) *http.Client {
 // Clients should be reused instead of created as needed. Clients are safe for concurrent use by multiple goroutines.
 func Unsafe(l log.Logger) *http.Client {
 	return new(false, l)
-}
-
-// loggingRT is a [http.RoundTripper] that logs requests and responses.
-type loggingRT struct {
-	l log.Logger
-	http.RoundTripper
-}
-
-func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error) {
-	start := time.Now()
-	defer func() {
-		l := lr.l.WithCtx(req.Context())
-		flds := log.F{
-			"msg":        "http_client",
-			"method":     req.Method,
-			"url":        req.URL.Redacted(),
-			"durationMS": time.Since(start).Milliseconds(),
-		}
-		if err != nil {
-			l.Error(err, flds)
-		} else {
-			flds["code"] = res.StatusCode
-			flds["status"] = res.Status
-			l.Info(flds)
-		}
-	}()
-
-	return lr.RoundTripper.RoundTrip(req)
 }
 
 // new creates a client. Use [Safe] or [Unsafe] instead.
@@ -109,7 +84,36 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 	}
 }
 
-const errPrefix = "ong/client:"
+// loggingRT is a [http.RoundTripper] that logs requests and responses.
+type loggingRT struct {
+	l log.Logger
+	http.RoundTripper
+}
+
+func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error) {
+	ctx := req.Context()
+	start := time.Now()
+	defer func() {
+		l := lr.l.WithCtx(ctx)
+		flds := log.F{
+			"msg":        "http_client",
+			"method":     req.Method,
+			"url":        req.URL.Redacted(),
+			"durationMS": time.Since(start).Milliseconds(),
+		}
+		if err != nil {
+			l.Error(err, flds)
+		} else {
+			flds["code"] = res.StatusCode
+			flds["status"] = res.Status
+			l.Info(flds)
+		}
+	}()
+
+	req.Header.Set(logIDHeader, log.GetId(ctx))
+
+	return lr.RoundTripper.RoundTrip(req)
+}
 
 func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall.RawConn) error {
 	if !ssrfSafe {
