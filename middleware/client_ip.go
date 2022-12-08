@@ -240,10 +240,10 @@ func getIPAddrList(headers http.Header, headerName string) []*netip.Addr {
 			var ipAddr *netip.Addr
 			// If this is the XFF header, rawListItem is just an IP;
 			// if it's the Forwarded header, then there's more parsing to do.
-			if headerName == forwardedHeader {
-				ipAddr = parseForwardedListItem(rawListItem)
-			} else { // == XFF
+			if headerName == xForwardedForHeader {
 				ipAddr = goodIPAddr(rawListItem)
+			} else {
+				ipAddr = parseForwardedListItem(rawListItem)
 			}
 
 			// ipAddr is nil if not valid
