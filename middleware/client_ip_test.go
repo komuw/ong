@@ -122,7 +122,7 @@ func TestTodo(t *testing.T) {
 		t.Run("bad header", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
-			hdrVal := "93.184.216.34" // AWS metadata api IP address.
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := leftmostNonPrivateStrategy(headerName, req.Header)
@@ -174,7 +174,7 @@ func TestTodo(t *testing.T) {
 		t.Run("bad header", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
-			hdrVal := "93.184.216.34" // AWS metadata api IP address.
+			hdrVal := publicIP
 			req.Header.Add(headerName, hdrVal)
 
 			ip := rightmostNonPrivateStrategy(headerName, req.Header)
