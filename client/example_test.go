@@ -18,6 +18,5 @@ func ExampleSafe() {
 	fmt.Println("res, err: ", res, err)
 
 	// This will log something like:
-	// {"level":"info","logID":"Z5X7qXm8HkT8kZ83xQyrrQ","method":"GET","msg":"http_client","pid":11776,"process":"request","timestamp":"2022-10-09T12:03:33.851543383Z","url":"http://169.254.169.254/latest/meta-data"}
-	// {"durationMS":0,"err":"Get \"http://169.254.169.254/latest/meta-data\": dial tcp 169.254.169.254:80: ong/client: address 169.254.169.254 IsLinkLocalUnicast","level":"error","logID":"Z5X7qXm8HkT8kZ83xQyrrQ","method":"GET","msg":"http_client","pid":11776,"process":"response","timestamp":"2022-10-09T12:03:33.851889217Z","url":"http://169.254.169.254/latest/meta-data"}
+	// {"durationMS":0,"err":"dial tcp 169.254.169.254:80: ong/client: address 169.254.169.254 IsLinkLocalUnicast","level":"error","logID":"yHSDRXAJP7QKx3AJQKNt7w","method":"GET","msg":"http_client","pid":325431,"timestamp":"2022-12-08T08:43:42.151691969Z","url":"http://169.254.169.254/latest/meta-data"}
 }
