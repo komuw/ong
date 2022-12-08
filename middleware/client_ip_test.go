@@ -13,6 +13,8 @@ import (
 
 func someClientIpHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ippp := GetClientIP(r)
+		fmt.Println("\t ippp: ", ippp)
 		fmt.Fprint(w, msg)
 	}
 }

@@ -36,11 +36,19 @@ func singleIP(headerName string) clientIPstrategy {
 	return clientIPstrategy(headerName)
 }
 
+func GetClientIP(r *http.Request) string {
+	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
+		if s, ok := vCtx.(string); ok {
+			return s
+		}
+	}
+
+	return r.RemoteAddr
+}
+
 func clientIP(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-
-		defer func() { wrappedHandler(w, r) }()
 
 		// TODO: make it part of this middleware's args.
 		var strategy clientIPstrategy
@@ -60,6 +68,8 @@ func clientIP(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		ctx = context.WithValue(ctx, clientIPctxKey, clientAddr)
 		r = r.WithContext(ctx)
+
+		wrappedHandler(w, r)
 	}
 }
 
