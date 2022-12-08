@@ -92,8 +92,11 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
-	// if headerName != xForwardedForHeader && headerName != forwardedHdr {
-	// }
+	if headerName != xForwardedForHeader && headerName != forwardedHeader {
+		// TODO: check this.
+		fmt.Println("\t checkkk")
+		return ""
+	}
 
 	ipAddrs := getIPAddrList(headers, headerName)
 	for _, ip := range ipAddrs {
@@ -127,6 +130,10 @@ func goodIPAddr(ipStr string) *netip.Addr {
 }
 
 func isSafeIp(addr *netip.Addr) bool {
+	if addr == nil {
+		return false
+	}
+
 	if addr.IsUnspecified() {
 		return false
 	}

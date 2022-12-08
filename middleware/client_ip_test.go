@@ -85,6 +85,15 @@ func TestTodo(t *testing.T) {
 	})
 
 	t.Run("singleIPHeaderStrategy", func(t *testing.T) {
+		t.Run("bad header", func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			headerName := xForwardedForHeader
+			hdrVal := "93.184.216.34"
+			req.Header.Add(headerName, hdrVal)
+
+			ip := singleIPHeaderStrategy(headerName, req.Header)
+			attest.Zero(t, ip)
+		})
 		t.Run("privateIp", func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			headerName := "Fly-Client-IP"
@@ -104,37 +113,38 @@ func TestTodo(t *testing.T) {
 			attest.NotZero(t, ip)
 			attest.Equal(t, ip, hdrVal)
 		})
-		t.Run("bad header", func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			headerName := xForwardedForHeader
-			hdrVal := "93.184.216.34"
-			req.Header.Add(headerName, hdrVal)
-
-			ip := singleIPHeaderStrategy(headerName, req.Header)
-			attest.Zero(t, ip)
-		})
 	})
 
-	// t.Run("leftmostNonPrivateStrategy", func(t *testing.T) {
-	// 	t.Run("privateIp", func(t *testing.T) {
-	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-	// 		headerName := "Fly-Client-IP"
-	// 		hdrVal := "169.254.169.254" // AWS metadata api IP address.
-	// 		req.Header.Add(headerName, hdrVal)
+	t.Run("leftmostNonPrivateStrategy", func(t *testing.T) {
+		t.Run("bad header", func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			headerName := "Fly-Client-IP"
+			hdrVal := "93.184.216.34" // AWS metadata api IP address.
+			req.Header.Add(headerName, hdrVal)
 
-	// 		ip := leftmostNonPrivateStrategy(headerName, req.Header)
-	// 		attest.Zero(t, ip)
-	// 	})
-	// 	t.Run("not privateIp", func(t *testing.T) {
-	// 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-	// 		headerName := "Fly-Client-IP"
-	// 		hdrVal := "93.184.216.34"
-	// 		req.Header.Add(headerName, hdrVal)
+			ip := leftmostNonPrivateStrategy(headerName, req.Header)
+			attest.Zero(t, ip)
+		})
 
-	// 		ip := leftmostNonPrivateStrategy(headerName, req.Header)
-	// 		attest.NotZero(t, ip)
-	// 		attest.Equal(t, ip, hdrVal)
-	// 		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
-	// 	})
-	// })
+		// t.Run("privateIp", func(t *testing.T) {
+		// 	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		// 	headerName := xForwardedForHeader
+		// 	hdrVal := "169.254.169.254" // AWS metadata api IP address.
+		// 	req.Header.Add(headerName, hdrVal)
+
+		// 	ip := leftmostNonPrivateStrategy(headerName, req.Header)
+		// 	attest.Zero(t, ip)
+		// })
+		// t.Run("not privateIp", func(t *testing.T) {
+		// 	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		// 	headerName := xForwardedForHeader
+		// 	hdrVal := "93.184.216.34"
+		// 	req.Header.Add(headerName, hdrVal)
+
+		// 	ip := leftmostNonPrivateStrategy(headerName, req.Header)
+		// 	attest.NotZero(t, ip)
+		// 	attest.Equal(t, ip, hdrVal)
+		// 	fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
+		// })
+	})
 }
