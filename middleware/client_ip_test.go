@@ -68,6 +68,26 @@ func TestClientIP(t *testing.T) {
 				},
 				expected: publicIP,
 			},
+			{
+				name:     "LeftIpStrategy",
+				strategy: LeftIpStrategy,
+				req: func() *http.Request {
+					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+					r.Header.Add(xForwardedForHeader, publicIP)
+					return r
+				},
+				expected: publicIP,
+			},
+			{
+				name:     "RightIpStrategy",
+				strategy: RightIpStrategy,
+				req: func() *http.Request {
+					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+					r.Header.Add(xForwardedForHeader, publicIP)
+					return r
+				},
+				expected: publicIP,
+			},
 		}
 
 		for _, tt := range tests {
