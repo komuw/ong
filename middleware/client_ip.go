@@ -89,7 +89,7 @@ func directAddrStrategy(remoteAddr string) string {
 // A non-exhaustive list of such single-IP headers is:
 // X-Real-IP, CF-Connecting-IP, True-Client-IP, Fastly-Client-IP, X-Azure-ClientIP, X-Azure-SocketIP, Fly-Client-IP.
 // This strategy should be used when the given header is added by a trusted reverse proxy.
-// You must ensure that this header is not spoofable (as is possible with Akamai's use of
+// You MUST ensure that this header is not spoofable (as is possible with Akamai's use of
 // True-Client-IP, Fastly's default use of Fastly-Client-IP, and Azure's X-Azure-ClientIP).
 // See the single-IP wiki page for more info: https://github.com/realclientip/realclientip-go/wiki/Single-IP-Headers
 //
@@ -125,10 +125,9 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 }
 
 // leftmostNonPrivateStrategy  derives the client IP from the leftmost valid and
-// non-private IP address in the X-Fowarded-For for Forwarded header. This
-// strategy should be used when a valid, non-private IP closest to the client is desired.
-// Note that this MUST NOT BE USED FOR SECURITY PURPOSES. This IP can be TRIVIALLY
-// SPOOFED.
+// non-private IP address in the X-Fowarded-For or Forwarded header.
+// This strategy should be used when a valid, non-private IP closest to the client is desired.
+// Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
@@ -153,10 +152,9 @@ func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	return ""
 }
 
-// rightmostNonPrivateStrategy derives the client IP from the rightmost valid,
-// non-private/non-internal IP address in the X-Fowarded-For for Forwarded header. This
-// strategy should be used when all reverse proxies between the internet and the
-// server have private-space IP addresses.
+// rightmostNonPrivateStrategy derives the client IP from the rightmost valid and
+// non-private IP address in the X-Fowarded-For or Forwarded header.
+// This strategy should be used when all reverse proxies between the internet and the server have private-space IP addresses.
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
@@ -183,9 +181,8 @@ func rightmostNonPrivateStrategy(headerName string, headers http.Header) string 
 	return ""
 }
 
-// goodIPAddr parses IP address and adds a check for unspecified (like "::") and zero-value
-// addresses (like "0.0.0.0"). These are nominally valid IPs (net.ParseIP will accept them),
-// but they are undesirable for the purposes of this library.
+// goodIPAddr parses IP address and adds a check for unspecified (like "::") and zero-value addresses (like "0.0.0.0").
+// These are nominally valid IPs (net.ParseIP will accept them), but they are undesirable for the purposes of this library.
 func goodIPAddr(ipStr string) *netip.Addr {
 	host, _, err := net.SplitHostPort(ipStr)
 	if err == nil {
@@ -230,12 +227,10 @@ func isSafeIp(addr *netip.Addr) bool {
 }
 
 // trimMatchedEnds trims s if and only if the first and last bytes in s are in chars.
-// If chars is a single character (like `"`), then the first and last bytes must match
-// that single character. If chars is two characters (like `[]`), the first byte in s
-// must match the first byte in chars, and the last bytes in s must match the last byte
-// in chars.
-// This helps us ensure that we only trim _matched_ quotes and brackets,
-// which strings.Trim doesn't provide.
+// If chars is a single character (like `"`), then the first and last bytes MUST match that single character.
+// If chars is two characters (like `[]`), the first byte in s MUST match the first byte in chars,
+// and the last bytes in s MUST match the last byte in chars.
+// This helps us ensure that we only trim _matched_ quotes and brackets, which strings.Trim doesn't provide.
 func trimMatchedEnds(s, chars string) (string, error) {
 	if len(chars) != 1 && len(chars) != 2 {
 		return "", fmt.Errorf("%s %s", errPrefix, "trimMatchedEnds chars must be length 1 or 2")
@@ -261,12 +256,11 @@ func trimMatchedEnds(s, chars string) (string, error) {
 	return s[1 : len(s)-1], nil
 }
 
-// lastHeader returns the last header with the given name. It returns empty string if the
-// header is not found or if the header has an empty value. No validation is done on the
-// IP string. headerName must already be canonicalized.
-// This should be used with single-IP headers, like X-Real-IP. Per RFC 2616, they should
-// not have multiple headers, but if they do we can hope we're getting the newest/best by
-// taking the last instance.
+// lastHeader returns the last header with the given name.
+// It returns empty string if the header is not found or if the header has an empty value.
+// No validation is done on the IP string. headerName MUST already be canonicalized.
+// This should be used with single-IP headers, like X-Real-IP.
+// Per RFC 2616, they should not have multiple headers, but if they do we can hope we're getting the newest/best by taking the last instance.
 // This MUST NOT be used with list headers, like X-Forwarded-For and Forwarded.
 func lastHeader(headers http.Header, headerName string) string {
 	// Note that Go's Header map uses canonicalized keys
@@ -279,9 +273,8 @@ func lastHeader(headers http.Header, headerName string) string {
 	return matches[len(matches)-1]
 }
 
-// getIPAddrList creates a single list of all of the X-Forwarded-For or Forwarded header
-// values, in order. Any invalid IPs will result in nil elements. headerName must already
-// be canonicalized.
+// getIPAddrList creates a single list of all of the X-Forwarded-For or Forwarded header values, in order.
+// Any invalid IPs will result in nil elements. headerName MUST already be canonicalized.
 func getIPAddrList(headers http.Header, headerName string) []*netip.Addr {
 	var result []*netip.Addr
 
@@ -319,8 +312,8 @@ func getIPAddrList(headers http.Header, headerName string) []*netip.Addr {
 	return result
 }
 
-// parseForwardedListItem parses a Forwarded header list item, and returns the "for" IP
-// address. Nil is returned if the "for" IP is absent or invalid.
+// parseForwardedListItem parses a Forwarded header list item, and returns the "for" IP address.
+// It returns nil if the "for" IP is absent or invalid.
 func parseForwardedListItem(fwd string) *netip.Addr {
 	// The header list item can look like these kinds of thing:
 	//	For="[2001:db8:cafe::17%zone]:4711"
