@@ -78,7 +78,7 @@ func allDefaultMiddlewares(
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
 	secretKey := o.secretKey
-	logger := o.l
+	l := o.l
 
 	// The way the middlewares are layered is:
 	// 1.  recoverer on the outer since we want it to watch all other middlewares.
@@ -129,9 +129,9 @@ func allDefaultMiddlewares(
 				),
 			),
 			domain,
-			logger,
+			l,
 		),
-		logger,
+		l,
 	)
 }
 
