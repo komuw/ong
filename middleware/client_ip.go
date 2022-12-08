@@ -49,6 +49,13 @@ func GetClientIP(r *http.Request) string {
 }
 
 // TODO: add proper warning.
+// clientIP is a middleware that adds the "real" client IP address to the request context.
+// The IP can then be fetched using [GetClientIP]
+//
+// Warning: This middleware should be used with care. Clients CAN easily spoof the client IPs.
+// Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
+//
+// [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
 func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -275,9 +282,7 @@ func lastHeader(headers http.Header, headerName string) string {
 
 // getIPAddrList creates a single list of all of the X-Forwarded-For or Forwarded header values, in order.
 // Any invalid IPs will result in nil elements. headerName MUST already be canonicalized.
-func getIPAddrList(headers http.Header, headerName string) []*netip.Addr {
-	var result []*netip.Addr
-
+func getIPAddrList(headers http.Header, headerName string) (result []*netip.Addr) {
 	// There may be multiple XFF headers present. We need to iterate through them all,
 	// in order, and collect all of the IPs.
 	// Note that we're not joining all of the headers into a single string and then
