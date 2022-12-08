@@ -2,14 +2,12 @@ package client
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/komuw/ong/log"
-
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/log"
 )
 
 func getLogger() log.Logger {
@@ -43,18 +41,17 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf safe", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
 		cli := Safe(getLogger())
 
 		for _, url := range urlsInPrivate {
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
 			attest.True(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Ok(t, err)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
@@ -64,7 +61,6 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf unsafe", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
 		cli := Unsafe(getLogger())
 
 		for _, url := range urlsInPrivate {
@@ -74,14 +70,14 @@ func TestClient(t *testing.T) {
 				// and gets a 404.
 				break
 			}
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
 			attest.False(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Ok(t, err)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
@@ -99,7 +95,7 @@ func TestClient(t *testing.T) {
 
 			cli := Safe(l)
 
-			res, err := cli.Get(context.Background(), "https://ajmsmsYnns.com") // nolint:bodyclose
+			res, err := cli.Get("https://ajmsmsYnns.com") // nolint:bodyclose
 			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
@@ -115,7 +111,7 @@ func TestClient(t *testing.T) {
 
 			cli := Safe(l)
 
-			res, err := cli.Get(context.Background(), "https://example.com") // nolint:bodyclose
+			res, err := cli.Get("https://example.com") // nolint:bodyclose
 			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)
@@ -136,7 +132,7 @@ func TestClient(t *testing.T) {
 			cli := Safe(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
-			res, err := cli.Post(context.Background(), "https://ajmsmsYnns.com", "application/json", b) // nolint:bodyclose
+			res, err := cli.Post("https://ajmsmsYnns.com", "application/json", b) // nolint:bodyclose
 			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
@@ -153,7 +149,7 @@ func TestClient(t *testing.T) {
 			cli := Safe(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
-			res, err := cli.Post(context.Background(), "https://example.com", "application/json", b) // nolint:bodyclose
+			res, err := cli.Post("https://example.com", "application/json", b) // nolint:bodyclose
 			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)
