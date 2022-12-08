@@ -55,7 +55,7 @@ func TestPanic(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
-		wrappedHandler := Panic(handlerThatPanics(msg, false, nil), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, nil), getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -72,7 +72,7 @@ func TestPanic(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
-		wrappedHandler := Panic(handlerThatPanics(msg, true, nil), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, true, nil), getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -102,7 +102,7 @@ func TestPanic(t *testing.T) {
 		msg := "hello"
 		errMsg := "99 problems"
 		err := errors.New(errMsg)
-		wrappedHandler := Panic(handlerThatPanics(msg, false, err), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -130,7 +130,7 @@ func TestPanic(t *testing.T) {
 		t.Parallel()
 
 		logOutput := &bytes.Buffer{}
-		wrappedHandler := Panic(anotherHandlerThatPanics(), getLogger(logOutput))
+		wrappedHandler := recoverer(anotherHandlerThatPanics(), getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -151,7 +151,7 @@ func TestPanic(t *testing.T) {
 		err := errors.New(msg)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Panic(handlerThatPanics(msg, false, err), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), getLogger(logOutput))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

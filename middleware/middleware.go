@@ -11,7 +11,7 @@ import (
 
 // ongMiddlewareErrorHeader is a http header that is set by Ong
 // whenever any of it's middlewares return an error.
-// The Log & Panic middleware will log the value of this header if it is set.
+// The Log & recoverer middleware will log the value of this header if it is set.
 //
 // An example, is when the Get middleware fails because it has been called with the wrong http method.
 // Or when the Csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
@@ -81,7 +81,7 @@ func allDefaultMiddlewares(
 	logger := o.l
 
 	// The way the middlewares are layered is:
-	// 1.  Panic on the outer since we want it to watch all other middlewares.
+	// 1.  recoverer on the outer since we want it to watch all other middlewares.
 	// 2.  Log since we would like to get logs as early in the lifecycle as possible.
 	// 3.  RateLimiter since we want bad traffic to be filtered early.
 	// 4.  LoadShedder for the same reason.
@@ -93,12 +93,12 @@ func allDefaultMiddlewares(
 	// 10. ReloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
 	// 11. Session since we want sessions to saved as soon as possible.
 	//
-	// user -> Panic -> Log -> RateLimiter -> LoadShedder -> HttpsRedirector -> SecurityHeaders -> Cors -> Csrf -> Gzip -> ReloadProtector -> Session -> actual-handler
+	// user -> recoverer -> Log -> RateLimiter -> LoadShedder -> HttpsRedirector -> SecurityHeaders -> Cors -> Csrf -> Gzip -> ReloadProtector -> Session -> actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
 
-	return Panic(
+	return recoverer(
 		Log(
 			RateLimiter(
 				LoadShedder(
@@ -137,7 +137,7 @@ func allDefaultMiddlewares(
 
 // All is a middleware that allows all http methods.
 //
-// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
+// It is composed of the [recoverer], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
 // As such, it provides the features and functionalities of all those middlewares.
 func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
@@ -154,7 +154,7 @@ func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 //
-// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
+// It is composed of the [recoverer], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
 // As such, it provides the features and functionalities of all those middlewares.
 func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
@@ -185,7 +185,7 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
 //
-// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
+// It is composed of the [recoverer], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
 // As such, it provides the features and functionalities of all those middlewares.
 func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
@@ -214,7 +214,7 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
 //
-// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
+// It is composed of the [recoverer], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
 // As such, it provides the features and functionalities of all those middlewares.
 func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
@@ -243,7 +243,7 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 //
-// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
+// It is composed of the [recoverer], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
 // As such, it provides the features and functionalities of all those middlewares.
 func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
@@ -272,7 +272,7 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 //
-// It is composed of the [Panic], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
+// It is composed of the [recoverer], [Log], [RateLimiter], [LoadShedder], [HttpsRedirector], [SecurityHeaders], [Cors], [Csrf], [ReloadProtector] & [Session] middleware.
 // As such, it provides the features and functionalities of all those middlewares.
 func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
