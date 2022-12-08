@@ -61,7 +61,7 @@ func TestClientIP(t *testing.T) {
 		}
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 10; rN++ {
+		for rN := 0; rN <= 11; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
