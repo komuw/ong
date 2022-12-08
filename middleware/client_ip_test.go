@@ -71,3 +71,39 @@ func TestClientIP(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+// TODO: rename.
+func TestTodo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("remoteAddrStrategy", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+
+		ip := remoteAddrStrategy(req.RemoteAddr)
+		attest.NotZero(t, ip)
+		fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
+	})
+
+	t.Run("singleIPHeaderStrategy", func(t *testing.T) {
+		t.Run("privateIp", func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			headerName := "Fly-Client-IP"
+			hdrVal := "169.254.169.254" // AWS metadata api IP address.
+			req.Header.Add(headerName, hdrVal)
+
+			ip := singleIPHeaderStrategy(headerName, req.Header)
+			attest.Zero(t, ip)
+		})
+		t.Run("not privateIp", func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+			headerName := "Fly-Client-IP"
+			hdrVal := "93.184.216.34"
+			req.Header.Add(headerName, hdrVal)
+
+			ip := singleIPHeaderStrategy(headerName, req.Header)
+			attest.NotZero(t, ip)
+			attest.Equal(t, ip, hdrVal)
+			fmt.Println("ip: ", ip, " : ", req.RemoteAddr)
+		})
+	})
+}
