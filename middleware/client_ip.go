@@ -57,12 +57,7 @@ func clientIP(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			clientAddr = singleIPHeaderStrategy(string(v), r.Header)
 		}
 
-		ctx = context.WithValue(
-			ctx,
-			// using this custom key is important, instead of using `logIDKey`
-			clientIPctxKey,
-			clientAddr,
-		)
+		ctx = context.WithValue(ctx, clientIPctxKey, clientAddr)
 		r = r.WithContext(ctx)
 	}
 }
