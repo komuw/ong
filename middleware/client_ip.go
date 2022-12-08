@@ -274,21 +274,6 @@ func trimMatchedEnds(s, chars string) (string, error) {
 	return s[1 : len(s)-1], nil
 }
 
-// splitHostZone splits a "host%zone" string into its components. If there is no zone,
-// host is the original input and zone is empty.
-func splitHostZone(s string) (host, zone string) {
-	// This is copied from an unexported function in the Go stdlib:
-	// https://github.com/golang/go/blob/5c9b6e8e63e012513b1cb1a4a08ff23dec4137a1/src/net/ipsock.go#L219-L228
-
-	// The IPv6 scoped addressing zone identifier starts after the last percent sign.
-	if i := strings.LastIndexByte(s, '%'); i > 0 {
-		host, zone = s[:i], s[i+1:]
-	} else {
-		host = s
-	}
-	return
-}
-
 // lastHeader returns the last header with the given name. It returns empty string if the
 // header is not found or if the header has an empty value. No validation is done on the
 // IP string. headerName must already be canonicalized.
