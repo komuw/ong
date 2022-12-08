@@ -44,20 +44,38 @@ func TestClientIP(t *testing.T) {
 	t.Run("ip is added", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
-		wrappedHandler := clientIP(someClientIpHandler(msg), DirectIpStrategy)
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		wrappedHandler.ServeHTTP(rec, req)
+		tests := []struct {
+			name     string
+			strategy clientIPstrategy
+		}{
+			{
+				name:     "DirectIpStrategy",
+				strategy: DirectIpStrategy,
+			},
+		}
 
-		res := rec.Result()
-		defer res.Body.Close()
+		for _, tt := range tests {
+			tt := tt
 
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Subsequence(t, string(rb), msg)
+				msg := "hello"
+				wrappedHandler := clientIP(someClientIpHandler(msg), tt.strategy)
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Subsequence(t, string(rb), msg)
+			})
+		}
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
