@@ -88,10 +88,14 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 			clientAddr = directAddrStrategy(r.RemoteAddr)
 		case LeftIpStrategy:
 			clientAddr = leftmostNonPrivateStrategy(xForwardedForHeader, r.Header)
-			// TODO: also look for forwardedHeader
+			if clientAddr == "" {
+				clientAddr = leftmostNonPrivateStrategy(forwardedHeader, r.Header)
+			}
 		case RightIpStrategy:
 			clientAddr = rightmostNonPrivateStrategy(xForwardedForHeader, r.Header)
-			// TODO: also look for forwardedHeader
+			if clientAddr == "" {
+				clientAddr = rightmostNonPrivateStrategy(forwardedHeader, r.Header)
+			}
 		default:
 			// treat everything else as a `singleIP` strategy
 			clientAddr = singleIPHeaderStrategy(string(v), r.Header)
