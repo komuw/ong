@@ -185,12 +185,18 @@ func rightmostNonPrivateStrategy(headerName string, headers http.Header) string 
 	return ""
 }
 
-// goodIPAddr wraps ParseIPAddr and adds a check for unspecified (like "::") and zero-value
+// goodIPAddr parses IP address and adds a check for unspecified (like "::") and zero-value
 // addresses (like "0.0.0.0"). These are nominally valid IPs (net.ParseIP will accept them),
 // but they are undesirable for the purposes of this library.
-// Note that this function should be the only use of ParseIPAddr in this library.
 func goodIPAddr(ipStr string) *netip.Addr {
-	ipAddr, err := parseIPAddr(ipStr)
+	host, _, err := net.SplitHostPort(ipStr)
+	if err == nil {
+		// `SplitHostPort` may error with something like `missing port in address`
+		// We continue neverthless since `netip.ParseAddr` below will also do validation.
+		ipStr = host
+	}
+
+	ipAddr, err := netip.ParseAddr(ipStr)
 	if err != nil {
 		fmt.Println("\t err: ", err)
 		return nil
@@ -224,22 +230,6 @@ func isSafeIp(addr *netip.Addr) bool {
 	}
 
 	return addr.IsValid()
-}
-
-// TODO: fold this inside `goodIPAddr`
-//
-// parseIPAddr parses the given string into a net.IPAddr, which is a useful type for
-// dealing with IPs have zones. The Go stdlib net package is lacking such a function.
-// This will also discard any port number from the input.
-func parseIPAddr(ipStr string) (netip.Addr, error) {
-	host, _, err := net.SplitHostPort(ipStr)
-	if err == nil {
-		// `SplitHostPort` may error with something like `missing port in address`
-		// We continue neverthless since `netip.ParseAddr` below will also do validation.
-		ipStr = host
-	}
-
-	return netip.ParseAddr(ipStr)
 }
 
 // trimMatchedEnds trims s if and only if the first and last bytes in s are in chars.
