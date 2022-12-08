@@ -54,12 +54,12 @@ const (
 	corsCacheDur = 2 * time.Hour
 )
 
-// Cors is a middleware to implement Cross-Origin Resource Sharing support.
+// cors is a middleware to implement Cross-Origin Resource Sharing support.
 //
 // If allowedOrigins is nil, all origins are allowed. You can also use * to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
-func Cors(
+func cors(
 	wrappedHandler http.HandlerFunc,
 	allowedOrigins []string,
 	allowedMethods []string,
