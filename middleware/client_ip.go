@@ -99,6 +99,7 @@ func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	}
 
 	ipAddrs := getIPAddrList(headers, headerName)
+	fmt.Println("\t ipAddrs: ", ipAddrs)
 	for _, ip := range ipAddrs {
 		if isSafeIp(ip) {
 			// This is the leftmost valid, non-private IP
