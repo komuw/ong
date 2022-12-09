@@ -72,6 +72,8 @@ const (
 //
 // headerName MUST not be either `X-Forwarded-For` or `Forwarded`.
 // It can be something like `CF-Connecting-IP`, `Fastly-Client-IP`, `Fly-Client-IP`, etc; depending on your usecase.
+//
+// See the warning in [GetClientIP]
 func SingleIpStrategy(headerName string) clientIPstrategy {
 	return clientIPstrategy(headerName)
 }

@@ -49,10 +49,16 @@ type Opts struct {
 // New returns a new Opts.
 //
 // domain is the domain name of your website.
-// httpsPort is the tls port where http requests will be redirected to.
-// allowedOrigins, allowedMethods, & allowedHeaders are used by the [cors] middleware.
 //
-// The secretKey should be kept secret and should not be shared.
+// httpsPort is the tls port where http requests will be redirected to.
+//
+// allowedOrigins, allowedMethods, & allowedHeaders are used by the CORS middleware.
+// If allowedOrigins is nil, all origins are allowed. You can also use * to allow all.
+// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
+// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
+//
+// secretKey is used for securing signed data.
+// It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
 //
 // strategy is the algorithm to use when fetching the client's IP address.
@@ -81,7 +87,7 @@ func New(
 }
 
 // WithOpts returns a new Opts that has sensible defaults.
-// See [New]
+// See [New] for extra documentation.
 func WithOpts(
 	domain string,
 	httpsPort uint16,
