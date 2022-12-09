@@ -263,11 +263,9 @@ func isSafeIp(addr *netip.Addr) bool {
 	if addr == nil {
 		return false
 	}
-
 	if addr.IsUnspecified() {
 		return false
 	}
-
 	if addr.IsLoopback() {
 		return false
 	}
