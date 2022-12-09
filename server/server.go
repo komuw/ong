@@ -60,13 +60,16 @@ func (o Opts) Equal(other Opts) bool {
 // NewOpts returns a new Opts.
 //
 // port is the port at which the server should listen on.
+//
 // readHeaderTimeout is the amount of time a server will be allowed to read request headers.
 // readTimeout is the maximum duration a server will use for reading the entire request, including the body.
 // writeTimeout is the maximum duration before a server times out writes of the response.
 // handlerTimeout is the maximum duration that handlers on the server will serve a request before timing out.
 // idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
+//
 // certFile is a path to a tls certificate.
 // keyFile is a path to a tls key.
+//
 // email is the e-address that will be used if/when procuring certificates from [letsencrypt].
 // domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
 //
@@ -177,7 +180,7 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) Opts {
 // If the Opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
 // Likewise, if the Opts include an email address, the server will accept https traffic and automatically handle http->https redirect.
 //
-// The server shuts down cleanly after receiving any terminating signal.
+// The server shuts down cleanly after receiving any termination signal.
 func Run(h http.Handler, o Opts, l log.Logger) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
