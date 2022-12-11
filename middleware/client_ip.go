@@ -67,7 +67,7 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 			clientAddr = clientip.SingleIPHeader(string(v), r.Header)
 		}
 
-		r = clientip.WithClientIP(r, clientAddr)
+		r = clientip.With(r, clientAddr)
 		wrappedHandler(w, r)
 	}
 }

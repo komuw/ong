@@ -68,8 +68,8 @@ func Get(r *http.Request) string {
 	return ip
 }
 
-// WithClientIP returns a [*http.Request] whose context contains a client IP address.
-func WithClientIP(r *http.Request, clientAddr string) *http.Request {
+// With returns a [*http.Request] whose context contains a client IP address.
+func With(r *http.Request, clientAddr string) *http.Request {
 	ctx := r.Context()
 	ctx = context.WithValue(ctx, clientIPctxKey, clientAddr)
 	r = r.WithContext(ctx)
