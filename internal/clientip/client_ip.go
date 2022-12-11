@@ -36,7 +36,6 @@ Algorithm:
 */
 
 type (
-	clientIPstrategy       string
 	clientIPcontextKeyType string
 )
 
