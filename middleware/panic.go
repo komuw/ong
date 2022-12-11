@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/komuw/ong/errors"
-	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/log"
 )
 
@@ -34,7 +33,7 @@ func recoverer(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 
 				flds := log.F{
 					"err":      fmt.Sprint(errR),
-					"clientIP": clientip.Get(r),
+					"clientIP": ClientIP(r),
 					"method":   r.Method,
 					"path":     r.URL.Redacted(),
 					"code":     code,

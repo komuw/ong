@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"sync"
 	"time"
-
-	"github.com/komuw/ong/internal/clientip"
 )
 
 // Most of the code here is insipired by(or taken from):
@@ -34,7 +32,7 @@ func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
 
-		host := clientip.Get(r)
+		host := ClientIP(r)
 		tb := rl.get(host, rateLimiterSendRate)
 
 		if !tb.allow() {

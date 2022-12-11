@@ -46,14 +46,8 @@ const (
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 )
 
-// ClientIP returns the "real" client IP address.
-//
-// Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
-// Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
-// You should especially heed this warning if you intend to use the IP addresses for security related activities.
-// Proceed at your own peril.
-//
-// [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
+// Get returns the "real" client IP address.
+// see ong/middleware for docs.
 func Get(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {

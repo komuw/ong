@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
-	"github.com/komuw/ong/internal/clientip"
 )
 
 const (
@@ -19,7 +18,7 @@ const (
 
 func someClientIpHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := clientip.Get(r)
+		ip := ClientIP(r)
 		res := fmt.Sprintf("message: %s, ip: %s", msg, ip)
 		fmt.Fprint(w, res)
 	}
