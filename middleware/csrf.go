@@ -212,7 +212,7 @@ func getToken(r *http.Request) (actualToken string) {
 
 	if len(tok) < csrfBytesTokenLength {
 		// Request has presented a token that we probably didn't generate coz this library issues
-		// tokens with le > csrfBytesTokenLength
+		// tokens with len > csrfBytesTokenLength
 		tok = ""
 	}
 

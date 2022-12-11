@@ -176,7 +176,7 @@ func TestServer(t *testing.T) {
 		msg := "hello world"
 		mux := mux.New(
 			l,
-			middleware.WithOpts("localhost", port, getSecretKey(), l),
+			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -267,7 +267,7 @@ func TestServer(t *testing.T) {
 		msg := "hello world"
 		mux := mux.New(
 			l,
-			middleware.WithOpts("localhost", port, getSecretKey(), l),
+			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,

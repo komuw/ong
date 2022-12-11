@@ -29,7 +29,7 @@ func main() {
 	l := log.New(os.Stdout, 1000)
 	mux := mux.New(
 		l,
-		middleware.WithOpts("localhost", 65081, secretKey, l),
+		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"/api",

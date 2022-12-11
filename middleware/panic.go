@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 
@@ -32,19 +31,14 @@ func recoverer(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 					code,
 				)
 
-				clientAddress := r.RemoteAddr
-				if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-					clientAddress = host
-				}
-
 				flds := log.F{
-					"err":           fmt.Sprint(errR),
-					"clientAddress": clientAddress,
-					"method":        r.Method,
-					"path":          r.URL.Redacted(),
-					"code":          code,
-					"status":        status,
-					"pid":           pid,
+					"err":      fmt.Sprint(errR),
+					"clientIP": ClientIP(r),
+					"method":   r.Method,
+					"path":     r.URL.Redacted(),
+					"code":     code,
+					"status":   status,
+					"pid":      pid,
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 					flds["ongError"] = ongError
