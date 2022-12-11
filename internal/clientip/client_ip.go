@@ -40,7 +40,7 @@ type (
 )
 
 const (
-	errPrefix           = "ong/middleware:"
+	errPrefix           = "ong/internal/clientip:"
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
 
@@ -48,7 +48,7 @@ const (
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 )
 
-// ClientIP returns the "real" client IP address.
+// GetClientIP returns the "real" client IP address.
 //
 // Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
@@ -56,7 +56,7 @@ const (
 // Proceed at your own peril.
 //
 // [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
-func ClientIP(r *http.Request) string {
+func GetClientIP(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {
 			return s
