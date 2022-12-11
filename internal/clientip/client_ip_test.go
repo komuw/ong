@@ -24,7 +24,7 @@ func TestClientIPstrategy(t *testing.T) {
 		{
 			name: "remoteAddrStrategy",
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return directAddrStrategy(remoteAddr)
+				return DirectAddrStrategy(remoteAddr)
 			},
 			assert: func(ip string) {
 				attest.NotZero(t, ip)
@@ -39,7 +39,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return singleIPHeaderStrategy(headerName, headers)
+				return SingleIPHeaderStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -53,7 +53,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return singleIPHeaderStrategy(headerName, headers)
+				return SingleIPHeaderStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -67,7 +67,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return singleIPHeaderStrategy(headerName, headers)
+				return SingleIPHeaderStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.NotZero(t, ip)
@@ -82,7 +82,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return singleIPHeaderStrategy(headerName, headers)
+				return SingleIPHeaderStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.NotZero(t, ip)
@@ -98,7 +98,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return leftmostNonPrivateStrategy(headerName, headers)
+				return LeftmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -112,7 +112,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return leftmostNonPrivateStrategy(headerName, headers)
+				return LeftmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -130,7 +130,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return leftmostNonPrivateStrategy(headerName, headers)
+				return LeftmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -144,7 +144,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return leftmostNonPrivateStrategy(headerName, headers)
+				return LeftmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.NotZero(t, ip)
@@ -163,7 +163,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return leftmostNonPrivateStrategy(headerName, headers)
+				return LeftmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.NotZero(t, ip)
@@ -179,7 +179,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return rightmostNonPrivateStrategy(headerName, headers)
+				return RightmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -193,7 +193,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return rightmostNonPrivateStrategy(headerName, headers)
+				return RightmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -211,7 +211,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return rightmostNonPrivateStrategy(headerName, headers)
+				return RightmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.Zero(t, ip)
@@ -225,7 +225,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return rightmostNonPrivateStrategy(headerName, headers)
+				return RightmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.NotZero(t, ip)
@@ -244,7 +244,7 @@ func TestClientIPstrategy(t *testing.T) {
 				return headerName
 			},
 			runStrategy: func(remoteAddr, headerName string, headers http.Header) string {
-				return rightmostNonPrivateStrategy(headerName, headers)
+				return RightmostNonPrivateStrategy(headerName, headers)
 			},
 			assert: func(ip string) {
 				attest.NotZero(t, ip)

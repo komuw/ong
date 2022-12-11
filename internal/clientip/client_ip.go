@@ -48,9 +48,15 @@ const (
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 )
 
-// GetClientIP returns the "real" client IP address.
-// See ong/middleware for more documentation
-func GetClientIP(r *http.Request) string {
+// ClientIP returns the "real" client IP address.
+//
+// Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
+// Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
+// You should especially heed this warning if you intend to use the IP addresses for security related activities.
+// Proceed at your own peril.
+//
+// [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
+func Get(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {
 			return s
@@ -61,9 +67,9 @@ func GetClientIP(r *http.Request) string {
 	return ip
 }
 
-// directAddrStrategy returns the client socket IP, stripped of port.
+// DirectAddrStrategy returns the client socket IP, stripped of port.
 // This strategy should be used if the server accepts direct connections, rather than through a proxy.
-func directAddrStrategy(remoteAddr string) string {
+func DirectAddrStrategy(remoteAddr string) string {
 	if ipAddr := goodIPAddr(remoteAddr); ipAddr != nil {
 		return ipAddr.String()
 	}
@@ -71,7 +77,7 @@ func directAddrStrategy(remoteAddr string) string {
 	return ""
 }
 
-// singleIPHeaderStrategy derives an IP address from a single-IP header.
+// SingleIPHeaderStrategy derives an IP address from a single-IP header.
 // A non-exhaustive list of such single-IP headers is:
 // X-Real-IP, CF-Connecting-IP, True-Client-IP, Fastly-Client-IP, X-Azure-ClientIP, X-Azure-SocketIP, Fly-Client-IP.
 // This strategy should be used when the given header is added by a trusted reverse proxy.
@@ -81,7 +87,7 @@ func directAddrStrategy(remoteAddr string) string {
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func singleIPHeaderStrategy(headerName string, headers http.Header) string {
+func SingleIPHeaderStrategy(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
 	if headerName == xForwardedForHeader || headerName == forwardedHeader {
@@ -110,14 +116,14 @@ func singleIPHeaderStrategy(headerName string, headers http.Header) string {
 	return ipAddr.String()
 }
 
-// leftmostNonPrivateStrategy derives the client IP from the leftmost valid and
+// LeftmostNonPrivateStrategy derives the client IP from the leftmost valid and
 // non-private IP address in the X-Fowarded-For or Forwarded header.
 // This strategy should be used when a valid, non-private IP closest to the client is desired.
 // Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
+func LeftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
 	if headerName != xForwardedForHeader && headerName != forwardedHeader {
@@ -137,13 +143,13 @@ func leftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	return ""
 }
 
-// rightmostNonPrivateStrategy derives the client IP from the rightmost valid and
+// RightmostNonPrivateStrategy derives the client IP from the rightmost valid and
 // non-private IP address in the X-Fowarded-For or Forwarded header.
 // This strategy should be used when all reverse proxies between the internet and the server have private-space IP addresses.
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func rightmostNonPrivateStrategy(headerName string, headers http.Header) string {
+func RightmostNonPrivateStrategy(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
 	if headerName != xForwardedForHeader && headerName != forwardedHeader {

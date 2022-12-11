@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/cookie"
+	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/log"
 )
 
@@ -63,7 +64,7 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.H
 		}
 		defer func() {
 			flds := log.F{
-				"clientIP":   ClientIP(r),
+				"clientIP":   clientip.Get(r),
 				"method":     r.Method,
 				"path":       r.URL.Redacted(),
 				"code":       lrw.code,
