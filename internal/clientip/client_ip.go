@@ -36,15 +36,12 @@ Algorithm:
 - https://adam-p.ca/blog/2022/03/x-forwarded-for/#algorithms
 */
 
-type (
-	clientIPcontextKeyType string
-)
+type clientIPcontextKeyType string
 
 const (
 	errPrefix           = "ong/internal/clientip:"
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
-
 	// clientIPctxKey is the name of the context key used to store the client IP address.
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 )

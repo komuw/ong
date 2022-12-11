@@ -19,14 +19,12 @@ const (
 	//
 	// See the warning in [GetClientIP]
 	DirectIpStrategy = clientIPstrategy("DirectIpStrategy")
-
 	// LeftIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 	// It derives the client IP from the leftmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
 	// Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
 	//
 	// See the warning in [GetClientIP]
 	LeftIpStrategy = clientIPstrategy("LeftIpStrategy")
-
 	// RightIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 	// It derives the client IP from the rightmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
 	RightIpStrategy = clientIPstrategy("RightIpStrategy")
