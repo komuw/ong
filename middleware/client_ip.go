@@ -57,14 +57,14 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 		var clientAddr string
 		switch v := strategy; v {
 		case DirectIpStrategy:
-			clientAddr = clientip.DirectAddrStrategy(r.RemoteAddr)
+			clientAddr = clientip.DirectAddress(r.RemoteAddr)
 		case LeftIpStrategy:
-			clientAddr = clientip.LeftmostNonPrivateStrategy(r.Header)
+			clientAddr = clientip.Leftmost(r.Header)
 		case RightIpStrategy:
-			clientAddr = clientip.RightmostNonPrivateStrategy(r.Header)
+			clientAddr = clientip.Rightmost(r.Header)
 		default:
 			// treat everything else as a `singleIP` strategy
-			clientAddr = clientip.SingleIPHeaderStrategy(string(v), r.Header)
+			clientAddr = clientip.SingleIPHeader(string(v), r.Header)
 		}
 
 		r = clientip.WithClientIP(r, clientAddr)

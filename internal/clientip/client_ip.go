@@ -77,9 +77,9 @@ func WithClientIP(r *http.Request, clientAddr string) *http.Request {
 	return r
 }
 
-// DirectAddrStrategy returns the client socket IP, stripped of port.
+// DirectAddress returns the client socket IP, stripped of port.
 // This strategy should be used if the server accepts direct connections, rather than through a proxy.
-func DirectAddrStrategy(remoteAddr string) string {
+func DirectAddress(remoteAddr string) string {
 	if ipAddr := goodIPAddr(remoteAddr); ipAddr != nil {
 		return ipAddr.String()
 	}
@@ -87,7 +87,7 @@ func DirectAddrStrategy(remoteAddr string) string {
 	return ""
 }
 
-// SingleIPHeaderStrategy derives an IP address from a single-IP header.
+// SingleIPHeader derives an IP address from a single-IP header.
 // A non-exhaustive list of such single-IP headers is:
 // X-Real-IP, CF-Connecting-IP, True-Client-IP, Fastly-Client-IP, X-Azure-ClientIP, X-Azure-SocketIP, Fly-Client-IP.
 // This strategy should be used when the given header is added by a trusted reverse proxy.
@@ -97,7 +97,7 @@ func DirectAddrStrategy(remoteAddr string) string {
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func SingleIPHeaderStrategy(headerName string, headers http.Header) string {
+func SingleIPHeader(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
 	if headerName == xForwardedForHeader || headerName == forwardedHeader {
@@ -126,14 +126,14 @@ func SingleIPHeaderStrategy(headerName string, headers http.Header) string {
 	return ipAddr.String()
 }
 
-// LeftmostNonPrivateStrategy derives the client IP from the leftmost valid and
+// Leftmost derives the client IP from the leftmost valid and
 // non-private IP address in the X-Fowarded-For or Forwarded header.
 // This strategy should be used when a valid, non-private IP closest to the client is desired.
 // Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func LeftmostNonPrivateStrategy(headers http.Header) string {
+func Leftmost(headers http.Header) string {
 	var theIP string
 
 	{
@@ -164,13 +164,13 @@ func LeftmostNonPrivateStrategy(headers http.Header) string {
 	return theIP
 }
 
-// RightmostNonPrivateStrategy derives the client IP from the rightmost valid and
+// Rightmost derives the client IP from the rightmost valid and
 // non-private IP address in the X-Fowarded-For or Forwarded header.
 // This strategy should be used when all reverse proxies between the internet and the server have private-space IP addresses.
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func RightmostNonPrivateStrategy(headers http.Header) string {
+func Rightmost(headers http.Header) string {
 	var theIP string
 
 	{
