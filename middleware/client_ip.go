@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/komuw/ong/internal/clientip"
@@ -13,17 +12,13 @@ import (
 //
 
 type (
-	clientIPstrategy       string
-	clientIPcontextKeyType string
+	clientIPstrategy string
 )
 
 const (
 	errPrefix           = "ong/middleware:"
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
-
-	// clientIPctxKey is the name of the context key used to store the client IP address.
-	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 
 	// DirectIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 	// This strategy should be used if the server accepts direct connections, rather than through a proxy.
@@ -63,8 +58,6 @@ func SingleIpStrategy(headerName string) clientIPstrategy {
 // [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
 func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
 		var clientAddr string
 		switch v := strategy; v {
 		case DirectIpStrategy:
@@ -84,9 +77,7 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 			clientAddr = clientip.SingleIPHeaderStrategy(string(v), r.Header)
 		}
 
-		ctx = context.WithValue(ctx, clientIPctxKey, clientAddr)
-		r = r.WithContext(ctx)
-
+		r = clientip.WithClientIP(r, clientAddr)
 		wrappedHandler(w, r)
 	}
 }

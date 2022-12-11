@@ -1,6 +1,7 @@
 package clientip
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -65,6 +66,15 @@ func Get(r *http.Request) string {
 
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr) // ignore error.
 	return ip
+}
+
+// WithClientIP returns a [*http.Request] whose context contains a client IP address.
+func WithClientIP(r *http.Request, clientAddr string) *http.Request {
+	ctx := r.Context()
+	ctx = context.WithValue(ctx, clientIPctxKey, clientAddr)
+	r = r.WithContext(ctx)
+
+	return r
 }
 
 // DirectAddrStrategy returns the client socket IP, stripped of port.
