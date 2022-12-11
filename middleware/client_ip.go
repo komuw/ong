@@ -11,9 +11,7 @@ import (
 //	(a) https://github.com/realclientip/realclientip-go whose license(BSD Zero Clause License) can be found here: https://github.com/realclientip/realclientip-go/blob/v1.0.0/LICENSE
 //
 
-type (
-	clientIPstrategy string
-)
+type clientIPstrategy string
 
 const (
 	// DirectIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
