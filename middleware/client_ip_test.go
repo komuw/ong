@@ -12,6 +12,11 @@ import (
 	"github.com/komuw/ong/internal/clientip"
 )
 
+const (
+	xForwardedForHeader = "X-Forwarded-For"
+	forwardedHeader     = "Forwarded"
+)
+
 func someClientIpHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := clientip.Get(r)

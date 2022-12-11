@@ -16,10 +16,6 @@ type (
 )
 
 const (
-	errPrefix           = "ong/middleware:"
-	xForwardedForHeader = "X-Forwarded-For"
-	forwardedHeader     = "Forwarded"
-
 	// DirectIpStrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 	// This strategy should be used if the server accepts direct connections, rather than through a proxy.
 	//
@@ -63,15 +59,9 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy clientIPstrategy) http.H
 		case DirectIpStrategy:
 			clientAddr = clientip.DirectAddrStrategy(r.RemoteAddr)
 		case LeftIpStrategy:
-			clientAddr = clientip.LeftmostNonPrivateStrategy(xForwardedForHeader, r.Header)
-			if clientAddr == "" {
-				clientAddr = clientip.LeftmostNonPrivateStrategy(forwardedHeader, r.Header)
-			}
+			clientAddr = clientip.LeftmostNonPrivateStrategy(r.Header)
 		case RightIpStrategy:
-			clientAddr = clientip.RightmostNonPrivateStrategy(xForwardedForHeader, r.Header)
-			if clientAddr == "" {
-				clientAddr = clientip.RightmostNonPrivateStrategy(forwardedHeader, r.Header)
-			}
+			clientAddr = clientip.RightmostNonPrivateStrategy(r.Header)
 		default:
 			// treat everything else as a `singleIP` strategy
 			clientAddr = clientip.SingleIPHeaderStrategy(string(v), r.Header)

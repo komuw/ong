@@ -133,24 +133,35 @@ func SingleIPHeaderStrategy(headerName string, headers http.Header) string {
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func LeftmostNonPrivateStrategy(headerName string, headers http.Header) string {
-	headerName = http.CanonicalHeaderKey(headerName)
+func LeftmostNonPrivateStrategy(headers http.Header) string {
+	var theIP string
 
-	if headerName != xForwardedForHeader && headerName != forwardedHeader {
-		// This is because the header we expect here is one that is a list of values(which xForwardedForHeader and forwardedHeader are.)
-		return ""
+	{
+		headerName := xForwardedForHeader // ought to be canonical. ie, http.CanonicalHeaderKey(xForwardedForHeader)
+		ipAddrs := getIPAddrList(headers, headerName)
+		for _, ip := range ipAddrs {
+			if isSafeIp(ip) {
+				// This is the leftmost valid, non-private IP
+				theIP = ip.String()
+				break
+			}
+		}
 	}
 
-	ipAddrs := getIPAddrList(headers, headerName)
-	for _, ip := range ipAddrs {
-		if isSafeIp(ip) {
-			// This is the leftmost valid, non-private IP
-			return ip.String()
+	if theIP == "" {
+		headerName := forwardedHeader
+		ipAddrs := getIPAddrList(headers, headerName)
+		for _, ip := range ipAddrs {
+			if isSafeIp(ip) {
+				// This is the leftmost valid, non-private IP
+				theIP = ip.String()
+				break
+			}
 		}
 	}
 
 	// We failed to find any valid, non-private IP
-	return ""
+	return theIP
 }
 
 // RightmostNonPrivateStrategy derives the client IP from the rightmost valid and
@@ -159,26 +170,39 @@ func LeftmostNonPrivateStrategy(headerName string, headers http.Header) string {
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
-func RightmostNonPrivateStrategy(headerName string, headers http.Header) string {
-	headerName = http.CanonicalHeaderKey(headerName)
+func RightmostNonPrivateStrategy(headers http.Header) string {
+	var theIP string
 
-	if headerName != xForwardedForHeader && headerName != forwardedHeader {
-		// This is because the header we expect here is one that is a list of values(which xForwardedForHeader and forwardedHeader are.)
-		return ""
+	{
+		headerName := xForwardedForHeader // ought to be canonical. ie, http.CanonicalHeaderKey(xForwardedForHeader)
+		ipAddrs := getIPAddrList(headers, headerName)
+		// Look backwards through the list of IP addresses
+		for i := len(ipAddrs) - 1; i >= 0; i-- {
+			ip := ipAddrs[i]
+			if isSafeIp(ip) {
+				// This is the rightmost non-private IP
+				theIP = ip.String()
+				break
+			}
+		}
 	}
 
-	ipAddrs := getIPAddrList(headers, headerName)
-	// Look backwards through the list of IP addresses
-	for i := len(ipAddrs) - 1; i >= 0; i-- {
-		ip := ipAddrs[i]
-		if isSafeIp(ip) {
-			// This is the rightmost non-private IP
-			return ip.String()
+	if theIP == "" {
+		headerName := forwardedHeader
+		ipAddrs := getIPAddrList(headers, headerName)
+		// Look backwards through the list of IP addresses
+		for i := len(ipAddrs) - 1; i >= 0; i-- {
+			ip := ipAddrs[i]
+			if isSafeIp(ip) {
+				// This is the rightmost non-private IP
+				theIP = ip.String()
+				break
+			}
 		}
 	}
 
 	// We failed to find any valid, non-private IP
-	return ""
+	return theIP
 }
 
 // goodIPAddr parses IP address and adds a check for unspecified (like "::") and zero-value addresses (like "0.0.0.0").
