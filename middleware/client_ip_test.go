@@ -54,7 +54,7 @@ func TestClientIP(t *testing.T) {
 
 		tests := []struct {
 			name     string
-			strategy clientIPstrategy
+			strategy ClientIPstrategy
 			req      func() *http.Request
 			expected string
 		}{

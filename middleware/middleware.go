@@ -42,7 +42,7 @@ type Opts struct {
 	allowedMethods []string
 	allowedHeaders []string
 	secretKey      string
-	strategy       clientIPstrategy
+	strategy       ClientIPstrategy
 	l              log.Logger
 }
 
@@ -71,7 +71,7 @@ func New(
 	allowedMethods []string,
 	allowedHeaders []string,
 	secretKey string,
-	strategy clientIPstrategy,
+	strategy ClientIPstrategy,
 	l log.Logger,
 ) Opts {
 	return Opts{
@@ -92,7 +92,7 @@ func WithOpts(
 	domain string,
 	httpsPort uint16,
 	secretKey string,
-	strategy clientIPstrategy,
+	strategy ClientIPstrategy,
 	l log.Logger,
 ) Opts {
 	return New(domain, httpsPort, nil, nil, nil, secretKey, strategy, l)
