@@ -63,13 +63,13 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.H
 		}
 		defer func() {
 			flds := log.F{
-				"clientAddress": GetClientIP(r),
-				"method":        r.Method,
-				"path":          r.URL.Redacted(),
-				"code":          lrw.code,
-				"status":        http.StatusText(lrw.code),
-				"durationMS":    time.Since(start).Milliseconds(),
-				"pid":           pid,
+				"clientIP":   ClientIP(r),
+				"method":     r.Method,
+				"path":       r.URL.Redacted(),
+				"code":       lrw.code,
+				"status":     http.StatusText(lrw.code),
+				"durationMS": time.Since(start).Milliseconds(),
+				"pid":        pid,
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				flds["ongError"] = ongError

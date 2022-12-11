@@ -78,7 +78,7 @@ func SingleIpStrategy(headerName string) clientIPstrategy {
 	return clientIPstrategy(headerName)
 }
 
-// GetClientIP fetches the "real" client IP address from r.
+// ClientIP fetches the "real" client IP address from r.
 //
 // Warning: This should be used with care. Clients CAN easily spoof IP addresses.
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
@@ -86,7 +86,7 @@ func SingleIpStrategy(headerName string) clientIPstrategy {
 // Proceed at your own peril.
 //
 // [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
-func GetClientIP(r *http.Request) string {
+func ClientIP(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {
 			return s

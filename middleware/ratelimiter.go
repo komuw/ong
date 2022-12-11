@@ -32,7 +32,7 @@ func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
 
-		host := GetClientIP(r)
+		host := ClientIP(r)
 		tb := rl.get(host, rateLimiterSendRate)
 
 		if !tb.allow() {

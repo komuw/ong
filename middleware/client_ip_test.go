@@ -13,7 +13,7 @@ import (
 
 func someClientIpHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := GetClientIP(r)
+		ip := ClientIP(r)
 		res := fmt.Sprintf("message: %s, ip: %s", msg, ip)
 		fmt.Fprint(w, res)
 	}

@@ -100,7 +100,7 @@ func TestLogMiddleware(t *testing.T) {
 			fmt.Sprint(res.StatusCode),
 			"durationMS",
 			"logID",
-			"clientAddress",
+			"clientIP",
 			"error",
 		} {
 			attest.Subsequence(t, logOutput.String(), v)

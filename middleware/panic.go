@@ -32,13 +32,13 @@ func recoverer(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 				)
 
 				flds := log.F{
-					"err":           fmt.Sprint(errR),
-					"clientAddress": GetClientIP(r),
-					"method":        r.Method,
-					"path":          r.URL.Redacted(),
-					"code":          code,
-					"status":        status,
-					"pid":           pid,
+					"err":      fmt.Sprint(errR),
+					"clientIP": ClientIP(r),
+					"method":   r.Method,
+					"path":     r.URL.Redacted(),
+					"code":     code,
+					"status":   status,
+					"pid":      pid,
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 					flds["ongError"] = ongError
