@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.27
+- Add Get cookie function: https://github.com/komuw/ong/pull/189
+
 ## v0.0.26
 - Create middleware that adds the "real" client IP address: https://github.com/komuw/ong/pull/187        
   Note that this is on a best effort basis.       
