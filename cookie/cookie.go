@@ -4,7 +4,6 @@ package cookie
 import (
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/cry"
+	"github.com/komuw/ong/internal/clientip"
 )
 
 const (
@@ -142,17 +142,15 @@ func SetEncrypted(
 		enc = cry.New(secretKey)
 	})
 
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return
-	}
-
+	ip := clientip.Get(
+		// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
+		r,
+	)
 	expires := strconv.Itoa(
 		int(
 			time.Now().UTC().Add(mAge).Unix(),
 		),
 	)
-
 	combined := ip + expires + value
 	encryptedEncodedVal := fmt.Sprintf(
 		"%d%s%d%s%s",
@@ -215,11 +213,10 @@ func GetEncrypted(
 	{
 		// Try and prevent replay attacks.
 		// This does not completely stop them, but it is better than nothing.
-		incomingIP, _, errS := net.SplitHostPort(r.RemoteAddr)
-		if errS != nil {
-			return nil, errS
-		}
-
+		incomingIP := clientip.Get(
+			// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
+			r,
+		)
 		if ip != incomingIP {
 			return nil, errors.New("ong/cookie: mismatched IP addresses")
 		}

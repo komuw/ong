@@ -12,10 +12,10 @@ import (
 
 const reloadProtectCookiePrefix = "ong_form_reload_protect"
 
-// ReloadProtector is a middleware that attempts to provides protection against a form re-submission when a user reloads/refreshes an already submitted web page/form.
+// reloadProtector is a middleware that attempts to provides protection against a form re-submission when a user reloads/refreshes an already submitted web page/form.
 //
 // If such a situation is detected; this middleware will issue a http GET redirect to the same url.
-func ReloadProtector(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
+func reloadProtector(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	safeMethods := []string{
 		// safe methods under rfc7231: https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.1
 		http.MethodGet,

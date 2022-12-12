@@ -16,7 +16,7 @@ func ExampleRun() {
 	secretKey := "hard-password"
 	mux := mux.New(
 		l,
-		middleware.WithOpts("localhost", 65081, secretKey, l),
+		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"hello/",

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"compress/gzip"
+	stdGzip "compress/gzip"
 	"fmt"
 	"html/template"
 	"io"
@@ -103,7 +103,7 @@ func readBody(t *testing.T, res *http.Response) (strBody string) {
 
 	if res.Header.Get(contentEncodingHeader) == "gzip" {
 		// the body is gzipped.
-		reader, err := gzip.NewReader(body)
+		reader, err := stdGzip.NewReader(body)
 		attest.Ok(t, err)
 		defer reader.Close()
 		rb, err := io.ReadAll(reader)
@@ -126,7 +126,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(someGzipHandler(msg))
+		wrappedHandler := gzip(someGzipHandler(msg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -144,7 +144,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(someGzipHandler(msg))
+		wrappedHandler := gzip(someGzipHandler(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -162,7 +162,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(handlerImplementingFlush(msg))
+		wrappedHandler := gzip(handlerImplementingFlush(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -182,7 +182,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(handlerImplementingFlush(msg))
+		wrappedHandler := gzip(handlerImplementingFlush(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")
@@ -202,7 +202,7 @@ func TestGzip(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := Gzip(someGzipHandler(msg))
+		wrappedHandler := gzip(someGzipHandler(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(acceptEncodingHeader, "br;q=1.0, compress;q=0.8, *;q=0.1")
@@ -219,7 +219,7 @@ func TestGzip(t *testing.T) {
 	t.Run("issues/81", func(t *testing.T) {
 		t.Parallel()
 
-		wrappedHandler := Gzip(login())
+		wrappedHandler := gzip(login())
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -237,7 +237,7 @@ func TestGzip(t *testing.T) {
 	t.Run("issues/81", func(t *testing.T) {
 		t.Parallel()
 
-		wrappedHandler := Gzip(login())
+		wrappedHandler := gzip(login())
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -258,7 +258,7 @@ func TestGzip(t *testing.T) {
 		msg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Gzip(someGzipHandler(msg))
+		wrappedHandler := gzip(someGzipHandler(msg))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -317,7 +317,7 @@ var result int //nolint:gochecknoglobals
 
 func BenchmarkOngGzip(b *testing.B) {
 	var r int
-	wrappedHandler := Gzip(gzipBenchmarkHandler())
+	wrappedHandler := gzip(gzipBenchmarkHandler())
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -409,7 +409,7 @@ func BenchmarkTmthrgdGzip(b *testing.B) {
 
 func BenchmarkNoGzip(b *testing.B) {
 	var r int
-	wrappedHandler := Gzip(gzipBenchmarkHandler())
+	wrappedHandler := gzip(gzipBenchmarkHandler())
 
 	b.ReportAllocs()
 	b.ResetTimer()

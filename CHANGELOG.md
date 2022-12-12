@@ -3,6 +3,15 @@
 Most recent version is listed first.  
 
 
+## v0.0.26
+- Create middleware that adds the "real" client IP address: https://github.com/komuw/ong/pull/187        
+  Note that this is on a best effort basis.       
+  Finding the true client IP address is a precarious process [1](https://adam-p.ca/blog/2022/03/x-forwarded-for/)      
+
+## v0.0.25
+- ong/client: Use roundTripper for logging: https://github.com/komuw/ong/pull/185
+- Make most middleware private: https://github.com/komuw/ong/pull/186
+
 ## v0.0.24
 - Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
 - Add ReloadProtector middleware: https://github.com/komuw/ong/pull/171
@@ -12,7 +21,7 @@ Most recent version is listed first.
 - ong/client: Add log id http header: https://github.com/komuw/ong/pull/166
 
 ## v0.0.22
-- Panic middleware should include correct stack trace: https://github.com/komuw/ong/pull/164
+- Panic/recoverer middleware should include correct stack trace: https://github.com/komuw/ong/pull/164
 - Log client address without port: https://github.com/komuw/ong/pull/165
 
 ## v0.0.21

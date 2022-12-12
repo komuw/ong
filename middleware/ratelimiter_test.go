@@ -26,7 +26,7 @@ func TestRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -46,7 +46,7 @@ func TestRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg))
 
 		msgsDelivered := []int{}
 		start := time.Now().UTC()
@@ -82,7 +82,7 @@ func TestRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -105,7 +105,7 @@ func TestRateLimiter(t *testing.T) {
 		msg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := RateLimiter(someRateLimiterHandler(msg))
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

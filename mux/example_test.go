@@ -27,7 +27,7 @@ func ExampleMux() {
 	l := log.New(os.Stdout, 1000)
 	mux := mux.New(
 		l,
-		middleware.WithOpts("localhost", 8080, "secretKey", l),
+		middleware.WithOpts("localhost", 8080, "secretKey", middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"login/",
