@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.28
+- ong/id should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
+
 ## v0.0.27
 - Add Get cookie function: https://github.com/komuw/ong/pull/189
 

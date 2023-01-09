@@ -268,7 +268,7 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
-		reqCsrfTok := id.Random(csrfBytesTokenLength)
+		reqCsrfTok := id.Random(csrfBytesTokenLength * 2)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
