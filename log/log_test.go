@@ -136,12 +136,15 @@ func TestLogger(t *testing.T) {
 		l := New(w, maxMsgs)
 
 		infoMsg := "hello world"
-		l.Info(F{"what": infoMsg})
+		l.Info(F{"what": infoMsg, "ok": "ak&dHyS>47K"})
 		errMsg := "oops, Houston we got 99 problems."
 		l.Error(errors.New(errMsg))
 
 		attest.Subsequence(t, w.String(), infoMsg)
 		attest.Subsequence(t, w.String(), errMsg)
+		// special characters are not quoted.
+		attest.Subsequence(t, w.String(), "&")
+		attest.Subsequence(t, w.String(), ">")
 	})
 
 	t.Run("neccesary fields added", func(t *testing.T) {
@@ -370,7 +373,7 @@ func TestLogger(t *testing.T) {
 			l := New(w, 2)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "ong/log/log_test.go:371")
+			attest.Subsequence(t, w.String(), "ong/log/log_test.go:374")
 		}
 
 		{

@@ -199,6 +199,7 @@ func (l Logger) log(lvl Level, f F) {
 func (l Logger) flush() {
 	b := &bytes.Buffer{}
 	encoder := json.NewEncoder(b)
+	encoder.SetEscapeHTML(false)
 
 	{
 		l.cBuf.mu.Lock()
