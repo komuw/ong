@@ -16,6 +16,7 @@ func TestNew(t *testing.T) {
 		{
 			got := New()
 			attest.NotZero(t, got)
+			attest.Equal(t, len(got), 16)
 
 			a := New()
 			b := New()
