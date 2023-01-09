@@ -1,4 +1,3 @@
-// Package id is a unique id generator
 package id
 
 import (
@@ -32,6 +31,8 @@ func TestNew(t *testing.T) {
 			c := Random(_len)
 			attest.NotEqual(t, a, b)
 			attest.NotEqual(t, a, c)
+
+			attest.Equal(t, len(c), _len)
 		}
 
 		{

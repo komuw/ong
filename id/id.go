@@ -13,7 +13,7 @@ func New() string {
 	return Random(16)
 }
 
-// Random generates a random string made from bytes of size n.
+// Random generates a random string of size n.
 //
 // If n < 1 or significantly large, it is set to reasonable bounds.
 // It uses `crypto/rand` but falls back to `math/rand` on error.
@@ -27,9 +27,12 @@ func Random(n int) string {
 		n = 100_000
 	}
 
-	b := make([]byte, n)
+	// This formula is from [base64.Encoding.EncodedLen]
+	byteSize := ((((n * 6) - 5) / 8) + 1)
+
+	b := make([]byte, byteSize)
 	if _, err := cryptoRand.Read(b); err != nil {
-		b = make([]byte, n)
+		b = make([]byte, byteSize)
 		// this codepath is rarely executed so we can put all the code here instead of global var.
 		mathRand.Seed(time.Now().UTC().UnixNano())
 		_, _ = mathRand.Read(b) // docs say that it always returns a nil error.
