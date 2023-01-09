@@ -373,7 +373,7 @@ func TestLogger(t *testing.T) {
 			l := New(w, 2)
 			l.WithCaller().WithImmediate().Info(F{"msg": msg})
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "ong/log/log_test.go:371")
+			attest.Subsequence(t, w.String(), "ong/log/log_test.go:374")
 		}
 
 		{
