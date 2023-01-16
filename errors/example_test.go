@@ -24,10 +24,15 @@ func Example_stackTraceFormatting() {
 }
 
 func ExampleWrap() {
-	_, err := os.Open("/this/file/does/not/exist.txt")
-	if err != nil {
-		errors.Wrap(err)
+	opener := func(p string) error {
+		_, err := os.Open(p)
+		if err != nil {
+			return errors.Wrap(err)
+		}
+		return nil
 	}
+
+	fmt.Printf("%+v", opener("/this/file/does/not/exist.txt"))
 }
 
 func ExampleDwrap() {
