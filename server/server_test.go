@@ -71,7 +71,8 @@ func TestOpts(t *testing.T) {
 	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := DevOpts()
+		l := log.New(&bytes.Buffer{}, 500)
+		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
 			host:              "127.0.0.1",
@@ -123,7 +124,8 @@ func TestOpts(t *testing.T) {
 	t.Run("default tls opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := DevOpts()
+		l := log.New(&bytes.Buffer{}, 500)
+		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
 			host:              "127.0.0.1",
@@ -186,9 +188,9 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			_, _ = CreateDevCertKey()
+			_, _ = CreateDevCertKey(l)
 			time.Sleep(1 * time.Second)
-			err := Run(mux, DevOpts(), l)
+			err := Run(mux, DevOpts(l), l)
 			attest.Ok(t, err)
 		}()
 
@@ -277,7 +279,7 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := CreateDevCertKey()
+			certFile, keyFile := CreateDevCertKey(l)
 			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
 			attest.Ok(t, err)
 		}()
