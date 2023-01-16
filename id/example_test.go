@@ -9,3 +9,12 @@ import (
 func ExampleNew() {
 	fmt.Println(id.New())
 }
+
+func ExampleRandom() {
+	size := 34
+	s := id.Random(size)
+	if len(s) != size {
+		panic("mismatched sizes")
+	}
+	fmt.Println(s)
+}
