@@ -41,11 +41,16 @@ func New(text string) error {
 }
 
 // Wrap returns err, capturing a stack trace.
+// It is a no-op if err had already been wrapped by this library.
 func Wrap(err error) error {
 	return wrap(err, 3)
 }
 
 func wrap(err error, skip int) error {
+	if _, ok := err.(*stackError); ok {
+		return err
+	}
+
 	stack := [4]uintptr{}
 	// skip 0 identifies the frame for `runtime.Callers` itself and
 	// skip 1 identifies the caller of `runtime.Callers`(ie of `wrap`).

@@ -96,6 +96,25 @@ func TestStackError(t *testing.T) {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
 		})
+
+		t.Run("late wrapping does not affect traces", func(t *testing.T) {
+			t.Parallel()
+
+			err := lateWrapping()
+
+			sterr, ok := err.(*stackError)
+			attest.True(t, ok)
+
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				"ong/errors/errors_test.go:29",
+				"ong/errors/errors_test.go:22",
+				"ong/errors/errors_test.go:16",
+				"ong/errors/errors_test.go:52",
+			} {
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
+			}
+		})
 	})
 
 	t.Run("formattting", func(t *testing.T) {
@@ -112,7 +131,7 @@ func TestStackError(t *testing.T) {
 			"ong/errors/errors_test.go:29",
 			"ong/errors/errors_test.go:22",
 			"ong/errors/errors_test.go:16",
-			"ong/errors/errors_test.go:104",
+			"ong/errors/errors_test.go:123",
 		} {
 			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
 		}
