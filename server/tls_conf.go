@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"crypto/md5"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -80,6 +82,67 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
 				//
+				// SSLVersion,Cipher,SSLExtension,EllipticCurve,EllipticCurvePointFormat
+				{
+					// TODO: check if this table is upto date and accurate.
+					greaseTable := map[uint16]bool{
+						0x0a0a: true, 0x1a1a: true, 0x2a2a: true, 0x3a3a: true,
+						0x4a4a: true, 0x5a5a: true, 0x6a6a: true, 0x7a7a: true,
+						0x8a8a: true, 0x9a9a: true, 0xaaaa: true, 0xbaba: true,
+						0xcaca: true, 0xdada: true, 0xeaea: true, 0xfafa: true,
+					}
+
+					s := ""
+					ver := uint16(0)
+					for _, v := range info.SupportedVersions {
+						// TODO: explain this.
+						// ja3 wants the version chosen, not the list of versions.
+						// see: https://sourcegraph.com/github.com/golang/go@go1.19.4/-/blob/src/crypto/tls/handshake_client.go?L62-71
+						if v > ver {
+							ver = v
+						}
+					}
+					s += fmt.Sprintf("%d,", ver)
+
+					vals := []string{}
+					for _, v := range info.CipherSuites {
+						vals = append(vals, fmt.Sprintf("%d", v))
+					}
+					s += fmt.Sprintf("%s,", strings.Join(vals, "-"))
+
+					// TODO: Explain this. Because `tls.ClientHelloInfo` does not have extensions.
+					// This should be fixed if https://github.com/golang/go/issues/32936 is ever implemented.
+					extensions := []uint16{}
+					vals = []string{}
+					for _, v := range extensions {
+						if _, ok := greaseTable[v]; ok {
+							continue
+						}
+
+						vals = append(vals, fmt.Sprintf("%d", v))
+					}
+					s += fmt.Sprintf("%s,", strings.Join(vals, "-"))
+
+					vals = []string{}
+					for _, v := range info.SupportedCurves {
+						vals = append(vals, fmt.Sprintf("%d", v))
+					}
+					s += fmt.Sprintf("%s,", strings.Join(vals, "-"))
+
+					vals = []string{}
+					for _, v := range info.SupportedPoints {
+						vals = append(vals, fmt.Sprintf("%d", v))
+					}
+					s += fmt.Sprintf("%s", strings.Join(vals, "-"))
+
+					ja3Hash := func(s string) string {
+						hasher := md5.New()
+						hasher.Write([]byte(s))
+						return hex.EncodeToString(hasher.Sum(nil))
+					}
+					fmt.Println("\n\t ja3 ss: ", s)
+					fmt.Println("\t ja3Hash: ", ja3Hash(s), "\n.")
+				}
 				return &c, nil
 			},
 		}

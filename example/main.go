@@ -205,6 +205,8 @@ func (m myAPI) login() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// kama.Dirp(r.TLS)
+		// fmt.Println("\n\n\t  version: ", r.TLS.Version, "\n.")
 		reqL := m.l.WithCtx(r.Context())
 
 		if r.Method != http.MethodPost {
