@@ -75,10 +75,15 @@ func New(w io.Writer, maxMsgs int) Logger {
 
 // WithCtx return a new logger, based on l, with the given ctx.
 func (l Logger) WithCtx(ctx context.Context) Logger {
+	id := l.logId
+	if id2, ok := GetId(ctx); ok {
+		// if ctx did not contain a logId, do not use it.
+		id = id2
+	}
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		logId:      GetId(ctx),
+		logId:      id,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -223,16 +228,17 @@ func (l Logger) flush() {
 	l.cBuf.reset()
 }
 
-// GetId returns a logID which is fetched either from the provided context or auto-generated.
-func GetId(ctx context.Context) string {
+// GetId gets a logId either from the provided context or auto-generated.
+// It returns the logID and true if the id came from ctx else false
+func GetId(ctx context.Context) (string, bool) {
 	if ctx != nil {
 		if vCtx := ctx.Value(CtxKey); vCtx != nil {
 			if s, ok := vCtx.(string); ok {
-				return s
+				return s, true
 			}
 		}
 	}
-	return id.New()
+	return id.New(), false
 }
 
 // circleBuf implements a very simple & naive circular buffer.

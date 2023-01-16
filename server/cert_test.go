@@ -1,10 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/log"
 )
 
 func TestCreateDevCertKey(t *testing.T) {
@@ -23,7 +25,8 @@ func TestCreateDevCertKey(t *testing.T) {
 		os.Remove(certPath)
 		os.Remove(keyPath)
 
-		_, _ = CreateDevCertKey()
+		l := log.New(&bytes.Buffer{}, 500)
+		_, _ = CreateDevCertKey(l)
 
 		_, err := os.Stat(certPath)
 		attest.Ok(t, err)

@@ -30,7 +30,7 @@ func ExampleRun() {
 		),
 	)
 
-	opts := server.DevOpts() // dev options.
+	opts := server.DevOpts(l) // dev options.
 	// alternatively for production:
 	//   opts := server.LetsEncryptOpts("email@email.com", "*.some-domain.com")
 	err := server.Run(mux, opts, l)

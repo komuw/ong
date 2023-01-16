@@ -106,7 +106,8 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 		}
 	}()
 
-	req.Header.Set(logIDHeader, log.GetId(ctx))
+	id, _ := log.GetId(ctx)
+	req.Header.Set(logIDHeader, id)
 
 	return lr.RoundTripper.RoundTrip(req)
 }
