@@ -9,6 +9,7 @@ Most recent version is listed first.
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
 - ong/errors; wrap as deep as possible: https://github.com/komuw/ong/pull/199
 - ong/errors; add errors.Dwrap: https://github.com/komuw/ong/pull/200
+- ong/id, bug fix where ids generated were not always of the requested length; https://github.com/komuw/ong/pull/201
 
 ## v0.0.27
 - Add Get cookie function: https://github.com/komuw/ong/pull/189
