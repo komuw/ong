@@ -7,6 +7,7 @@ Most recent version is listed first.
 - ong/id should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
 - Do not quote special characters: https://github.com/komuw/ong/pull/193
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
+- ong/errors; wrap as deep as possible: https://github.com/komuw/ong/pull/199
 
 ## v0.0.27
 - Add Get cookie function: https://github.com/komuw/ong/pull/189
