@@ -3,13 +3,13 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"golang.org/x/net/idna"
 
-	ongErrors "github.com/komuw/ong/errors"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -23,7 +23,7 @@ import (
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
-func getTlsConfig(o opts) (*tls.Config, error) {
+func getTlsConfig(o Opts) (*tls.Config, error) {
 	if err := validateDomain(o.tls.domain); err != nil {
 		return nil, err
 	}
@@ -63,11 +63,10 @@ func getTlsConfig(o opts) (*tls.Config, error) {
 		// 2. get from disk.
 		//
 		if len(o.tls.keyFile) < 1 {
-			return nil, ongErrors.New("keyFile cannot be empty if certFile is also specified")
+			return nil, errors.New("ong/server: keyFile cannot be empty if certFile is also specified")
 		}
 		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
 		if err != nil {
-			err = ongErrors.Wrap(err)
 			return nil, err
 		}
 
@@ -88,27 +87,27 @@ func getTlsConfig(o opts) (*tls.Config, error) {
 	}
 
 	// 3. non-tls traffic.
-	return nil, ongErrors.New("ong only serves https")
+	return nil, errors.New("ong/server: ong only serves https")
 }
 
 func validateDomain(domain string) error {
 	if len(domain) < 1 {
-		return ongErrors.New("domain cannot be empty")
+		return errors.New("ong/server: domain cannot be empty")
 	}
 	if strings.Count(domain, "*") > 1 {
-		return ongErrors.New("domain can only contain one wildcard character")
+		return errors.New("ong/server: domain can only contain one wildcard character")
 	}
 	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
-		return ongErrors.New("wildcard character should be a prefix")
+		return errors.New("ong/server: wildcard character should be a prefix")
 	}
 	if strings.Contains(domain, "*") && domain[1] != '.' {
-		return ongErrors.New("wildcard character should be followed by a `.` character")
+		return errors.New("ong/server: wildcard character should be followed by a `.` character")
 	}
 
 	if !strings.Contains(domain, "*") {
 		// not wildcard
 		if _, err := idna.Lookup.ToASCII(domain); err != nil {
-			return ongErrors.Wrap(err)
+			return err
 		}
 	}
 
@@ -167,7 +166,7 @@ func customHostWhitelist(domain string) autocert.HostPolicy {
 			}
 		}
 
-		return ongErrors.New(fmt.Sprintf("ong/acme: host %q not configured in HostWhitelist", host))
+		return fmt.Errorf("ong/server: host %q not configured in HostWhitelist", host)
 	}
 }
 

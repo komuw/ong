@@ -40,7 +40,7 @@ func TestLogMiddleware(t *testing.T) {
 	t.Parallel()
 
 	getLogger := func(w io.Writer) log.Logger {
-		return log.New(context.Background(), w, 500)
+		return log.New(w, 500)
 	}
 
 	t.Run("success", func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestLogMiddleware(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
+		wrappedHandler := logger(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -79,7 +79,7 @@ func TestLogMiddleware(t *testing.T) {
 		errorMsg := "someLogHandler failed"
 		successMsg := "hello"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
+		wrappedHandler := logger(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -100,7 +100,7 @@ func TestLogMiddleware(t *testing.T) {
 			fmt.Sprint(res.StatusCode),
 			"durationMS",
 			"logID",
-			"requestAddr",
+			"clientIP",
 			"error",
 		} {
 			attest.Subsequence(t, logOutput.String(), v)
@@ -120,7 +120,7 @@ func TestLogMiddleware(t *testing.T) {
 		successMsg := "hello"
 		errorMsg := "someLogHandler failed"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
+		wrappedHandler := logger(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		{
 			// first request that succeds
@@ -218,7 +218,7 @@ func TestLogMiddleware(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
 		domain := "example.com"
-		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
+		wrappedHandler := logger(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		someLogID := "hey-some-log-id:" + id.New()
 
@@ -256,7 +256,7 @@ func TestLogMiddleware(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Log(someLogHandler(successMsg), domain, getLogger(logOutput))
+		wrappedHandler := logger(someLogHandler(successMsg), domain, getLogger(logOutput))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -314,17 +314,19 @@ func TestGetLogId(t *testing.T) {
 		}
 
 		{
-			// cookies take precedence.
-			expected := "cookie-expected-three"
+			// header take precedence.
 			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 			req.AddCookie(&http.Cookie{
 				Name:  logIDKey,
-				Value: expected,
+				Value: "cookie-expected-three",
 			})
+
+			expected := "header-logID"
+			req.Header.Add(logIDKey, expected)
+
 			req = req.WithContext(
 				context.WithValue(context.Background(), log.CtxKey, "context-logID"),
 			)
-			req.Header.Add(logIDKey, "header-logID")
 
 			id := getLogId(req)
 			attest.Equal(t, id, expected)

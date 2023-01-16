@@ -2,20 +2,18 @@ package client
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/komuw/ong/log"
-
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/log"
 )
 
-func getLogger(ctx context.Context) log.Logger {
+func getLogger() log.Logger {
 	w := &bytes.Buffer{}
 	maxMsgs := 15
-	return log.New(ctx, w, maxMsgs)
+	return log.New(w, maxMsgs)
 }
 
 func TestClient(t *testing.T) {
@@ -43,18 +41,17 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf safe", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		cli := Safe(getLogger(ctx))
+		cli := Safe(getLogger())
 
 		for _, url := range urlsInPrivate {
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
 			attest.True(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Ok(t, err)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
@@ -64,8 +61,7 @@ func TestClient(t *testing.T) {
 	t.Run("ssrf unsafe", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
-		cli := Unsafe(getLogger(ctx))
+		cli := Unsafe(getLogger())
 
 		for _, url := range urlsInPrivate {
 			if strings.Contains(url, "169.254.169.254") {
@@ -74,14 +70,14 @@ func TestClient(t *testing.T) {
 				// and gets a 404.
 				break
 			}
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Error(t, err)
 			attest.False(t, strings.Contains(err.Error(), errPrefix))
 		}
 
 		for _, url := range urlsInPublic {
-			res, err := cli.Get(ctx, url) // nolint:bodyclose
+			res, err := cli.Get(url) // nolint:bodyclose
 			clean(res)
 			attest.Ok(t, err)
 			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("url=%s", url))
@@ -95,12 +91,11 @@ func TestClient(t *testing.T) {
 			// error
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			ctx := context.Background()
-			l := log.New(ctx, w, maxMsgs)
+			l := log.New(w, maxMsgs)
 
 			cli := Safe(l)
 
-			res, err := cli.Get(ctx, "https://ajmsmsYnns.com") // nolint:bodyclose
+			res, err := cli.Get("https://ajmsmsYnns.com") // nolint:bodyclose
 			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
@@ -112,12 +107,11 @@ func TestClient(t *testing.T) {
 			// success
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			ctx := context.Background()
-			l := log.New(ctx, w, maxMsgs)
+			l := log.New(w, maxMsgs)
 
 			cli := Safe(l)
 
-			res, err := cli.Get(ctx, "https://example.com") // nolint:bodyclose
+			res, err := cli.Get("https://example.com") // nolint:bodyclose
 			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)
@@ -133,13 +127,12 @@ func TestClient(t *testing.T) {
 			// error
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			ctx := context.Background()
-			l := log.New(ctx, w, maxMsgs)
+			l := log.New(w, maxMsgs)
 
 			cli := Safe(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
-			res, err := cli.Post(ctx, "https://ajmsmsYnns.com", "application/json", b) // nolint:bodyclose
+			res, err := cli.Post("https://ajmsmsYnns.com", "application/json", b) // nolint:bodyclose
 			clean(res)
 			attest.Zero(t, res)
 			attest.Error(t, err)
@@ -151,13 +144,12 @@ func TestClient(t *testing.T) {
 			// success
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			ctx := context.Background()
-			l := log.New(ctx, w, maxMsgs)
+			l := log.New(w, maxMsgs)
 
 			cli := Safe(l)
 
 			b := strings.NewReader(`{"key":"value"}`)
-			res, err := cli.Post(ctx, "https://example.com", "application/json", b) // nolint:bodyclose
+			res, err := cli.Post("https://example.com", "application/json", b) // nolint:bodyclose
 			clean(res)
 			attest.NotZero(t, res)
 			attest.Ok(t, err)

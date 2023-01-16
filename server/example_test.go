@@ -1,0 +1,59 @@
+package server_test
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/mux"
+	"github.com/komuw/ong/server"
+)
+
+func ExampleRun() {
+	l := log.New(os.Stdout, 1000)
+	secretKey := "hard-password"
+	mux := mux.New(
+		l,
+		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
+		nil,
+		mux.NewRoute(
+			"hello/",
+			mux.MethodGet,
+			hello("hello world"),
+		),
+		mux.NewRoute(
+			"check/:age/",
+			mux.MethodAll,
+			check(),
+		),
+	)
+
+	opts := server.DevOpts(l) // dev options.
+	// alternatively for production:
+	//   opts := server.LetsEncryptOpts("email@email.com", "*.some-domain.com")
+	err := server.Run(mux, opts, l)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func hello(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cspNonce := middleware.GetCspNonce(r.Context())
+		csrfToken := middleware.GetCsrfToken(r.Context())
+		fmt.Printf("hello called cspNonce: %s, csrfToken: %s", cspNonce, csrfToken)
+
+		// use msg, which is a dependency specific to this handler
+		fmt.Fprint(w, msg)
+	}
+}
+
+func check() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		age := mux.Param(r.Context(), "age")
+		_, _ = fmt.Fprintf(w, "Age is %s", age)
+	}
+}

@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -16,6 +15,7 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/mux"
 )
 
 func getSecretKey() string {
@@ -30,7 +30,7 @@ func TestDrainDuration(t *testing.T) {
 		t.Parallel()
 
 		handlerTimeout := 170 * time.Second
-		o := opts{
+		o := Opts{
 			port:              65080,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -49,7 +49,7 @@ func TestDrainDuration(t *testing.T) {
 		t.Parallel()
 
 		writeTimeout := 3 * time.Minute
-		o := opts{
+		o := Opts{
 			port:              65080,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -71,8 +71,9 @@ func TestOpts(t *testing.T) {
 	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := DevOpts()
-		want := opts{
+		l := log.New(&bytes.Buffer{}, 500)
+		got := DevOpts(l)
+		want := Opts{
 			port:              65081,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -99,7 +100,7 @@ func TestOpts(t *testing.T) {
 		certFile, keyFile := certKeyPaths()
 		got := withOpts(80, certFile, keyFile, "", "*.example.com")
 
-		want := opts{
+		want := Opts{
 			port:              80,
 			host:              "0.0.0.0",
 			network:           "tcp",
@@ -123,8 +124,9 @@ func TestOpts(t *testing.T) {
 	t.Run("default tls opts", func(t *testing.T) {
 		t.Parallel()
 
-		got := DevOpts()
-		want := opts{
+		l := log.New(&bytes.Buffer{}, 500)
+		got := DevOpts(l)
+		want := Opts{
 			port:              65081,
 			host:              "127.0.0.1",
 			network:           "tcp",
@@ -161,7 +163,7 @@ func TestServer(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)
 
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
@@ -174,26 +176,26 @@ func TestServer(t *testing.T) {
 		port := uint16(65081)
 		uri := "/api"
 		msg := "hello world"
-		mux := NewMux(
+		mux := mux.New(
 			l,
-			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			Routes{
-				NewRoute(
-					uri,
-					MethodGet,
-					someServerTestHandler(msg),
-				),
-			})
+			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
+			nil,
+			mux.NewRoute(
+				uri,
+				mux.MethodGet,
+				someServerTestHandler(msg),
+			),
+		)
 
 		go func() {
-			_, _ = CreateDevCertKey()
+			_, _ = CreateDevCertKey(l)
 			time.Sleep(1 * time.Second)
-			err := Run(mux, DevOpts(), l)
+			err := Run(mux, DevOpts(l), l)
 			attest.Ok(t, err)
 		}()
 
 		// await for the server to start.
-		time.Sleep(7 * time.Second)
+		time.Sleep(11 * time.Second)
 
 		{
 			// https server.
@@ -265,25 +267,25 @@ func TestServer(t *testing.T) {
 		port := math.MaxUint16 - uint16(3)
 		uri := "/api"
 		msg := "hello world"
-		mux := NewMux(
+		mux := mux.New(
 			l,
-			middleware.WithOpts("localhost", port, getSecretKey(), l),
-			Routes{
-				NewRoute(
-					uri,
-					MethodGet,
-					someServerTestHandler(msg),
-				),
-			})
+			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
+			nil,
+			mux.NewRoute(
+				uri,
+				mux.MethodGet,
+				someServerTestHandler(msg),
+			),
+		)
 
 		go func() {
-			certFile, keyFile := CreateDevCertKey()
+			certFile, keyFile := CreateDevCertKey(l)
 			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
 			attest.Ok(t, err)
 		}()
 
 		// await for the server to start.
-		time.Sleep(7 * time.Second)
+		time.Sleep(11 * time.Second)
 
 		runhandler := func() {
 			res, err := client.Get(fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)) // note: the https scheme.

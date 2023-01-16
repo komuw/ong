@@ -1,14 +1,14 @@
-package enc_test
+package cry_test
 
 import (
 	"fmt"
 
-	"github.com/komuw/ong/enc"
+	"github.com/komuw/ong/cry"
 )
 
 func ExampleEnc_Encrypt() {
 	key := "hard-passwd"
-	e := enc.New(key)
+	e := cry.New(key)
 
 	plainTextMsg := "Muziki asili yake - Remmy Ongala." // English: `What is the origin of music by Remmy Ongala`
 	encryptedMsg := e.Encrypt(plainTextMsg)
@@ -19,7 +19,7 @@ func ExampleEnc_Encrypt() {
 
 func ExampleEnc_EncryptEncode() {
 	key := "hard-passwd"
-	e := enc.New(key)
+	e := cry.New(key)
 
 	originalPlainTextMsg := "three little birds."
 	encryptedEncodedMsg := e.EncryptEncode(originalPlainTextMsg)
@@ -36,4 +36,20 @@ func ExampleEnc_EncryptEncode() {
 	fmt.Println(resultantPlainTextMsg)
 
 	// Output: three little birds.
+}
+
+func ExampleHash() {
+	password := "my NSA-hard password"
+	// it is okay to save hashedPasswd to the database, as an example.
+	hashedPasswd, err := cry.Hash(password)
+	if err != nil {
+		panic(err)
+	}
+
+	err = cry.Eql(password, hashedPasswd)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(hashedPasswd)
 }

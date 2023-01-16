@@ -17,7 +17,14 @@ func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) h
 	}
 }
 
-func TestSet(t *testing.T) {
+func setEncryptedHandler(name, value, domain string, mAge time.Duration, secretKey string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		SetEncrypted(r, w, name, value, domain, mAge, secretKey)
+		fmt.Fprint(w, "hello")
+	}
+}
+
+func TestCookies(t *testing.T) {
 	t.Parallel()
 
 	t.Run("set succeds", func(t *testing.T) {
@@ -102,6 +109,74 @@ func TestSet(t *testing.T) {
 		attest.True(t, cookie.Expires.Sub(now) > 1)
 		attest.Equal(t, cookie.HttpOnly, false)
 	})
+
+	t.Run("set encrypted", func(t *testing.T) {
+		t.Parallel()
+
+		name := "logId"
+		value := "hello world are you okay"
+		domain := "localhost"
+		mAge := 23 * time.Hour
+		secretKey := "my secret key"
+		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, len(res.Cookies()), 1)
+		attest.Equal(t, res.Cookies()[0].Name, name)
+
+		cookie := res.Cookies()[0]
+		now := time.Now()
+
+		attest.True(t, cookie.MaxAge >= 1)
+		attest.True(t, cookie.Expires.Sub(now) > 1)
+		attest.Equal(t, cookie.HttpOnly, true)
+
+		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
+		val, err := GetEncrypted(req, cookie.Name, secretKey)
+
+		attest.Ok(t, err)
+		attest.Equal(t, val.Value, value)
+		attest.Equal(t, val.Name, cookie.Name)
+	})
+
+	t.Run("encrypted expired", func(t *testing.T) {
+		t.Parallel()
+
+		name := "logId"
+		value := "hello world are you okay"
+		domain := "localhost"
+		mAge := -23 * time.Hour
+		secretKey := "my secret key"
+		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, len(res.Cookies()), 1)
+		attest.Equal(t, res.Cookies()[0].Name, name)
+
+		cookie := res.Cookies()[0]
+
+		attest.Equal(t, cookie.HttpOnly, true)
+
+		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
+		val, err := GetEncrypted(req, cookie.Name, secretKey)
+
+		attest.Zero(t, val)
+		attest.Error(t, err)
+	})
 }
 
 func deleteHandler(name, value, domain string, mAge time.Duration) http.HandlerFunc {
@@ -136,4 +211,27 @@ func TestDelete(t *testing.T) {
 		cookie := res.Cookies()[1]
 		attest.True(t, cookie.MaxAge < 0)
 	})
+}
+
+var result int //nolint:gochecknoglobals
+
+func BenchmarkSetEncrypted(b *testing.B) {
+	var r int
+	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+	res := httptest.NewRecorder()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		r = testSetEncrypted(req, res)
+	}
+
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	result = r
+}
+
+func testSetEncrypted(req *http.Request, res http.ResponseWriter) int {
+	SetEncrypted(req, res, "name", "value", "example.com", 2*time.Hour, "some-key")
+	return 3
 }

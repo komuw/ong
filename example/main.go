@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -10,47 +10,50 @@ import (
 	"sync"
 	"time"
 
+	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/server"
+	"github.com/komuw/ong/sess"
 )
 
 // Taken mainly from the talk; "How I Write HTTP Web Services after Eight Years" by Mat Ryer
 // 1. https://www.youtube.com/watch?v=rWBSMsLG8po
 // 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
 
+const secretKey = "hard-password"
+
 func main() {
 	api := NewMyApi("someDb")
-	l := log.New(context.Background(), os.Stdout, 1000)
-	secretKey := "hard-password"
-	mux := server.NewMux(
+	l := log.New(os.Stdout, 1000)
+	mux := mux.New(
 		l,
-		middleware.WithOpts("localhost", 65081, secretKey, l),
-		server.Routes{
-			server.NewRoute(
-				"/api",
-				server.MethodPost,
-				api.handleAPI(),
-			),
-			server.NewRoute(
-				"serveDirectory",
-				server.MethodAll,
-				middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
-			),
-			server.NewRoute(
-				"check/",
-				server.MethodAll,
-				api.check(200),
-			),
-			server.NewRoute(
-				"login",
-				server.MethodAll,
-				api.login(),
-			),
-		})
+		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
+		nil,
+		mux.NewRoute(
+			"/api",
+			mux.MethodPost,
+			api.handleAPI(),
+		),
+		mux.NewRoute(
+			"serveDirectory",
+			mux.MethodAll,
+			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
+		),
+		mux.NewRoute(
+			"check/:age/",
+			mux.MethodAll,
+			api.check("world"),
+		),
+		mux.NewRoute(
+			"login",
+			mux.MethodAll,
+			api.login(),
+		),
+	)
 
-	_, _ = server.CreateDevCertKey()
-	err := server.Run(mux, server.DevOpts(), l)
+	err := server.Run(mux, server.DevOpts(l), l)
 	if err != nil {
 		l.Error(err, log.F{"msg": "server.Run error"})
 		os.Exit(1)
@@ -66,7 +69,7 @@ type myAPI struct {
 func NewMyApi(db string) myAPI {
 	return myAPI{
 		db: db,
-		l:  log.New(context.Background(), os.Stdout, 1000),
+		l:  log.New(os.Stdout, 1000),
 	}
 }
 
@@ -76,9 +79,11 @@ func (m myAPI) handleFileServer() http.HandlerFunc {
 	// instead create a folder that only has your templates and server that.
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
-	return func(w http.ResponseWriter, req *http.Request) {
-		m.l.Info(log.F{"msg": "handleFileServer", "redactedURL": req.URL.Redacted()})
-		realHandler(w, req)
+	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
+		reqL.Info(log.F{"msg": "handleFileServer", "redactedURL": r.URL.Redacted()})
+		realHandler(w, r)
 	}
 }
 
@@ -96,9 +101,11 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 	var serverStart time.Time
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
 		// intialize somethings only once for perf
 		once.Do(func() {
-			m.l.Info(log.F{"msg": "called only once during the first request"})
+			reqL.Info(log.F{"msg": "called only once during the first request"})
 			serverStart = time.Now()
 		})
 
@@ -115,22 +122,61 @@ func (m myAPI) handleAPI() http.HandlerFunc {
 }
 
 // you can take arguments for handler specific dependencies
-func (m myAPI) check(code int) http.HandlerFunc {
+func (m myAPI) check(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
 		cspNonce := middleware.GetCspNonce(r.Context())
 		csrfToken := middleware.GetCsrfToken(r.Context())
-		m.l.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
+		reqL.Info(log.F{"msg": "check called", "cspNonce": cspNonce, "csrfToken": csrfToken})
 
-		_, _ = fmt.Fprint(w, "hello from check/ endpoint")
-		// use code, which is a dependency specific to this handler
-		w.WriteHeader(code)
+		cartID := "afakHda8eqL"
+		sess.SetM(r, sess.M{
+			"name":    "John Doe",
+			"age":     "88",
+			"cart_id": cartID,
+		})
+
+		reqL.WithImmediate().Info(log.F{"cart_id": sess.Get(r, "cart_id")})
+		if sess.Get(r, "cart_id") != "" {
+			if sess.Get(r, "cart_id") != cartID {
+				panic("wrong cartID")
+			}
+		}
+
+		age := mux.Param(r.Context(), "age")
+		// use msg, which is a dependency specific to this handler
+		_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
 	}
 }
 
 func (m myAPI) login() http.HandlerFunc {
 	tmpl, err := template.New("myTpl").Parse(`<!DOCTYPE html>
 <html>
-
+<head>
+<link rel="stylesheet" href="https://unpkg.com/mvp.css@1.12/mvp.css">
+<style>
+	:root{
+		/* ovverive variables from mvp.css */
+		--line-height: 1.0;
+		--font-family: system-ui;
+	}
+	html {
+	/*
+	from:
+	  - https://www.swyx.io/css-100-bytes
+	  - https://news.ycombinator.com/item?id=32972768
+	  - https://github.com/andybrewer/mvp
+	  - https://www.joshwcomeau.com/css/full-bleed/
+	  - https://www.joshwcomeau.com/css/custom-css-reset/
+	*/
+		max-width: 70ch;
+		padding: 3em 1em;
+		margin: auto;
+		font-size: 1.0em;
+	}
+</style>
+</head>
 <body>
     <script nonce="{{.CspNonceValue}}">
 	    console.log("hello world");
@@ -153,7 +199,14 @@ func (m myAPI) login() http.HandlerFunc {
 		panic(err)
 	}
 
+	type User struct {
+		Email string
+		Name  string
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
+		reqL := m.l.WithCtx(r.Context())
+
 		if r.Method != http.MethodPost {
 			data := struct {
 				CsrfTokenName  string
@@ -174,6 +227,34 @@ func (m myAPI) login() http.HandlerFunc {
 		if err = r.ParseForm(); err != nil {
 			panic(err)
 		}
+
+		email := r.FormValue("email")
+		firstName := r.FormValue("firstName")
+
+		u := &User{Email: email, Name: firstName}
+
+		s, errM := json.Marshal(u)
+		if errM != nil {
+			panic(errM)
+		}
+
+		cookieName := "ong_example_session_cookie"
+		c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
+		reqL.WithImmediate().Info(log.F{
+			"msg":    "login handler log cookie",
+			"err":    errM,
+			"cookie": c,
+		})
+
+		cookie.SetEncrypted(
+			r,
+			w,
+			cookieName,
+			string(s),
+			"localhost",
+			23*24*time.Hour,
+			secretKey,
+		)
 
 		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
 	}

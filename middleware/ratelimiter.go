@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"math"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -25,25 +24,19 @@ import (
 // rateLimiterSendRate is the rate limit in requests/sec.
 var rateLimiterSendRate = 100.00 //nolint:gochecknoglobals
 
-// RateLimiter is a middleware that limits requests by IP address.
-func RateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+// rateLimiter is a middleware that limits requests by IP address.
+func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	rl := newRl()
-	retryAfter := 15 * time.Minute
+	const retryAfter = 15 * time.Minute
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
 
-		// if `SplitHostPort` returns an error, host will be empty string; which is okay with us.
-		host, _, _ := net.SplitHostPort(
-			// the documentation of `http.Request.RemoteAddr` says:
-			// RemoteAddr is not filled in by ReadRequest and has no defined format.
-			// So we cant rely on it been present, or having a given format.
-			r.RemoteAddr,
-		)
+		host := ClientIP(r)
 		tb := rl.get(host, rateLimiterSendRate)
 
 		if !tb.allow() {
-			err := fmt.Errorf("rate limited, retry after %s", retryAfter)
+			err := fmt.Errorf("ong/middleware: rate limited, retry after %s", retryAfter)
 			w.Header().Set(ongMiddlewareErrorHeader, err.Error())
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(

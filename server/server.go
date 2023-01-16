@@ -13,9 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	ongErrors "github.com/komuw/ong/errors"
+	"github.com/komuw/ong/automax"
 	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/server/automax"
 
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
@@ -33,8 +32,10 @@ type tlsOpts struct {
 	domain string
 }
 
-// opts defines parameters for running an HTTP server.
-type opts struct {
+// Opts are the various parameters(optionals) that can be used to configure a HTTP server.
+//
+// Use either [NewOpts], [DevOpts], [CertOpts] or [LetsEncryptOpts] to get a valid Opts.
+type Opts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
@@ -50,17 +51,32 @@ type opts struct {
 	httpPort      string
 }
 
-// Equal compares two opts for equality.
+// Equal compares two Opts for equality.
 // It was added for testing purposes.
-func (o opts) Equal(other opts) bool {
+func (o Opts) Equal(other Opts) bool {
 	return o == other
 }
 
-// NewOpts returns a new opts.
+// NewOpts returns a new Opts.
 //
-// If certFile is a non-empty string, this will enable tls from certificates found on disk.
-// If email is a non-empty string, this will enable tls from certificates procured from letsencrypt.
-// domain can be an exact domain, subdomain or wildcard.
+// port is the port at which the server should listen on.
+//
+// readHeaderTimeout is the amount of time a server will be allowed to read request headers.
+// readTimeout is the maximum duration a server will use for reading the entire request, including the body.
+// writeTimeout is the maximum duration before a server times out writes of the response.
+// handlerTimeout is the maximum duration that handlers on the server will serve a request before timing out.
+// idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
+//
+// certFile is a path to a tls certificate.
+// keyFile is a path to a tls key.
+//
+// email is the e-address that will be used if/when procuring certificates from [letsencrypt].
+// domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
+//
+// If certFile is a non-empty string, this will enable tls using certificates found on disk.
+// If email is a non-empty string, this will enable tls using certificates procured from [letsencrypt].
+//
+// [letsencrypt]: https://letsencrypt.org/
 func NewOpts(
 	port uint16,
 	readHeaderTimeout time.Duration,
@@ -72,7 +88,7 @@ func NewOpts(
 	keyFile string,
 	email string, // if present, tls will be served from letsencrypt certifiates.
 	domain string,
-) opts {
+) Opts {
 	serverPort := fmt.Sprintf(":%d", port)
 	host := "127.0.0.1"
 	if port == 80 || port == 443 {
@@ -87,7 +103,7 @@ func NewOpts(
 		httpPort = port - 1
 	}
 
-	return opts{
+	return Opts{
 		port:              port,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
@@ -109,24 +125,32 @@ func NewOpts(
 	}
 }
 
-// DevOpts returns a new opts that has sensible defaults for tls, especially for dev environments.
-func DevOpts() opts {
+// DevOpts returns a new Opts that has sensible defaults for tls, especially for dev environments.
+// It also automatically creates the dev certifiates/key by internally calling [CreateDevCertKey]
+func DevOpts(l log.Logger) Opts {
+	if os.Getenv("ONG_RUNNING_IN_TESTS") == "" {
+		// This means we are not in CI. Thus, create dev certificates.
+		//
+		// This function call fails in CI with `permission denied`
+		// since it is trying to create certificates in filesystem.
+		_, _ = CreateDevCertKey(l)
+	}
 	certFile, keyFile := certKeyPaths()
 	return withOpts(65081, certFile, keyFile, "", "localhost")
 }
 
-// CertOpts returns a new opts that has sensible defaults given certFile & keyFile.
-func CertOpts(certFile, keyFile, domain string) opts {
+// CertOpts returns a new Opts that has sensible defaults given certFile & keyFile.
+func CertOpts(certFile, keyFile, domain string) Opts {
 	return withOpts(443, certFile, keyFile, "", domain)
 }
 
-// LetsEncryptOpts returns a new opts that procures certificates from Letsencrypt.
-func LetsEncryptOpts(email, domain string) opts {
+// LetsEncryptOpts returns a new Opts that procures certificates from Letsencrypt.
+func LetsEncryptOpts(email, domain string) Opts {
 	return withOpts(443, "", "", email, domain)
 }
 
-// withOpts returns a new opts that has sensible defaults given port.
-func withOpts(port uint16, certFile, keyFile, email, domain string) opts {
+// withOpts returns a new Opts that has sensible defaults given port.
+func withOpts(port uint16, certFile, keyFile, email, domain string) Opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
@@ -150,13 +174,14 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) opts {
 	)
 }
 
-// Run listens on a network address and then calls Serve to handle requests on incoming connections.
+// Run creates a http server, starts the server on a network address and then calls Serve to handle requests on incoming connections.
 //
 // It sets up a server with the parameters provided by o.
-// If the opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
+// If the Opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
+// Likewise, if the Opts include an email address, the server will accept https traffic and automatically handle http->https redirect.
 //
-// The server shuts down cleanly after receiving any terminating signal.
-func Run(h http.Handler, o opts, l log.Logger) error {
+// The server shuts down cleanly after receiving any termination signal.
+func Run(h http.Handler, o Opts, l log.Logger) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
 
@@ -243,7 +268,7 @@ func sigHandler(
 	}()
 }
 
-func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) error {
+func serve(ctx context.Context, srv *http.Server, o Opts, logger log.Logger) error {
 	{
 		// HTTP(non-tls) LISTERNER:
 		redirectSrv := &http.Server{
@@ -260,7 +285,6 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			redirectSrvCfg := listenerConfig()
 			redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
 			if errL != nil {
-				errL = ongErrors.Wrap(errL)
 				logger.Error(errL, log.F{"msg": "redirect server, unable to create listener"})
 				return
 			}
@@ -270,7 +294,6 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			})
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
-				errRedirectSrv = ongErrors.Wrap(errRedirectSrv)
 				logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
 			}
 		}()
@@ -281,7 +304,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, o.network, o.serverAddress)
 		if err != nil {
-			return ongErrors.Wrap(err)
+			return err
 		}
 		logger.Info(log.F{
 			"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
@@ -292,7 +315,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 			"",
 			"",
 		); errS != nil {
-			return ongErrors.Wrap(errS)
+			return errS
 		}
 	}
 
@@ -300,7 +323,7 @@ func serve(ctx context.Context, srv *http.Server, o opts, logger log.Logger) err
 }
 
 // drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
-func drainDuration(o opts) time.Duration {
+func drainDuration(o Opts) time.Duration {
 	dur := 1 * time.Second
 
 	if o.handlerTimeout > dur {

@@ -2,6 +2,80 @@
 
 Most recent version is listed first.  
 
+
+## v0.0.28
+- ong/id should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
+- Do not quote special characters: https://github.com/komuw/ong/pull/193
+- WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
+
+## v0.0.27
+- Add Get cookie function: https://github.com/komuw/ong/pull/189
+
+## v0.0.26
+- Create middleware that adds the "real" client IP address: https://github.com/komuw/ong/pull/187        
+  Note that this is on a best effort basis.       
+  Finding the true client IP address is a precarious process [1](https://adam-p.ca/blog/2022/03/x-forwarded-for/)      
+
+## v0.0.25
+- ong/client: Use roundTripper for logging: https://github.com/komuw/ong/pull/185
+- Make most middleware private: https://github.com/komuw/ong/pull/186
+
+## v0.0.24
+- Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
+- Add ReloadProtector middleware: https://github.com/komuw/ong/pull/171
+- Creating a new route should panic if handler is already wrapped in an ong middleware: https://github.com/komuw/ong/pull/172
+
+## v0.0.23
+- ong/client: Add log id http header: https://github.com/komuw/ong/pull/166
+
+## v0.0.22
+- Panic/recoverer middleware should include correct stack trace: https://github.com/komuw/ong/pull/164
+- Log client address without port: https://github.com/komuw/ong/pull/165
+
+## v0.0.21
+- Improve performance of calling Csrf middleware multiple times: https://github.com/komuw/ong/pull/161
+
+## v0.0.20
+- Bugfix: When a route conflict is detected, report the correct file & line number: https://github.com/komuw/ong/pull/160
+
+## v0.0.19
+- Fix false positive/negative/whatever route conflict: https://github.com/komuw/ong/pull/157
+
+## v0.0.18
+- Update documentation
+
+## v0.0.17
+- Update documentation
+
+## v0.0.16
+- Add support for http sessions: https://github.com/komuw/ong/pull/154
+- Add ability to specify a custom 404 handler: https://github.com/komuw/ong/pull/155
+
+## v0.0.15
+- Make encrypted cookies more performant: https://github.com/komuw/ong/pull/152
+
+## v0.0.14
+- Update documentation: https://github.com/komuw/ong/pull/151
+
+## v0.0.13
+- Fix bug in parsing cgroup mem values from files: https://github.com/komuw/ong/pull/148
+
+## v0.0.12
+- Prefix errors produced by ong with a constant string: https://github.com/komuw/ong/pull/147
+- Try and mitigate cookie replay attacks: https://github.com/komuw/ong/pull/146
+
+## v0.0.11
+- Add secure/encrypted cookies: https://github.com/komuw/ong/pull/143
+
+## v0.0.10
+- Remove ctx from log.Logger struct: https://github.com/komuw/ong/pull/142
+
+## v0.0.9
+- Add password hashing capabilities: https://github.com/komuw/ong/pull/137
+- Simplify loadshedding implementation: https://github.com/komuw/ong/pull/138
+- Make automax to be a stand-alone package: https://github.com/komuw/ong/pull/139
+- Add a router/muxer with a bit more functionality: https://github.com/komuw/ong/pull/140
+
 ## v0.0.8
 - Improve documentation.
 

@@ -4,6 +4,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -40,7 +41,7 @@ func setMem(c ...config) func() {
 		}
 	}
 
-	n, err := strconv.ParseInt(string(content), 10, 64)
+	n, err := strconv.ParseInt(strings.TrimSpace(string(content)), 10, 64)
 	if err != nil {
 		return undo
 	}

@@ -31,7 +31,7 @@ func TestSecurity(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Security(echoHandler(msg), domain)
+		wrappedHandler := securityHeaders(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -52,7 +52,7 @@ func TestSecurity(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Security(echoHandler(msg), domain)
+		wrappedHandler := securityHeaders(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -86,7 +86,7 @@ func TestSecurity(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Security(echoHandler(msg), domain)
+		wrappedHandler := securityHeaders(echoHandler(msg), domain)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -124,7 +124,7 @@ func TestGetCspNonce(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Security(echoHandler(msg), domain)
+		wrappedHandler := securityHeaders(echoHandler(msg), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)

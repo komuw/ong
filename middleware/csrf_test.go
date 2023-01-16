@@ -9,9 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/komuw/ong/enc"
-
 	"github.com/akshayjshah/attest"
+	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
 )
 
@@ -128,7 +127,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -149,7 +148,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -180,7 +179,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -204,7 +203,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -226,7 +225,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -267,9 +266,9 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
-		reqCsrfTok := id.Random(csrfBytesTokenLength)
+		reqCsrfTok := id.Random(csrfBytesTokenLength * 2)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
@@ -296,11 +295,11 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		enc := enc.New(key)
-		reqCsrfTok := enc.EncryptEncode("msgToEncrypt")
+		enc2 := cry.New(key)
+		reqCsrfTok := enc2.EncryptEncode("msgToEncrypt")
 
 		{
 			// make GET request
@@ -366,7 +365,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		rec := httptest.NewRecorder()
 		postMsg := "my name is John"
@@ -395,11 +394,11 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := Csrf(someCsrfHandler(msg), getSecretKey(), domain)
+		wrappedHandler := csrf(someCsrfHandler(msg), getSecretKey(), domain)
 
 		key := getSecretKey()
-		enc := enc.New(key)
-		reqCsrfTok := enc.EncryptEncode("msgToEncrypt")
+		enc2 := cry.New(key)
+		reqCsrfTok := enc2.EncryptEncode("msgToEncrypt")
 
 		{
 			// make GET request

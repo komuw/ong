@@ -32,12 +32,10 @@ const (
 	cspBytesTokenLength = csrfBytesTokenLength
 )
 
-// Security is a middleware that adds some important HTTP security headers and assigns them sensible default values.
+// securityHeaders is a middleware that adds some important HTTP security headers and assigns them sensible default values.
 //
-// example usage:
-//
-//	middleware.Security(yourHandler(), "example.com")
-func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
+// Some of the headers set are Permissions-Policy, Content-securityHeaders-Policy, X-Content-Type-Options, X-Frame-Options, Cross-Origin-Resource-Policy, Cross-Origin-Opener-Policy, Referrer-Policy & Strict-Transport-securityHeaders
+func securityHeaders(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -113,14 +111,7 @@ func Security(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 	}
 }
 
-// GetCspNonce returns the Content-Security-Policy nonce that was set for that particular request.
-//
-// example usage:
-//
-//	func myHandler(w http.ResponseWriter, r *http.Request) {
-//		cspNonce := middleware.GetCspNonce(r.Context())
-//		_ = cspNonce
-//	}
+// GetCspNonce returns the Content-Security-Policy nonce that was set for the http request in question.
 func GetCspNonce(c context.Context) string {
 	v := c.Value(cspCtxKey)
 	if v != nil {

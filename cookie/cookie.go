@@ -2,8 +2,16 @@
 package cookie
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
+
+	"github.com/komuw/ong/cry"
+	"github.com/komuw/ong/internal/clientip"
 )
 
 const (
@@ -18,7 +26,8 @@ const (
 // Set creates a cookie on the HTTP response.
 //
 // If domain is an empty string, the cookie is set for the current host(excluding subdomains) else it is set for the given domain and its subdomains.
-// If mAge <= 0, a session cookie is created. If jsAccess is false, the cookie will be in-accesible to Javascript.
+// If mAge == 0, a session cookie is created. If mAge < 0, it means delete the cookie now.
+// If jsAccess is false, the cookie will be in-accesible to Javascript.
 // In most cases you should set it to false(exceptions are rare, like when setting a csrf cookie)
 func Set(
 	w http.ResponseWriter,
@@ -34,7 +43,7 @@ func Set(
 	expires := time.Now().UTC().Add(mAge)
 	maxAge := int(mAge.Seconds())
 
-	if mAge <= 0 {
+	if mAge == 0 {
 		// this is a session cookie
 		expires = time.Time{}
 		maxAge = 0
@@ -74,6 +83,160 @@ func Set(
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_the_lifetime_of_a_cookie
 
 	http.SetCookie(w, c)
+}
+
+// Get returns a copy of the named cookie.
+func Get(r *http.Request, name string) (*http.Cookie, error) {
+	c, err := r.Cookie(name)
+	if err != nil {
+		return nil, err
+	}
+
+	c2 := &http.Cookie{
+		Name:     c.Name,
+		Value:    c.Value,
+		Path:     c.Path,
+		Domain:   c.Domain,
+		Expires:  c.Expires,
+		MaxAge:   c.MaxAge,
+		Secure:   c.Secure,
+		HttpOnly: c.HttpOnly,
+		SameSite: c.SameSite,
+		Raw:      c.Raw,
+		// do not add c.Unparsed since it is a slice of strings and caller of GetEncrypted may manipulate it.
+	}
+
+	return c2, nil
+}
+
+// This value should not be changed without thinking about it.
+// The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
+// So `sep` should not be any of those.
+const sep = ":"
+
+var (
+	enc  cry.Enc   //nolint:gochecknoglobals
+	once sync.Once //nolint:gochecknoglobals
+)
+
+// SetEncrypted creates a cookie on the HTTP response.
+// The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
+//
+// Note: While encrypted cookies can guarantee that the data has not been tampered with,
+// that it is all there and correct, and that the clients cannot read its raw value; they cannot guarantee freshness.
+// This means that (similar to plain-text cookies), they are still susceptible to [replay attacks]
+//
+// Also see [Set]
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func SetEncrypted(
+	r *http.Request,
+	w http.ResponseWriter,
+	name string,
+	value string,
+	domain string,
+	mAge time.Duration,
+	secretKey string,
+) {
+	once.Do(func() {
+		enc = cry.New(secretKey)
+	})
+
+	ip := clientip.Get(
+		// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
+		r,
+	)
+	expires := strconv.Itoa(
+		int(
+			time.Now().UTC().Add(mAge).Unix(),
+		),
+	)
+	combined := ip + expires + value
+	encryptedEncodedVal := fmt.Sprintf(
+		"%d%s%d%s%s",
+		len(ip),
+		sep,
+		len(expires),
+		sep,
+		enc.EncryptEncode(combined),
+	)
+
+	Set(
+		w,
+		name,
+		encryptedEncodedVal,
+		domain,
+		mAge,
+		false,
+	)
+}
+
+// GetEncrypted authenticates, un-encrypts and returns a copy of the named cookie with the value decrypted.
+func GetEncrypted(
+	r *http.Request,
+	name string,
+	secretKey string,
+) (*http.Cookie, error) {
+	once.Do(func() {
+		enc = cry.New(secretKey)
+	})
+
+	c, err := Get(r, name)
+	if err != nil {
+		return nil, err
+	}
+
+	subs := strings.Split(c.Value, sep)
+	if len(subs) != 3 {
+		return nil, errors.New("ong/cookie: invalid cookie")
+	}
+
+	lenOfIp, err := strconv.Atoi(subs[0])
+	if err != nil {
+		return nil, err
+	}
+
+	lenOfExpires, err := strconv.Atoi(subs[1])
+	if err != nil {
+		return nil, err
+	}
+
+	decryptedVal, err := enc.DecryptDecode(subs[2])
+	if err != nil {
+		return nil, err
+	}
+
+	ip, expiresStr, val := decryptedVal[:lenOfIp],
+		decryptedVal[lenOfIp:lenOfIp+lenOfExpires],
+		decryptedVal[lenOfIp+lenOfExpires:]
+
+	{
+		// Try and prevent replay attacks.
+		// This does not completely stop them, but it is better than nothing.
+		incomingIP := clientip.Get(
+			// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
+			r,
+		)
+		if ip != incomingIP {
+			return nil, errors.New("ong/cookie: mismatched IP addresses")
+		}
+
+		expires, errP := strconv.ParseInt(expiresStr, 10, 64)
+		if errP != nil {
+			return nil, errP
+		}
+
+		// You cannot trust anything about the incoing cookie except its value.
+		// This is because, it is the only thing that was encrypted/authenticated.
+		// So we cannot use `c.MaxAge` here, since a client could have modified that.
+		diff := expires - time.Now().UTC().Unix()
+		if diff <= 0 {
+			return nil, errors.New("ong/cookie: cookie is expired")
+		}
+	}
+
+	c.Value = val
+	return c, nil
 }
 
 // Delete removes the named cookie.

@@ -1,7 +1,7 @@
-// Package enc provides utilities to carry out encryption and decryption.
+// Package cry provides utilities for cryptography.
 // This library has not been vetted and people are discouraged from using it.
-// Instead use the crypto facilities in the Go standard library and/or golang.org/x/crypto
-package enc
+// Instead, use the cryptography facilities in the Go standard library and/or golang.org/x/crypto
+package cry
 
 import (
 	"crypto/cipher"
@@ -65,13 +65,13 @@ func New(key string) Enc {
 	//
 
 	if len(key) < 4 {
-		panic(errors.New("short key"))
+		panic(errors.New("ong/cry: short key"))
 	}
 
 	// derive a key.
-	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	password := []byte(key)
-	derivedKey, err := scrypt.Key(password, salt, n, r, p, keyLen)
+	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
+	derivedKey, err := deriveKey(password, salt)
 	if err != nil {
 		panic(err)
 	}
@@ -97,7 +97,7 @@ func New(key string) Enc {
 	}
 }
 
-// Encrypt encrypts the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
+// Encrypt, encrypts and authenticates(tamper-proofs) the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
 func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncrypt := []byte(plainTextMsg)
 
@@ -123,10 +123,10 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	return encrypted
 }
 
-// Decrypt un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
+// Decrypt authenticates and un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
 func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if len(encryptedMsg) < e.aead.NonceSize() {
-		return nil, errors.New("ciphertext too short")
+		return nil, errors.New("ong/cry: ciphertext too short")
 	}
 
 	// get salt

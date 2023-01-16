@@ -5,9 +5,10 @@ import (
 	"errors"
 	"mime"
 	"net/http"
+	"sync"
 	"time"
 
-	"github.com/komuw/ong/enc"
+	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
 
 	"github.com/komuw/ong/cookie"
@@ -17,9 +18,13 @@ import (
 //   (a) https://github.com/gofiber/fiber whose license(MIT) can be found here:            https://github.com/gofiber/fiber/blob/v2.34.1/LICENSE
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
-// errCsrfTokenNotFound is returned when a request using a non-safe http method
-// either does not supply a csrf token, or the supplied token is not recognized by the server.
-var errCsrfTokenNotFound = errors.New("csrf token not found")
+var (
+	// errCsrfTokenNotFound is returned when a request using a non-safe http method
+	// either does not supply a csrf token, or the supplied token is not recognized by the server.
+	errCsrfTokenNotFound = errors.New("ong/middleware: csrf token not found")
+	once                 sync.Once //nolint:gochecknoglobals
+	enc                  cry.Enc   //nolint:gochecknoglobals
+)
 
 type csrfContextKey string
 
@@ -49,10 +54,13 @@ const (
 	csrfBytesTokenLength = 32
 )
 
-// Csrf is a middleware that provides protection against Cross Site Request Forgeries.
+// csrf is a middleware that provides protection against Cross Site Request Forgeries.
+//
 // If a csrf token is not provided(or is not valid), when it ought to have been; this middleware will issue a http GET redirect to the same url.
-func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
-	enc := enc.New(secretKey)
+func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
+	once.Do(func() {
+		enc = cry.New(secretKey)
+	})
 	msgToEncrypt := id.Random(16)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -163,14 +171,7 @@ func Csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 	}
 }
 
-// GetCsrfToken returns the csrf token was set for that particular request.
-//
-// example usage:
-//
-//	func myHandler(w http.ResponseWriter, r *http.Request) {
-//		csrfToken := middleware.GetCsrfToken(r.Context())
-//		_ = csrfToken
-//	}
+// GetCsrfToken returns the csrf token that was set for the http request in question.
 func GetCsrfToken(c context.Context) string {
 	v := c.Value(csrfCtxKey)
 	if v != nil {
@@ -211,7 +212,7 @@ func getToken(r *http.Request) (actualToken string) {
 
 	if len(tok) < csrfBytesTokenLength {
 		// Request has presented a token that we probably didn't generate coz this library issues
-		// tokens with le > csrfBytesTokenLength
+		// tokens with len > csrfBytesTokenLength
 		tok = ""
 	}
 

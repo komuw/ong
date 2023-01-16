@@ -24,27 +24,33 @@ import (
 //   (b) https://github.com/sirupsen/logrus whose license(MIT) can be found here: https://github.com/sirupsen/logrus/blob/v1.8.1/LICENSE
 
 type (
-	level             string
+	// Level indicates the severity of a log event/message.
+	Level string
+	// F is the fields to use as a log event/message.
+	F                 map[string]interface{}
 	logContextKeyType string
-	// F is the fields to use as a log message.
-	F map[string]interface{}
 )
 
 const (
-	infoL  level = "info"
-	errorL level = "error"
+	// INFO is the log severity indicating an issue that is informational in nature.
+	INFO Level = "info"
+	// ERROR is the log severity indicating an issue that is critical in nature.
+	ERROR Level = "error"
+	// CtxKey is the name of the context key used to store the logID.
+	CtxKey = logContextKeyType("Ong-logID")
 )
 
-// CtxKey is the name under which this library stores the http cookie, http header and context key for the logID.
-const CtxKey = logContextKeyType("Ong-logID")
-
 // Logger represents an active logging object that generates lines of output to an io.Writer.
+// It stores log messages into a [circular buffer]. All those log events are only flushed to the underlying io.Writer when
+// a message with level [ERROR] is logged.
 //
-// It can be used simultaneously from multiple goroutines.
+// It can be used simultaneously from multiple goroutines. Use [New] to get a valid Logger.
+//
+// [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 type Logger struct {
 	w          io.Writer
 	cBuf       *circleBuf
-	ctx        context.Context
+	logId      string // this is the id that was got from ctx and should be added in all logs.
 	addCallers bool
 	flds       F
 	immediate  bool // log without buffering. important especially when using logger as an output for the stdlib logger.
@@ -52,21 +58,15 @@ type Logger struct {
 
 // todo: add heartbeat in the future.
 
-// New creates a new logger.
-func New(
-	ctx context.Context,
-	w io.Writer,
-	maxMsgs int,
-) Logger {
-	logID := GetId(ctx)
-	ctx = context.WithValue(ctx, CtxKey, logID)
+// New creates a new logger. The returned logger buffers upto maxMsgs log messages in a circular buffer.
+func New(w io.Writer, maxMsgs int) Logger {
 	if maxMsgs < 1 {
 		maxMsgs = 10
 	}
 	return Logger{
 		w:          w,
 		cBuf:       newCirleBuf(maxMsgs),
-		ctx:        ctx,
+		logId:      id.New(),
 		addCallers: false,
 		flds:       nil,
 		immediate:  false,
@@ -75,13 +75,15 @@ func New(
 
 // WithCtx return a new logger, based on l, with the given ctx.
 func (l Logger) WithCtx(ctx context.Context) Logger {
-	logID := GetId(ctx)
-	ctx = context.WithValue(ctx, CtxKey, logID)
-
+	id := l.logId
+	if id2, ok := GetId(ctx); ok {
+		// if ctx did not contain a logId, do not use it.
+		id = id2
+	}
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        ctx,
+		logId:      id,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -97,7 +99,7 @@ func (l Logger) withcaller(add bool) Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        l.ctx,
+		logId:      l.logId,
 		addCallers: add,
 		flds:       l.flds,
 		immediate:  l.immediate,
@@ -109,7 +111,7 @@ func (l Logger) WithFields(f F) Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        l.ctx,
+		logId:      l.logId,
 		addCallers: l.addCallers,
 		flds:       f,
 		immediate:  l.immediate,
@@ -121,19 +123,19 @@ func (l Logger) WithImmediate() Logger {
 	return Logger{
 		w:          l.w,
 		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		ctx:        l.ctx,
+		logId:      l.logId,
 		addCallers: l.addCallers,
 		flds:       l.flds,
 		immediate:  true,
 	}
 }
 
-// Info will log at the Info level.
+// Info will log at the [INFO] level.
 func (l Logger) Info(f F) {
-	l.log(infoL, f)
+	l.log(INFO, f)
 }
 
-// Error will log at the Error level.
+// Error will log at the [ERROR] level.
 func (l Logger) Error(e error, fs ...F) {
 	dst := F{}
 	if e != nil {
@@ -149,18 +151,12 @@ func (l Logger) Error(e error, fs ...F) {
 		}
 	}
 
-	l.log(errorL, dst)
+	l.log(ERROR, dst)
 }
 
 // Write implements the io.Writer interface.
 //
 // This is useful if you want to set this logger as a writer for the standard library log.
-//
-// example usage:
-//
-//	l := log.New(ctx, os.Stdout, 100, true)
-//	stdLogger := stdLog.New(l, "stdlib", stdLog.LstdFlags)
-//	stdLogger.Println("hello world")
 func (l Logger) Write(p []byte) (n int, err error) {
 	n = len(p)
 	if n > 0 && p[n-1] == '\n' {
@@ -176,21 +172,15 @@ func (l Logger) Write(p []byte) (n int, err error) {
 // StdLogger returns a logger from the Go standard library log package.
 //
 // That logger will use l as its output.
-//
-// example usage:
-//
-//	l := log.New(ctx, os.Stdout, 100, true)
-//	stdLogger := l.StdLogger()
-//	stdLogger.Println("hey")
 func (l Logger) StdLogger() *stdLog.Logger {
 	l = l.WithImmediate().WithCaller()
 	return stdLog.New(l, "", 0)
 }
 
-func (l Logger) log(lvl level, f F) {
+func (l Logger) log(lvl Level, f F) {
 	f["level"] = lvl
 	f["timestamp"] = time.Now().UTC()
-	f["logID"] = GetId(l.ctx)
+	f["logID"] = l.logId
 	if l.addCallers {
 		// the caller is the line where `.Info` or `.Error` is called.
 		if _, file, line, ok := runtime.Caller(2); ok {
@@ -205,7 +195,7 @@ func (l Logger) log(lvl level, f F) {
 
 	l.cBuf.store(f)
 
-	if lvl == errorL || l.immediate {
+	if lvl == ERROR || l.immediate {
 		// flush
 		l.flush()
 	}
@@ -214,6 +204,7 @@ func (l Logger) log(lvl level, f F) {
 func (l Logger) flush() {
 	b := &bytes.Buffer{}
 	encoder := json.NewEncoder(b)
+	encoder.SetEscapeHTML(false)
 
 	{
 		l.cBuf.mu.Lock()
@@ -237,16 +228,17 @@ func (l Logger) flush() {
 	l.cBuf.reset()
 }
 
-// GetId returns a logID which is fetched either from the provided context or auto-generated.
-func GetId(ctx context.Context) string {
+// GetId gets a logId either from the provided context or auto-generated.
+// It returns the logID and true if the id came from ctx else false
+func GetId(ctx context.Context) (string, bool) {
 	if ctx != nil {
 		if vCtx := ctx.Value(CtxKey); vCtx != nil {
 			if s, ok := vCtx.(string); ok {
-				return s
+				return s, true
 			}
 		}
 	}
-	return id.New()
+	return id.New(), false
 }
 
 // circleBuf implements a very simple & naive circular buffer.
