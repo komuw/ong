@@ -97,6 +97,42 @@ func TestStackError(t *testing.T) {
 			}
 		})
 
+		t.Run("errors.Dwrap", func(t *testing.T) {
+			t.Parallel()
+
+			openFile := func(p string) (errp error) {
+				defer Dwrap(&errp)
+
+				f, err := os.Open(p)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				return nil
+			}
+
+			err := openFile("/tmp/nonExistentFile-akJGdadE.txt")
+
+			sterr, ok := err.(*stackError)
+			attest.True(t, ok)
+			{
+				// Is, As, Unwrap
+				var targetErr *fs.PathError
+				attest.True(t, stdErrors.Is(err, os.ErrNotExist))
+				attest.NotZero(t, stdErrors.Unwrap(err))
+				attest.True(t, stdErrors.As(err, &targetErr))
+			}
+
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				"ong/errors/errors_test.go:108",
+				"ong/errors/errors_test.go:115",
+			} {
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
+			}
+		})
+
 		t.Run("late wrapping does not affect traces", func(t *testing.T) {
 			t.Parallel()
 
@@ -131,7 +167,7 @@ func TestStackError(t *testing.T) {
 			"ong/errors/errors_test.go:29",
 			"ong/errors/errors_test.go:22",
 			"ong/errors/errors_test.go:16",
-			"ong/errors/errors_test.go:123",
+			"ong/errors/errors_test.go:159",
 		} {
 			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
 		}
