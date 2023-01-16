@@ -4,6 +4,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -13,8 +14,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/komuw/kama"
 	"github.com/komuw/ong/automax"
 	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
 
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
@@ -212,6 +215,47 @@ func Run(h http.Handler, o Opts, l log.Logger) error {
 		IdleTimeout:       o.idleTimeout,
 		ErrorLog:          logger.StdLogger(),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
+		ConnContext: func(inCtx context.Context, c net.Conn) context.Context {
+			if _, ok := c.(*tls.Conn); ok {
+				fmt.Println("\n\n\t It is tls.Conn", "\n.")
+			}
+
+			if _, ok := c.(*net.IPConn); ok {
+				fmt.Println("\n\n\t It is net.IPConn", "\n.")
+			}
+
+			// if _, ok := c.(*net.conn); ok {
+			// 	fmt.Println("\n\n\t It is net.conn", "\n.")
+			// }
+
+			// if _, ok := c.(*net.pipe); ok {
+			// 	fmt.Println("\n\n\t It is net.pipe", "\n.")
+			// }
+
+			if _, ok := c.(*net.TCPConn); ok {
+				fmt.Println("\n\n\t It is net.TCPConn", "\n.")
+			}
+
+			if _, ok := c.(*net.UDPConn); ok {
+				fmt.Println("\n\n\t It is net.UDPConn", "\n.")
+			}
+
+			if _, ok := c.(*net.UnixConn); ok {
+				fmt.Println("\n\n\t It is net.UnixConn", "\n.")
+			}
+			fmt.Printf("\n\n\t  conn: %+#v (%+#T)\n\n.", c, c)
+
+			kama.Dirp(c)
+
+			newCtx := context.WithValue(
+				inCtx,
+				// using this custom key is important, instead of using `logIDKey`
+				middleware.ServerConnCtxKey,
+				"KOMU-STUFF",
+			)
+
+			return newCtx
+		},
 	}
 
 	drainDur := drainDuration(o)

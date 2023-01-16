@@ -205,8 +205,18 @@ func (m myAPI) login() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// kama.Dirp(r.TLS)
-		// fmt.Println("\n\n\t  version: ", r.TLS.Version, "\n.")
+		{
+			// kama.Dirp(r.TLS)
+			// fmt.Println("\n\n\t  version: ", r.TLS.Version, "\n.")
+			ctx := r.Context()
+			fmt.Println("\n\t try and get ServerConnCtxKey.")
+			if vCtx := ctx.Value(middleware.ServerConnCtxKey); vCtx != nil {
+				if s, ok := vCtx.(string); ok {
+					fmt.Println("\n\n\t ServerConnCtxKey: ", s)
+				}
+			}
+		}
+
 		reqL := m.l.WithCtx(r.Context())
 
 		if r.Method != http.MethodPost {

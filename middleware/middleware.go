@@ -32,6 +32,10 @@ import (
 // Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
 const ongMiddlewareErrorHeader = "Ong-Middleware-Error"
 
+type serverConnContextKeyType string
+
+const ServerConnCtxKey = serverConnContextKeyType("serverConnContextKeyType")
+
 // Opts are the various parameters(optionals) that can be used to configure middlewares.
 //
 // Use either [New] or [WithOpts] to get a valid Opts.
