@@ -53,7 +53,7 @@ func main() {
 		),
 	)
 
-	err := server.Run(mux, server.DevOpts(), l)
+	err := server.Run(mux, server.DevOpts(l), l)
 	if err != nil {
 		l.Error(err, log.F{"msg": "server.Run error"})
 		os.Exit(1)
