@@ -212,6 +212,7 @@ func (m myAPI) login() http.HandlerFunc {
 			fmt.Println("\n\t try and get ServerConnCtxKey.")
 			if vCtx := ctx.Value(middleware.ServerConnCtxKey); vCtx != nil {
 				if s, ok := vCtx.(string); ok {
+					// This works.
 					fmt.Println("\n\n\t ServerConnCtxKey: ", s)
 				}
 			}
