@@ -209,13 +209,21 @@ func (m myAPI) login() http.HandlerFunc {
 			// kama.Dirp(r.TLS)
 			// fmt.Println("\n\n\t  version: ", r.TLS.Version, "\n.")
 			ctx := r.Context()
-			fmt.Println("\n\t try and get ServerConnCtxKey.")
+			fmt.Println("\n Inside handler.")
 			if vCtx := ctx.Value(middleware.ServerConnCtxKey); vCtx != nil {
 				if s, ok := vCtx.(string); ok {
 					// This works.
-					fmt.Println("\n\n\t ServerConnCtxKey: ", s)
+					fmt.Println("\t middleware.ServerConnCtxKey: ", s)
 				}
 			}
+
+			if vCtx := ctx.Value(http.ServerContextKey); vCtx != nil {
+				if s, ok := vCtx.(*http.Server); ok {
+					// This works.
+					fmt.Println("\t http.ServerContextKey: ", s)
+				}
+			}
+
 		}
 
 		reqL := m.l.WithCtx(r.Context())

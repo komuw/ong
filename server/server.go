@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/komuw/kama"
 	"github.com/komuw/ong/automax"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -214,45 +213,23 @@ func Run(h http.Handler, o Opts, l log.Logger) error {
 		WriteTimeout:      o.writeTimeout,
 		IdleTimeout:       o.idleTimeout,
 		ErrorLog:          logger.StdLogger(),
-		BaseContext:       func(net.Listener) context.Context { return ctx },
+		BaseContext: func(inList net.Listener) context.Context {
+			fmt.Printf("\n\n\t BaseContext. typeOf inList: (%+#T)\n\n.", inList)
+			return ctx
+		},
 		ConnContext: func(inCtx context.Context, c net.Conn) context.Context {
-			if _, ok := c.(*tls.Conn); ok {
-				fmt.Println("\n\n\t It is tls.Conn", "\n.")
-			}
+			// *tls.Conn
+			// *net.IPConn
+			// *net.conn
+			// *net.pipe
+			// 	*net.TCPConn
+			// 	*net.UDPConn
+			// 	*net.UnixConn
+			// 	*KomuConn
 
-			if _, ok := c.(*net.IPConn); ok {
-				fmt.Println("\n\n\t It is net.IPConn", "\n.")
-			}
-
-			// if _, ok := c.(*net.conn); ok {
-			// 	fmt.Println("\n\n\t It is net.conn", "\n.")
-			// }
-
-			// if _, ok := c.(*net.pipe); ok {
-			// 	fmt.Println("\n\n\t It is net.pipe", "\n.")
-			// }
-
-			if _, ok := c.(*net.TCPConn); ok {
-				fmt.Println("\n\n\t It is net.TCPConn", "\n.")
-			}
-
-			if _, ok := c.(*net.UDPConn); ok {
-				fmt.Println("\n\n\t It is net.UDPConn", "\n.")
-			}
-
-			if _, ok := c.(*net.UnixConn); ok {
-				fmt.Println("\n\n\t It is net.UnixConn", "\n.")
-			}
-			fmt.Printf("\n\n\t  conn: %+#v (%+#T)\n\n.", c, c)
-
-			kama.Dirp(c)
-
-			newCtx := context.WithValue(
-				inCtx,
-				// using this custom key is important, instead of using `logIDKey`
-				middleware.ServerConnCtxKey,
-				"KOMU-STUFF",
-			)
+			fmt.Printf("\n\n\t ConnContext. typeOfConn: (%+#T)\n\n.", c)
+			// kama.Dirp(c)
+			newCtx := context.WithValue(inCtx, middleware.ServerConnCtxKey, "KOMU-STUFF")
 
 			return newCtx
 		},
@@ -313,6 +290,11 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o Opts, logger log.Logger) error {
+	tlsConf, errTc := getTlsConfig(o)
+	if errTc != nil {
+		return errTc
+	}
+
 	{
 		// HTTP(non-tls) LISTERNER:
 		redirectSrv := &http.Server{
@@ -336,7 +318,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger log.Logger) err
 			logger.Info(log.F{
 				"msg": fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr),
 			})
-			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
+			errRedirectSrv := redirectSrv.Serve(&komuListener{redirectSrvListener, "Komu", "", tlsConf})
 			if errRedirectSrv != nil {
 				logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
 			}
@@ -353,6 +335,8 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger log.Logger) err
 		logger.Info(log.F{
 			"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
 		})
+
+		l = &komuListener{l, "Komu", "", tlsConf}
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`
@@ -416,4 +400,37 @@ func listenerConfig() *net.ListenConfig {
 			})
 		},
 	}
+}
+
+// ////////////////
+type komuListener struct {
+	net.Listener
+	Name    string
+	ja3     string
+	tlsConf *tls.Config
+}
+
+func (l *komuListener) Accept() (net.Conn, error) {
+	c, errLa := l.Listener.Accept()
+	if errLa != nil {
+		return nil, errLa
+	}
+
+	// *net.TCPConn
+	fmt.Printf("\n\n\t  accept typeOfConn: (%+#T)\n\n.", c)
+
+	kc := &KomuConn{Conn: c, Name: l.Name}
+	// cc := tls.Server(kc, l.tlsConf)
+	cc := kc
+
+	// tc := &KomuConn{Conn: c, Name: l.Name}
+	return cc, nil
+}
+
+// KomuConn wraps a net.KomuConn, and sets a deadline for every read
+// and write operation.
+type KomuConn struct {
+	net.Conn
+	Name string
+	ja3  string
 }

@@ -45,6 +45,18 @@ func Wrap(err error) error {
 	return wrap(err, 3)
 }
 
+// Dwrap mutates an error adding stack trace to it.
+// It does nothing when *errp == nil.
+//
+// Example:
+//
+//	defer errors.Dwrap(&err)
+func Dwrap(errp *error) {
+	if *errp != nil {
+		*errp = wrap(*errp, 3)
+	}
+}
+
 func wrap(err error, skip int) error {
 	stack := [4]uintptr{}
 	// skip 0 identifies the frame for `runtime.Callers` itself and

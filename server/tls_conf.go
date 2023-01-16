@@ -142,6 +142,16 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 					}
 					fmt.Println("\n\t ja3 ss: ", s)
 					fmt.Println("\t ja3Hash: ", ja3Hash(s), "\n.")
+
+					{
+						connXX := info.Conn
+						fmt.Printf("\n\n\t  getTlsConfig typeOfConn: (%+#T)\n\n.", connXX)
+
+						if connYY, ok := info.Conn.(*KomuConn); ok {
+							connYY.ja3 = ja3Hash(s)
+							fmt.Println("\n\t connYY: ", connYY.ja3)
+						}
+					}
 				}
 				return &c, nil
 			},
