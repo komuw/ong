@@ -15,7 +15,7 @@ import (
 
 // stackError is an implementation of error that adds stack trace support and error wrapping.
 type stackError struct {
-	stack [4]uintptr
+	stack []uintptr
 	err   error
 }
 
@@ -51,14 +51,17 @@ func wrap(err error, skip int) error {
 		return err
 	}
 
-	stack := [4]uintptr{}
+	// limit stack size to 64 call depth.
+	// `pkgsite/derrors` limits it to 16K(16 * 1024)
+	// https://github.com/golang/pkgsite/blob/035bfc02f3faa0221e0edf90b0a21d3619c95fdd/internal/derrors/derrors.go#L261-L264
+	stack := [64]uintptr{}
 	// skip 0 identifies the frame for `runtime.Callers` itself and
 	// skip 1 identifies the caller of `runtime.Callers`(ie of `wrap`).
-	_ = runtime.Callers(skip, stack[:])
+	n := runtime.Callers(skip, stack[:])
 
 	return &stackError{
 		err:   err,
-		stack: stack,
+		stack: stack[:n],
 	}
 }
 
