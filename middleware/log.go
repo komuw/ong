@@ -204,7 +204,8 @@ func getLogId(req *http.Request) string {
 	}
 
 	fromCtx := func(ctx context.Context) string {
-		return log.GetId(ctx)
+		id, _ := log.GetId(ctx)
+		return id
 	}
 
 	// get logid in order of preference;
