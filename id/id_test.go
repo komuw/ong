@@ -53,4 +53,15 @@ func TestNew(t *testing.T) {
 			attest.NotZero(t, got)
 		}
 	})
+
+	t.Run("range", func(t *testing.T) {
+		t.Parallel()
+
+		for i := 1; i <= 10_001; i++ {
+			got := Random(i)
+			attest.NotZero(t, got)
+			_len := len(got)
+			attest.Equal(t, _len, i, attest.Sprintf("input(%d), got len(%d) ", i, _len))
+		}
+	})
 }

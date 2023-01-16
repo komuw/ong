@@ -53,5 +53,5 @@ func Random(n int) string {
 		_, _ = mathRand.Read(b) // docs say that it always returns a nil error.
 	}
 
-	return enc.EncodeToString(b)
+	return enc.EncodeToString(b)[:n]
 }
