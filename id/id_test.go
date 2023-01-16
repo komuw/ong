@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"golang.org/x/exp/slices"
 )
 
 func TestNew(t *testing.T) {
@@ -62,6 +63,24 @@ func TestNew(t *testing.T) {
 			attest.NotZero(t, got)
 			_len := len(got)
 			attest.Equal(t, _len, i, attest.Sprintf("input(%d), got len(%d) ", i, _len))
+		}
+	})
+
+	t.Run("no dupes", func(t *testing.T) {
+		t.Parallel()
+
+		seen := []string{}
+		for i := 1; i <= 10_001; i++ {
+			got := New()
+			attest.NotZero(t, got)
+			_len := len(got)
+			attest.Equal(t, _len, 16, attest.Sprintf("input(%d), got len(%d) ", i, _len))
+
+			if slices.Contains(seen, got) {
+				t.Fatal("Random produced duplicates")
+			} else {
+				seen = append(seen, got)
+			}
 		}
 	})
 }
