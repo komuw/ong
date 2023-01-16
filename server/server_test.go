@@ -195,7 +195,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		time.Sleep(7 * time.Second)
+		time.Sleep(11 * time.Second)
 
 		{
 			// https server.
@@ -285,7 +285,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		time.Sleep(7 * time.Second)
+		time.Sleep(11 * time.Second)
 
 		runhandler := func() {
 			res, err := client.Get(fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)) // note: the https scheme.
