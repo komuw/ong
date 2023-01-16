@@ -110,7 +110,6 @@ type tb struct {
 	tokens float64
 	// +checklocks:mu
 	delayForTokens time.Duration
-	// +checklocks:mu
 	// updatedAt is the time at which this operation took place.
 	// We could have ideally used a `time.Time` as its type; but we wanted the latency struct to be minimal in size.
 	// +checklocks:mu
