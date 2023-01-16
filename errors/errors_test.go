@@ -48,6 +48,10 @@ func open(p string) error {
 	return nil
 }
 
+func lateWrapping() error {
+	return Wrap(hello())
+}
+
 func TestStackError(t *testing.T) {
 	t.Parallel()
 
@@ -68,7 +72,7 @@ func TestStackError(t *testing.T) {
 				"ong/errors/errors_test.go:29",
 				"ong/errors/errors_test.go:22",
 				"ong/errors/errors_test.go:16",
-				"ong/errors/errors_test.go:60",
+				"ong/errors/errors_test.go:64",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -87,7 +91,7 @@ func TestStackError(t *testing.T) {
 			for _, v := range []string{
 				"ong/errors/errors_test.go:44",
 				"ong/errors/errors_test.go:35",
-				"ong/errors/errors_test.go:80",
+				"ong/errors/errors_test.go:84",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -108,7 +112,7 @@ func TestStackError(t *testing.T) {
 			"ong/errors/errors_test.go:29",
 			"ong/errors/errors_test.go:22",
 			"ong/errors/errors_test.go:16",
-			"ong/errors/errors_test.go:100",
+			"ong/errors/errors_test.go:104",
 		} {
 			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
 		}
