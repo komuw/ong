@@ -91,7 +91,6 @@ func loadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 type latencyQueue struct {
 	mu sync.Mutex // protects sl
-
 	/*
 		unsafe.Sizeof(sl) == 8bytes.
 		latency is how long the operation took(ie latency)
@@ -100,6 +99,7 @@ type latencyQueue struct {
 		Since [latencyQueue.reSize] is called oftenly; all the latencies in the queue will
 		aways be within `samplingPeriod` give or take.
 	*/
+	// +checklocks:mu
 	sl []time.Duration
 }
 

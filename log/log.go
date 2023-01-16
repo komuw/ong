@@ -243,8 +243,10 @@ func GetId(ctx context.Context) (string, bool) {
 
 // circleBuf implements a very simple & naive circular buffer.
 type circleBuf struct {
-	mu      sync.Mutex // protects buf
-	buf     []F
+	mu sync.Mutex // protects buf
+	// +checklocks:mu
+	buf []F
+
 	maxSize int
 }
 
