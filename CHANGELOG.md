@@ -3,9 +3,7 @@
 Most recent version is listed first.  
 
 
-## v0.0.28
-- ong/id should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
-- Do not quote special characters: https://github.com/komuw/ong/pull/193
+## v0.0.29
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
 - ong/errors; wrap as deep as possible: https://github.com/komuw/ong/pull/199
 - ong/errors; add errors.Dwrap: https://github.com/komuw/ong/pull/200
@@ -13,6 +11,10 @@ Most recent version is listed first.
 - Do not use math/rand in encryption: https://github.com/komuw/ong/pull/203
 - Improve examples: https://github.com/komuw/ong/pull/204
 - Do not duplicate session cookies: https://github.com/komuw/ong/pull/206
+
+## v0.0.28
+- ong/id should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
+- Do not quote special characters: https://github.com/komuw/ong/pull/193
 
 ## v0.0.27
 - Add Get cookie function: https://github.com/komuw/ong/pull/189
