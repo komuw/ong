@@ -144,18 +144,12 @@ func TestSession(t *testing.T) {
 		name := "John Doe"
 		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain)
 
-		ts := httptest.NewServer(
-			wrappedHandler,
-		)
-		t.Cleanup(func() {
-			ts.Close()
-		})
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
 
-		res, err := ts.Client().Get(ts.URL)
-		attest.Ok(t, err)
-		t.Cleanup(func() {
-			res.Body.Close()
-		})
+		res := rec.Result()
+		defer res.Body.Close()
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
