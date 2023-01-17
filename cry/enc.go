@@ -8,8 +8,6 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
-	mathRand "math/rand"
-	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
@@ -177,16 +175,7 @@ func (e Enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err
 func random(n1, n2 int) []byte {
 	b := make([]byte, n1, n2)
 	if _, err := cryptoRand.Read(b); err != nil {
-		b = make([]byte, n1, n2)
-		//
-		// Since this func(rand()) is called in encrypt, Is it safe to use mathRand here?
-		// According to agl(the one and only);
-		// "The nonce itself does not have to be random, it can be a counter. But it absolutely must be unique"
-		// "You can send the nonce in the clear before each message; so long as it's unique."
-		// see: https://crypto.stackexchange.com/a/5818
-		//
-		mathRand.Seed(time.Now().UTC().UnixNano()) // this codepath is rarely executed so we can put all the code here instead of global var.
-		_, _ = mathRand.Read(b)                    // docs say that it always returns a nil error.
+		panic(err)
 	}
 	return b
 }
