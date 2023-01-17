@@ -11,6 +11,7 @@ Most recent version is listed first.
 - Do not use math/rand in encryption: https://github.com/komuw/ong/pull/203
 - Improve examples: https://github.com/komuw/ong/pull/204
 - Do not duplicate session cookies: https://github.com/komuw/ong/pull/206
+- Fix changelog versions: https://github.com/komuw/ong/pull/207
 
 ## v0.0.28
 - ong/id should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
