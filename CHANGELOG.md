@@ -12,6 +12,7 @@ Most recent version is listed first.
 - ong/id, bug fix where ids generated were not always of the requested length; https://github.com/komuw/ong/pull/201
 - Do not use math/rand in encryption: https://github.com/komuw/ong/pull/203
 - Improve examples: https://github.com/komuw/ong/pull/204
+- Do not duplicate session cookies: https://github.com/komuw/ong/pull/206
 
 ## v0.0.27
 - Add Get cookie function: https://github.com/komuw/ong/pull/189
