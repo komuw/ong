@@ -69,7 +69,7 @@ func newSessRW(
 	}
 }
 
-// Write save session data.
+// Write saves session data.
 func (srw *sessRW) Write(b []byte) (int, error) {
 	// 3. Save session cookie to response.
 
