@@ -11,16 +11,16 @@ import (
 
 func main() {
 	const secretKey = "hard-password"
-	api := NewMyApi("someDb")
+	api := NewApp("someDb")
 	l := log.New(os.Stdout, 1000)
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
-			"/api",
+			"/health",
 			mux.MethodPost,
-			api.handleAPI(),
+			api.health(),
 		),
 		mux.NewRoute(
 			"serveDirectory",
