@@ -50,7 +50,7 @@ var (
 	_ http.Hijacker       = &sessRW{}
 	_ http.Pusher         = &sessRW{}
 	_ io.ReaderFrom       = &sessRW{}
-	// _ http.CloseNotifier  = &logRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
+	// _ http.CloseNotifier  = &sessRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
 func newSessRW(
@@ -67,7 +67,7 @@ func newSessRW(
 	}
 }
 
-// Write recodes the size of bytes sent for logging purposes.
+// Write save session data.
 func (srw *sessRW) Write(b []byte) (int, error) {
 	// 3. Save session cookie to response.
 
