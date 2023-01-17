@@ -157,7 +157,6 @@ func TestSession(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Subsequence(t, string(rb), name)
 
-		fmt.Println("\n\t res.Cookies(): ", res.Cookies(), "\n.", res.Header.Get("set-cookie"), "\n.")
 		attest.Equal(t, len(res.Cookies()), 1)
 		attest.Equal(t, res.Cookies()[0].Name, sess.CookieName)
 		attest.NotZero(t, res.Cookies()[0].Value)
