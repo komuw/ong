@@ -56,7 +56,6 @@ func templateVarsHandler(t *testing.T, name string) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		return
 	}
 }
 
