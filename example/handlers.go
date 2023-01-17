@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -12,35 +13,15 @@ import (
 
 	"github.com/komuw/ong/client"
 	"github.com/komuw/ong/cookie"
+	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/sess"
+	"github.com/komuw/ong/xcontext"
 )
-
-// TODO: remove this checklist
-/*
-Things we need to showcase.
-1. csrf tokens.                   - DONE(login)
-2. csp tokens.                    - DONE(login)
-3. encrypted cookies(get & set)   - DONE(login)
-4. use of safe http client.       - DONE(health)
-5. encryption/decryption.         - DONE(health)  TODO:
-6. Hashing passwords.             - DONE(login)
-7. error wrapping.                 - DONE(health)
-8. error Dwrap                     - DONE(health)
-9. id.New()                        - DONE(health)
-10. logging.                       - DONE(handleFileServer)
-    - WithCtx                      - DONE(handleFileServer)
-	- stdlib.                      - DONE(handleFileServer)
-11. middleware.clientIp            - DONE(handleFileServer)
-12. middleware.ClientIPstrategy    - DONE(main func.)
-13. mux.Param                      - DONE(check)
-14. session.Get and set.           - DONE(check)
-15. xcontext.Detach                - DONE(check)
-*/
 
 // app represents component as a struct, shared dependencies as fields, no global state.
 type app struct {
@@ -57,17 +38,15 @@ func NewApp(db string) app {
 }
 
 // health handler showcases the use of:
-// - safe http client.
 // - encryption/decryption.
-// - error wrapping.
 // - random id.
-func (a app) health() http.HandlerFunc {
+func (a app) health(secretKey string) http.HandlerFunc {
 	var (
 		once        sync.Once
 		serverBoot  time.Time = time.Now().UTC()
 		serverStart time.Time
-		cli         = client.Safe(a.l)
 		serverID    = id.New()
+		enc         = cry.New(secretKey)
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -76,49 +55,32 @@ func (a app) health() http.HandlerFunc {
 			serverStart = time.Now().UTC()
 		})
 
-		makeReq := func(url string) (code int, errp error) {
-			defer errors.Dwrap(&errp)
+		encryptedSrvID := enc.EncryptEncode(serverID)
 
-			req, err := http.NewRequestWithContext(r.Context(), "GET", url, nil)
-			if err != nil {
-				return 0, err
-			}
-			resp, err := cli.Do(req)
-			if err != nil {
-				return 0, err
-			}
-			defer resp.Body.Close()
-
-			return resp.StatusCode, nil
-		}
-
-		code, err := makeReq("https://example.com")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		res := fmt.Sprintf("serverBoot=%s, serverStart=%s, serverId=%s, statusCode=%d\n", serverBoot, serverStart, serverID, code)
+		res := fmt.Sprintf("serverBoot=%s, serverStart=%s, serverId=%s\n", serverBoot, serverStart, encryptedSrvID)
 		_, _ = io.WriteString(w, res)
 	}
 }
 
 // check handler showcases the use of:
-// - mux.Param
-// - sessions
-// - xcontext.Detach
+// - mux.Param.
+// - sessions.
+// - xcontext.Detach.
+// - safe http client.
+// - error wrapping.
 func (a app) check(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		reqL := a.l.WithCtx(r.Context())
+	cli := client.Safe(a.l)
 
+	return func(w http.ResponseWriter, r *http.Request) {
 		cartID := "afakHda8eqL"
+
+		age := mux.Param(r.Context(), "age")
 		sess.SetM(r, sess.M{
 			"name":    "John Doe",
-			"age":     "88",
+			"age":     age,
 			"cart_id": cartID,
 		})
 
-		reqL.WithImmediate().Info(log.F{"cart_id": sess.Get(r, "cart_id")})
 		if sess.Get(r, "cart_id") != "" {
 			if sess.Get(r, "cart_id") != cartID {
 				http.Error(w, "wrong cartID", http.StatusBadRequest)
@@ -126,8 +88,35 @@ func (a app) check(msg string) http.HandlerFunc {
 			}
 		}
 
-		age := mux.Param(r.Context(), "age")
-		// use msg, which is a dependency specific to this handler
+		go func(ctx context.Context) {
+			makeReq := func(url string) (code int, errp error) {
+				defer errors.Dwrap(&errp)
+
+				req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+				if err != nil {
+					return 0, err
+				}
+				resp, err := cli.Do(req)
+				if err != nil {
+					return 0, err
+				}
+				defer resp.Body.Close()
+
+				return resp.StatusCode, nil
+			}
+
+			l := a.l.WithCtx(ctx)
+			code, err := makeReq("https://example.com")
+			if err != nil {
+				l.Error(err)
+			}
+			l.Info(log.F{"msg": "req succeded", "code": code})
+		}(
+			// we need to detach context,
+			// since this goroutine can outlive the http request lifecycle.
+			xcontext.Detach(r.Context()),
+		)
+
 		_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
 	}
 }
@@ -171,11 +160,13 @@ func (a app) login(secretKey string) http.HandlerFunc {
 
 	<h2>Welcome to awesome website.</h2>
 	<form method="POST">
-	<label>Email:</label><br>
-	<input type="text" id="email" name="email"><br>
 	<label>First Name:</label><br>
 	<input type="text" id="firstName" name="firstName"><br>
-
+	<label>Email:</label><br>
+	<input type="text" id="email" name="email"><br>
+	<label>Password:</label><br>
+	<input type="password" id="password" name="password"><br>
+	
 	<input type="hidden" id="{{.CsrfTokenName}}" name="{{.CsrfTokenName}}" value="{{.CsrfTokenValue}}"><br>
 	<input type="submit">
 	</form>
@@ -219,6 +210,7 @@ func (a app) login(secretKey string) http.HandlerFunc {
 
 		email := r.FormValue("email")
 		firstName := r.FormValue("firstName")
+		password := r.FormValue("password")
 
 		u := &User{Email: email, Name: firstName}
 
@@ -228,7 +220,7 @@ func (a app) login(secretKey string) http.HandlerFunc {
 			return
 		}
 
-		cookieName := "ong_example_session_cookie"
+		cookieName := "example_session_cookie"
 		c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
 		reqL.WithImmediate().Info(log.F{
 			"msg":    "login handler log cookie",
@@ -245,6 +237,13 @@ func (a app) login(secretKey string) http.HandlerFunc {
 			23*24*time.Hour,
 			secretKey,
 		)
+
+		hashedPasswd, err := cry.Hash(password)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		a.db = hashedPasswd
 
 		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
 	}

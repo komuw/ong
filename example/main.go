@@ -20,7 +20,7 @@ func main() {
 		mux.NewRoute(
 			"/health",
 			mux.MethodPost,
-			api.health(),
+			api.health(secretKey),
 		),
 		mux.NewRoute(
 			"serveDirectory",
