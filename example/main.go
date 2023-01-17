@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	const secretKey = "hard-password"
+	const secretKey = "super-h@rd-pa$$word"
 	api := NewApp("someDb")
 	l := log.New(os.Stdout, 1000)
 	mux := mux.New(
