@@ -247,9 +247,9 @@ func (a app) login(secretKey string) http.HandlerFunc {
 		existingPasswdHash := a.db.Get("passwd")
 		if e := cry.Eql(password, existingPasswdHash); e != nil {
 			// passwd did not exist before.
-			hashedPasswd, err := cry.Hash(password)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			hashedPasswd, errH := cry.Hash(password)
+			if errH != nil {
+				http.Error(w, errH.Error(), http.StatusInternalServerError)
 				return
 			}
 			a.db.Set("passwd", hashedPasswd)
