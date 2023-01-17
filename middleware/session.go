@@ -39,6 +39,7 @@ type sessRW struct {
 	r         *http.Request
 	domain    string
 	secretKey string
+	written   bool
 }
 
 var (
@@ -64,6 +65,7 @@ func newSessRW(
 		r:              r,
 		domain:         domain,
 		secretKey:      secretKey,
+		written:        false,
 	}
 }
 
@@ -76,13 +78,16 @@ func (srw *sessRW) Write(b []byte) (int, error) {
 	// According to: https://pkg.go.dev/net/http#ResponseWriter
 	// Changing the header map after a call to WriteHeader/Write has no effect unless in some specific cases.
 	// Thus, we call sess.Save here just before any call to `ResponseWriter.Write` goes through.
-	sess.Save(
-		srw.r,
-		srw.ResponseWriter,
-		srw.domain,
-		sessionMaxAge,
-		srw.secretKey,
-	)
+	if !srw.written {
+		sess.Save(
+			srw.r,
+			srw.ResponseWriter,
+			srw.domain,
+			sessionMaxAge,
+			srw.secretKey,
+		)
+		srw.written = true
+	}
 
 	return srw.ResponseWriter.Write(b)
 }
