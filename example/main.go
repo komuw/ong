@@ -18,10 +18,6 @@ import (
 	"github.com/komuw/ong/sess"
 )
 
-// Taken mainly from the talk; "How I Write HTTP Web Services after Eight Years" by Mat Ryer
-// 1. https://www.youtube.com/watch?v=rWBSMsLG8po
-// 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
-
 const secretKey = "hard-password"
 
 func main() {
