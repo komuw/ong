@@ -23,16 +23,22 @@ import (
 	"github.com/komuw/ong/xcontext"
 )
 
+// db is a dummy database.
+type db interface {
+	Get(key string) string
+	Set(key, value string)
+}
+
 // app represents component as a struct, shared dependencies as fields, no global state.
 type app struct {
-	db string
+	db db
 	l  log.Logger
 }
 
 // NewApp creates a new app.
-func NewApp(db string) app {
+func NewApp(d db) app {
 	return app{
-		db: db,
+		db: d,
 		l:  log.New(os.Stdout, 1000),
 	}
 }
@@ -243,7 +249,7 @@ func (a app) login(secretKey string) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		a.db = hashedPasswd
+		a.db.Set("passwd", hashedPasswd)
 
 		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
 	}

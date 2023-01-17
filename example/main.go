@@ -11,7 +11,7 @@ import (
 
 func main() {
 	const secretKey = "super-h@rd-pa$$word"
-	api := NewApp("someDb")
+	api := NewApp(myDB{map[string]string{}})
 	l := log.New(os.Stdout, 1000)
 	mux := mux.New(
 		l,
@@ -45,3 +45,9 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+// myDB implements a dummy in-memory database.
+type myDB struct{ m map[string]string }
+
+func (m myDB) Get(key string) string { return "" }
+func (m myDB) Set(key, value string) {}
