@@ -52,7 +52,7 @@ func (s cHandler) WithGroup(name string) slog.Handler {
 }
 
 // TODO: rename receiver from `s`
-func (s cHandler) Handle(r slog.Record) (err error) {
+func (s cHandler) Handle(r slog.Record) error {
 	// TODO: make sure time is in UTC.
 	id, _ := GetId(r.Context)
 	// TODO: we should only call `r.AddAttrs` once in this entire method.
@@ -74,17 +74,21 @@ func (s cHandler) Handle(r slog.Record) (err error) {
 		}
 	})
 
+	var err error
 	if r.Level >= slog.LevelError {
 		s.cBuf.mu.Lock()
 		for _, v := range s.cBuf.buf {
-			_ = v
-			return s.h.Handle(r)
+			if e := s.h.Handle(v); e != nil {
+				err = e
+			}
 		}
 		s.cBuf.mu.Unlock()
-
+		s.cBuf.reset()
+	} else {
+		s.cBuf.store(r)
 	}
 
-	return
+	return err
 }
 
 type logContextKeyType string
