@@ -57,6 +57,7 @@ func (s cHandler) WithGroup(name string) slog.Handler {
 // TODO: rename receiver from `s`
 func (s cHandler) Handle(r slog.Record) error {
 	// TODO: make sure time is in UTC.
+	// see: https://github.com/golang/go/issues/56345#issuecomment-1407053167
 	id, _ := GetId(r.Context)
 	// TODO: we should only call `r.AddAttrs` once in this entire method.
 	r.AddAttrs(slog.Attr{Key: "logID", Value: slog.StringValue(id)})

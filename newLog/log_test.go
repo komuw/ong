@@ -119,7 +119,6 @@ func TestLogger(t *testing.T) {
 		maxMsgs := 3
 		l := NewSlog(w, maxMsgs)
 		l(context.Background()).Info("hey", "one", "one")
-		// l.Info(F{"one": "one"})
 
 		attest.Zero(t, w.String())
 	})
@@ -132,29 +131,30 @@ func TestLogger(t *testing.T) {
 		l := NewSlog(w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
 		l(context.Background()).Error(msg, errors.New(msg))
-		// l.Error(errors.New(msg))
 
 		attest.Subsequence(t, w.String(), msg)
 	})
 
-	// t.Run("info logs are flushed on error", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("info logs are flushed on error", func(t *testing.T) {
+		t.Parallel()
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
+		w := newBuf()
+		maxMsgs := 3
+		l := NewSlog(w, maxMsgs)
 
-	// 	infoMsg := "hello world"
-	// 	l.Info(F{"what": infoMsg, "ok": "ak&dHyS>47K"})
-	// 	errMsg := "oops, Houston we got 99 problems."
-	// 	l.Error(errors.New(errMsg))
+		infoMsg := "hello world"
+		l(context.Background()).Info(infoMsg, "what", "ok", "passwd", "ak&dHyS>47K")
+		errMsg := "oops, Houston we got 99 problems."
+		l(context.Background()).Error("some-error", errors.New(errMsg))
 
-	// 	attest.Subsequence(t, w.String(), infoMsg)
-	// 	attest.Subsequence(t, w.String(), errMsg)
-	// 	// special characters are not quoted.
-	// 	attest.Subsequence(t, w.String(), "&")
-	// 	attest.Subsequence(t, w.String(), ">")
-	// })
+		fmt.Println("\n\t w.String(): ", w.String(), "\n.")
+
+		attest.Subsequence(t, w.String(), infoMsg)
+		attest.Subsequence(t, w.String(), errMsg)
+		// special characters are not quoted.
+		attest.Subsequence(t, w.String(), "&")
+		attest.Subsequence(t, w.String(), ">")
+	})
 
 	// t.Run("neccesary fields added", func(t *testing.T) {
 	// 	t.Parallel()
