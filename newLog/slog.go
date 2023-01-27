@@ -108,7 +108,7 @@ func GetId(ctx context.Context) (string, bool) {
 // circleBuf implements a very simple & naive circular buffer.
 type circleBuf struct {
 	mu      sync.Mutex // protects buf
-	buf     []slog.Attr
+	buf     []slog.Record
 	maxSize int
 }
 
@@ -117,14 +117,14 @@ func newCirleBuf(maxSize int) *circleBuf {
 		maxSize = 10
 	}
 	c := &circleBuf{
-		buf:     make([]slog.Attr, maxSize),
+		buf:     make([]slog.Record, maxSize),
 		maxSize: maxSize,
 	}
 	c.reset() // remove the nils from `make()`
 	return c
 }
 
-func (c *circleBuf) store(f slog.Attr) {
+func (c *circleBuf) store(r slog.Record) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -141,7 +141,7 @@ func (c *circleBuf) store(f slog.Attr) {
 		c.buf = c.buf[:upto]
 	}
 
-	c.buf = append(c.buf, f)
+	c.buf = append(c.buf, r)
 }
 
 func (c *circleBuf) reset() {
