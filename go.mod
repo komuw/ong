@@ -3,8 +3,10 @@ module github.com/komuw/ong
 go 1.19
 
 require (
+	go.opentelemetry.io/otel v1.11.2
+	go.opentelemetry.io/otel/trace v1.11.2
 	golang.org/x/crypto v0.4.0
-	golang.org/x/exp v0.0.0-20221211140036-ad323defaf05
+	golang.org/x/exp v0.0.0-20230127140709-cafedaf64729
 	golang.org/x/net v0.4.0
 	golang.org/x/sys v0.3.0
 )
