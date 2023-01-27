@@ -77,6 +77,9 @@ func (s cHandler) Handle(r slog.Record) error {
 		}
 	})
 
+	// store record only after manipulating it.
+	s.cBuf.store(r)
+
 	var err error
 	if r.Level >= slog.LevelError {
 		s.cBuf.mu.Lock()
@@ -89,8 +92,6 @@ func (s cHandler) Handle(r slog.Record) error {
 		}
 		s.cBuf.mu.Unlock()
 		s.cBuf.reset()
-	} else {
-		s.cBuf.store(r)
 	}
 
 	return err
