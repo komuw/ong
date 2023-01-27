@@ -78,6 +78,8 @@ func (s cHandler) Handle(r slog.Record) error {
 	if r.Level >= slog.LevelError {
 		s.cBuf.mu.Lock()
 		for _, v := range s.cBuf.buf {
+			// TODO: check how it handles special characters
+			// see: https://github.com/komuw/ong/commit/fd94ed712d9baa5b42d5ff16f1fe561337491328
 			if e := s.h.Handle(v); e != nil {
 				err = e
 			}
