@@ -7,9 +7,6 @@ import (
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/exp/slog"
 )
 
@@ -56,7 +53,6 @@ func (s cHandler) WithGroup(name string) slog.Handler {
 
 // TODO: rename receiver from `s`
 func (s cHandler) Handle(r slog.Record) (err error) {
-
 	// TODO: make sure time is in UTC.
 	id, _ := GetId(r.Context)
 	// TODO: we should only call `r.AddAttrs` once in this entire method.
@@ -75,19 +71,20 @@ func (s cHandler) Handle(r slog.Record) (err error) {
 					r.AddAttrs(slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
 				}
 			}
-
 		}
 	})
 
 	if r.Level >= slog.LevelError {
 		s.cBuf.mu.Lock()
 		for _, v := range s.cBuf.buf {
+			_ = v
 			return s.h.Handle(r)
 		}
 		s.cBuf.mu.Unlock()
 
 	}
 
+	return
 }
 
 type logContextKeyType string

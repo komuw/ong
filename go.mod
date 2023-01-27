@@ -3,8 +3,6 @@ module github.com/komuw/ong
 go 1.19
 
 require (
-	go.opentelemetry.io/otel v1.11.2
-	go.opentelemetry.io/otel/trace v1.11.2
 	golang.org/x/crypto v0.4.0
 	golang.org/x/exp v0.0.0-20230127140709-cafedaf64729
 	golang.org/x/net v0.4.0
@@ -15,6 +13,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
