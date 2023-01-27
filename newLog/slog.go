@@ -82,10 +82,10 @@ func (s cHandler) Handle(r slog.Record) (err error) {
 	if r.Level >= slog.LevelError {
 		s.cBuf.mu.Lock()
 		for _, v := range s.cBuf.buf {
+			return s.h.Handle(r)
 		}
 		s.cBuf.mu.Unlock()
 
-		return s.h.Handle(r)
 	}
 
 }
