@@ -38,7 +38,10 @@ func NewSlog(ctx context.Context) *slog.Logger {
 }
 
 // custom handler.
-type cHandler struct{ h slog.Handler }
+type cHandler struct {
+	h    slog.Handler
+	cBuf *circleBuf
+}
 
 func (s cHandler) Enabled(_ slog.Level) bool { return true /* support all logging levels*/ }
 func (s cHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
