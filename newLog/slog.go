@@ -5,6 +5,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/komuw/ong/errors"
+	"github.com/komuw/ong/id"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -52,73 +54,58 @@ func (s cHandler) WithGroup(name string) slog.Handler {
 	return &cHandler{h: s.h.WithGroup(name)}
 }
 
+// TODO: rename receiver from `s`
 func (s cHandler) Handle(r slog.Record) (err error) {
-	ctx := r.Context
-	if ctx == nil {
+
+	// TODO: make sure time is in UTC.
+	id, _ := GetId(r.Context)
+	// TODO: we should only call `r.AddAttrs` once in this entire method.
+	r.AddAttrs(slog.Attr{Key: "logID", Value: slog.StringValue(id)})
+
+	// TODO: Obey the following rules form the slog documentation:
+	//
+	// Handle methods that produce output should observe the following rules:
+	//   - If r.Time is the zero time, ignore the time.
+	//   - If an Attr's key is the empty string, ignore the Attr.
+	//
+	r.Attrs(func(a slog.Attr) {
+		if a.Key == slog.ErrorKey {
+			if e, ok := a.Value.Any().(error); ok {
+				if stack := errors.StackTrace(e); stack != "" {
+					r.AddAttrs(slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+				}
+			}
+
+		}
+	})
+
+	if r.Level >= slog.LevelError {
+		s.cBuf.mu.Lock()
+		for _, v := range s.cBuf.buf {
+		}
+		s.cBuf.mu.Unlock()
+
 		return s.h.Handle(r)
 	}
 
-	span := trace.SpanFromContext(ctx)
-	if !span.IsRecording() {
-		return s.h.Handle(r)
-	}
+}
 
-	{ // (a) adds TraceIds & spanIds to logs.
-		//
-		// TODO: (komuw) add stackTraces maybe.
-		//
-		sCtx := span.SpanContext()
-		attrs := make([]slog.Attr, 0)
-		if sCtx.HasTraceID() {
-			attrs = append(attrs,
-				slog.Attr{Key: "traceId", Value: slog.StringValue(sCtx.TraceID().String())},
-			)
-		}
-		if sCtx.HasSpanID() {
-			attrs = append(attrs,
-				slog.Attr{Key: "spanId", Value: slog.StringValue(sCtx.SpanID().String())},
-			)
-		}
-		if len(attrs) > 0 {
-			r.AddAttrs(attrs...)
+type logContextKeyType string
+
+const // CtxKey is the name of the context key used to store the logID.
+CtxKey = logContextKeyType("Ong-logID")
+
+// GetId gets a logId either from the provided context or auto-generated.
+// It returns the logID and true if the id came from ctx else false
+func GetId(ctx context.Context) (string, bool) {
+	if ctx != nil {
+		if vCtx := ctx.Value(CtxKey); vCtx != nil {
+			if s, ok := vCtx.(string); ok {
+				return s, true
+			}
 		}
 	}
-
-	{ // (b) adds logs to the active span as events.
-
-		// code from: https://github.com/uptrace/opentelemetry-go-extra/tree/main/otellogrus
-		// which is BSD 2-Clause license.
-
-		attrs := make([]attribute.KeyValue, 0)
-
-		logSeverityKey := attribute.Key("log.severity")
-		logMessageKey := attribute.Key("log.message")
-		attrs = append(attrs, logSeverityKey.String(r.Level.String()))
-		attrs = append(attrs, logMessageKey.String(r.Message))
-
-		// TODO: Obey the following rules form the slog documentation:
-		//
-		// Handle methods that produce output should observe the following rules:
-		//   - If r.Time is the zero time, ignore the time.
-		//   - If an Attr's key is the empty string, ignore the Attr.
-		//
-		r.Attrs(func(a slog.Attr) {
-			attrs = append(attrs,
-				attribute.KeyValue{
-					Key:   attribute.Key(a.Key),
-					Value: attribute.StringValue(a.Value.String()),
-				},
-			)
-		})
-		// todo: add caller info.
-
-		span.AddEvent("log", trace.WithAttributes(attrs...))
-		if r.Level >= slog.LevelError {
-			span.SetStatus(codes.Error, r.Message)
-		}
-	}
-
-	return s.h.Handle(r)
+	return id.New(), false
 }
 
 // circleBuf implements a very simple & naive circular buffer.
