@@ -17,8 +17,9 @@ var (
 
 // usage:
 //
+//	glob := NewSlog(os.Stdout, 1_000)
 //	ctx, span := tracer.Start(ctx, "myFuncName")
-//	l := NewSlog(ctx)
+//	l := glob(ctx)
 //	l.Info("hello world")
 func NewSlog(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	onceSlog.Do(func() {
