@@ -67,23 +67,23 @@ func TestCircleBuf(t *testing.T) {
 		attest.Equal(t, c.buf[2].Value.String(), "30")
 	})
 
-	// t.Run("reset", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("reset", func(t *testing.T) {
+		t.Parallel()
 
-	// 	maxSize := 80
-	// 	c := newCirleBuf(maxSize)
-	// 	for i := 0; i <= (13 * maxSize); i++ {
-	// 		x := fmt.Sprint(i)
-	// 		c.store(F{x: x})
-	// 		attest.True(t, len(c.buf) <= maxSize)
-	// 		attest.True(t, cap(c.buf) <= maxSize)
-	// 	}
-	// 	attest.True(t, len(c.buf) <= maxSize)
-	// 	attest.True(t, cap(c.buf) <= maxSize)
+		maxSize := 80
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (13 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(slog.Attr{Key: x, Value: slog.StringValue(x)})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
 
-	// 	c.reset()
+		c.reset()
 
-	// 	attest.Equal(t, len(c.buf), 0)
-	// 	attest.Equal(t, cap(c.buf), maxSize)
-	// })
+		attest.Equal(t, len(c.buf), 0)
+		attest.Equal(t, cap(c.buf), maxSize)
+	})
 }
