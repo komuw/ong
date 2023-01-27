@@ -46,27 +46,26 @@ func TestCircleBuf(t *testing.T) {
 		attest.True(t, cap(c.buf) <= maxSize)
 	})
 
-	// t.Run("clears oldest first", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("clears oldest first", func(t *testing.T) {
+		t.Parallel()
 
-	// 	maxSize := 5
-	// 	c := newCirleBuf(maxSize)
-	// 	for i := 0; i <= (6 * maxSize); i++ {
-	// 		x := fmt.Sprint(i)
-	// 		c.store(F{"msg": x})
-	// 		attest.True(t, len(c.buf) <= maxSize)
-	// 		attest.True(t, cap(c.buf) <= maxSize)
-	// 	}
-	// 	attest.True(t, len(c.buf) <= maxSize)
-	// 	attest.True(t, cap(c.buf) <= maxSize)
+		maxSize := 5
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (6 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(slog.Attr{Key: x, Value: slog.StringValue(x)})
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
 
-	// 	val1, ok := c.buf[1]["msg"].(string)
-	// 	attest.True(t, ok)
-	// 	attest.Equal(t, val1, "29")
-	// 	val2, ok := c.buf[2]["msg"].(string)
-	// 	attest.True(t, ok)
-	// 	attest.Equal(t, val2, "30")
-	// })
+		attest.Equal(t, c.buf[1].Key, "29")
+		attest.Equal(t, c.buf[1].Value.String(), "29")
+
+		attest.Equal(t, c.buf[2].Key, "30")
+		attest.Equal(t, c.buf[2].Value.String(), "30")
+	})
 
 	// t.Run("reset", func(t *testing.T) {
 	// 	t.Parallel()
