@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -29,20 +30,21 @@ func TestCircleBuf(t *testing.T) {
 		attest.Equal(t, cap(c.buf), 4)
 	})
 
-	// t.Run("does not exceed maxsize", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("does not exceed maxsize", func(t *testing.T) {
+		t.Parallel()
 
-	// 	maxSize := 8
-	// 	c := newCirleBuf(maxSize)
-	// 	for i := 0; i <= (13 * maxSize); i++ {
-	// 		x := fmt.Sprint(i)
-	// 		c.store(F{x: x})
-	// 		attest.True(t, len(c.buf) <= maxSize)
-	// 		attest.True(t, cap(c.buf) <= maxSize)
-	// 	}
-	// 	attest.True(t, len(c.buf) <= maxSize)
-	// 	attest.True(t, cap(c.buf) <= maxSize)
-	// })
+		maxSize := 8
+		c := newCirleBuf(maxSize)
+		for i := 0; i <= (13 * maxSize); i++ {
+			x := fmt.Sprint(i)
+			c.store(slog.Attr{Key: x, Value: slog.StringValue(x)})
+
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
+		}
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
+	})
 
 	// t.Run("clears oldest first", func(t *testing.T) {
 	// 	t.Parallel()
