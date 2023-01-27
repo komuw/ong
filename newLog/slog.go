@@ -2,7 +2,7 @@ package log
 
 import (
 	"context"
-	"os"
+	"io"
 	"sync"
 
 	"github.com/komuw/ong/errors"
@@ -20,20 +20,22 @@ var (
 //	ctx, span := tracer.Start(ctx, "myFuncName")
 //	l := NewSlog(ctx)
 //	l.Info("hello world")
-func NewSlog(ctx context.Context) *slog.Logger {
+func NewSlog(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	onceSlog.Do(func() {
 		opts := slog.HandlerOptions{
 			AddSource: true,
 			Level:     slog.LevelDebug,
 		}
-		jh := opts.NewJSONHandler(os.Stdout)
+		jh := opts.NewJSONHandler(w)
 
-		h := cHandler{h: jh}
+		h := cHandler{h: jh, cBuf: newCirleBuf(maxMsgs)}
 		l := slog.New(h)
 		slogLogger = l
 	})
 
-	return slogLogger.WithContext(ctx)
+	return func(ctx context.Context) *slog.Logger {
+		return slogLogger.WithContext(ctx)
+	}
 }
 
 // custom handler.
