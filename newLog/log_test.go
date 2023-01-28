@@ -250,8 +250,10 @@ func TestLogger(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
-		maxMsgs := 3
+		maxMsgs := 12
 		l := NewSlog(w, maxMsgs)
+
+		xl := l(context.Background())
 
 		tokens := []string{
 			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
@@ -266,6 +268,7 @@ func TestLogger(t *testing.T) {
 		for _, tok := range tokens {
 			go func(t string) {
 				l(context.Background()).Info("one" + t)
+				xl.Info("one" + t)
 			}(tok)
 		}
 
@@ -287,6 +290,7 @@ func TestLogger(t *testing.T) {
 			go func(t string) {
 				defer wg.Done()
 				l(context.Background()).Info("four" + t)
+				xl.Error("some-xl-error", errors.New("four"+t))
 			}(tok)
 		}
 		wg.Wait()
