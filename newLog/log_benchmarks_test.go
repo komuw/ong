@@ -233,6 +233,9 @@ func BenchmarkAverageCase(b *testing.B) {
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
 			l.Info(sl[0], slAny...)
+			if rand.Intn(100) >= 99 {
+				l.Error("some-error", logErr)
+			}
 		}
 	})
 
