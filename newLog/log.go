@@ -17,12 +17,13 @@ import (
 //	l := glob(ctx)
 //	l.Info("hello world")
 func NewSlog(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
+	opts := slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}
 	cbuf := newCirleBuf(maxMsgs)
+
 	return func(ctx context.Context) *slog.Logger {
-		opts := slog.HandlerOptions{
-			AddSource: true,
-			Level:     slog.LevelDebug,
-		}
 		jh := opts.NewJSONHandler(w)
 		h := cHandler{h: jh, cBuf: cbuf}
 		l := slog.New(h)
