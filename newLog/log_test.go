@@ -110,7 +110,6 @@ func (s *syncBuffer) Write(p []byte) (n int, err error) {
 	return s.b.Write(p)
 }
 
-// TODO: add test for ong/errors
 func TestLogger(t *testing.T) {
 	t.Parallel()
 
@@ -163,7 +162,6 @@ func TestLogger(t *testing.T) {
 	t.Run("neccesary fields added", func(t *testing.T) {
 		t.Parallel()
 
-		// TODO: test that ong/errors adds StackTrace.
 		{
 			w := &bytes.Buffer{}
 			maxMsgs := 3

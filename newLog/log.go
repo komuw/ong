@@ -51,7 +51,8 @@ func (s cHandler) WithGroup(name string) slog.Handler {
 	return &cHandler{h: s.h.WithGroup(name)}
 }
 
-// TODO: rename receiver from `s`
+// TODO: fgure out `encoder.SetEscapeHTML`
+// see: https://github.com/golang/go/issues/56345#issuecomment-1407491552
 func (s cHandler) Handle(r slog.Record) error {
 	// TODO: make sure time is in UTC.
 	// see: https://github.com/golang/go/issues/56345#issuecomment-1407053167
