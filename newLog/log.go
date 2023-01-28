@@ -39,6 +39,11 @@ func NewSlog(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 }
 
+// TODO: if we decide to use our own handler that is not backed by another(like JSONHandler)
+//        we need to do our own locking.
+// "User-defined handlers are responsible for their own locking."
+// see: https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
+
 // custom handler.
 type cHandler struct {
 	h    slog.Handler
