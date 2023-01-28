@@ -10,11 +10,6 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-var (
-	onceSlog   sync.Once
-	slogLogger *slog.Logger
-)
-
 // usage:
 //
 //	glob := NewSlog(os.Stdout, 1_000)
@@ -22,20 +17,17 @@ var (
 //	l := glob(ctx)
 //	l.Info("hello world")
 func NewSlog(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
-	onceSlog.Do(func() {
+	cbuf := newCirleBuf(maxMsgs)
+	return func(ctx context.Context) *slog.Logger {
 		opts := slog.HandlerOptions{
 			AddSource: true,
 			Level:     slog.LevelDebug,
 		}
 		jh := opts.NewJSONHandler(w)
-
-		h := cHandler{h: jh, cBuf: newCirleBuf(maxMsgs)}
+		h := cHandler{h: jh, cBuf: cbuf}
 		l := slog.New(h)
-		slogLogger = l
-	})
 
-	return func(ctx context.Context) *slog.Logger {
-		return slogLogger.WithContext(ctx)
+		return l.WithContext(ctx)
 	}
 }
 
