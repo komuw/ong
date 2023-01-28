@@ -147,8 +147,6 @@ func TestLogger(t *testing.T) {
 		errMsg := "oops, Houston we got 99 problems."
 		l(context.Background()).Error("some-error", errors.New(errMsg))
 
-		fmt.Println("\n\t w.String(): ", w.String(), "\n.")
-
 		attest.Subsequence(t, w.String(), infoMsg)
 		attest.Subsequence(t, w.String(), errMsg)
 		// special characters are not quoted.
