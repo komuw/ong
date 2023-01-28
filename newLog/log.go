@@ -21,10 +21,10 @@ func NewSlog(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 		AddSource: true,
 		Level:     slog.LevelDebug,
 	}
+	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
 
 	return func(ctx context.Context) *slog.Logger {
-		jh := opts.NewJSONHandler(w)
 		h := cHandler{h: jh, cBuf: cbuf}
 		l := slog.New(h)
 
