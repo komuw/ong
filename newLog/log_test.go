@@ -246,189 +246,49 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
-	// t.Run("WithCaller does not invalidate buffer", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
-	// 	{
-	// 		for i := 0; i <= (maxMsgs); i++ {
-	// 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
-	// 			l.Info(F{"what": infoMsg})
-	// 		}
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 3"))
-	// 	}
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := NewSlog(w, maxMsgs)
 
-	// 	{
-	// 		l = l.WithCaller()
-	// 		errMsg := "oops, Houston we got 99 problems."
-	// 		l.Error(errors.New(errMsg))
+		tokens := []string{
+			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
+			"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
+		}
 
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-	// 		attest.Subsequence(t, w.String(), "hello world : 3")
-	// 		attest.Subsequence(t, w.String(), errMsg)
-	// 	}
-	// })
+		for _, tok := range tokens {
+			go func(t string) {
+				l(context.Background()).Info("one" + t)
+			}(tok)
+		}
 
-	// t.Run("WithFields", func(t *testing.T) {
-	// 	t.Parallel()
+		for _, tok := range tokens {
+			go func(t string) {
+				l(context.Background()).Error("some-error", errors.New("bad"+t))
+			}(tok)
+		}
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
-	// 	flds := F{"version": "v0.1.2", "env": "prod", "service": "web-commerce"}
-	// 	l = l.WithFields(flds)
+		for _, tok := range tokens {
+			go func(t string) {
+				l(context.Background()).Error("some-other-error", errors.New("bad-two"+t))
+			}(tok)
+		}
 
-	// 	msg := "hello"
-	// 	l.Info(F{"msg": msg})
-	// 	errMsg := "oops, Houston we got 99 problems."
-	// 	l.Error(errors.New(errMsg))
-
-	// 	for _, v := range []string{
-	// 		"version",
-	// 		"v0.1.2",
-	// 		"web-commerce",
-	// 		msg,
-	// 		errMsg,
-	// 	} {
-	// 		attest.Subsequence(t, w.String(), v)
-	// 	}
-	// 	attest.Equal(t, l.flds, flds)
-
-	// 	newFlds := F{"okay": "yes", "country": "Norway"}
-	// 	l = l.WithFields(newFlds)
-	// 	newErrMsg := "new error"
-	// 	l.Error(errors.New(newErrMsg))
-	// 	// asserts that the `l.flds` maps does not grow without bound.
-	// 	attest.Equal(t, l.flds, newFlds)
-	// 	for _, v := range []string{
-	// 		"okay",
-	// 		"yes",
-	// 		"Norway",
-	// 		msg,
-	// 		newErrMsg,
-	// 	} {
-	// 		attest.Subsequence(t, w.String(), v)
-	// 	}
-	// })
-
-	// t.Run("WithImmediate logs immediately", func(t *testing.T) {
-	// 	t.Parallel()
-
-	// 	w := &bytes.Buffer{}
-	// 	msg := "hello world"
-	// 	l := New(w, 2).WithImmediate()
-	// 	l.Info(F{"msg": msg})
-
-	// 	attest.Subsequence(t, w.String(), msg)
-	// })
-
-	// t.Run("interop with stdlibLog", func(t *testing.T) {
-	// 	t.Parallel()
-
-	// 	w := &bytes.Buffer{}
-	// 	msg := "hello world"
-	// 	l := New(w, 2)
-	// 	stdLogger := stdLog.New(l, "stdlib", stdLog.Lshortfile)
-	// 	stdLogger.Println(msg)
-
-	// 	attest.Subsequence(t, w.String(), msg)
-	// })
-
-	// t.Run("get stdlibLog", func(t *testing.T) {
-	// 	t.Parallel()
-
-	// 	w := &bytes.Buffer{}
-	// 	msg := "hey what up?"
-	// 	l := New(w, 2)
-	// 	stdLogger := l.StdLogger()
-	// 	stdLogger.Println(msg)
-	// 	attest.Subsequence(t, w.String(), msg)
-	// })
-
-	// t.Run("WithCaller uses correct line", func(t *testing.T) {
-	// 	t.Parallel()
-
-	// 	{
-	// 		w := &bytes.Buffer{}
-	// 		msg := "hey what up?"
-	// 		l := New(w, 2)
-	// 		l.WithCaller().WithImmediate().Info(F{"msg": msg})
-	// 		attest.Subsequence(t, w.String(), msg)
-	// 		attest.Subsequence(t, w.String(), "ong/log/log_test.go:374")
-	// 	}
-
-	// 	{
-	// 		// for stdlib we disable caller info, since it would otherwise
-	// 		// point to `ong/log/log.go` as the caller.
-	// 		w := &bytes.Buffer{}
-	// 		msg := "hey what up?"
-	// 		l := New(w, 2)
-	// 		l.WithCaller().StdLogger().Println(msg)
-	// 		attest.Subsequence(t, w.String(), msg)
-	// 		attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
-	// 	}
-
-	// 	{
-	// 		w := &bytes.Buffer{}
-	// 		msg := "hey what up?"
-	// 		l := New(w, 2).WithCaller()
-	// 		stdLogger := stdLog.New(l, "stdlib", 0)
-	// 		stdLogger.Println(msg)
-	// 		attest.Subsequence(t, w.String(), msg)
-	// 		attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
-	// 	}
-	// })
-
-	// t.Run("concurrency safe", func(t *testing.T) {
-	// 	t.Parallel()
-
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
-
-	// 	tokens := []string{
-	// 		"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
-	// 		"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
-	// 		"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-	// 		"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
-	// 		"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
-	// 		"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
-	// 		"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
-	// 	}
-
-	// 	for _, tok := range tokens {
-	// 		go func(t string) {
-	// 			l.Info(F{"one": "one" + t})
-	// 		}(tok)
-	// 	}
-
-	// 	for _, tok := range tokens {
-	// 		go func(t string) {
-	// 			l.Error(errors.New("bad" + t))
-	// 		}(tok)
-	// 	}
-
-	// 	for _, tok := range tokens {
-	// 		go func(t string) {
-	// 			l.Error(errors.New("bad-two" + t))
-	// 		}(tok)
-	// 	}
-
-	// 	wg := &sync.WaitGroup{}
-	// 	for _, tok := range tokens {
-	// 		wg.Add(1)
-	// 		go func(t string) {
-	// 			defer wg.Done()
-	// 			l.Info(F{"four": "four" + t})
-	// 		}(tok)
-	// 	}
-	// 	wg.Wait()
-	// })
+		wg := &sync.WaitGroup{}
+		for _, tok := range tokens {
+			wg.Add(1)
+			go func(t string) {
+				defer wg.Done()
+				l(context.Background()).Info("four" + t)
+			}(tok)
+		}
+		wg.Wait()
+	})
 }
