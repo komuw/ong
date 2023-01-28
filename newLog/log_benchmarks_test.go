@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	ongOldlog "github.com/komuw/ong/log"
+	ongOldlog "github.com/komuw/ong/oldLog"
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
@@ -94,7 +94,7 @@ func noOpFunc(f ongOldlog.F) {
 func BenchmarkBestCase(b *testing.B) {
 	f, sl := getMessage()
 	str := fmt.Sprintf("%s", sl)
-	b.Logf("best case") // best-case because ong/log does not log if it is not error level
+	b.Logf("best case") // best-case because ong/oldLog does not log if it is not error level
 
 	b.Run("Zap", func(b *testing.B) {
 		l := newZapLogger(zap.DebugLevel)
@@ -123,7 +123,7 @@ func BenchmarkBestCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/log", func(b *testing.B) {
+	b.Run("ong/oldLog", func(b *testing.B) {
 		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -186,7 +186,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/log", func(b *testing.B) {
+	b.Run("ong/oldLog", func(b *testing.B) {
 		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -244,7 +244,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/log", func(b *testing.B) {
+	b.Run("ong/oldLog", func(b *testing.B) {
 		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
