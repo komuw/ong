@@ -66,7 +66,7 @@ func newNewOngLogger() *slog.Logger {
 	)(context.Background())
 }
 
-func getMessage() (ongOldlog.F, []string) {
+func getMessage() (ongOldlog.F, []string, []any) {
 	type car struct {
 		mft  string
 		date uint64
@@ -94,12 +94,7 @@ func getMessage() (ongOldlog.F, []string) {
 		sl = append(sl, fmt.Sprintf("%v", v))
 	}
 
-	return f, sl
-}
-
-func newGetMessage() (ongOldlog.F, []string, []any) {
 	slAny := []any{}
-	f, sl := getMessage()
 	for _, v := range sl {
 		slAny = append(slAny, v)
 	}
@@ -112,7 +107,7 @@ func noOpFunc(f ongOldlog.F) {
 }
 
 func BenchmarkBestCase(b *testing.B) {
-	f, sl, slAny := newGetMessage()
+	f, sl, slAny := getMessage()
 	str := fmt.Sprintf("%s", sl)
 	b.Logf("best case") // best-case because ong/oldLog does not log if it is not error level
 
@@ -171,7 +166,7 @@ func BenchmarkBestCase(b *testing.B) {
 }
 
 func BenchmarkAverageCase(b *testing.B) {
-	f, sl, slAny := newGetMessage()
+	f, sl, slAny := getMessage()
 	str := fmt.Sprintf("%s", sl)
 	logErr := stdlibErrors.New("hey")
 
@@ -249,7 +244,7 @@ func BenchmarkAverageCase(b *testing.B) {
 }
 
 func BenchmarkWorstCase(b *testing.B) {
-	f, sl := getMessage()
+	f, sl, slAny := getMessage()
 	str := fmt.Sprintf("%s", sl)
 	logErr := stdlibErrors.New("hey")
 
@@ -292,6 +287,16 @@ func BenchmarkWorstCase(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			l.Info(f)
 			l.Error(logErr, f)
+		}
+	})
+
+	b.Run("ong/newLog", func(b *testing.B) {
+		l := newNewOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
+			l.Error("some-error", logErr)
 		}
 	})
 
