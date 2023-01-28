@@ -171,7 +171,7 @@ func BenchmarkBestCase(b *testing.B) {
 }
 
 func BenchmarkAverageCase(b *testing.B) {
-	f, sl := getMessage()
+	f, sl, slAny := newGetMessage()
 	str := fmt.Sprintf("%s", sl)
 	logErr := stdlibErrors.New("hey")
 
@@ -224,6 +224,15 @@ func BenchmarkAverageCase(b *testing.B) {
 			if rand.Intn(100) >= 99 {
 				l.Error(logErr)
 			}
+		}
+	})
+
+	b.Run("ong/newLog", func(b *testing.B) {
+		l := newNewOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
 		}
 	})
 
