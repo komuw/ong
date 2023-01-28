@@ -158,42 +158,41 @@ func TestLogger(t *testing.T) {
 		// attest.Subsequence(t, w.String(), ">")
 	})
 
-	// t.Run("neccesary fields added", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("neccesary fields added", func(t *testing.T) {
+		t.Parallel()
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := NewSlog(w, maxMsgs)
 
-	// 	{
-	// 		infoMsg := "hello world"
-	// 		l.Info(F{"what": infoMsg})
-	// 		l.Error(errors.New("bad"))
+		// TODO: test that ong/errors adds StackTrace.
+		{
+			infoMsg := "hello world"
+			l(context.Background()).Info(infoMsg)
+			l(context.Background()).Error("some-err", errors.New("bad"))
 
-	// 		id := l.logId
-	// 		attest.NotZero(t, id)
-	// 		attest.Subsequence(t, w.String(), id)
-	// 		attest.Subsequence(t, w.String(), "level")
-	// 		attest.Subsequence(t, w.String(), "stack")
-	// 		attest.Subsequence(t, w.String(), "err")
-	// 		attest.False(t, strings.Contains(w.String(), "line")) // line not added
-	// 	}
+			attest.Subsequence(t, w.String(), "logID")
+			attest.Subsequence(t, w.String(), "level")
+			attest.Subsequence(t, w.String(), "source")
+			attest.Subsequence(t, w.String(), slog.ErrorKey)
+			// attest.False(t, strings.Contains(w.String(), "line")) // line not added
+		}
 
-	// 	{
-	// 		l = l.WithCaller()
-	// 		l.Info(F{"name": "john"})
-	// 		errMsg := "kimeumana"
-	// 		l.Error(errors.New(errMsg))
+		// {
+		// 	l = l.WithCaller()
+		// 	l.Info(F{"name": "john"})
+		// 	errMsg := "kimeumana"
+		// 	l.Error(errors.New(errMsg))
 
-	// 		id := l.logId
-	// 		attest.NotZero(t, id)
-	// 		attest.Subsequence(t, w.String(), id)
-	// 		attest.Subsequence(t, w.String(), "level")
-	// 		attest.Subsequence(t, w.String(), "stack")
-	// 		attest.Subsequence(t, w.String(), "err")
-	// 		attest.Subsequence(t, w.String(), "line") // line added
-	// 	}
-	// })
+		// 	id := l.logId
+		// 	attest.NotZero(t, id)
+		// 	attest.Subsequence(t, w.String(), id)
+		// 	attest.Subsequence(t, w.String(), "level")
+		// 	attest.Subsequence(t, w.String(), "stack")
+		// 	attest.Subsequence(t, w.String(), "err")
+		// 	attest.Subsequence(t, w.String(), "line") // line added
+		// }
+	})
 
 	// t.Run("logs are rotated", func(t *testing.T) {
 	// 	t.Parallel()
