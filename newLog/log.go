@@ -10,6 +10,8 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+// TODO: rename NewSlog to `New`
+//
 // usage:
 //
 //	glob := NewSlog(os.Stdout, 1_000)

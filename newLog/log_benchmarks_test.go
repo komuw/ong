@@ -1,6 +1,7 @@
 package log_test
 
 import (
+	"context"
 	stdlibErrors "errors"
 	"fmt"
 	"io"
@@ -9,10 +10,12 @@ import (
 	"time"
 
 	ongOldlog "github.com/komuw/ong/log"
+	ongNewlog "github.com/komuw/ong/newLog"
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/slog"
 )
 
 func newZerolog() zerolog.Logger {
@@ -47,12 +50,20 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	))
 }
 
-func newOngLogger() ongOldlog.Logger {
+func newOldOngLogger() ongOldlog.Logger {
 	maxMsgs := 50_000
 	return ongOldlog.New(
 		io.Discard,
 		maxMsgs,
 	)
+}
+
+func newNewOngLogger() *slog.Logger {
+	maxMsgs := 50_000
+	return ongNewlog.NewSlog(
+		io.Discard,
+		maxMsgs,
+	)(context.Background())
 }
 
 func getMessage() (ongOldlog.F, []string) {
@@ -86,13 +97,22 @@ func getMessage() (ongOldlog.F, []string) {
 	return f, sl
 }
 
+func newGetMessage() (ongOldlog.F, []string, []any) {
+	slAny := []any{}
+	f, sl := getMessage()
+	for _, v := range sl {
+		slAny = append(slAny, v)
+	}
+	return f, sl, slAny
+}
+
 func noOpFunc(f ongOldlog.F) {
 	// func used in the `no logger` benchmark.
 	_ = f
 }
 
 func BenchmarkBestCase(b *testing.B) {
-	f, sl := getMessage()
+	f, sl, slAny := newGetMessage()
 	str := fmt.Sprintf("%s", sl)
 	b.Logf("best case") // best-case because ong/oldLog does not log if it is not error level
 
@@ -124,11 +144,20 @@ func BenchmarkBestCase(b *testing.B) {
 	})
 
 	b.Run("ong/oldLog", func(b *testing.B) {
-		l := newOngLogger()
+		l := newOldOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
 			l.Info(f)
+		}
+	})
+
+	b.Run("ong/newLog", func(b *testing.B) {
+		l := newNewOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
 		}
 	})
 
@@ -187,7 +216,7 @@ func BenchmarkAverageCase(b *testing.B) {
 	})
 
 	b.Run("ong/oldLog", func(b *testing.B) {
-		l := newOngLogger()
+		l := newOldOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
@@ -245,7 +274,7 @@ func BenchmarkWorstCase(b *testing.B) {
 	})
 
 	b.Run("ong/oldLog", func(b *testing.B) {
-		l := newOngLogger()
+		l := newOldOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
