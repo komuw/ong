@@ -215,57 +215,36 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), errMsg)
 	})
 
-	// t.Run("various ways of calling l.Error", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("WithContext does not invalidate buffer", func(t *testing.T) {
+		t.Parallel()
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
-	// 	msg := "some-error"
-	// 	err := errors.New(msg)
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := NewSlog(w, maxMsgs)
+		{
+			for i := 0; i <= (maxMsgs); i++ {
+				infoMsg := "hello world" + " : " + fmt.Sprint(i)
+				l(context.Background()).Info(infoMsg)
+			}
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
+		}
 
-	// 	l.Error(err)
-	// 	l.Error(err, F{"one": "two"})
-	// 	l.Error(err, F{"three": "four"}, F{"five": "six"})
-	// 	l.Error(err, nil)
-	// 	l.Error(nil)
-	// 	l.Error(nil, F{"seven": "eight"})
+		{
+			xl := l(context.Background())
+			l := xl.WithContext(context.Background())
+			errMsg := "oops, Houston we got 99 problems."
+			l.Error("some-error", errors.New(errMsg))
 
-	// 	attest.Subsequence(t, w.String(), msg)
-	// 	for _, v := range []string{"one", "two", "three", "four", "five", "six", "seven", "eight"} {
-	// 		attest.Subsequence(t, w.String(), v, attest.Sprintf("`%s` not found", v))
-	// 	}
-	// })
-
-	// t.Run("WithCtx does not invalidate buffer", func(t *testing.T) {
-	// 	t.Parallel()
-
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
-	// 	{
-	// 		for i := 0; i <= (maxMsgs); i++ {
-	// 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
-	// 			l.Info(F{"what": infoMsg})
-	// 		}
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 3"))
-	// 	}
-
-	// 	{
-	// 		l = l.WithCtx(context.Background())
-	// 		errMsg := "oops, Houston we got 99 problems."
-	// 		l.Error(errors.New(errMsg))
-
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-	// 		attest.Subsequence(t, w.String(), "hello world : 3")
-	// 		attest.Subsequence(t, w.String(), errMsg)
-	// 	}
-	// })
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.Subsequence(t, w.String(), "hello world : 3")
+			attest.Subsequence(t, w.String(), errMsg)
+		}
+	})
 
 	// t.Run("WithCaller does not invalidate buffer", func(t *testing.T) {
 	// 	t.Parallel()
