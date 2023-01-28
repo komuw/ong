@@ -59,8 +59,9 @@ func (s cHandler) Handle(r slog.Record) error {
 	// TODO: make sure time is in UTC.
 	// see: https://github.com/golang/go/issues/56345#issuecomment-1407053167
 	id, _ := GetId(r.Context)
-	// TODO: we should only call `r.AddAttrs` once in this entire method.
-	r.AddAttrs(slog.Attr{Key: "logID", Value: slog.StringValue(id)})
+	newAttrs := []slog.Attr{
+		{Key: "logID", Value: slog.StringValue(id)},
+	}
 
 	// TODO: Obey the following rules form the slog documentation:
 	//
@@ -72,11 +73,12 @@ func (s cHandler) Handle(r slog.Record) error {
 		if a.Key == slog.ErrorKey {
 			if e, ok := a.Value.Any().(error); ok {
 				if stack := errors.StackTrace(e); stack != "" {
-					r.AddAttrs(slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+					newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
 				}
 			}
 		}
 	})
+	r.AddAttrs(newAttrs...)
 
 	// store record only after manipulating it.
 	s.cBuf.store(r)
