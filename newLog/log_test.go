@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	ongErrors "github.com/komuw/ong/errors"
 	"golang.org/x/exp/slog"
 )
 
@@ -161,12 +162,12 @@ func TestLogger(t *testing.T) {
 	t.Run("neccesary fields added", func(t *testing.T) {
 		t.Parallel()
 
-		w := &bytes.Buffer{}
-		maxMsgs := 3
-		l := NewSlog(w, maxMsgs)
-
 		// TODO: test that ong/errors adds StackTrace.
 		{
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+			l := NewSlog(w, maxMsgs)
+
 			infoMsg := "hello world"
 			l(context.Background()).Info(infoMsg)
 			l(context.Background()).Error("some-err", errors.New("bad"))
@@ -175,23 +176,20 @@ func TestLogger(t *testing.T) {
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "source")
 			attest.Subsequence(t, w.String(), slog.ErrorKey)
-			// attest.False(t, strings.Contains(w.String(), "line")) // line not added
 		}
 
-		// {
-		// 	l = l.WithCaller()
-		// 	l.Info(F{"name": "john"})
-		// 	errMsg := "kimeumana"
-		// 	l.Error(errors.New(errMsg))
+		{
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+			l := NewSlog(w, maxMsgs)
 
-		// 	id := l.logId
-		// 	attest.NotZero(t, id)
-		// 	attest.Subsequence(t, w.String(), id)
-		// 	attest.Subsequence(t, w.String(), "level")
-		// 	attest.Subsequence(t, w.String(), "stack")
-		// 	attest.Subsequence(t, w.String(), "err")
-		// 	attest.Subsequence(t, w.String(), "line") // line added
-		// }
+			infoMsg := "hello world"
+			l(context.Background()).Info(infoMsg)
+			l(context.Background()).Error("some-ong-err", ongErrors.New("bad"))
+
+			attest.Subsequence(t, w.String(), "logID")
+			attest.Subsequence(t, w.String(), "stack")
+		}
 	})
 
 	// t.Run("logs are rotated", func(t *testing.T) {
