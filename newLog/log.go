@@ -41,6 +41,18 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 // "User-defined handlers are responsible for their own locking."
 // see: https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 
+// TODO: Make sure we have a way to get back an old school stdlib logger.
+//       This is needed by things like http.Server.Errolog
+// see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
+//
+// we could add `Write()` method and a `GiveMeStdLogger()` method to `handler`
+// then in ong/server/server.go we do;
+// l := newLog.New(...)(ctx)
+// if xl, ok := l.Handler().(ong/newlog.Handler); ok {
+//    stdlibLogger = xl.GiveMeStdLogger()
+//    http.Server.Errolog = stdlibLogger
+//}
+
 // custom handler.
 type handler struct {
 	h    slog.Handler
