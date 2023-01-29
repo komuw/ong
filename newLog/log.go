@@ -60,7 +60,9 @@ func (l handler) WithGroup(name string) slog.Handler {
 // see: https://github.com/golang/go/issues/56345#issuecomment-1407491552
 func (l handler) Handle(r slog.Record) error {
 	// TODO: make sure time is in UTC.
-	// see: https://github.com/golang/go/issues/56345#issuecomment-1407053167
+	// see: - https://github.com/golang/go/issues/56345#issuecomment-1407053167
+	//      - https://github.com/golang/go/issues/56345#issuecomment-1406279161 (has an implementation)
+	//
 	id, _ := GetId(r.Context)
 	newAttrs := []slog.Attr{
 		{Key: "logID", Value: slog.StringValue(id)},
