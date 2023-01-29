@@ -15,8 +15,6 @@ type logContextKeyType string
 // CtxKey is the name of the context key used to store the logID.
 const CtxKey = logContextKeyType("Ong-logID")
 
-// TODO: rename New to `New`
-//
 // usage:
 //
 //	glob := New(os.Stdout, 1_000)
