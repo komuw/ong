@@ -10,6 +10,11 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+type logContextKeyType string
+
+const // CtxKey is the name of the context key used to store the logID.
+CtxKey = logContextKeyType("Ong-logID")
+
 // TODO: rename NewSlog to `New`
 //
 // usage:
@@ -99,11 +104,6 @@ func (s cHandler) Handle(r slog.Record) error {
 
 	return err
 }
-
-type logContextKeyType string
-
-const // CtxKey is the name of the context key used to store the logID.
-CtxKey = logContextKeyType("Ong-logID")
 
 // GetId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
