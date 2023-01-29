@@ -12,8 +12,8 @@ import (
 
 type logContextKeyType string
 
-const // CtxKey is the name of the context key used to store the logID.
-CtxKey = logContextKeyType("Ong-logID")
+// CtxKey is the name of the context key used to store the logID.
+const CtxKey = logContextKeyType("Ong-logID")
 
 // TODO: rename NewSlog to `New`
 //
