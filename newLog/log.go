@@ -28,7 +28,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := cHandler{h: jh, cBuf: cbuf}
+	h := handler{h: jh, cBuf: cbuf}
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
@@ -42,23 +42,23 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 // see: https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 
 // custom handler.
-type cHandler struct {
+type handler struct {
 	h    slog.Handler
 	cBuf *circleBuf
 }
 
-func (s cHandler) Enabled(_ slog.Level) bool { return true /* support all logging levels*/ }
-func (s cHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &cHandler{h: s.h.WithAttrs(attrs)}
+func (h handler) Enabled(_ slog.Level) bool { return true /* support all logging levels*/ }
+func (l handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &handler{h: l.h.WithAttrs(attrs)}
 }
 
-func (s cHandler) WithGroup(name string) slog.Handler {
-	return &cHandler{h: s.h.WithGroup(name)}
+func (l handler) WithGroup(name string) slog.Handler {
+	return &handler{h: l.h.WithGroup(name)}
 }
 
 // TODO: fgure out `encoder.SetEscapeHTML`
 // see: https://github.com/golang/go/issues/56345#issuecomment-1407491552
-func (s cHandler) Handle(r slog.Record) error {
+func (l handler) Handle(r slog.Record) error {
 	// TODO: make sure time is in UTC.
 	// see: https://github.com/golang/go/issues/56345#issuecomment-1407053167
 	id, _ := GetId(r.Context)
@@ -84,20 +84,20 @@ func (s cHandler) Handle(r slog.Record) error {
 	r.AddAttrs(newAttrs...)
 
 	// store record only after manipulating it.
-	s.cBuf.store(r)
+	l.cBuf.store(r)
 
 	var err error
 	if r.Level >= slog.LevelError {
-		s.cBuf.mu.Lock()
-		for _, v := range s.cBuf.buf {
+		l.cBuf.mu.Lock()
+		for _, v := range l.cBuf.buf {
 			// TODO: check how it handles special characters
 			// see: https://github.com/komuw/ong/commit/fd94ed712d9baa5b42d5ff16f1fe561337491328
-			if e := s.h.Handle(v); e != nil {
+			if e := l.h.Handle(v); e != nil {
 				err = e
 			}
 		}
-		s.cBuf.mu.Unlock()
-		s.cBuf.reset()
+		l.cBuf.mu.Unlock()
+		l.cBuf.reset()
 	}
 
 	return err
