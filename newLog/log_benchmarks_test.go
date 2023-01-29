@@ -60,7 +60,7 @@ func newOldOngLogger() ongOldlog.Logger {
 
 func newNewOngLogger() *slog.Logger {
 	maxMsgs := 50_000
-	return ongNewlog.NewSlog(
+	return ongNewlog.New(
 		io.Discard,
 		maxMsgs,
 	)(context.Background())

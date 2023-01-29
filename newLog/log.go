@@ -15,15 +15,15 @@ type logContextKeyType string
 // CtxKey is the name of the context key used to store the logID.
 const CtxKey = logContextKeyType("Ong-logID")
 
-// TODO: rename NewSlog to `New`
+// TODO: rename New to `New`
 //
 // usage:
 //
-//	glob := NewSlog(os.Stdout, 1_000)
+//	glob := New(os.Stdout, 1_000)
 //	ctx, span := tracer.Start(ctx, "myFuncName")
 //	l := glob(ctx)
 //	l.Info("hello world")
-func NewSlog(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
+func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	opts := slog.HandlerOptions{
 		AddSource: true,
 		Level:     slog.LevelDebug,

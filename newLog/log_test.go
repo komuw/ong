@@ -118,7 +118,7 @@ func TestLogger(t *testing.T) {
 
 		w := newBuf()
 		maxMsgs := 3
-		l := NewSlog(w, maxMsgs)
+		l := New(w, maxMsgs)
 		l(context.Background()).Info("hey", "one", "one")
 
 		attest.Zero(t, w.String())
@@ -129,7 +129,7 @@ func TestLogger(t *testing.T) {
 
 		w := newBuf()
 		maxMsgs := 3
-		l := NewSlog(w, maxMsgs)
+		l := New(w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
 		l(context.Background()).Error(msg, errors.New(msg))
 
@@ -141,7 +141,7 @@ func TestLogger(t *testing.T) {
 
 		w := newBuf()
 		maxMsgs := 3
-		l := NewSlog(w, maxMsgs)
+		l := New(w, maxMsgs)
 
 		infoMsg := "hello world"
 		l(context.Background()).Info(infoMsg, "what", "ok", "passwd", "ak&dHyS>47K")
@@ -165,7 +165,7 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			maxMsgs := 3
-			l := NewSlog(w, maxMsgs)
+			l := New(w, maxMsgs)
 
 			infoMsg := "hello world"
 			l(context.Background()).Info(infoMsg)
@@ -180,7 +180,7 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			maxMsgs := 3
-			l := NewSlog(w, maxMsgs)
+			l := New(w, maxMsgs)
 
 			infoMsg := "hello world"
 			l(context.Background()).Info(infoMsg)
@@ -196,7 +196,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := NewSlog(w, maxMsgs)
+		l := New(w, maxMsgs)
 
 		for i := 0; i <= (maxMsgs + 4); i++ {
 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -218,7 +218,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := NewSlog(w, maxMsgs)
+		l := New(w, maxMsgs)
 		{
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
@@ -249,7 +249,7 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 12
-		l := NewSlog(w, maxMsgs)
+		l := New(w, maxMsgs)
 
 		xl := l(context.Background())
 
