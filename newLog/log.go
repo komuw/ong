@@ -54,6 +54,11 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 //}
 
 // custom handler.
+// TODO: docs.
+//
+// This handler is similar to python's [memory handler]
+//
+// [memory handler]: https://github.com/python/cpython/blob/v3.11.1/Lib/logging/handlers.py#L1353-L1359
 type handler struct {
 	h    slog.Handler
 	cBuf *circleBuf
