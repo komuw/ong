@@ -60,6 +60,9 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 //
 // [memory handler]: https://github.com/python/cpython/blob/v3.11.1/Lib/logging/handlers.py#L1353-L1359
 type handler struct {
+	// from [slog.Handler] documentation:
+	// Any of the Handler's methods may be called concurrently with itself or with other methods.
+	// It is the responsibility of the Handler to manage this concurrency.
 	h    slog.Handler
 	cBuf *circleBuf
 }
