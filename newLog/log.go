@@ -59,7 +59,10 @@ type handler struct {
 	cBuf *circleBuf
 }
 
-func (h handler) Enabled(_ slog.Level) bool { return true /* support all logging levels*/ }
+func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
+	return true /* support all logging levels*/
+}
+
 func (l handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &handler{h: l.h.WithAttrs(attrs)}
 }
