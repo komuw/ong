@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.30
+- Update to Go v1.20: https://github.com/komuw/ong/pull/209
+
 ## v0.0.29
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
 - ong/errors; wrap as deep as possible: https://github.com/komuw/ong/pull/199
