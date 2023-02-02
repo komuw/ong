@@ -200,6 +200,47 @@ jobs:
           ONG_RUNNING_IN_TESTS: 'YES'
 
 
+  # https://go.dev/testing/coverage/
+  integration_test_coverage:
+    name: integration_test_coverage
+    timeout-minutes: 2
+    strategy:
+      matrix:
+        go-version: ['>=1.20']
+        platform: [ubuntu-22.04]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          # For pull requests, build and test the PR head not a merge of the PR with the destination.
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          # We need to full history for git-restore-mtime to know what modification dates to use.
+          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
+          fetch-depth: '0'
+
+      - name: custom setupGo
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: whole program coverage
+        run: |
+          pwd; ls -lsha
+          rm -rf coverage/* ongExample
+          go build -cover -o ongExample github.com/komuw/ong/example
+          GOCOVERDIR=coverage/ ./ongExample &
+          sleep 10 && kill -15 $(pidof ongExample) && sleep 26
+          GOCOVERDIR=coverage/ ./ongExample &
+          sleep 10
+          ls -lsha coverage/
+          curl -vkL -X GET http://127.0.0.1:65080/health  # http redirection
+          curl -vkL -X GET https://127.0.0.1:65081/health # https
+          curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
+          curl -vkL https://127.0.0.1:65081/check/67
+          kill -15 $(pidof ongExample)
+          go tool covdata percent -i=coverage
+
   # run_stress_test:
   #   name: run_stress_test
   #   timeout-minutes: 2
