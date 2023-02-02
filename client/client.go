@@ -47,6 +47,9 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 	timeout := 3 * 2 * time.Second
 
 	dialer := &net.Dialer{
+		// Using Dialer.ControlContext instead of Dialer.Control allows;
+		// - propagation of logging contexts, metric context or other metadata down to the callback.
+		// - cancellation if the callback potentially does I/O.
 		ControlContext: ssrfSocketControl(ssrfSafe),
 		// see: net.DefaultResolver
 		Resolver: &net.Resolver{
