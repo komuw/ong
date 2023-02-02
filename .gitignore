@@ -4,6 +4,7 @@ debug.test
 coverage.txt
 coverage.html
 coverage.out
+coverage/
 .DS_Store
 
 # go-pry debug stuff
@@ -14,6 +15,7 @@ coverage.out
 
 # binary
 ong
+ongExample
 
 # debug stuff
 debug.test
