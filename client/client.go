@@ -3,6 +3,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -46,7 +47,7 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 	timeout := 3 * 2 * time.Second
 
 	dialer := &net.Dialer{
-		Control: ssrfSocketControl(ssrfSafe),
+		ControlContext: ssrfSocketControl(ssrfSafe),
 		// see: net.DefaultResolver
 		Resolver: &net.Resolver{
 			// Prefer Go's built-in DNS resolver.
@@ -112,12 +113,12 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 	return lr.RoundTripper.RoundTrip(req)
 }
 
-func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall.RawConn) error {
+func ssrfSocketControl(ssrfSafe bool) func(ctx context.Context, network, address string, c syscall.RawConn) error {
 	if !ssrfSafe {
 		return nil
 	}
 
-	return func(network, address string, conn syscall.RawConn) error {
+	return func(ctx context.Context, network, address string, c syscall.RawConn) error {
 		if !(network == "tcp4" || network == "tcp6") {
 			return fmt.Errorf("%s %s is not a safe network type", errPrefix, network)
 		}
