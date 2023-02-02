@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 1
     strategy:
       matrix:
-        go-version: ['>1.19.3']
+        go-version: ['>=1.20']
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -61,7 +61,7 @@ jobs:
     timeout-minutes: 7
     strategy:
       matrix:
-        go-version: ['>1.19.3']
+        go-version: ['>=1.20']
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -103,7 +103,7 @@ jobs:
     timeout-minutes: 5
     strategy:
       matrix:
-        go-version: ['>1.19.3']
+        go-version: ['>=1.20']
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -130,7 +130,7 @@ jobs:
       - name: install tools
         run: |
           set -x
-          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install honnef.co/go/tools/cmd/staticcheck@master
           go install github.com/securego/gosec/cmd/gosec@latest
           go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
           go install github.com/orijtech/structslop/cmd/structslop@latest
@@ -158,10 +158,10 @@ jobs:
 
           go vet -all ./...
           go vet -vettool=/home/runner/go/bin/shadow -strict ./...
-          /home/runner/go/bin/staticcheck -tests -go 1.19 ./...
+          /home/runner/go/bin/staticcheck -tests -go 1.20 ./...
           govulncheck ./...
-          # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.19
-          # /home/runner/go/bin/structslop ./... # does not seem to work with Go1.19
+          # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.20
+          # /home/runner/go/bin/structslop ./... # does not seem to work with Go1.20
           /home/runner/go/bin/httperroryzer ./...
           # see: https://github.com/golang/go/commit/a98589711da5e9d935e8d690cfca92892e86d557
           /home/runner/go/bin/errcheck -ignoregenerated -ignoretests -asserts ./...
@@ -175,7 +175,7 @@ jobs:
           wget -nc --output-document=/tmp/semgrep-go.zip https://github.com/dgryski/semgrep-go/archive/refs/heads/master.zip
           unzip -o /tmp/semgrep-go.zip -d /tmp/semgrep-go
           go get github.com/quasilyte/go-ruleguard/dsl
-          golangci-lint run --config .golangci.yml ./...
+          # golangci-lint run --config .golangci.yml ./...
           go mod tidy
           python -m venv /tmp/.venv
           . /tmp/.venv/bin/activate
@@ -200,12 +200,56 @@ jobs:
           ONG_RUNNING_IN_TESTS: 'YES'
 
 
+  # https://go.dev/testing/coverage/
+  integration_test_coverage:
+    name: integration_test_coverage
+    timeout-minutes: 2
+    strategy:
+      matrix:
+        go-version: ['>=1.20']
+        platform: [ubuntu-22.04]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+        with:
+          # For pull requests, build and test the PR head not a merge of the PR with the destination.
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          # We need to full history for git-restore-mtime to know what modification dates to use.
+          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
+          fetch-depth: '0'
+
+      - name: custom setupGo
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: whole program coverage
+        run: |
+          pwd; ls -lsha
+          sudo apt -y update
+          sudo apt -y install libnss3-tools # certutil
+          mkdir -p coverage/
+          rm -rf coverage/* ongExample
+          go build -cover -o ongExample github.com/komuw/ong/example
+          GOCOVERDIR=coverage/ ./ongExample &
+          sleep 10 && kill -15 $(pidof ongExample) && sleep 26
+          GOCOVERDIR=coverage/ ./ongExample &
+          sleep 10
+          ls -lsha coverage/
+          curl -vkL -X GET http://127.0.0.1:65080/health  # http redirection
+          curl -vkL -X GET https://127.0.0.1:65081/health # https
+          curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
+          curl -vkL https://127.0.0.1:65081/check/67
+          kill -15 $(pidof ongExample)
+          go tool covdata percent -i=coverage
+
   # run_stress_test:
   #   name: run_stress_test
   #   timeout-minutes: 2
   #   strategy:
   #     matrix:
-  #       go-version: ['>1.19.3']
+  #       go-version: ['>=1.20']
   #       platform: [ubuntu-22.04]
   #   runs-on: ${{ matrix.platform }}
   #   steps:

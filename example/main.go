@@ -19,7 +19,7 @@ func main() {
 		nil,
 		mux.NewRoute(
 			"/health",
-			mux.MethodPost,
+			mux.MethodGet,
 			api.health(secretKey),
 		),
 		mux.NewRoute(
