@@ -612,8 +612,6 @@ func BenchmarkAverageCase(b *testing.B) {
 	str := fmt.Sprintf("%s", sl)
 	logErr := stdlibErrors.New("hey")
 
-	rand.Seed(time.Now().UnixNano())
-
 	b.Logf("average case")
 
 	b.Run("Zap", func(b *testing.B) {

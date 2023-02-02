@@ -5,7 +5,6 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	mathRand "math/rand"
-	"time"
 )
 
 // encodeURL is like [base64.EncodeURL] except we replace:
@@ -48,8 +47,6 @@ func Random(n int) string {
 	b := make([]byte, byteSize)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, byteSize)
-		// this codepath is rarely executed so we can put all the code here instead of global var.
-		mathRand.Seed(time.Now().UTC().UnixNano())
 		_, _ = mathRand.Read(b) // docs say that it always returns a nil error.
 	}
 
