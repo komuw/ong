@@ -232,18 +232,17 @@ jobs:
           mkdir -p coverage/
           rm -rf coverage/* ongExample
           go build -cover -o ongExample github.com/komuw/ong/example
-          GOCOVERDIR=coverage/ ./ongExample
-          # GOCOVERDIR=coverage/ ./ongExample &
-          # sleep 10 && kill -15 $(pidof ongExample) && sleep 26
-          # GOCOVERDIR=coverage/ ./ongExample &
-          # sleep 10
-          # ls -lsha coverage/
-          # curl -vkL -X GET http://127.0.0.1:65080/health  # http redirection
-          # curl -vkL -X GET https://127.0.0.1:65081/health # https
-          # curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
-          # curl -vkL https://127.0.0.1:65081/check/67
-          # kill -15 $(pidof ongExample)
-          # go tool covdata percent -i=coverage
+          GOCOVERDIR=coverage/ ./ongExample &
+          sleep 10 && kill -15 $(pidof ongExample) && sleep 26
+          GOCOVERDIR=coverage/ ./ongExample &
+          sleep 10
+          ls -lsha coverage/
+          curl -vkL -X GET http://127.0.0.1:65080/health  # http redirection
+          curl -vkL -X GET https://127.0.0.1:65081/health # https
+          curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
+          curl -vkL https://127.0.0.1:65081/check/67
+          kill -15 $(pidof ongExample)
+          go tool covdata percent -i=coverage
 
   # run_stress_test:
   #   name: run_stress_test
