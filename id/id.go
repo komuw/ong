@@ -1,11 +1,11 @@
-// Package id generates unique random strings
+// Package id generates unique random strings.
+// It however should not be used for cryptography purposes.
 package id
 
 import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	mathRand "math/rand"
-	"time"
 )
 
 // encodeURL is like [base64.EncodeURL] except we replace:
@@ -23,7 +23,7 @@ func encoding() *base64.Encoding {
 
 var enc = encoding() //nolint:gochecknoglobals
 
-// New returns a new random string
+// New returns a new random string.
 func New() string {
 	return Random(16)
 }
@@ -48,8 +48,9 @@ func Random(n int) string {
 	b := make([]byte, byteSize)
 	if _, err := cryptoRand.Read(b); err != nil {
 		b = make([]byte, byteSize)
-		// this codepath is rarely executed so we can put all the code here instead of global var.
-		mathRand.Seed(time.Now().UTC().UnixNano())
+		//lint:ignore SA1019 `mathRand.Read` is deprecated.
+		// However, for our case here is okay since the func id.Random is not used for cryptography.
+		// Also we like the property of `mathRand.Read` always returning a nil error.
 		_, _ = mathRand.Read(b) // docs say that it always returns a nil error.
 	}
 

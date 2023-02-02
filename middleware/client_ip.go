@@ -28,6 +28,8 @@ const (
 	LeftIpStrategy = ClientIPstrategy("LeftIpStrategy")
 
 	// RightIpStrategy derives the client IP from the rightmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	//
+	// See the warning in [ClientIP]
 	RightIpStrategy = ClientIPstrategy("RightIpStrategy")
 )
 

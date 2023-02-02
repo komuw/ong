@@ -13,7 +13,7 @@ It's name is derived from Tanzanian artiste, [Remmy Ongala](https://en.wikipedia
 Taken mainly from the talk; `How I Write HTTP Web Services after Eight Years`[1][2] by Mat Ryer.    
 
 
-You really should not use this library/toolkit.    
+You really should **not** use this library/toolkit.    
 Instead, use the Go `net/http` package; and if you need some extra bits, may I suggest the awesome [github.com/gorilla](https://github.com/gorilla) web toolkit.    
 
 
@@ -83,8 +83,12 @@ func check() http.HandlerFunc {
 }
 ```
 
-`go run -race ./...`     
+`go run -race ./...`       
+
+A more complete example can be found in the `example/` folder.      
 
 
+
+### references:
 1. https://www.youtube.com/watch?v=rWBSMsLG8po     
 2. https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html     
