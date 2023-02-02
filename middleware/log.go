@@ -25,7 +25,6 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.H
 	//
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 
-	mathRand.Seed(time.Now().UTC().UnixNano())
 	pid := os.Getpid()
 
 	return func(w http.ResponseWriter, r *http.Request) {

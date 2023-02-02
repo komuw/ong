@@ -183,7 +183,6 @@ func TestLatencyQueue(t *testing.T) {
 }
 
 func loadShedderBenchmarkHandler() http.HandlerFunc {
-	rand.Seed(time.Now().UTC().UnixNano())
 	return func(w http.ResponseWriter, r *http.Request) {
 		latency := time.Duration(rand.Intn(100)+1) * time.Millisecond
 		time.Sleep(latency)

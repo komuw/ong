@@ -1,6 +1,6 @@
 module github.com/komuw/ong
 
-go 1.19
+go 1.20
 
 require (
 	golang.org/x/crypto v0.5.0
@@ -13,7 +13,6 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
