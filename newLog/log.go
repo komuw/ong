@@ -79,8 +79,6 @@ func (l handler) WithGroup(name string) slog.Handler {
 	return &handler{h: l.h.WithGroup(name)}
 }
 
-// TODO: fgure out `encoder.SetEscapeHTML`
-// see: https://github.com/golang/go/issues/56345#issuecomment-1407491552
 func (l handler) Handle(r slog.Record) error {
 	// TODO: make sure time is in UTC.
 	// see: - https://github.com/golang/go/issues/56345#issuecomment-1407053167
@@ -115,8 +113,6 @@ func (l handler) Handle(r slog.Record) error {
 	if r.Level >= slog.LevelError {
 		l.cBuf.mu.Lock()
 		for _, v := range l.cBuf.buf {
-			// TODO: check how it handles special characters
-			// see: https://github.com/komuw/ong/commit/fd94ed712d9baa5b42d5ff16f1fe561337491328
 			if e := l.h.Handle(v); e != nil {
 				err = e
 			}
