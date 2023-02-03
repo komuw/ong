@@ -34,6 +34,8 @@ func GetId(ctx context.Context) (string, bool) {
 
 // New returns an [slog.Logger] that is backed by a handler that stores log messages into a [circular buffer].
 // Those log messages are only flushed to the underlying io.Writer when a message with level >=[slog.LevelError] is logged.
+// A unique logID is also added to the logs that acts as a correlation id of log events from diffrent components that
+// neverthless are related.
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
@@ -49,7 +51,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	return func(ctx context.Context) *slog.Logger {
 		id := h.logID
 		if id2, ok := GetId(ctx); ok {
-			// if ctx did not contain a logId, do not use it.
+			// if ctx did not contain a logId, do not use the generated one.
 			id = id2
 		}
 
@@ -61,8 +63,6 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 // Handler is an [slog.Handler]
 // It stores log messages into a [circular buffer]. Those log messages are only flushed to the underlying io.Writer when
 // a message with level >=[slog.LevelError] is logged.
-//
-// It can be used simultaneously from multiple goroutines.
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 type Handler struct {
@@ -110,7 +110,7 @@ func (l Handler) Handle(r slog.Record) error {
 
 	id := l.logID
 	if id2, ok := GetId(r.Context); ok {
-		// if ctx did not contain a logId, do not use it.
+		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
 	}
 	r.Context = context.WithValue(r.Context, CtxKey, id)
