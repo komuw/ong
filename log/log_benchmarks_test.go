@@ -9,8 +9,7 @@ import (
 	"testing"
 	"time"
 
-	ongOldlog "github.com/komuw/ong/log"
-	ongNewlog "github.com/komuw/ong/newLog"
+	"github.com/komuw/ong/log"
 	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
@@ -50,29 +49,21 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	))
 }
 
-func newOldOngLogger() ongOldlog.Logger {
-	maxMsgs := 50_000
-	return ongOldlog.New(
-		io.Discard,
-		maxMsgs,
-	)
-}
-
 func newNewOngLogger() *slog.Logger {
 	maxMsgs := 50_000
-	return ongNewlog.New(
+	return log.New(
 		io.Discard,
 		maxMsgs,
 	)(context.Background())
 }
 
-func getMessage() (ongOldlog.F, []string, []any) {
+func getMessage() ([]string, []any) {
 	type car struct {
 		mft  string
 		date uint64
 	}
 	c := car{mft: "Toyota", date: uint64(1994)}
-	f := ongOldlog.F{
+	f := map[string]any{
 		"some-random-id": "kad8184dHjekI1ESL",
 		"age":            34,
 		"name":           "John Snow",
@@ -98,16 +89,16 @@ func getMessage() (ongOldlog.F, []string, []any) {
 	for _, v := range sl {
 		slAny = append(slAny, v)
 	}
-	return f, sl, slAny
+	return sl, slAny
 }
 
-func noOpFunc(f ongOldlog.F) {
+func noOpFunc(s string) {
 	// func used in the `no logger` benchmark.
-	_ = f
+	_ = s
 }
 
 func BenchmarkBestCase(b *testing.B) {
-	f, sl, slAny := getMessage()
+	sl, slAny := getMessage()
 	str := fmt.Sprintf("%s", sl)
 	b.Logf("best case") // best-case because ong/oldLog does not log if it is not error level
 
@@ -138,15 +129,6 @@ func BenchmarkBestCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/oldLog", func(b *testing.B) {
-		l := newOldOngLogger()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(f)
-		}
-	})
-
 	b.Run("ong/newLog", func(b *testing.B) {
 		l := newNewOngLogger()
 		b.ReportAllocs()
@@ -160,13 +142,13 @@ func BenchmarkBestCase(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			noOpFunc(f)
+			noOpFunc("")
 		}
 	})
 }
 
 func BenchmarkAverageCase(b *testing.B) {
-	f, sl, slAny := getMessage()
+	sl, slAny := getMessage()
 	str := fmt.Sprintf("%s", sl)
 	logErr := stdlibErrors.New("hey")
 
@@ -208,18 +190,6 @@ func BenchmarkAverageCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/oldLog", func(b *testing.B) {
-		l := newOldOngLogger()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(f)
-			if rand.Intn(100) >= 99 {
-				l.Error(logErr)
-			}
-		}
-	})
-
 	b.Run("ong/newLog", func(b *testing.B) {
 		l := newNewOngLogger()
 		b.ReportAllocs()
@@ -236,13 +206,13 @@ func BenchmarkAverageCase(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			noOpFunc(f)
+			noOpFunc("")
 		}
 	})
 }
 
 func BenchmarkWorstCase(b *testing.B) {
-	f, sl, slAny := getMessage()
+	sl, slAny := getMessage()
 	str := fmt.Sprintf("%s", sl)
 	logErr := stdlibErrors.New("hey")
 
@@ -278,16 +248,6 @@ func BenchmarkWorstCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/oldLog", func(b *testing.B) {
-		l := newOldOngLogger()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(f)
-			l.Error(logErr, f)
-		}
-	})
-
 	b.Run("ong/newLog", func(b *testing.B) {
 		l := newNewOngLogger()
 		b.ReportAllocs()
@@ -302,7 +262,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			noOpFunc(f)
+			noOpFunc("")
 		}
 	})
 }
