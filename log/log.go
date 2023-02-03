@@ -144,11 +144,9 @@ func (l Handler) Handle(r slog.Record) error {
 			}
 		}
 		l.cBuf.reset()
-	}
-
-	// remove once the following is implemnted.
-	// https://github.com/golang/go/issues/56345#issuecomment-1407635269
-	if l.immediate {
+	} else if l.immediate {
+		// remove once the following is implemnted.
+		// https://github.com/golang/go/issues/56345#issuecomment-1407635269
 		err = l.h.Handle(r)
 	}
 
