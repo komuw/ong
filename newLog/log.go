@@ -45,6 +45,8 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
+		id, _ := GetId(ctx)
+		ctx = context.WithValue(ctx, CtxKey, id)
 		return l.WithContext(ctx)
 	}
 }

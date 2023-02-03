@@ -21,6 +21,6 @@ func ExampleNew() {
 	hey(context.Background())
 
 	// example output:
-	//   {"email":"jane@example.com","level":"info","logID":"r73RdRZEExH7cnax2faY7A","msg":"sending email","timestamp":"2022-09-16T12:56:05.471496845Z"}
-	//   {"email":"jane@example.com","err":"sending email failed.","level":"error","logID":"r73RdRZEExH7cnax2faY7A","timestamp":"2022-09-16T12:56:05.471500752Z"}
+	//   {"time":"2023-02-03T11:26:47.460792396Z","level":"INFO","source":"main.go:17","msg":"sending email","email":"jane@example.com","logID":"DQTXGs3HM8Xgx3yt"}
+	//   {"time":"2023-02-03T11:26:47.46080217Z","level":"ERROR","source":"main.go:18","msg":"fail","err":"sending email failed.","email":"jane@example.com","logID":"DQTXGs3HM8Xgx3yt"}
 }
