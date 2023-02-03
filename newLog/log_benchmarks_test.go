@@ -1,0 +1,308 @@
+package log_test
+
+import (
+	"context"
+	stdlibErrors "errors"
+	"fmt"
+	"io"
+	"math/rand"
+	"testing"
+	"time"
+
+	ongOldlog "github.com/komuw/ong/log"
+	ongNewlog "github.com/komuw/ong/newLog"
+	"github.com/rs/zerolog"
+	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/slog"
+)
+
+func newZerolog() zerolog.Logger {
+	return zerolog.New(io.Discard).With().Timestamp().Logger()
+}
+
+func newLogrus() *logrus.Logger {
+	return &logrus.Logger{
+		Out:       io.Discard,
+		Formatter: new(logrus.JSONFormatter),
+		Hooks:     make(logrus.LevelHooks),
+		Level:     logrus.DebugLevel,
+	}
+}
+
+// implements zap's `ztest.Discarder{}` which is internal.
+type Discarder struct {
+	io.Writer
+}
+
+func (d Discarder) Sync() error { return nil }
+
+func newZapLogger(lvl zapcore.Level) *zap.Logger {
+	ec := zap.NewProductionEncoderConfig()
+	ec.EncodeDuration = zapcore.NanosDurationEncoder
+	ec.EncodeTime = zapcore.EpochNanosTimeEncoder
+	enc := zapcore.NewJSONEncoder(ec)
+	return zap.New(zapcore.NewCore(
+		enc,
+		Discarder{io.Discard},
+		lvl,
+	))
+}
+
+func newOldOngLogger() ongOldlog.Logger {
+	maxMsgs := 50_000
+	return ongOldlog.New(
+		io.Discard,
+		maxMsgs,
+	)
+}
+
+func newNewOngLogger() *slog.Logger {
+	maxMsgs := 50_000
+	return ongNewlog.New(
+		io.Discard,
+		maxMsgs,
+	)(context.Background())
+}
+
+func getMessage() (ongOldlog.F, []string, []any) {
+	type car struct {
+		mft  string
+		date uint64
+	}
+	c := car{mft: "Toyota", date: uint64(1994)}
+	f := ongOldlog.F{
+		"some-random-id": "kad8184dHjekI1ESL",
+		"age":            34,
+		"name":           "John Snow",
+		"gender":         "male",
+		"company":        "ACME INC",
+		"email":          "sandersgonzalez@pivitol.com",
+		"phone":          "+1 (914) 563-2007",
+		"startdate":      time.Now(),
+		"height":         float64(89.22),
+		"car_length":     float32(123.8999),
+		"carVal":         c,
+		"carPtr":         &c,
+	}
+
+	sl := make([]string, 0, len(f))
+
+	for k, v := range f {
+		sl = append(sl, k)
+		sl = append(sl, fmt.Sprintf("%v", v))
+	}
+
+	slAny := []any{}
+	for _, v := range sl {
+		slAny = append(slAny, v)
+	}
+	return f, sl, slAny
+}
+
+func noOpFunc(f ongOldlog.F) {
+	// func used in the `no logger` benchmark.
+	_ = f
+}
+
+func BenchmarkBestCase(b *testing.B) {
+	f, sl, slAny := getMessage()
+	str := fmt.Sprintf("%s", sl)
+	b.Logf("best case") // best-case because ong/oldLog does not log if it is not error level
+
+	b.Run("Zap", func(b *testing.B) {
+		l := newZapLogger(zap.DebugLevel)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(str)
+		}
+	})
+
+	b.Run("sirupsen/logrus", func(b *testing.B) {
+		l := newLogrus()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(str)
+		}
+	})
+
+	b.Run("rs/zerolog", func(b *testing.B) {
+		l := newZerolog()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info().Msg(str)
+		}
+	})
+
+	b.Run("ong/oldLog", func(b *testing.B) {
+		l := newOldOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(f)
+		}
+	})
+
+	b.Run("ong/newLog", func(b *testing.B) {
+		l := newNewOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
+		}
+	})
+
+	b.Run("no logger", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			noOpFunc(f)
+		}
+	})
+}
+
+func BenchmarkAverageCase(b *testing.B) {
+	f, sl, slAny := getMessage()
+	str := fmt.Sprintf("%s", sl)
+	logErr := stdlibErrors.New("hey")
+
+	b.Logf("average case")
+
+	b.Run("Zap", func(b *testing.B) {
+		l := newZapLogger(zap.DebugLevel)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(str)
+			if rand.Intn(100) >= 99 {
+				l.Error(logErr.Error())
+			}
+		}
+	})
+
+	b.Run("sirupsen/logrus", func(b *testing.B) {
+		l := newLogrus()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(str)
+			if rand.Intn(100) >= 99 {
+				l.Error(logErr.Error())
+			}
+		}
+	})
+
+	b.Run("rs/zerolog", func(b *testing.B) {
+		l := newZerolog()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info().Msg(str)
+			if rand.Intn(100) >= 99 {
+				l.Error().Msg(logErr.Error())
+			}
+		}
+	})
+
+	b.Run("ong/oldLog", func(b *testing.B) {
+		l := newOldOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(f)
+			if rand.Intn(100) >= 99 {
+				l.Error(logErr)
+			}
+		}
+	})
+
+	b.Run("ong/newLog", func(b *testing.B) {
+		l := newNewOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
+			if rand.Intn(100) >= 99 {
+				l.Error("some-error", logErr)
+			}
+		}
+	})
+
+	b.Run("no logger", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			noOpFunc(f)
+		}
+	})
+}
+
+func BenchmarkWorstCase(b *testing.B) {
+	f, sl, slAny := getMessage()
+	str := fmt.Sprintf("%s", sl)
+	logErr := stdlibErrors.New("hey")
+
+	b.Logf("worst case")
+
+	b.Run("Zap", func(b *testing.B) {
+		l := newZapLogger(zap.DebugLevel)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(str)
+			l.Error(logErr.Error())
+		}
+	})
+
+	b.Run("sirupsen/logrus", func(b *testing.B) {
+		l := newLogrus()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(str)
+			l.Error(logErr.Error())
+		}
+	})
+
+	b.Run("rs/zerolog", func(b *testing.B) {
+		l := newZerolog()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info().Msg(str)
+			l.Error().Msg(logErr.Error())
+		}
+	})
+
+	b.Run("ong/oldLog", func(b *testing.B) {
+		l := newOldOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(f)
+			l.Error(logErr, f)
+		}
+	})
+
+	b.Run("ong/newLog", func(b *testing.B) {
+		l := newNewOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
+			l.Error("some-error", logErr)
+		}
+	})
+
+	b.Run("no logger", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			noOpFunc(f)
+		}
+	})
+}

@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	golang.org/x/crypto v0.5.0
-	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201
+	golang.org/x/exp v0.0.0-20230202163644-54bba9f4231b
 	golang.org/x/net v0.5.0
 	golang.org/x/sys v0.4.0
 )
