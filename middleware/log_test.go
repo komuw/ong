@@ -14,6 +14,7 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 const someLogHandlerHeader = "SomeLogHandlerHeader"
@@ -39,8 +40,8 @@ func someLogHandler(successMsg string) http.HandlerFunc {
 func TestLogMiddleware(t *testing.T) {
 	t.Parallel()
 
-	getLogger := func(w io.Writer) log.Logger {
-		return log.New(w, 500)
+	getLogger := func(w io.Writer) *slog.Logger {
+		return log.New(w, 500)(context.Background())
 	}
 
 	t.Run("success", func(t *testing.T) {

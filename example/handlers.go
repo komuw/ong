@@ -21,6 +21,7 @@ import (
 	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/sess"
 	"github.com/komuw/ong/xcontext"
+	"golang.org/x/exp/slog"
 )
 
 // db is a dummy database.
@@ -32,14 +33,14 @@ type db interface {
 // app represents component as a struct, shared dependencies as fields, no global state.
 type app struct {
 	db db
-	l  log.Logger
+	l  *slog.Logger
 }
 
 // NewApp creates a new app.
 func NewApp(d db) app {
 	return app{
 		db: d,
-		l:  log.New(os.Stdout, 1000),
+		l:  log.New(os.Stdout, 1000)(context.Background()),
 	}
 }
 
@@ -111,12 +112,12 @@ func (a app) check(msg string) http.HandlerFunc {
 				return resp.StatusCode, nil
 			}
 
-			l := a.l.WithCtx(ctx)
+			l := a.l.WithContext(ctx)
 			code, err := makeReq("https://example.com")
 			if err != nil {
-				l.Error(err)
+				l.Error("handler error", err)
 			}
-			l.Info(log.F{"msg": "req succeded", "code": code})
+			l.Info("req succeded", "code", code)
 		}(
 			// we need to detach context,
 			// since this goroutine can outlive the http request lifecycle.
@@ -189,7 +190,7 @@ func (a app) login(secretKey string) http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqL := a.l.WithCtx(r.Context())
+		reqL := a.l.WithContext(r.Context())
 
 		if r.Method != http.MethodPost {
 			data := struct {
@@ -228,11 +229,10 @@ func (a app) login(secretKey string) http.HandlerFunc {
 
 		cookieName := "example_session_cookie"
 		c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
-		reqL.WithImmediate().Info(log.F{
-			"msg":    "login handler log cookie",
-			"err":    errM,
-			"cookie": c,
-		})
+		reqL.Info("login handler log cookie",
+			"err", errM,
+			"cookie", c,
+		)
 
 		cookie.SetEncrypted(
 			r,
@@ -269,11 +269,17 @@ func (a app) handleFileServer() http.HandlerFunc {
 	fs := http.FileServer(http.Dir("./stuff"))
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqL := a.l.WithCtx(r.Context())
+		reqL := a.l.WithContext(r.Context())
 
-		reqL.Info(log.F{"msg": "handleFileServer", "clientIP": middleware.ClientIP(r)})
+		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r))
 
-		reqL.StdLogger().Println("this is now a Go standard library logger")
+		lHandler, ok := reqL.Handler().(log.Handler)
+		if !ok {
+			e := fmt.Errorf("unable to convert %v(%T) into log.Handler", reqL.Handler(), reqL.Handler())
+			http.Error(w, e.Error(), http.StatusInternalServerError)
+			return
+		}
+		lHandler.StdLogger().Println("this is now a Go standard library logger")
 
 		realHandler(w, r)
 	}

@@ -2,6 +2,7 @@ package mux
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -34,7 +35,7 @@ func thisIsAnitherMuxHandler() http.HandlerFunc {
 func TestNewRoute(t *testing.T) {
 	t.Parallel()
 
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	// succeds
 	_ = NewRoute(
@@ -71,7 +72,7 @@ func TestMux(t *testing.T) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	t.Run("unknown uri", func(t *testing.T) {
 		t.Parallel()
@@ -237,7 +238,7 @@ var result Mux //nolint:gochecknoglobals
 func BenchmarkMuxNew(b *testing.B) {
 	var r Mux
 
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	b.ReportAllocs()
 	b.ResetTimer()

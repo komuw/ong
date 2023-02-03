@@ -43,7 +43,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := handler{h: jh, cBuf: cbuf}
+	h := Handler{h: jh, cBuf: cbuf}
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
@@ -53,14 +53,14 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 }
 
-// handler is an [slog.Handler]
+// Handler is an [slog.Handler]
 // It stores log messages into a [circular buffer]. Those log messages are only flushed to the underlying io.Writer when
 // a message with level >=[slog.LevelError] is logged.
 //
 // It can be used simultaneously from multiple goroutines.
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
-type handler struct {
+type Handler struct {
 	// This handler is similar to python's memory handler.
 	// https://github.com/python/cpython/blob/v3.11.1/Lib/logging/handlers.py#L1353-L1359
 	//
@@ -76,19 +76,19 @@ type handler struct {
 	immediate bool
 }
 
-func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
+func (h Handler) Enabled(_ context.Context, _ slog.Level) bool {
 	return true /* support all logging levels*/
 }
 
-func (l handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &handler{h: l.h.WithAttrs(attrs)}
+func (l Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &Handler{h: l.h.WithAttrs(attrs)}
 }
 
-func (l handler) WithGroup(name string) slog.Handler {
-	return &handler{h: l.h.WithGroup(name)}
+func (l Handler) WithGroup(name string) slog.Handler {
+	return &Handler{h: l.h.WithGroup(name)}
 }
 
-func (l handler) Handle(r slog.Record) error {
+func (l Handler) Handle(r slog.Record) error {
 	// Obey the following rules form the slog documentation:
 	// Handle methods that produce output should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
@@ -143,19 +143,20 @@ func (l handler) Handle(r slog.Record) error {
 	return err
 }
 
-// TODO: Remove the `handler.Write` and `handler.StdLogger` methods..
+// TODO: Remove the `handler.Write` and `handler.StdLogger` methods.
+//       Also make `Handler` private
 //       This is needed by things like http.Server.Errolog
 // see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
 
 // StdLogger returns an unstructured logger from the Go standard library log package.
 // That logger will use l as its output.
-func (l handler) StdLogger() *stdLog.Logger {
+func (l Handler) StdLogger() *stdLog.Logger {
 	return stdLog.New(l, "", 0)
 }
 
 // Write implements the io.Writer interface.
 // This is useful if you want to set this logger as a writer for the standard library log.
-func (l handler) Write(p []byte) (n int, err error) {
+func (l Handler) Write(p []byte) (n int, err error) {
 	n = len(p)
 	if n > 0 && p[n-1] == '\n' {
 		// Trim CR added by stdlog.

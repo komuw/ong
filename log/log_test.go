@@ -254,7 +254,7 @@ func TestLogger(t *testing.T) {
 		msg := "hey what up?"
 		l := New(w, 2)
 		logger := l(context.Background())
-		h, ok := logger.Handler().(handler)
+		h, ok := logger.Handler().(Handler)
 		attest.True(t, ok)
 
 		stdLogger := h.StdLogger()

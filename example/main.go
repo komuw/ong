@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/komuw/ong/log"
@@ -12,7 +13,7 @@ import (
 func main() {
 	const secretKey = "super-h@rd-pa$$word"
 	api := NewApp(myDB{map[string]string{}})
-	l := log.New(os.Stdout, 1000)
+	l := log.New(os.Stdout, 1000)(context.Background())
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
@@ -41,7 +42,7 @@ func main() {
 
 	err := server.Run(mux, server.DevOpts(l), l)
 	if err != nil {
-		l.Error(err, log.F{"msg": "server.Run error"})
+		l.Error("server.Run error", err)
 		os.Exit(1)
 	}
 }

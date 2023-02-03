@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -28,18 +29,18 @@ const (
 
 // Safe creates a http client that has some good defaults & is safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-func Safe(l log.Logger) *http.Client {
+func Safe(l *slog.Logger) *http.Client {
 	return new(true, l)
 }
 
 // Unsafe creates a http client that has some good defaults & is NOT safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-func Unsafe(l log.Logger) *http.Client {
+func Unsafe(l *slog.Logger) *http.Client {
 	return new(false, l)
 }
 
 // new creates a client. Use [Safe] or [Unsafe] instead.
-func new(ssrfSafe bool, l log.Logger) *http.Client {
+func new(ssrfSafe bool, l *slog.Logger) *http.Client {
 	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
 	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
 	// and the p95 response times for http POST requests is ~3seconds:
@@ -75,7 +76,7 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 
 	lr := &loggingRT{
 		RoundTripper: transport,
-		l:            l.WithFields(log.F{"pid": os.Getpid()}),
+		l:            l.With("pid", os.Getpid()),
 	}
 
 	return &http.Client{
@@ -86,7 +87,7 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 
 // loggingRT is a [http.RoundTripper] that logs requests and responses.
 type loggingRT struct {
-	l log.Logger
+	l *slog.Logger
 	http.RoundTripper
 }
 
@@ -94,19 +95,23 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 	ctx := req.Context()
 	start := time.Now()
 	defer func() {
-		l := lr.l.WithCtx(ctx)
-		flds := log.F{
-			"msg":        "http_client",
-			"method":     req.Method,
-			"url":        req.URL.Redacted(),
-			"durationMS": time.Since(start).Milliseconds(),
+		l := lr.l.WithContext(ctx)
+		msg := "http_client"
+		// TODO: (komuw), check if using []any{} is okay.
+		flds := []any{
+			"method", req.Method,
+			"url", req.URL.Redacted(),
+			"durationMS", time.Since(start).Milliseconds(),
 		}
 		if err != nil {
-			l.Error(err, flds)
+			l.Error(msg, err, flds)
 		} else {
-			flds["code"] = res.StatusCode
-			flds["status"] = res.Status
-			l.Info(flds)
+			extra := []any{
+				"code", res.StatusCode,
+				"status", res.Status,
+			}
+			flds = append(flds, extra...)
+			l.Info(msg, flds)
 		}
 	}()
 

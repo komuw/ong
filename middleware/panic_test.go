@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 
 	"github.com/akshayjshah/attest"
 )
@@ -46,8 +48,8 @@ func anotherHandlerThatPanics() http.HandlerFunc {
 func TestPanic(t *testing.T) {
 	t.Parallel()
 
-	getLogger := func(w io.Writer) log.Logger {
-		return log.New(w, 500)
+	getLogger := func(w io.Writer) *slog.Logger {
+		return log.New(w, 500)(context.Background())
 	}
 
 	t.Run("ok if no panic", func(t *testing.T) {

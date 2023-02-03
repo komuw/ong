@@ -2,18 +2,20 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
-func getLogger() log.Logger {
+func getLogger() *slog.Logger {
 	w := &bytes.Buffer{}
 	maxMsgs := 15
-	return log.New(w, maxMsgs)
+	return log.New(w, maxMsgs)(context.Background())
 }
 
 func TestClient(t *testing.T) {
@@ -91,7 +93,7 @@ func TestClient(t *testing.T) {
 			// error
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)
+			l := log.New(w, maxMsgs)(context.Background())
 
 			cli := Safe(l)
 
@@ -107,7 +109,7 @@ func TestClient(t *testing.T) {
 			// success
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)
+			l := log.New(w, maxMsgs)(context.Background())
 
 			cli := Safe(l)
 
@@ -127,7 +129,7 @@ func TestClient(t *testing.T) {
 			// error
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)
+			l := log.New(w, maxMsgs)(context.Background())
 
 			cli := Safe(l)
 
@@ -144,7 +146,7 @@ func TestClient(t *testing.T) {
 			// success
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)
+			l := log.New(w, maxMsgs)(context.Background())
 
 			cli := Safe(l)
 

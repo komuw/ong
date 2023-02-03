@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -15,7 +16,7 @@ import (
 func TestPprofServer(t *testing.T) {
 	t.Parallel()
 
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()

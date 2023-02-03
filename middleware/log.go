@@ -13,12 +13,13 @@ import (
 
 	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 const logIDKey = string(log.CtxKey)
 
 // logger is a middleware that logs http requests and responses using [log.Logger].
-func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.HandlerFunc {
+func logger(wrappedHandler http.HandlerFunc, domain string, l *slog.Logger) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
@@ -29,7 +30,7 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.H
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		reqL := l.WithCtx(ctx)
+		reqL := l.WithContext(ctx)
 
 		{
 			// set cookie/headers/ctx for logID.
@@ -61,17 +62,20 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.H
 			ResponseWriter: w,
 		}
 		defer func() {
-			flds := log.F{
-				"clientIP":   ClientIP(r),
-				"method":     r.Method,
-				"path":       r.URL.Redacted(),
-				"code":       lrw.code,
-				"status":     http.StatusText(lrw.code),
-				"durationMS": time.Since(start).Milliseconds(),
-				"pid":        pid,
+			msg := "http_server" // TODO: check if this is okay.
+			// TODO: (komuw) check if this okay
+			flds := []any{
+				"clientIP", ClientIP(r),
+				"method", r.Method,
+				"path", r.URL.Redacted(),
+				"code", lrw.code,
+				"status", http.StatusText(lrw.code),
+				"durationMS", time.Since(start).Milliseconds(),
+				"pid", pid,
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
-				flds["ongError"] = ongError
+				extra := []any{"ongError", ongError}
+				flds = append(flds, extra)
 			}
 
 			// Remove header so that users dont see it.
@@ -88,13 +92,15 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l log.Logger) http.H
 				// Only log 10% of the errors.
 				shouldLog := mathRand.Intn(100) > 90
 				if shouldLog {
-					reqL.Error(nil, flds)
+					e := fmt.Errorf("code:%d", lrw.code) // TODO: check if this is okay.
+					reqL.Error(msg, e, flds...)
 				}
 			} else if lrw.code >= http.StatusBadRequest {
+				e := fmt.Errorf("code:%d", lrw.code) // TODO: check if this is okay.
 				// both client and server errors.
-				reqL.Error(nil, flds)
+				reqL.Error(msg, e, flds...)
 			} else {
-				reqL.Info(flds)
+				reqL.Info(msg, flds...)
 			}
 		}()
 

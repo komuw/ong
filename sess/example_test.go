@@ -1,6 +1,7 @@
 package sess_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -25,11 +26,12 @@ func loginHandler() http.HandlerFunc {
 }
 
 func ExampleSetM() {
+	l := log.New(os.Stdout, 100)(context.Background())
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	handler := middleware.Get(
 		loginHandler(),
-		middleware.WithOpts("example.com", 443, "secretKey", middleware.DirectIpStrategy, log.New(os.Stdout, 100)),
+		middleware.WithOpts("example.com", 443, "secretKey", middleware.DirectIpStrategy, l),
 	)
 	handler.ServeHTTP(rec, req)
 

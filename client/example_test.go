@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"context"
 	"os"
 
 	"github.com/komuw/ong/client"
@@ -8,7 +9,7 @@ import (
 )
 
 func ExampleSafe() {
-	l := log.New(os.Stdout, 7)
+	l := log.New(os.Stdout, 7)(context.Background())
 
 	cli := client.Safe(l)
 	// This is the AWS metadata url.

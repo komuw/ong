@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/komuw/ong/errors"
-	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -14,14 +14,14 @@ import (
 
 // recoverer is a middleware that recovers from panics in wrappedHandler.
 // When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
-func recoverer(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
+func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 	pid := os.Getpid()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			errR := recover()
 			if errR != nil {
-				reqL := l.WithCtx(r.Context()).WithCaller()
+				reqL := l.WithContext(r.Context())
 
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)
@@ -31,24 +31,28 @@ func recoverer(wrappedHandler http.HandlerFunc, l log.Logger) http.HandlerFunc {
 					code,
 				)
 
-				flds := log.F{
-					"err":      fmt.Sprint(errR),
-					"clientIP": ClientIP(r),
-					"method":   r.Method,
-					"path":     r.URL.Redacted(),
-					"code":     code,
-					"status":   status,
-					"pid":      pid,
+				msg := "http_server" // TODO: (komuw) check if this okay
+				// TODO: (komuw) check if this okay
+				flds := []any{
+					"err", fmt.Sprint(errR),
+					"clientIP", ClientIP(r),
+					"method", r.Method,
+					"path", r.URL.Redacted(),
+					"code", code,
+					"status", status,
+					"pid", pid,
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
-					flds["ongError"] = ongError
+					extra := []any{"ongError", ongError}
+					flds = append(flds, extra)
 				}
 				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
 				if e, ok := errR.(error); ok {
-					reqL.Error(errors.Wrap(e), flds) // wrap with ong/errors so that the log will have a stacktrace.
+					reqL.Error(msg, errors.Wrap(e), flds...) // wrap with ong/errors so that the log will have a stacktrace.
 				} else {
-					reqL.Error(nil, flds)
+
+					reqL.Error(msg, errors.New("unknown error"), flds...)
 				}
 			}
 		}()

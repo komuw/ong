@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -31,10 +31,9 @@ import (
 //
 // This is only meant to be used for development/local settings.
 // The certificate is self-signed & a best effort is made to add its CA to the OS trust store.
-func CreateDevCertKey(l log.Logger) (certFile, keyFile string) {
-	l = l.WithImmediate()
-	l.Info(log.F{"msg": "creating dev tls cert and key"})
-	defer l.Info(log.F{"msg": "done creating dev tls cert and key"})
+func CreateDevCertKey(l *slog.Logger) (certFile, keyFile string) {
+	l.Info("creating dev tls cert and key")
+	defer l.Info("done creating dev tls cert and key")
 
 	caCert, caKey := installCA(l)
 	certPath, keyPath := certKeyPaths()
@@ -80,9 +79,9 @@ func CreateDevCertKey(l log.Logger) (certFile, keyFile string) {
 }
 
 // installCA adds the dev root CA to the linux/ubuntu certificate trust store.
-func installCA(l log.Logger) (caCert *x509.Certificate, caKey any) {
-	l.Info(log.F{"msg": "installing dev root CA"})
-	defer l.Info(log.F{"msg": "done installing dev root CA"})
+func installCA(l *slog.Logger) (caCert *x509.Certificate, caKey any) {
+	l.Info("installing dev root CA")
+	defer l.Info("done installing dev root CA")
 
 	caCert, caKey = loadCA()
 
@@ -97,7 +96,7 @@ func installCA(l log.Logger) (caCert *x509.Certificate, caKey any) {
 	_, errVerify := caCert.Verify(x509.VerifyOptions{})
 	if errVerify == nil && errStat == nil {
 		// cert is already installed.
-		l.Info(log.F{"msg": "root CA was already installed"})
+		l.Info("root CA was already installed")
 		return caCert, caKey
 	}
 
@@ -117,7 +116,7 @@ func installCA(l log.Logger) (caCert *x509.Certificate, caKey any) {
 	sysTrustCmd := []string{"update-ca-certificates"}
 	cmd = commandWithSudo(sysTrustCmd...)
 	out, err = cmd.CombinedOutput()
-	l.Info(log.F{"msg": string(out)})
+	l.Info(string(out))
 	if err != nil {
 		panic(err)
 	}
@@ -134,7 +133,7 @@ func installCA(l log.Logger) (caCert *x509.Certificate, caKey any) {
 		createDir := []string{"mkdir", "-p", nssDb}
 		cmd = commandWithSudo(createDir...)
 		out, err = cmd.CombinedOutput()
-		l.Info(log.F{"msg": string(out), "args": cmd.Args, "err": err})
+		l.Info(string(out), "args", cmd.Args, "err", err)
 		if err != nil {
 			panic(err)
 		}
@@ -142,13 +141,13 @@ func installCA(l log.Logger) (caCert *x509.Certificate, caKey any) {
 		delete := []string{"certutil", "-D", "-d", nssDb, "-n", caUniqename}
 		cmd = commandWithSudo(delete...)
 		out, err = cmd.CombinedOutput()
-		l.Info(log.F{"msg": string(out), "args": cmd.Args, "err": err})
+		l.Info(string(out), "args", cmd.Args, "err", err)
 		_ = err // ignore error
 
 		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertName}
 		cmd = commandWithSudo(add...)
 		out, err = cmd.CombinedOutput()
-		l.Info(log.F{"msg": string(out), "args": cmd.Args})
+		l.Info(string(out), "args", cmd.Args)
 		if err != nil {
 			panic(err)
 		}
