@@ -247,6 +247,21 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
+	t.Run("get stdlibLog", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		msg := "hey what up?"
+		l := New(w, 2)
+		logger := l(context.Background())
+		h, ok := logger.Handler().(handler)
+		attest.True(t, ok)
+
+		stdLogger := h.StdLogger()
+		stdLogger.Println(msg)
+		attest.Subsequence(t, w.String(), msg)
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 

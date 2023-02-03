@@ -4,6 +4,8 @@ package log
 import (
 	"context"
 	"io"
+	stdLog "log"
+	"runtime"
 	"sync"
 	"time"
 
@@ -51,18 +53,6 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 }
 
-// TODO: Make sure we have a way to get back an old school stdlib logger.
-//       This is needed by things like http.Server.Errolog
-// see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
-//
-// we could add `Write()` method and a `GiveMeStdLogger()` method to `handler`
-// then in ong/server/server.go we do;
-// l := newLog.New(...)(ctx)
-// if xl, ok := l.Handler().(ong/newlog.Handler); ok {
-//    stdlibLogger = xl.GiveMeStdLogger()
-//    http.Server.Errolog = stdlibLogger
-//}
-
 // handler is an [slog.Handler]
 // It stores log messages into a [circular buffer]. Those log messages are only flushed to the underlying io.Writer when
 // a message with level >=[slog.LevelError] is logged.
@@ -80,6 +70,10 @@ type handler struct {
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 	h    slog.Handler
 	cBuf *circleBuf
+
+	// remove this once the following is implemnted
+	// https://github.com/golang/go/issues/56345#issuecomment-1407635269
+	immediate bool
 }
 
 func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
@@ -140,7 +134,50 @@ func (l handler) Handle(r slog.Record) error {
 		l.cBuf.reset()
 	}
 
+	// remove once the following is implemnted.
+	// https://github.com/golang/go/issues/56345#issuecomment-1407635269
+	if l.immediate {
+		err = l.h.Handle(r)
+	}
+
 	return err
+}
+
+// TODO: Remove the `handler.Write` and `handler.StdLogger` methods..
+//       This is needed by things like http.Server.Errolog
+// see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
+
+// StdLogger returns an unstructured logger from the Go standard library log package.
+// That logger will use l as its output.
+func (l handler) StdLogger() *stdLog.Logger {
+	return stdLog.New(l, "", 0)
+}
+
+// Write implements the io.Writer interface.
+// This is useful if you want to set this logger as a writer for the standard library log.
+func (l handler) Write(p []byte) (n int, err error) {
+	n = len(p)
+	if n > 0 && p[n-1] == '\n' {
+		// Trim CR added by stdlog.
+		p = p[0 : n-1]
+	}
+
+	var pcs [1]uintptr
+	calldepth := 1
+	runtime.Callers(calldepth+2, pcs[:])
+
+	l.immediate = true
+	err = l.Handle(
+		slog.NewRecord(
+			time.Now(),
+			slog.LevelDebug,
+			string(p),
+			pcs[0],
+			context.Background(),
+		),
+	)
+
+	return
 }
 
 // circleBuf implements a very simple & naive circular buffer.
