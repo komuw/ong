@@ -6,6 +6,7 @@ Most recent version is listed first.
 ## v0.0.30
 - Update to Go v1.20: https://github.com/komuw/ong/pull/209
 - Use net.Dialer.ControlContext instead of use net.Dialer.Control: https://github.com/komuw/ong/pull/212
+- Re-enable golangci-lint: https://github.com/komuw/ong/pull/214
 
 ## v0.0.29
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
