@@ -1,3 +1,4 @@
+// Package log implements a simple logging handler.
 package log
 
 import (
@@ -16,12 +17,23 @@ type logContextKeyType string
 // CtxKey is the name of the context key used to store the logID.
 const CtxKey = logContextKeyType("Ong-logID")
 
-// usage:
+// GetId gets a logId either from the provided context or auto-generated.
+// It returns the logID and true if the id came from ctx else false
+func GetId(ctx context.Context) (string, bool) {
+	if ctx != nil {
+		if vCtx := ctx.Value(CtxKey); vCtx != nil {
+			if s, ok := vCtx.(string); ok {
+				return s, true
+			}
+		}
+	}
+	return id.New(), false
+}
+
+// New returns an [slog.Logger] that is backed by a handler that stores log messages into a [circular buffer].
+// Those log messages are only flushed to the underlying io.Writer when a message with level >=[slog.LevelError] is logged.
 //
-//	glob := New(os.Stdout, 1_000)
-//	ctx, span := tracer.Start(ctx, "myFuncName")
-//	l := glob(ctx)
-//	l.Info("hello world")
+// [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	opts := slog.HandlerOptions{
 		AddSource: true,
@@ -127,19 +139,6 @@ func (l handler) Handle(r slog.Record) error {
 	}
 
 	return err
-}
-
-// GetId gets a logId either from the provided context or auto-generated.
-// It returns the logID and true if the id came from ctx else false
-func GetId(ctx context.Context) (string, bool) {
-	if ctx != nil {
-		if vCtx := ctx.Value(CtxKey); vCtx != nil {
-			if s, ok := vCtx.(string); ok {
-				return s, true
-			}
-		}
-	}
-	return id.New(), false
 }
 
 // circleBuf implements a very simple & naive circular buffer.
