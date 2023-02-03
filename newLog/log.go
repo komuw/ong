@@ -106,18 +106,19 @@ func (l handler) Handle(r slog.Record) error {
 	})
 	r.AddAttrs(newAttrs...)
 
+	l.cBuf.mu.Lock()
+	defer l.cBuf.mu.Unlock()
+
 	// store record only after manipulating it.
 	l.cBuf.store(r)
 
 	var err error
 	if r.Level >= slog.LevelError {
-		l.cBuf.mu.Lock()
 		for _, v := range l.cBuf.buf {
 			if e := l.h.Handle(v); e != nil {
 				err = e
 			}
 		}
-		l.cBuf.mu.Unlock()
 		l.cBuf.reset()
 	}
 
@@ -138,6 +139,7 @@ func GetId(ctx context.Context) (string, bool) {
 }
 
 // circleBuf implements a very simple & naive circular buffer.
+// users of circleBuf are responsible for concurrency safety.
 type circleBuf struct {
 	mu sync.Mutex // protects buf
 	// +checklocks:mu
@@ -158,9 +160,6 @@ func newCirleBuf(maxSize int) *circleBuf {
 }
 
 func (c *circleBuf) store(r slog.Record) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	availableSpace := c.maxSize - len(c.buf)
 	if availableSpace <= 0 {
 		// clear space.
@@ -178,7 +177,5 @@ func (c *circleBuf) store(r slog.Record) {
 }
 
 func (c *circleBuf) reset() {
-	c.mu.Lock()
 	c.buf = c.buf[:0]
-	c.mu.Unlock()
 }
