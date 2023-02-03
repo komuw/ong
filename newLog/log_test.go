@@ -144,13 +144,18 @@ func TestLogger(t *testing.T) {
 		maxMsgs := 3
 		l := New(w, maxMsgs)
 
+		logger := l(context.Background())
 		infoMsg := "hello world"
-		l(context.Background()).Info(infoMsg, "what", "ok", "passwd", "ak&dHyS>47K")
+		logger.Info(infoMsg, "what", "ok", "passwd", "ak&dHyS>47K")
 		errMsg := "oops, Houston we got 99 problems."
-		l(context.Background()).Error("some-error", errors.New(errMsg))
+		logger.Error("some-error", errors.New(errMsg))
+
+		logID, ok := GetId(logger.Context())
+		attest.True(t, ok)
 
 		attest.Subsequence(t, w.String(), infoMsg)
 		attest.Subsequence(t, w.String(), errMsg)
+		attest.Subsequence(t, w.String(), logID)
 
 		// special characters are not quoted.
 		attest.Subsequence(t, w.String(), "&")
