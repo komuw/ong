@@ -187,7 +187,7 @@ func TestLogMiddleware(t *testing.T) {
 
 			for _, v := range []string{
 				// from first request
-				"info",
+				"INFO",
 				http.MethodHead,
 				"FirstUri",
 				fmt.Sprint(http.StatusOK),
@@ -195,7 +195,7 @@ func TestLogMiddleware(t *testing.T) {
 				http.MethodGet,
 				"SecondUri",
 				// from third request
-				"error",
+				"ERROR",
 				http.MethodPost,
 				"ThirdUri",
 				fmt.Sprint(http.StatusInternalServerError),
