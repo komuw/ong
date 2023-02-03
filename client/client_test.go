@@ -102,7 +102,7 @@ func TestClient(t *testing.T) {
 			attest.Zero(t, res)
 			attest.Error(t, err)
 			attest.NotZero(t, w.String())
-			attest.Subsequence(t, w.String(), "error")
+			attest.Subsequence(t, w.String(), "ERROR")
 		}
 
 		{
@@ -139,7 +139,7 @@ func TestClient(t *testing.T) {
 			attest.Zero(t, res)
 			attest.Error(t, err)
 			attest.NotZero(t, w.String())
-			attest.Subsequence(t, w.String(), "error")
+			attest.Subsequence(t, w.String(), "ERROR")
 		}
 
 		{
