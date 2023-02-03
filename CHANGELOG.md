@@ -5,6 +5,8 @@ Most recent version is listed first.
 
 ## v0.0.30
 - Update to Go v1.20: https://github.com/komuw/ong/pull/209
+- Use net.Dialer.ControlContext instead of use net.Dialer.Control: https://github.com/komuw/ong/pull/212
+- Re-enable golangci-lint: https://github.com/komuw/ong/pull/214
 - Use the new stdlib structured logger: https://github.com/komuw/ong/pull/208
 
 ## v0.0.29

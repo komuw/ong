@@ -51,7 +51,7 @@ func Random(n int) string {
 		//lint:ignore SA1019 `mathRand.Read` is deprecated.
 		// However, for our case here is okay since the func id.Random is not used for cryptography.
 		// Also we like the property of `mathRand.Read` always returning a nil error.
-		_, _ = mathRand.Read(b) // docs say that it always returns a nil error.
+		_, _ = mathRand.Read(b) // nolint:staticcheck
 	}
 
 	return enc.EncodeToString(b)[:n]

@@ -130,7 +130,7 @@ jobs:
       - name: install tools
         run: |
           set -x
-          go install honnef.co/go/tools/cmd/staticcheck@master
+          go install honnef.co/go/tools/cmd/staticcheck@latest
           go install github.com/securego/gosec/cmd/gosec@latest
           go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
           go install github.com/orijtech/structslop/cmd/structslop@latest
@@ -175,7 +175,7 @@ jobs:
           wget -nc --output-document=/tmp/semgrep-go.zip https://github.com/dgryski/semgrep-go/archive/refs/heads/master.zip
           unzip -o /tmp/semgrep-go.zip -d /tmp/semgrep-go
           go get github.com/quasilyte/go-ruleguard/dsl
-          # golangci-lint run --config .golangci.yml ./...
+          golangci-lint run --config .golangci.yml ./...
           go mod tidy
           python -m venv /tmp/.venv
           . /tmp/.venv/bin/activate
