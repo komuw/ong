@@ -43,11 +43,16 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := Handler{h: jh, cBuf: cbuf, immediate: false}
+	h := Handler{h: jh, cBuf: cbuf, logID: id.New(), immediate: false}
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
-		id, _ := GetId(ctx)
+		id := h.logID
+		if id2, ok := GetId(ctx); ok {
+			// if ctx did not contain a logId, do not use it.
+			id = id2
+		}
+
 		ctx = context.WithValue(ctx, CtxKey, id)
 		return l.WithContext(ctx)
 	}
@@ -68,8 +73,9 @@ type Handler struct {
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
-	h    slog.Handler
-	cBuf *circleBuf
+	h     slog.Handler
+	cBuf  *circleBuf
+	logID string
 
 	// remove this once the following is implemnted
 	// https://github.com/golang/go/issues/56345#issuecomment-1407635269
@@ -81,11 +87,11 @@ func (h Handler) Enabled(_ context.Context, _ slog.Level) bool {
 }
 
 func (l Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return Handler{h: l.h.WithAttrs(attrs), cBuf: l.cBuf, immediate: l.immediate}
+	return Handler{h: l.h.WithAttrs(attrs), cBuf: l.cBuf, logID: l.logID, immediate: l.immediate}
 }
 
 func (l Handler) WithGroup(name string) slog.Handler {
-	return Handler{h: l.h.WithGroup(name), cBuf: l.cBuf, immediate: l.immediate}
+	return Handler{h: l.h.WithGroup(name), cBuf: l.cBuf, logID: l.logID, immediate: l.immediate}
 }
 
 func (l Handler) Handle(r slog.Record) error {
@@ -102,7 +108,13 @@ func (l Handler) Handle(r slog.Record) error {
 	}
 	r.Time = r.Time.UTC()
 
-	id, _ := GetId(r.Context)
+	id := l.logID
+	if id2, ok := GetId(r.Context); ok {
+		// if ctx did not contain a logId, do not use it.
+		id = id2
+	}
+	r.Context = context.WithValue(r.Context, CtxKey, id)
+
 	newAttrs := []slog.Attr{
 		{Key: "logID", Value: slog.StringValue(id)},
 	}
