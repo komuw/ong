@@ -36,11 +36,6 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 }
 
-// TODO: if we decide to use our own handler that is not backed by another(like JSONHandler)
-//        we need to do our own locking.
-// "User-defined handlers are responsible for their own locking."
-// see: https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
-
 // TODO: Make sure we have a way to get back an old school stdlib logger.
 //       This is needed by things like http.Server.Errolog
 // see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
@@ -53,16 +48,21 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 //    http.Server.Errolog = stdlibLogger
 //}
 
-// custom handler.
-// TODO: docs.
+// handler is an [slog.Handler]
+// It stores log messages into a [circular buffer]. Those log messages are only flushed to the underlying io.Writer when
+// a message with level >=[slog.LevelError] is logged.
 //
-// This handler is similar to python's [memory handler]
+// It can be used simultaneously from multiple goroutines.
 //
-// [memory handler]: https://github.com/python/cpython/blob/v3.11.1/Lib/logging/handlers.py#L1353-L1359
+// [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 type handler struct {
+	// This handler is similar to python's memory handler.
+	// https://github.com/python/cpython/blob/v3.11.1/Lib/logging/handlers.py#L1353-L1359
+	//
 	// from [slog.Handler] documentation:
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
+	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 	h    slog.Handler
 	cBuf *circleBuf
 }
