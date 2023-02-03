@@ -80,10 +80,11 @@ func (l handler) WithGroup(name string) slog.Handler {
 }
 
 func (l handler) Handle(r slog.Record) error {
-	// TODO: make sure time is in UTC.
-	// see: - https://github.com/golang/go/issues/56345#issuecomment-1407053167
-	//      - https://github.com/golang/go/issues/56345#issuecomment-1406279161 (has an implementation)
-	//
+	// Convert time to UTC.
+	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
+	// If we ever need that functionality, we would do that in `r.Attrs()`
+	r.Time = r.Time.UTC()
+
 	id, _ := GetId(r.Context)
 	newAttrs := []slog.Attr{
 		{Key: "logID", Value: slog.StringValue(id)},
