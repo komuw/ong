@@ -129,7 +129,7 @@ func BenchmarkBestCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/newLog", func(b *testing.B) {
+	b.Run("ong", func(b *testing.B) {
 		l := newNewOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -190,7 +190,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/newLog", func(b *testing.B) {
+	b.Run("ong", func(b *testing.B) {
 		l := newNewOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -248,7 +248,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		}
 	})
 
-	b.Run("ong/newLog", func(b *testing.B) {
+	b.Run("ong", func(b *testing.B) {
 		l := newNewOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
