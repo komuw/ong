@@ -43,7 +43,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := Handler{h: jh, cBuf: cbuf}
+	h := Handler{h: jh, cBuf: cbuf, immediate: false}
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
@@ -81,11 +81,11 @@ func (h Handler) Enabled(_ context.Context, _ slog.Level) bool {
 }
 
 func (l Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &Handler{h: l.h.WithAttrs(attrs)}
+	return Handler{h: l.h.WithAttrs(attrs), cBuf: l.cBuf, immediate: l.immediate}
 }
 
 func (l Handler) WithGroup(name string) slog.Handler {
-	return &Handler{h: l.h.WithGroup(name)}
+	return Handler{h: l.h.WithGroup(name), cBuf: l.cBuf, immediate: l.immediate}
 }
 
 func (l Handler) Handle(r slog.Record) error {

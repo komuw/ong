@@ -103,15 +103,16 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 			"url", req.URL.Redacted(),
 			"durationMS", time.Since(start).Milliseconds(),
 		}
+
 		if err != nil {
-			l.Error(msg, err, flds)
+			l.Error(msg, err, flds...)
 		} else {
 			extra := []any{
 				"code", res.StatusCode,
 				"status", res.Status,
 			}
 			flds = append(flds, extra...)
-			l.Info(msg, flds)
+			l.Info(msg, flds...)
 		}
 	}()
 
