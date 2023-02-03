@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
@@ -80,9 +81,17 @@ func (l handler) WithGroup(name string) slog.Handler {
 }
 
 func (l handler) Handle(r slog.Record) error {
+	// Obey the following rules form the slog documentation:
+	// Handle methods that produce output should observe the following rules:
+	//   - If r.Time is the zero time, ignore the time.
+	//   - If an Attr's key is the empty string, ignore the Attr.
+
 	// Convert time to UTC.
 	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
 	// If we ever need that functionality, we would do that in `r.Attrs()`
+	if r.Time.IsZero() {
+		r.Time = time.Now().UTC()
+	}
 	r.Time = r.Time.UTC()
 
 	id, _ := GetId(r.Context)
@@ -90,12 +99,6 @@ func (l handler) Handle(r slog.Record) error {
 		{Key: "logID", Value: slog.StringValue(id)},
 	}
 
-	// TODO: Obey the following rules form the slog documentation:
-	//
-	// Handle methods that produce output should observe the following rules:
-	//   - If r.Time is the zero time, ignore the time.
-	//   - If an Attr's key is the empty string, ignore the Attr.
-	//
 	r.Attrs(func(a slog.Attr) {
 		if a.Key == slog.ErrorKey {
 			if e, ok := a.Value.Any().(error); ok {
