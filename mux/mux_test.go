@@ -193,8 +193,8 @@ func TestMux(t *testing.T) {
 			rStr := fmt.Sprintf("%v", r)
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:23") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:29") // location where `thisIsAnitherMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:24") // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:30") // location where `thisIsAnitherMuxHandler` is declared.
 		}()
 
 		_ = New(
