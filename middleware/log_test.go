@@ -102,7 +102,7 @@ func TestLogMiddleware(t *testing.T) {
 			"durationMS",
 			"logID",
 			"clientIP",
-			"error",
+			"ERROR",
 		} {
 			attest.Subsequence(t, logOutput.String(), v)
 		}
