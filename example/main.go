@@ -38,6 +38,11 @@ func main() {
 			mux.MethodAll,
 			api.login(secretKey),
 		),
+		mux.NewRoute(
+			"panic",
+			mux.MethodAll,
+			api.panic(),
+		),
 	)
 
 	err := server.Run(mux, server.DevOpts(l), l)

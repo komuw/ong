@@ -284,3 +284,15 @@ func (a app) handleFileServer() http.HandlerFunc {
 		realHandler(w, r)
 	}
 }
+
+// panic handler showcases the use of:
+// - recoverer middleware.
+func (a app) panic() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		names := []string{"John", "Jane", "Kamau"}
+		_ = 93
+		msg := "hey"
+		n := names[934]
+		_, _ = io.WriteString(w, fmt.Sprintf("%s %s", msg, n))
+	}
+}
