@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	stdLog "log"
 	"net"
 	"net/http"
 	"os"
@@ -260,7 +261,14 @@ func sigHandler(
 		defer cancel()
 
 		sigCaught := <-sigs
-		logger.Info("server got shutdown signal",
+
+		// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
+		sl := stdLog.New(os.Stdout, "", 0)
+		if lHandler, ok := logger.Handler().(log.Handler); !ok {
+			sl = lHandler.StdLogger()
+		}
+
+		sl.Println("server got shutdown signal",
 			"signal", fmt.Sprintf("%v", sigCaught),
 			"shutdownDuration", drainDur.String(),
 		)
