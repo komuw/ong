@@ -116,7 +116,6 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 		}
 	}()
 
-	// TODO: (komuw) should we use l.logID if id from `log.GetId` did not come from ctx.
 	id, _ := log.GetId(ctx)
 	req.Header.Set(logIDHeader, id)
 
