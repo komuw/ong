@@ -133,7 +133,7 @@ func installCA(l *slog.Logger) (caCert *x509.Certificate, caKey any) {
 		createDir := []string{"mkdir", "-p", nssDb}
 		cmd = commandWithSudo(createDir...)
 		out, err = cmd.CombinedOutput()
-		l.Info(string(out), "args", cmd.Args, "err", err)
+		l.Info(string(out), "args", cmd.Args, "error", err)
 		if err != nil {
 			panic(err)
 		}
@@ -141,7 +141,7 @@ func installCA(l *slog.Logger) (caCert *x509.Certificate, caKey any) {
 		delete := []string{"certutil", "-D", "-d", nssDb, "-n", caUniqename}
 		cmd = commandWithSudo(delete...)
 		out, err = cmd.CombinedOutput()
-		l.Info(string(out), "args", cmd.Args, "err", err)
+		l.Info(string(out), "args", cmd.Args, "error", err)
 		_ = err // ignore error
 
 		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertName}

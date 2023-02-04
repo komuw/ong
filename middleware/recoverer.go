@@ -34,7 +34,7 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 				msg := "http_server" // TODO: (komuw) check if this okay
 				// TODO: (komuw) check if this okay
 				flds := []any{
-					"err", fmt.Sprint(errR),
+					"error", fmt.Sprint(errR),
 					"clientIP", ClientIP(r),
 					"method", r.Method,
 					"path", r.URL.Redacted(),
