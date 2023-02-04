@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 // ongMiddlewareErrorHeader is a http header that is set by Ong
@@ -43,7 +43,7 @@ type Opts struct {
 	allowedHeaders []string
 	secretKey      string
 	strategy       ClientIPstrategy
-	l              log.Logger
+	l              *slog.Logger
 }
 
 // New returns a new Opts.
@@ -72,7 +72,7 @@ func New(
 	allowedHeaders []string,
 	secretKey string,
 	strategy ClientIPstrategy,
-	l log.Logger,
+	l *slog.Logger,
 ) Opts {
 	return Opts{
 		domain:         domain,
@@ -93,7 +93,7 @@ func WithOpts(
 	httpsPort uint16,
 	secretKey string,
 	strategy ClientIPstrategy,
-	l log.Logger,
+	l *slog.Logger,
 ) Opts {
 	return New(domain, httpsPort, nil, nil, nil, secretKey, strategy, l)
 }

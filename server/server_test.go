@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -71,7 +72,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)
+		l := log.New(&bytes.Buffer{}, 500)(context.Background())
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
@@ -124,7 +125,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default tls opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)
+		l := log.New(&bytes.Buffer{}, 500)(context.Background())
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
@@ -163,7 +164,7 @@ func TestServer(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()

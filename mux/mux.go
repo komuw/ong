@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"golang.org/x/exp/slog"
 )
 
 // Common HTTP methods.
@@ -55,7 +55,7 @@ func NewRoute(
 //
 // Use [New] to get a valid Mux.
 type Mux struct {
-	l      log.Logger
+	l      *slog.Logger
 	router *router // some router
 }
 
@@ -68,7 +68,7 @@ type Mux struct {
 // Typically, an application should only have one Mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(l log.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, routes ...Route) Mux {
+func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, routes ...Route) Mux {
 	m := Mux{
 		l:      l,
 		router: newRouter(notFoundHandler),

@@ -8,6 +8,7 @@ Most recent version is listed first.
 - Use net.Dialer.ControlContext instead of use net.Dialer.Control: https://github.com/komuw/ong/pull/212
 - Re-enable golangci-lint: https://github.com/komuw/ong/pull/214
 - Use the new stdlib structured logger: https://github.com/komuw/ong/pull/208
+- Replace custom logger with slog: https://github.com/komuw/ong/pull/215
 
 ## v0.0.29
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196

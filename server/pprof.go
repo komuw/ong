@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 /*
@@ -16,7 +17,7 @@ example usage:
 
 	go tool pprof  http://localhost:65060/debug/pprof/heap
 */
-func startPprofServer(logger log.Logger) {
+func startPprofServer(logger *slog.Logger) {
 	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
 	//
 	mux := http.NewServeMux()
@@ -32,6 +33,12 @@ func startPprofServer(logger log.Logger) {
 	port := 65060
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	readHeader, read, write, idle := pprofTimeouts()
+	lHandler, ok := logger.Handler().(log.Handler)
+	if !ok {
+		logger.Error("pprof server, log conversion", fmt.Errorf("unable to convert %v(%T) into log.Handler", logger.Handler(), logger.Handler()))
+		return
+	}
+
 	pprofSrv := &http.Server{
 		Addr: addr,
 		// the pprof muxer is failing to work with `http.TimeoutHandler`
@@ -41,7 +48,7 @@ func startPprofServer(logger log.Logger) {
 		ReadTimeout:       read,
 		WriteTimeout:      write,
 		IdleTimeout:       idle,
-		ErrorLog:          logger.StdLogger(),
+		ErrorLog:          lHandler.StdLogger(),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
@@ -49,16 +56,14 @@ func startPprofServer(logger log.Logger) {
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
 		if err != nil {
-			logger.Error(err, log.F{"msg": "pprof server, unable to create listener"})
+			logger.Error("pprof server, unable to create listener", err)
 			return
 		}
 
-		logger.Info(log.F{
-			"msg": fmt.Sprintf("pprof server listening at %s", pprofSrv.Addr),
-		})
+		logger.Info(fmt.Sprintf("pprof server listening at %s", pprofSrv.Addr))
 		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
-			logger.Error(errPprofSrv, log.F{"msg": "unable to start pprof server"})
+			logger.Error("unable to start pprof server", errPprofSrv)
 		}
 	}()
 }

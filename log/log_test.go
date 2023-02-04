@@ -3,22 +3,16 @@ package log
 import (
 	"bytes"
 	"context"
-	stdlibErrors "errors"
+	"errors"
 	"fmt"
-	"io"
-	stdLog "log"
-	"math/rand"
+	mathRand "math/rand"
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/akshayjshah/attest"
-	"github.com/komuw/ong/errors"
-	"github.com/rs/zerolog"
-	"github.com/sirupsen/logrus"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	ongErrors "github.com/komuw/ong/errors"
+	"golang.org/x/exp/slog"
 )
 
 func TestCircleBuf(t *testing.T) {
@@ -29,16 +23,13 @@ func TestCircleBuf(t *testing.T) {
 
 		maxSize := 4
 		c := newCirleBuf(maxSize)
-		c.store(F{"msg": "one"})
-		c.store(F{"msg": "two"})
 
-		val1, ok := c.buf[0]["msg"].(string)
-		attest.True(t, ok)
-		attest.Equal(t, val1, "one")
+		c.store(slog.Record{Message: "one"})
+		c.store(slog.Record{Message: "two"})
 
-		val2, ok := c.buf[1]["msg"].(string)
-		attest.True(t, ok)
-		attest.Equal(t, val2, "two")
+		attest.Equal(t, c.buf[0].Message, "one")
+
+		attest.Equal(t, c.buf[1].Message, "two")
 
 		attest.Equal(t, len(c.buf), 2)
 		attest.Equal(t, cap(c.buf), 4)
@@ -51,7 +42,8 @@ func TestCircleBuf(t *testing.T) {
 		c := newCirleBuf(maxSize)
 		for i := 0; i <= (13 * maxSize); i++ {
 			x := fmt.Sprint(i)
-			c.store(F{x: x})
+			c.store(slog.Record{Message: x})
+
 			attest.True(t, len(c.buf) <= maxSize)
 			attest.True(t, cap(c.buf) <= maxSize)
 		}
@@ -66,19 +58,15 @@ func TestCircleBuf(t *testing.T) {
 		c := newCirleBuf(maxSize)
 		for i := 0; i <= (6 * maxSize); i++ {
 			x := fmt.Sprint(i)
-			c.store(F{"msg": x})
+			c.store(slog.Record{Message: x})
 			attest.True(t, len(c.buf) <= maxSize)
 			attest.True(t, cap(c.buf) <= maxSize)
 		}
 		attest.True(t, len(c.buf) <= maxSize)
 		attest.True(t, cap(c.buf) <= maxSize)
 
-		val1, ok := c.buf[1]["msg"].(string)
-		attest.True(t, ok)
-		attest.Equal(t, val1, "29")
-		val2, ok := c.buf[2]["msg"].(string)
-		attest.True(t, ok)
-		attest.Equal(t, val2, "30")
+		attest.Equal(t, c.buf[1].Message, "29")
+		attest.Equal(t, c.buf[2].Message, "30")
 	})
 
 	t.Run("reset", func(t *testing.T) {
@@ -88,7 +76,7 @@ func TestCircleBuf(t *testing.T) {
 		c := newCirleBuf(maxSize)
 		for i := 0; i <= (13 * maxSize); i++ {
 			x := fmt.Sprint(i)
-			c.store(F{x: x})
+			c.store(slog.Record{Message: x})
 			attest.True(t, len(c.buf) <= maxSize)
 			attest.True(t, cap(c.buf) <= maxSize)
 		}
@@ -102,16 +90,37 @@ func TestCircleBuf(t *testing.T) {
 	})
 }
 
+type syncBuffer struct {
+	mu sync.Mutex
+	b  *bytes.Buffer
+}
+
+func newBuf() *syncBuffer {
+	return &syncBuffer{b: &bytes.Buffer{}}
+}
+
+func (s *syncBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.String()
+}
+
+func (s *syncBuffer) Write(p []byte) (n int, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.Write(p)
+}
+
 func TestLogger(t *testing.T) {
 	t.Parallel()
 
 	t.Run("info level does not do anything", func(t *testing.T) {
 		t.Parallel()
 
-		w := &bytes.Buffer{}
+		w := newBuf()
 		maxMsgs := 3
 		l := New(w, maxMsgs)
-		l.Info(F{"one": "one"})
+		l(context.Background()).Info("hey", "one", "one")
 
 		attest.Zero(t, w.String())
 	})
@@ -119,11 +128,11 @@ func TestLogger(t *testing.T) {
 	t.Run("error logs immediately", func(t *testing.T) {
 		t.Parallel()
 
-		w := &bytes.Buffer{}
+		w := newBuf()
 		maxMsgs := 3
 		l := New(w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
-		l.Error(errors.New(msg))
+		l(context.Background()).Error(msg, errors.New(msg))
 
 		attest.Subsequence(t, w.String(), msg)
 	})
@@ -131,17 +140,23 @@ func TestLogger(t *testing.T) {
 	t.Run("info logs are flushed on error", func(t *testing.T) {
 		t.Parallel()
 
-		w := &bytes.Buffer{}
+		w := newBuf()
 		maxMsgs := 3
 		l := New(w, maxMsgs)
 
+		logger := l(context.Background())
 		infoMsg := "hello world"
-		l.Info(F{"what": infoMsg, "ok": "ak&dHyS>47K"})
+		logger.Info(infoMsg, "what", "ok", "passwd", "ak&dHyS>47K")
 		errMsg := "oops, Houston we got 99 problems."
-		l.Error(errors.New(errMsg))
+		logger.Error("some-error", errors.New(errMsg))
+
+		logID, ok := GetId(logger.Context())
+		attest.True(t, ok)
 
 		attest.Subsequence(t, w.String(), infoMsg)
 		attest.Subsequence(t, w.String(), errMsg)
+		attest.Subsequence(t, w.String(), logID)
+
 		// special characters are not quoted.
 		attest.Subsequence(t, w.String(), "&")
 		attest.Subsequence(t, w.String(), ">")
@@ -150,37 +165,32 @@ func TestLogger(t *testing.T) {
 	t.Run("neccesary fields added", func(t *testing.T) {
 		t.Parallel()
 
-		w := &bytes.Buffer{}
-		maxMsgs := 3
-		l := New(w, maxMsgs)
-
 		{
-			infoMsg := "hello world"
-			l.Info(F{"what": infoMsg})
-			l.Error(errors.New("bad"))
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+			l := New(w, maxMsgs)
 
-			id := l.logId
-			attest.NotZero(t, id)
-			attest.Subsequence(t, w.String(), id)
+			infoMsg := "hello world"
+			l(context.Background()).Info(infoMsg)
+			l(context.Background()).Error("some-err", errors.New("bad"))
+
+			attest.Subsequence(t, w.String(), "logID")
 			attest.Subsequence(t, w.String(), "level")
-			attest.Subsequence(t, w.String(), "stack")
-			attest.Subsequence(t, w.String(), "err")
-			attest.False(t, strings.Contains(w.String(), "line")) // line not added
+			attest.Subsequence(t, w.String(), "source")
+			attest.Subsequence(t, w.String(), slog.ErrorKey)
 		}
 
 		{
-			l = l.WithCaller()
-			l.Info(F{"name": "john"})
-			errMsg := "kimeumana"
-			l.Error(errors.New(errMsg))
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+			l := New(w, maxMsgs)
 
-			id := l.logId
-			attest.NotZero(t, id)
-			attest.Subsequence(t, w.String(), id)
-			attest.Subsequence(t, w.String(), "level")
+			infoMsg := "hello world"
+			l(context.Background()).Info(infoMsg)
+			l(context.Background()).Error("some-ong-err", ongErrors.New("bad"))
+
+			attest.Subsequence(t, w.String(), "logID")
 			attest.Subsequence(t, w.String(), "stack")
-			attest.Subsequence(t, w.String(), "err")
-			attest.Subsequence(t, w.String(), "line") // line added
 		}
 	})
 
@@ -193,10 +203,10 @@ func TestLogger(t *testing.T) {
 
 		for i := 0; i <= (maxMsgs + 4); i++ {
 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
-			l.Info(F{"what": infoMsg})
+			l(context.Background()).Info(infoMsg)
 		}
 		errMsg := "oops, Houston we got 99 problems."
-		l.Error(errors.New(errMsg))
+		l(context.Background()).Error("somer-error", errors.New(errMsg))
 
 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
@@ -206,59 +216,35 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), errMsg)
 	})
 
-	t.Run("various ways of calling l.Error", func(t *testing.T) {
+	t.Run("id reused across contexts", func(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(w, maxMsgs)
-		msg := "some-error"
-		err := errors.New(msg)
 
-		l.Error(err)
-		l.Error(err, F{"one": "two"})
-		l.Error(err, F{"three": "four"}, F{"five": "six"})
-		l.Error(err, nil)
-		l.Error(nil)
-		l.Error(nil, F{"seven": "eight"})
+		l1 := New(w, maxMsgs)(context.Background())
+		logid1, ok := GetId(l1.Context())
+		attest.True(t, ok)
+		l1.Error("hey1", errors.New("cool1"))
 
-		attest.Subsequence(t, w.String(), msg)
-		for _, v := range []string{"one", "two", "three", "four", "five", "six", "seven", "eight"} {
-			attest.Subsequence(t, w.String(), v, attest.Sprintf("`%s` not found", v))
-		}
+		attest.Subsequence(t, w.String(), "hey1")
+		attest.Subsequence(t, w.String(), logid1)
+		h, ok := l1.Handler().(Handler)
+		attest.True(t, ok)
+		attest.Equal(t, len(h.cBuf.buf), 0)
+
+		w.Reset() // clear buffer.
+
+		ctx := context.Background()
+		l2 := l1.WithContext(ctx)
+		l2.Error("hey2", errors.New("cool2"))
+		fmt.Println(w.String())
+		attest.Subsequence(t, w.String(), "hey2")
+		attest.False(t, strings.Contains(w.String(), "hey1")) // hey1 is not loggged here.
+		attest.Subsequence(t, w.String(), logid1)
 	})
 
-	t.Run("WithCtx does not invalidate buffer", func(t *testing.T) {
-		t.Parallel()
-
-		w := &bytes.Buffer{}
-		maxMsgs := 3
-		l := New(w, maxMsgs)
-		{
-			for i := 0; i <= (maxMsgs); i++ {
-				infoMsg := "hello world" + " : " + fmt.Sprint(i)
-				l.Info(F{"what": infoMsg})
-			}
-			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
-		}
-
-		{
-			l = l.WithCtx(context.Background())
-			errMsg := "oops, Houston we got 99 problems."
-			l.Error(errors.New(errMsg))
-
-			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-			attest.Subsequence(t, w.String(), "hello world : 3")
-			attest.Subsequence(t, w.String(), errMsg)
-		}
-	})
-
-	t.Run("WithCaller does not invalidate buffer", func(t *testing.T) {
+	t.Run("WithContext does not invalidate buffer", func(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
@@ -267,7 +253,7 @@ func TestLogger(t *testing.T) {
 		{
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
-				l.Info(F{"what": infoMsg})
+				l(context.Background()).Info(infoMsg)
 			}
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
@@ -276,9 +262,10 @@ func TestLogger(t *testing.T) {
 		}
 
 		{
-			l = l.WithCaller()
+			xl := l(context.Background())
+			l := xl.WithContext(context.Background())
 			errMsg := "oops, Houston we got 99 problems."
-			l.Error(errors.New(errMsg))
+			l.Error("some-error", errors.New(errMsg))
 
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
@@ -286,71 +273,6 @@ func TestLogger(t *testing.T) {
 			attest.Subsequence(t, w.String(), "hello world : 3")
 			attest.Subsequence(t, w.String(), errMsg)
 		}
-	})
-
-	t.Run("WithFields", func(t *testing.T) {
-		t.Parallel()
-
-		w := &bytes.Buffer{}
-		maxMsgs := 3
-		l := New(w, maxMsgs)
-		flds := F{"version": "v0.1.2", "env": "prod", "service": "web-commerce"}
-		l = l.WithFields(flds)
-
-		msg := "hello"
-		l.Info(F{"msg": msg})
-		errMsg := "oops, Houston we got 99 problems."
-		l.Error(errors.New(errMsg))
-
-		for _, v := range []string{
-			"version",
-			"v0.1.2",
-			"web-commerce",
-			msg,
-			errMsg,
-		} {
-			attest.Subsequence(t, w.String(), v)
-		}
-		attest.Equal(t, l.flds, flds)
-
-		newFlds := F{"okay": "yes", "country": "Norway"}
-		l = l.WithFields(newFlds)
-		newErrMsg := "new error"
-		l.Error(errors.New(newErrMsg))
-		// asserts that the `l.flds` maps does not grow without bound.
-		attest.Equal(t, l.flds, newFlds)
-		for _, v := range []string{
-			"okay",
-			"yes",
-			"Norway",
-			msg,
-			newErrMsg,
-		} {
-			attest.Subsequence(t, w.String(), v)
-		}
-	})
-
-	t.Run("WithImmediate logs immediately", func(t *testing.T) {
-		t.Parallel()
-
-		w := &bytes.Buffer{}
-		msg := "hello world"
-		l := New(w, 2).WithImmediate()
-		l.Info(F{"msg": msg})
-
-		attest.Subsequence(t, w.String(), msg)
-	})
-
-	t.Run("interop with stdlibLog", func(t *testing.T) {
-		t.Parallel()
-
-		w := &bytes.Buffer{}
-		msg := "hello world"
-		l := New(w, 2)
-		stdLogger := stdLog.New(l, "stdlib", stdLog.Lshortfile)
-		stdLogger.Println(msg)
-
-		attest.Subsequence(t, w.String(), msg)
 	})
 
 	t.Run("get stdlibLog", func(t *testing.T) {
@@ -359,77 +281,64 @@ func TestLogger(t *testing.T) {
 		w := &bytes.Buffer{}
 		msg := "hey what up?"
 		l := New(w, 2)
-		stdLogger := l.StdLogger()
+		logger := l(context.Background())
+		h, ok := logger.Handler().(Handler)
+		attest.True(t, ok)
+
+		stdLogger := h.StdLogger()
 		stdLogger.Println(msg)
 		attest.Subsequence(t, w.String(), msg)
-	})
-
-	t.Run("WithCaller uses correct line", func(t *testing.T) {
-		t.Parallel()
-
-		{
-			w := &bytes.Buffer{}
-			msg := "hey what up?"
-			l := New(w, 2)
-			l.WithCaller().WithImmediate().Info(F{"msg": msg})
-			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "ong/log/log_test.go:374")
-		}
-
-		{
-			// for stdlib we disable caller info, since it would otherwise
-			// point to `ong/log/log.go` as the caller.
-			w := &bytes.Buffer{}
-			msg := "hey what up?"
-			l := New(w, 2)
-			l.WithCaller().StdLogger().Println(msg)
-			attest.Subsequence(t, w.String(), msg)
-			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
-		}
-
-		{
-			w := &bytes.Buffer{}
-			msg := "hey what up?"
-			l := New(w, 2).WithCaller()
-			stdLogger := stdLog.New(l, "stdlib", 0)
-			stdLogger.Println(msg)
-			attest.Subsequence(t, w.String(), msg)
-			attest.False(t, strings.Contains(w.String(), "ong/log/log_test.go"))
-		}
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
-		maxMsgs := 3
+		maxMsgs := 12
 		l := New(w, maxMsgs)
+
+		xl := l(context.Background())
 
 		tokens := []string{
 			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
 			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
 			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
 			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
 			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
 			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
 			"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l.Info(F{"one": "one" + t})
+				l(context.Background()).Info("one" + t)
+				xl.Info("one" + t)
 			}(tok)
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l.Error(errors.New("bad" + t))
+				l(context.Background()).Error("some-error", errors.New("bad"+t))
 			}(tok)
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l.Error(errors.New("bad-two" + t))
+				l(context.Background()).Error("some-other-error", errors.New("bad-two"+t))
 			}(tok)
 		}
 
@@ -438,293 +347,15 @@ func TestLogger(t *testing.T) {
 			wg.Add(1)
 			go func(t string) {
 				defer wg.Done()
-				l.Info(F{"four": "four" + t})
+				l(context.Background()).Info("four" + t)
+				xl.Info("okay-" + t)
+
+				if mathRand.Intn(100) > 75 { // log errors 25% of the time.
+					l(context.Background()).Error("hey", errors.New("some-err-"+t))
+					xl.Error("some-xl-error", errors.New("other-err-"+t))
+				}
 			}(tok)
 		}
 		wg.Wait()
 	})
 }
-
-//////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
-// The benchmarks code here is insipired by(or taken from):
-//   (a) https://github.com/uber-go/zap/tree/v1.21.0/benchmarks whose license(MIT) can be found here: https://github.com/uber-go/zap/blob/v1.21.0/LICENSE.txt
-
-// note: Im not making any claims about which is faster or not.
-/*
-goos: linux
-goarch: amd64
-pkg: github.com/komuw/ong/log
-cpu: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz
-
-BenchmarkBestCase/no_logger-8             6.950 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBestCase/ong/log-8               902.4 ns/op	      56 B/op	       3 allocs/op
-BenchmarkBestCase/rs/zerolog-8            11_260 ns/op	     150 B/op	       0 allocs/op
-BenchmarkBestCase/Zap-8  	              22_341 ns/op	     343 B/op	       1 allocs/op
-BenchmarkBestCase/sirupsen/logrus-8       32_260 ns/op	    2042 B/op	      26 allocs/op
-*/
-// The above benchmark is unfair to the others since ong/log is not logging to a io.writer when all its logging are Info logs.
-
-/*
-BenchmarkAverageCase/no_logger-8           6.797 ns/op	       0 B/op	       0 allocs/op
-BenchmarkAverageCase/rs/zerolog-8          12_249 ns/op	     152 B/op	       0 allocs/op
-BenchmarkAverageCase/Zap-8                 21_539 ns/op	     348 B/op	       1 allocs/op
-BenchmarkAverageCase/sirupsen/logrus-8     33_543 ns/op	    1962 B/op	      26 allocs/op
-BenchmarkAverageCase/ong/log-8             75_640 ns/op	    3369 B/op	      42 allocs/op
-*/
-
-/*
-BenchmarkWorstCase/no_logger-8             6.806 ns/op	       0 B/op	       0 allocs/op
-BenchmarkWorstCase/rs/zerolog-8            17_721 ns/op	     305 B/op	       1 allocs/op
-BenchmarkWorstCase/Zap-8                   26_612 ns/op	     690 B/op	       2 allocs/op
-BenchmarkWorstCase/sirupsen/logrus-8       56_562 ns/op	    3664 B/op	      53 allocs/op
-BenchmarkWorstCase/ong/log-8               167_518 ns/op	8362 B/op	      95 allocs/op
-*/
-// The above benchmark is 'more representative' since this time round, ong/log is writing to io.writer for every invocation.
-
-func newZerolog() zerolog.Logger {
-	return zerolog.New(io.Discard).With().Timestamp().Logger()
-}
-
-func newLogrus() *logrus.Logger {
-	return &logrus.Logger{
-		Out:       io.Discard,
-		Formatter: new(logrus.JSONFormatter),
-		Hooks:     make(logrus.LevelHooks),
-		Level:     logrus.DebugLevel,
-	}
-}
-
-// implements zap's `ztest.Discarder{}` which is internal.
-type Discarder struct {
-	io.Writer
-}
-
-func (d Discarder) Sync() error { return nil }
-
-func newZapLogger(lvl zapcore.Level) *zap.Logger {
-	ec := zap.NewProductionEncoderConfig()
-	ec.EncodeDuration = zapcore.NanosDurationEncoder
-	ec.EncodeTime = zapcore.EpochNanosTimeEncoder
-	enc := zapcore.NewJSONEncoder(ec)
-	return zap.New(zapcore.NewCore(
-		enc,
-		Discarder{io.Discard},
-		lvl,
-	))
-}
-
-func newOngLogger() Logger {
-	maxMsgs := 50_000
-	return New(
-		io.Discard,
-		maxMsgs,
-	)
-}
-
-func getMessage() (F, []string) {
-	type car struct {
-		mft  string
-		date uint64
-	}
-	c := car{mft: "Toyota", date: uint64(1994)}
-	f := F{
-		"some-random-id": "kad8184dHjekI1ESL",
-		"age":            34,
-		"name":           "John Snow",
-		"gender":         "male",
-		"company":        "ACME INC",
-		"email":          "sandersgonzalez@pivitol.com",
-		"phone":          "+1 (914) 563-2007",
-		"startdate":      time.Now(),
-		"height":         float64(89.22),
-		"car_length":     float32(123.8999),
-		"carVal":         c,
-		"carPtr":         &c,
-	}
-
-	sl := make([]string, 0, len(f))
-
-	for k, v := range f {
-		sl = append(sl, k)
-		sl = append(sl, fmt.Sprintf("%v", v))
-	}
-
-	return f, sl
-}
-
-func noOpFunc(f F) {
-	// func used in the `no logger` benchmark.
-	_ = f
-}
-
-func BenchmarkBestCase(b *testing.B) {
-	f, sl := getMessage()
-	str := fmt.Sprintf("%s", sl)
-	b.Logf("best case") // best-case because ong/log does not log if it is not error level
-
-	b.Run("Zap", func(b *testing.B) {
-		l := newZapLogger(zap.DebugLevel)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(str)
-		}
-	})
-
-	b.Run("sirupsen/logrus", func(b *testing.B) {
-		l := newLogrus()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(str)
-		}
-	})
-
-	b.Run("rs/zerolog", func(b *testing.B) {
-		l := newZerolog()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info().Msg(str)
-		}
-	})
-
-	b.Run("ong/log", func(b *testing.B) {
-		l := newOngLogger()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(f)
-		}
-	})
-
-	b.Run("no logger", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			noOpFunc(f)
-		}
-	})
-}
-
-func BenchmarkAverageCase(b *testing.B) {
-	f, sl := getMessage()
-	str := fmt.Sprintf("%s", sl)
-	logErr := stdlibErrors.New("hey")
-
-	b.Logf("average case")
-
-	b.Run("Zap", func(b *testing.B) {
-		l := newZapLogger(zap.DebugLevel)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(str)
-			if rand.Intn(100) >= 99 {
-				l.Error(logErr.Error())
-			}
-		}
-	})
-
-	b.Run("sirupsen/logrus", func(b *testing.B) {
-		l := newLogrus()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(str)
-			if rand.Intn(100) >= 99 {
-				l.Error(logErr.Error())
-			}
-		}
-	})
-
-	b.Run("rs/zerolog", func(b *testing.B) {
-		l := newZerolog()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info().Msg(str)
-			if rand.Intn(100) >= 99 {
-				l.Error().Msg(logErr.Error())
-			}
-		}
-	})
-
-	b.Run("ong/log", func(b *testing.B) {
-		l := newOngLogger()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(f)
-			if rand.Intn(100) >= 99 {
-				l.Error(logErr)
-			}
-		}
-	})
-
-	b.Run("no logger", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			noOpFunc(f)
-		}
-	})
-}
-
-func BenchmarkWorstCase(b *testing.B) {
-	f, sl := getMessage()
-	str := fmt.Sprintf("%s", sl)
-	logErr := stdlibErrors.New("hey")
-
-	b.Logf("worst case")
-
-	b.Run("Zap", func(b *testing.B) {
-		l := newZapLogger(zap.DebugLevel)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(str)
-			l.Error(logErr.Error())
-		}
-	})
-
-	b.Run("sirupsen/logrus", func(b *testing.B) {
-		l := newLogrus()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(str)
-			l.Error(logErr.Error())
-		}
-	})
-
-	b.Run("rs/zerolog", func(b *testing.B) {
-		l := newZerolog()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info().Msg(str)
-			l.Error().Msg(logErr.Error())
-		}
-	})
-
-	b.Run("ong/log", func(b *testing.B) {
-		l := newOngLogger()
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			l.Info(f)
-			l.Error(logErr, f)
-		}
-	})
-
-	b.Run("no logger", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
-			noOpFunc(f)
-		}
-	})
-}
-
-//////////////////////////////////////////////////////////////////////// BENCHMARKS ////////////////////////////////////////////////////////////////////////
