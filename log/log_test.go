@@ -90,34 +90,13 @@ func TestCircleBuf(t *testing.T) {
 	})
 }
 
-type syncBuffer struct {
-	mu sync.Mutex
-	b  *bytes.Buffer
-}
-
-func newBuf() *syncBuffer {
-	return &syncBuffer{b: &bytes.Buffer{}}
-}
-
-func (s *syncBuffer) String() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.b.String()
-}
-
-func (s *syncBuffer) Write(p []byte) (n int, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.b.Write(p)
-}
-
 func TestLogger(t *testing.T) {
 	t.Parallel()
 
 	t.Run("info level does not do anything", func(t *testing.T) {
 		t.Parallel()
 
-		w := newBuf()
+		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(w, maxMsgs)
 		l(context.Background()).Info("hey", "one", "one")
@@ -128,7 +107,7 @@ func TestLogger(t *testing.T) {
 	t.Run("error logs immediately", func(t *testing.T) {
 		t.Parallel()
 
-		w := newBuf()
+		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
@@ -140,7 +119,7 @@ func TestLogger(t *testing.T) {
 	t.Run("info logs are flushed on error", func(t *testing.T) {
 		t.Parallel()
 
-		w := newBuf()
+		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(w, maxMsgs)
 
@@ -288,7 +267,7 @@ func TestLogger(t *testing.T) {
 		stdLogger := h.StdLogger()
 		stdLogger.Println(msg)
 		attest.Subsequence(t, w.String(), msg)
-		attest.Subsequence(t, w.String(), "log/log_test.go:289")
+		attest.Subsequence(t, w.String(), "log/log_test.go:268")
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
