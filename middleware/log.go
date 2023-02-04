@@ -30,7 +30,6 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l *slog.Logger) http
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		reqL := l.WithContext(ctx)
 
 		{
 			// set cookie/headers/ctx for logID.
@@ -86,6 +85,9 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l *slog.Logger) http
 			// Write) has no effect unless the HTTP status code was of the
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
+
+			// The logger should be in the defer block so that it uses the updated context containing the logID.
+			reqL := l.WithContext(ctx)
 
 			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
 				// We are either in load shedding or rate-limiting.
