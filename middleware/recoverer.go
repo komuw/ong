@@ -26,8 +26,7 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)
 
-				msg := "http_server" // TODO: (komuw) check if this okay
-				// TODO: (komuw) check if this okay
+				msg := "http_server"
 				flds := []any{
 					"error", fmt.Sprint(errR),
 					"clientIP", ClientIP(r),

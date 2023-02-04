@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -14,19 +13,18 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/log"
-	"golang.org/x/exp/slog"
 )
 
-const someLogHandlerHeader = "SomeLogHandlerHeader"
+const someTraceHandlerHeader = "someTraceHandlerHeader"
 
-func someLogHandler(successMsg string) http.HandlerFunc {
+func someTraceHandler(successMsg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// sleep so that the log middleware has some useful duration metrics to report.
+		// sleep so that the trace middleware has some useful duration metrics to report.
 		time.Sleep(3 * time.Millisecond)
-		if r.Header.Get(someLogHandlerHeader) != "" {
+		if r.Header.Get(someTraceHandlerHeader) != "" {
 			http.Error(
 				w,
-				r.Header.Get(someLogHandlerHeader),
+				r.Header.Get(someTraceHandlerHeader),
 				http.StatusInternalServerError,
 			)
 			return
@@ -37,19 +35,15 @@ func someLogHandler(successMsg string) http.HandlerFunc {
 	}
 }
 
-func TestLogMiddleware(t *testing.T) {
+func TestTraceMiddleware(t *testing.T) {
 	t.Parallel()
-
-	getLogger := func(w io.Writer) *slog.Logger {
-		return log.New(w, 500)(context.Background())
-	}
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput))
+		domain := "example.com"
+		wrappedHandler := trace(someTraceHandler(successMsg), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -63,20 +57,25 @@ func TestLogMiddleware(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), successMsg)
-		attest.Zero(t, logOutput.String())
+
+		logHeader := res.Header.Get(logIDKey)
+		attest.NotZero(t, logHeader)
+		attest.True(t, len(res.Cookies()) >= 1)
+		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 	})
 
 	t.Run("error", func(t *testing.T) {
 		t.Parallel()
 
-		logOutput := &bytes.Buffer{}
-		errorMsg := "someLogHandler failed"
+		errorMsg := "someTraceHandler failed"
 		successMsg := "hello"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput))
+		domain := "example.com"
+		wrappedHandler := trace(someTraceHandler(successMsg), domain)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
-		req.Header.Set(someLogHandlerHeader, errorMsg)
+		req.Header.Set(someTraceHandlerHeader, errorMsg)
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -88,25 +87,20 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
 		attest.Equal(t, string(rb), errorMsg+"\n")
 
-		for _, v := range []string{
-			"code",
-			fmt.Sprint(res.StatusCode),
-			"durationMS",
-			"logID",
-			"clientIP",
-			"ERROR",
-		} {
-			attest.Subsequence(t, logOutput.String(), v)
-		}
+		logHeader := res.Header.Get(logIDKey)
+		attest.NotZero(t, logHeader)
+		attest.True(t, len(res.Cookies()) >= 1)
+		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 	})
 
-	t.Run("requests share log data.", func(t *testing.T) {
+	t.Run("requests share data.", func(t *testing.T) {
 		t.Parallel()
 
-		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		errorMsg := "someLogHandler failed"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput))
+		errorMsg := "someTraceHandler failed"
+		domain := "example.com"
+		wrappedHandler := trace(someTraceHandler(successMsg), domain)
 
 		{
 			// first request that succeds
@@ -122,7 +116,12 @@ func TestLogMiddleware(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), successMsg)
-			attest.Zero(t, logOutput.String())
+
+			logHeader := res.Header.Get(logIDKey)
+			attest.NotZero(t, logHeader)
+			attest.True(t, len(res.Cookies()) >= 1)
+			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 
 		{
@@ -139,14 +138,19 @@ func TestLogMiddleware(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), successMsg)
-			attest.Zero(t, logOutput.String())
+
+			logHeader := res.Header.Get(logIDKey)
+			attest.NotZero(t, logHeader)
+			attest.True(t, len(res.Cookies()) >= 1)
+			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 
 		{
 			// third request that errors
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/ThirdUri", nil)
-			req.Header.Set(someLogHandlerHeader, errorMsg)
+			req.Header.Set(someTraceHandlerHeader, errorMsg)
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -158,34 +162,20 @@ func TestLogMiddleware(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
 			attest.Equal(t, string(rb), errorMsg+"\n")
 
-			for _, v := range []string{
-				// from first request
-				"INFO",
-				http.MethodHead,
-				"FirstUri",
-				fmt.Sprint(http.StatusOK),
-				// from second request
-				http.MethodGet,
-				"SecondUri",
-				// from third request
-				"ERROR",
-				http.MethodPost,
-				"ThirdUri",
-				fmt.Sprint(http.StatusInternalServerError),
-				// common
-				"durationMS",
-			} {
-				attest.Subsequence(t, logOutput.String(), v)
-			}
+			logHeader := res.Header.Get(logIDKey)
+			attest.NotZero(t, logHeader)
+			attest.True(t, len(res.Cookies()) >= 1)
+			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 	})
 
 	t.Run("re-uses logID", func(t *testing.T) {
 		t.Parallel()
 
-		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput))
+		domain := "example.com"
+		wrappedHandler := trace(someTraceHandler(successMsg), domain)
 
 		someLogID := "hey-some-log-id:" + id.New()
 
@@ -205,17 +195,22 @@ func TestLogMiddleware(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), successMsg)
-		attest.Zero(t, logOutput.String())
-	})
 
+		logHeader := res.Header.Get(logIDKey)
+		attest.NotZero(t, logHeader)
+		attest.True(t, len(res.Cookies()) >= 1)
+		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, logHeader, res.Cookies()[0].Value)
+		attest.Equal(t, logHeader, someLogID)
+	})
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
+		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput))
+		wrappedHandler := trace(someTraceHandler(successMsg), domain)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -241,5 +236,54 @@ func TestLogMiddleware(t *testing.T) {
 			}()
 		}
 		wg.Wait()
+	})
+}
+
+func TestGetLogId(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		{
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			id := getLogId(req)
+			attest.NotZero(t, id)
+		}
+
+		{
+			expected := "expected-one"
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req.Header.Add(logIDKey, expected)
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
+		}
+
+		{
+			expected := "expected-two"
+			ctx := context.WithValue(context.Background(), log.CtxKey, expected)
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req = req.WithContext(ctx)
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
+		}
+
+		{
+			// header take precedence.
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req.AddCookie(&http.Cookie{
+				Name:  logIDKey,
+				Value: "cookie-expected-three",
+			})
+
+			expected := "header-logID"
+			req.Header.Add(logIDKey, expected)
+
+			req = req.WithContext(
+				context.WithValue(context.Background(), log.CtxKey, "context-logID"),
+			)
+
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
+		}
 	})
 }

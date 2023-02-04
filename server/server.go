@@ -194,6 +194,8 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	if errTc != nil {
 		return errTc
 	}
+
+	// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
 	lHandler, ok := logger.Handler().(log.Handler)
 	if !ok {
 		return fmt.Errorf("unable to convert %v(%T) into log.Handler", logger.Handler(), logger.Handler())
@@ -271,12 +273,13 @@ func sigHandler(
 }
 
 func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) error {
+	// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
+	lHandler, ok := logger.Handler().(log.Handler)
+	if !ok {
+		return fmt.Errorf("unable to convert %v(%T) into log.Handler", logger.Handler(), logger.Handler())
+	}
 	{
 		// HTTP(non-tls) LISTERNER:
-		lHandler, ok := logger.Handler().(log.Handler)
-		if !ok {
-			return fmt.Errorf("unable to convert %v(%T) into log.Handler", logger.Handler(), logger.Handler())
-		}
 		redirectSrv := &http.Server{
 			Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
 			Handler:           srv.Handler,
@@ -295,7 +298,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 				return
 			}
 
-			logger.Info(fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr))
+			lHandler.StdLogger().Printf("redirect server listening at %s", redirectSrv.Addr)
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
 				logger.Error("unable to start redirect server", errRedirectSrv)
@@ -310,7 +313,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 		if err != nil {
 			return err
 		}
-		logger.Info(fmt.Sprintf("https server listening at %s", o.serverAddress))
+		lHandler.StdLogger().Printf("https server listening at %s", o.serverAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`

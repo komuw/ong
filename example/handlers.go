@@ -272,6 +272,7 @@ func (a app) handleFileServer() http.HandlerFunc {
 
 		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r))
 
+		// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
 		lHandler, ok := reqL.Handler().(log.Handler)
 		if !ok {
 			e := fmt.Errorf("unable to convert %v(%T) into log.Handler", reqL.Handler(), reqL.Handler())

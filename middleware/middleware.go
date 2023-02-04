@@ -4,17 +4,18 @@
 // The middlewares [All], [Get], [Post], [Head], [Put] & [Delete] wrap other internal middleware.
 // The effect of this is that the aforementioned middleware, in addition to their specialised functionality, will:
 //
-//  1. Add the "real" client IP address to the request context.
-//  2. Recover from panics in the wrappedHandler.
-//  3. Log http requests and responses.
-//  4. Rate limit requests by IP address.
-//  5. Shed load based on http response latencies.
-//  6. Redirect http requests to https.
-//  7. Add some important HTTP security headers and assign them sensible default values.
-//  8. Implement Cross-Origin Resource Sharing support(CORS).
-//  9. Provide protection against Cross Site Request Forgeries(CSRF).
-//  10. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
-//  11. Implement http sessions.
+//  1. Adds logID for traceability.
+//  2. Add the "real" client IP address to the request context.
+//  3. Recover from panics in the wrappedHandler.
+//  4. Log http requests and responses.
+//  5. Rate limit requests by IP address.
+//  6. Shed load based on http response latencies.
+//  7. Redirect http requests to https.
+//  8. Add some important HTTP security headers and assign them sensible default values.
+//  9. Implement Cross-Origin Resource Sharing support(CORS).
+//  10. Provide protection against Cross Site Request Forgeries(CSRF).
+//  11. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
+//  12. Implement http sessions.
 package middleware
 
 import (
@@ -117,74 +118,78 @@ func allDefaultMiddlewares(
 	l := o.l
 
 	// The way the middlewares are layered is:
-	// 1.  clientIP on outer most since client IP is needed by a couple of inner middlewares.
-	// 2.  recoverer on the outer since we want it to watch all other middlewares.
-	// 3.  logger since we would like to get logs as early in the lifecycle as possible.
-	// 4.  rateLimiter since we want bad traffic to be filtered early.
-	// 5.  loadShedder for the same reason.
-	// 6.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
-	// 7.  securityHeaders since we want some minimum level of security.
-	// 8.  cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 9.  csrf since this one is a bit more involved perf-wise.
-	// 10. Gzip since it is very involved perf-wise.
-	// 11. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
-	// 12. session since we want sessions to saved as soon as possible.
+	// 1.  trace on outer most since we need to add logID's earliest for use by inner middlewares.
+	// 2.  clientIP on outer since client IP is needed by a couple of inner middlewares.
+	// 3.  recoverer on the outer since we want it to watch all other middlewares.
+	// 4.  logger since we would like to get logs as early in the lifecycle as possible.
+	// 5.  rateLimiter since we want bad traffic to be filtered early.
+	// 6.  loadShedder for the same reason.
+	// 7.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
+	// 8.  securityHeaders since we want some minimum level of security.
+	// 9.  cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 10.  csrf since this one is a bit more involved perf-wise.
+	// 11. Gzip since it is very involved perf-wise.
+	// 12. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
+	// 13. session since we want sessions to saved as soon as possible.
 	//
 	// user ->
-	//  clientIP ->
-	//   recoverer ->
-	//    logger ->
-	//     rateLimiter ->
-	//      loadShedder ->
-	//       httpsRedirector ->
-	//        securityHeaders ->
-	//         cors ->
-	//          csrf ->
-	//           Gzip ->
-	//            reloadProtector ->
-	//             session ->
-	//              actual-handler
+	//  trace ->
+	//   clientIP ->
+	//    recoverer ->
+	//     logger ->
+	//      rateLimiter ->
+	//       loadShedder ->
+	//        httpsRedirector ->
+	//         securityHeaders ->
+	//          cors ->
+	//           csrf ->
+	//            Gzip ->
+	//             reloadProtector ->
+	//              session ->
+	//               actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
 
-	return clientIP(
-		recoverer(
-			logger(
-				rateLimiter(
-					loadShedder(
-						httpsRedirector(
-							securityHeaders(
-								cors(
-									csrf(
-										reloadProtector(
-											session(
-												wrappedHandler,
-												secretKey,
+	return trace(
+		clientIP(
+			recoverer(
+				logger(
+					rateLimiter(
+						loadShedder(
+							httpsRedirector(
+								securityHeaders(
+									cors(
+										csrf(
+											reloadProtector(
+												session(
+													wrappedHandler,
+													secretKey,
+													domain,
+												),
 												domain,
 											),
+											secretKey,
 											domain,
 										),
-										secretKey,
-										domain,
+										allowedOrigins,
+										allowedMethods,
+										allowedHeaders,
 									),
-									allowedOrigins,
-									allowedMethods,
-									allowedHeaders,
+									domain,
 								),
+								httpsPort,
 								domain,
 							),
-							httpsPort,
-							domain,
 						),
 					),
+					l,
 				),
-				domain,
 				l,
 			),
-			l,
+			strategy,
 		),
-		strategy,
+		domain,
 	)
 }
 

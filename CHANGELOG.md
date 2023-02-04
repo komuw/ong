@@ -9,6 +9,7 @@ Most recent version is listed first.
 - Re-enable golangci-lint: https://github.com/komuw/ong/pull/214
 - Use the new stdlib structured logger: https://github.com/komuw/ong/pull/208
 - Replace custom logger with slog: https://github.com/komuw/ong/pull/215
+- Add a trace middleware: https://github.com/komuw/ong/pull/216
 
 ## v0.0.29
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196

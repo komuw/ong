@@ -157,6 +157,8 @@ func (h Handler) Handle(r slog.Record) error {
 //       Also make `Handler` private
 //       This is needed by things like http.Server.Errolog
 // see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
+//
+// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
 
 // StdLogger returns an unstructured logger from the Go standard library log package.
 // That logger will use l as its output.
@@ -174,8 +176,8 @@ func (h Handler) Write(p []byte) (n int, err error) {
 	}
 
 	var pcs [1]uintptr
-	calldepth := 1
-	runtime.Callers(calldepth+2, pcs[:])
+	calldepth := 4
+	runtime.Callers(calldepth, pcs[:])
 
 	h.immediate = true
 	err = h.Handle(
