@@ -14,7 +14,7 @@ import (
 
 func ExampleRun() {
 	l := log.New(os.Stdout, 1000)(context.Background())
-	secretKey := "hard-password"
+	secretKey := "super-h@rd-pa$$word"
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
