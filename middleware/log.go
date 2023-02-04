@@ -92,13 +92,11 @@ func logger(wrappedHandler http.HandlerFunc, domain string, l *slog.Logger) http
 				// Only log 10% of the errors.
 				shouldLog := mathRand.Intn(100) > 90
 				if shouldLog {
-					e := fmt.Errorf("code:%d", lrw.code) // TODO: check if this is okay.
-					reqL.Error(msg, e, flds...)
+					reqL.Error(msg, nil, flds...)
 				}
 			} else if lrw.code >= http.StatusBadRequest {
-				e := fmt.Errorf("code:%d", lrw.code) // TODO: check if this is okay.
 				// both client and server errors.
-				reqL.Error(msg, e, flds...)
+				reqL.Error(msg, nil, flds...)
 			} else {
 				reqL.Info(msg, flds...)
 			}
