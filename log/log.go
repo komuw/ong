@@ -86,15 +86,15 @@ func (h Handler) Enabled(_ context.Context, _ slog.Level) bool {
 	return true /* support all logging levels*/
 }
 
-func (l Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return Handler{h: l.h.WithAttrs(attrs), cBuf: l.cBuf, logID: l.logID, immediate: l.immediate}
+func (h Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return Handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID, immediate: h.immediate}
 }
 
-func (l Handler) WithGroup(name string) slog.Handler {
-	return Handler{h: l.h.WithGroup(name), cBuf: l.cBuf, logID: l.logID, immediate: l.immediate}
+func (h Handler) WithGroup(name string) slog.Handler {
+	return Handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID, immediate: h.immediate}
 }
 
-func (l Handler) Handle(r slog.Record) error {
+func (h Handler) Handle(r slog.Record) error {
 	// Obey the following rules form the slog documentation:
 	// Handle methods that produce output should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
@@ -108,7 +108,7 @@ func (l Handler) Handle(r slog.Record) error {
 	}
 	r.Time = r.Time.UTC()
 
-	id := l.logID
+	id := h.logID
 	if id2, ok := GetId(r.Context); ok {
 		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
@@ -130,24 +130,24 @@ func (l Handler) Handle(r slog.Record) error {
 	})
 	r.AddAttrs(newAttrs...)
 
-	l.cBuf.mu.Lock()
-	defer l.cBuf.mu.Unlock()
+	h.cBuf.mu.Lock()
+	defer h.cBuf.mu.Unlock()
 
 	// store record only after manipulating it.
-	l.cBuf.store(r)
+	h.cBuf.store(r)
 
 	var err error
 	if r.Level >= slog.LevelError {
-		for _, v := range l.cBuf.buf {
-			if e := l.h.Handle(v); e != nil {
+		for _, v := range h.cBuf.buf {
+			if e := h.h.Handle(v); e != nil {
 				err = e
 			}
 		}
-		l.cBuf.reset()
-	} else if l.immediate {
+		h.cBuf.reset()
+	} else if h.immediate {
 		// remove once the following is implemnted.
 		// https://github.com/golang/go/issues/56345#issuecomment-1407635269
-		err = l.h.Handle(r)
+		err = h.h.Handle(r)
 	}
 
 	return err
@@ -160,13 +160,13 @@ func (l Handler) Handle(r slog.Record) error {
 
 // StdLogger returns an unstructured logger from the Go standard library log package.
 // That logger will use l as its output.
-func (l Handler) StdLogger() *stdLog.Logger {
-	return stdLog.New(l, "", 0)
+func (h Handler) StdLogger() *stdLog.Logger {
+	return stdLog.New(h, "", 0)
 }
 
 // Write implements the io.Writer interface.
 // This is useful if you want to set this logger as a writer for the standard library log.
-func (l Handler) Write(p []byte) (n int, err error) {
+func (h Handler) Write(p []byte) (n int, err error) {
 	n = len(p)
 	if n > 0 && p[n-1] == '\n' {
 		// Trim CR added by stdlog.
@@ -177,8 +177,8 @@ func (l Handler) Write(p []byte) (n int, err error) {
 	calldepth := 1
 	runtime.Callers(calldepth+2, pcs[:])
 
-	l.immediate = true
-	err = l.Handle(
+	h.immediate = true
+	err = h.Handle(
 		slog.NewRecord(
 			time.Now(),
 			slog.LevelDebug,
