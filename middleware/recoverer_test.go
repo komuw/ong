@@ -141,7 +141,7 @@ func TestPanic(t *testing.T) {
 		res := rec.Result()
 		defer res.Body.Close()
 		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
-		attest.Subsequence(t, logOutput.String(), "middleware/panic_test.go:42") // line where panic happened.
+		attest.Subsequence(t, logOutput.String(), "middleware/recoverer_test.go:42") // line where panic happened.
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

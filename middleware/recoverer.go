@@ -25,11 +25,6 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)
-				http.Error(
-					w,
-					status,
-					code,
-				)
 
 				msg := "http_server" // TODO: (komuw) check if this okay
 				// TODO: (komuw) check if this okay
@@ -53,6 +48,13 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 				} else {
 					reqL.Error(msg, nil, flds...)
 				}
+
+				// respond.
+				http.Error(
+					w,
+					status,
+					code,
+				)
 			}
 		}()
 
