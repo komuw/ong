@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.31
+- Bugfix; immediately log when server gets os/interrupt signal: https://github.com/komuw/ong/commit/b9ed83a98e7bba0350a473b668ddc2ba8d4677cd
+
 ## v0.0.30
 - Update to Go v1.20: https://github.com/komuw/ong/pull/209
 - Use net.Dialer.ControlContext instead of use net.Dialer.Control: https://github.com/komuw/ong/pull/212
