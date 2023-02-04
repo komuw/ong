@@ -40,7 +40,13 @@ func main() {
 	secretKey := "super-h@rd-pa$$word"
 	mux := mux.New(
 		l,
-		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
+		middleware.WithOpts(
+			"localhost",
+			65081,
+			secretKey,
+			middleware.DirectIpStrategy,
+			l,
+		),
 		nil,
 		mux.NewRoute(
 			"hello/",
