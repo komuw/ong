@@ -275,7 +275,7 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
-	t.Run("get stdlibLog", func(t *testing.T) {
+	t.Run("stdlibLog", func(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
@@ -288,6 +288,7 @@ func TestLogger(t *testing.T) {
 		stdLogger := h.StdLogger()
 		stdLogger.Println(msg)
 		attest.Subsequence(t, w.String(), msg)
+		attest.Subsequence(t, w.String(), "log/log_test.go:289")
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

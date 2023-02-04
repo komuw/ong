@@ -176,8 +176,8 @@ func (h Handler) Write(p []byte) (n int, err error) {
 	}
 
 	var pcs [1]uintptr
-	calldepth := 1
-	runtime.Callers(calldepth+2, pcs[:])
+	calldepth := 4
+	runtime.Callers(calldepth, pcs[:])
 
 	h.immediate = true
 	err = h.Handle(
