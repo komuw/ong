@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"io"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -37,10 +36,10 @@ type app struct {
 }
 
 // NewApp creates a new app.
-func NewApp(d db) app {
+func NewApp(d db, l *slog.Logger) app {
 	return app{
 		db: d,
-		l:  log.New(os.Stdout, 1000)(context.Background()),
+		l:  l,
 	}
 }
 
