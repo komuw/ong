@@ -62,7 +62,7 @@ func startPprofServer(logger *slog.Logger) {
 			return
 		}
 
-		lHandler.StdLogger().Println(fmt.Sprintf("pprof server listening at %s", pprofSrv.Addr))
+		lHandler.StdLogger().Printf("pprof server listening at %s", pprofSrv.Addr)
 		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
 			logger.Error("unable to start pprof server", errPprofSrv)

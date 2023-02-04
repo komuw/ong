@@ -298,7 +298,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 				return
 			}
 
-			lHandler.StdLogger().Println(fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr))
+			lHandler.StdLogger().Printf("redirect server listening at %s", redirectSrv.Addr)
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
 				logger.Error("unable to start redirect server", errRedirectSrv)
@@ -313,7 +313,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 		if err != nil {
 			return err
 		}
-		lHandler.StdLogger().Println(fmt.Sprintf("https server listening at %s", o.serverAddress))
+		lHandler.StdLogger().Printf("https server listening at %s", o.serverAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`
