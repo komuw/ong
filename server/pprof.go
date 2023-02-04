@@ -33,6 +33,8 @@ func startPprofServer(logger *slog.Logger) {
 	port := 65060
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	readHeader, read, write, idle := pprofTimeouts()
+
+	// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
 	lHandler, ok := logger.Handler().(log.Handler)
 	if !ok {
 		logger.Error("pprof server, log conversion", fmt.Errorf("unable to convert %v(%T) into log.Handler", logger.Handler(), logger.Handler()))
@@ -60,7 +62,7 @@ func startPprofServer(logger *slog.Logger) {
 			return
 		}
 
-		logger.Info(fmt.Sprintf("pprof server listening at %s", pprofSrv.Addr))
+		lHandler.StdLogger().Println(fmt.Sprintf("pprof server listening at %s", pprofSrv.Addr))
 		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
 			logger.Error("unable to start pprof server", errPprofSrv)
