@@ -97,7 +97,6 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 	defer func() {
 		l := lr.l.WithContext(ctx)
 		msg := "http_client"
-		// TODO: (komuw), check if using []any{} is okay.
 		flds := []any{
 			"method", req.Method,
 			"url", req.URL.Redacted(),

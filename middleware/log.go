@@ -29,8 +29,7 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 			ResponseWriter: w,
 		}
 		defer func() {
-			msg := "http_server" // TODO: check if this is okay.
-			// TODO: (komuw) check if this okay
+			msg := "http_server"
 			flds := []any{
 				"clientIP", ClientIP(r),
 				"method", r.Method,
