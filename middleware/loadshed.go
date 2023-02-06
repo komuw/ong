@@ -88,6 +88,8 @@ func loadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+const maxLatItems = 5_000
+
 type latencyQueue struct {
 	mu sync.Mutex // protects sl
 
@@ -117,7 +119,7 @@ func (lq *latencyQueue) reSize() {
 	defer lq.mu.Unlock()
 
 	size := len(lq.sl)
-	if size > 5_000 {
+	if size > maxLatItems {
 		// Each `latency` struct is 8bytes. So we can afford to have 5_000(40KB)
 		half := size / 2
 		lq.sl = lq.sl[half:] // retain the latest half.

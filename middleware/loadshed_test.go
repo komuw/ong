@@ -162,6 +162,34 @@ func TestLatencyQueue(t *testing.T) {
 		attest.Zero(t, got)
 	})
 
+	t.Run("issues/217: order is preserved", func(t *testing.T) {
+		t.Parallel()
+
+		// See: https://github.com/komuw/ong/issues/217
+
+		lq := newLatencyQueue()
+		for i := 1; i <= maxLatItems; i++ {
+			lq.sl = append(
+				lq.sl,
+				time.Duration(i)*time.Second,
+			)
+		}
+
+		// add very small latency to be latest in the queue.
+		smallLatency := 1 * time.Second
+		for i := 1; i <= 20; i++ {
+			lq.sl = append(lq.sl, smallLatency)
+		}
+
+		// call percentile which may mutate the latency slice.
+		_ = percentile(lq.sl, 90, len(lq.sl))
+
+		latest := lq.sl[len(lq.sl)-1]
+		secondLatest := lq.sl[len(lq.sl)-1]
+		attest.Equal(t, latest, smallLatency)
+		attest.Equal(t, secondLatest, smallLatency)
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
