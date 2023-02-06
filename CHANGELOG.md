@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.32
+- Loadshedder should not re-order latencies: https://github.com/komuw/ong/pull/218
+
 ## v0.0.31
 - Bugfix; immediately log when server gets os/interrupt signal: https://github.com/komuw/ong/commit/b9ed83a98e7bba0350a473b668ddc2ba8d4677cd
 
