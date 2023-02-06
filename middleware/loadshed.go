@@ -40,7 +40,7 @@ const (
 	resizePeriod = samplingPeriod + (3 * time.Minute)
 
 	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.
-	maxLatencyItems = 5_000
+	maxLatencyItems = 1_000
 )
 
 // loadShedder is a middleware that sheds load based on http response latencies.
@@ -121,7 +121,7 @@ func (lq *latencyQueue) reSize() {
 
 	size := len(lq.sl)
 	if size > maxLatencyItems {
-		// Each `latency` struct is 8bytes. So we can afford to have 5_000(40KB)
+		// Each `latency` struct is 8bytes. So we can afford to have upto 1_000(8KB) items.
 		half := size / 2
 		lq.sl = lq.sl[half:] // retain the latest half.
 	}
