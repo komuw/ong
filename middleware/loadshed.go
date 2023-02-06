@@ -38,6 +38,9 @@ const (
 	// It should always be > samplingPeriod
 	// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
 	resizePeriod = samplingPeriod + (3 * time.Minute)
+
+	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.
+	maxLatencyItems = 1_000
 )
 
 // loadShedder is a middleware that sheds load based on http response latencies.
@@ -117,8 +120,8 @@ func (lq *latencyQueue) reSize() {
 	defer lq.mu.Unlock()
 
 	size := len(lq.sl)
-	if size > 5_000 {
-		// Each `latency` struct is 8bytes. So we can afford to have 5_000(40KB)
+	if size > maxLatencyItems {
+		// Each `latency` struct is 8bytes. So we can afford to have upto 1_000(8KB) items.
 		half := size / 2
 		lq.sl = lq.sl[half:] // retain the latest half.
 	}
@@ -139,7 +142,9 @@ func (lq *latencyQueue) getP99(minSampleSize int) (p99latency time.Duration) {
 }
 
 func percentile(N []time.Duration, pctl float64, lenSl int) time.Duration {
-	slices.Sort(N)
+	newN := slices.Clone(N)
+
+	slices.Sort(newN)
 	index := int((pctl / 100) * float64(lenSl))
-	return N[index]
+	return newN[index]
 }

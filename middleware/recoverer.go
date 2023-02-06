@@ -38,7 +38,7 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 					extra := []any{"ongError", ongError}
-					flds = append(flds, extra)
+					flds = append(flds, extra...)
 				}
 				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 

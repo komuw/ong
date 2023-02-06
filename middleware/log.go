@@ -41,7 +41,7 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				extra := []any{"ongError", ongError}
-				flds = append(flds, extra)
+				flds = append(flds, extra...)
 			}
 
 			// Remove header so that users dont see it.
