@@ -176,7 +176,7 @@ func TestLatencyQueue(t *testing.T) {
 		}
 
 		// add very small latency to be latest in the queue.
-		smallLatency := 1 * time.Second
+		smallLatency := 1 * time.Nanosecond
 		for i := 1; i <= 20; i++ {
 			lq.sl = append(lq.sl, smallLatency)
 		}
