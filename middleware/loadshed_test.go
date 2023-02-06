@@ -184,6 +184,9 @@ func TestLatencyQueue(t *testing.T) {
 		// call percentile which may mutate the latency slice.
 		_ = percentile(lq.sl, 90, len(lq.sl))
 
+		// resize.
+		lq.reSize()
+
 		latest := lq.sl[len(lq.sl)-1]
 		secondLatest := lq.sl[len(lq.sl)-1]
 		attest.Equal(t, latest, smallLatency)
