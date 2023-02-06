@@ -32,8 +32,9 @@ func GetId(ctx context.Context) (string, bool) {
 	return id.New(), false
 }
 
-// New returns an [slog.Logger] that is backed by a handler that stores log messages into a [circular buffer].
-// Those log messages are only flushed to the underlying io.Writer when a message with level >=[slog.LevelError] is logged.
+// New returns a function that returns an [slog.Logger]
+// The logger is backed by a handler that stores log messages into a [circular buffer].
+// Those log messages are only flushed to the underlying io.Writer when a message with level >= [slog.LevelError] is logged.
 // A unique logID is also added to the logs that acts as a correlation id of log events from diffrent components that
 // neverthless are related.
 //
@@ -62,7 +63,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 
 // Handler is an [slog.Handler]
 // It stores log messages into a [circular buffer]. Those log messages are only flushed to the underlying io.Writer when
-// a message with level >=[slog.LevelError] is logged.
+// a message with level >= [slog.LevelError] is logged.
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 type Handler struct {
