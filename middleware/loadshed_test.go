@@ -190,8 +190,10 @@ func TestLatencyQueue(t *testing.T) {
 
 		latest := lq.sl[len(lq.sl)-1]
 		secondLatest := lq.sl[len(lq.sl)-1]
+		first := lq.sl[0]
 		attest.Equal(t, latest, smallLatency)
 		attest.Equal(t, secondLatest, smallLatency)
+		attest.NotEqual(t, first, smallLatency)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

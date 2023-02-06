@@ -141,7 +141,9 @@ func (lq *latencyQueue) getP99(minSampleSize int) (p99latency time.Duration) {
 }
 
 func percentile(N []time.Duration, pctl float64, lenSl int) time.Duration {
-	slices.Sort(N)
+	newN := slices.Clone(N)
+
+	slices.Sort(newN)
 	index := int((pctl / 100) * float64(lenSl))
-	return N[index]
+	return newN[index]
 }
