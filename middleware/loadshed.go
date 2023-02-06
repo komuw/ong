@@ -38,6 +38,9 @@ const (
 	// It should always be > samplingPeriod
 	// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
 	resizePeriod = samplingPeriod + (3 * time.Minute)
+
+	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.
+	maxLatencyItems = 5_000
 )
 
 // loadShedder is a middleware that sheds load based on http response latencies.
@@ -88,8 +91,6 @@ func loadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-const maxLatItems = 5_000
-
 type latencyQueue struct {
 	mu sync.Mutex // protects sl
 
@@ -119,7 +120,7 @@ func (lq *latencyQueue) reSize() {
 	defer lq.mu.Unlock()
 
 	size := len(lq.sl)
-	if size > maxLatItems {
+	if size > maxLatencyItems {
 		// Each `latency` struct is 8bytes. So we can afford to have 5_000(40KB)
 		half := size / 2
 		lq.sl = lq.sl[half:] // retain the latest half.

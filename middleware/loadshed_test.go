@@ -169,7 +169,7 @@ func TestLatencyQueue(t *testing.T) {
 
 		// 1. Add big latencies.
 		lq := newLatencyQueue()
-		for i := 1; i <= maxLatItems; i++ {
+		for i := 1; i <= maxLatencyItems; i++ {
 			lq.sl = append(
 				lq.sl,
 				time.Duration(i)*time.Minute,
