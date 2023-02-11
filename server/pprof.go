@@ -34,13 +34,6 @@ func startPprofServer(logger *slog.Logger) {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	readHeader, read, write, idle := pprofTimeouts()
 
-	// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
-	lHandler, ok := logger.Handler().(log.Handler)
-	if !ok {
-		logger.Error("pprof server, log conversion", fmt.Errorf("unable to convert %v(%T) into log.Handler", logger.Handler(), logger.Handler()))
-		return
-	}
-
 	pprofSrv := &http.Server{
 		Addr: addr,
 		// the pprof muxer is failing to work with `http.TimeoutHandler`
@@ -50,7 +43,7 @@ func startPprofServer(logger *slog.Logger) {
 		ReadTimeout:       read,
 		WriteTimeout:      write,
 		IdleTimeout:       idle,
-		ErrorLog:          lHandler.StdLogger(),
+		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
@@ -62,7 +55,9 @@ func startPprofServer(logger *slog.Logger) {
 			return
 		}
 
-		lHandler.StdLogger().Printf("pprof server listening at %s", pprofSrv.Addr)
+		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
+			Printf("pprof server listening at %s", pprofSrv.Addr)
+
 		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
 			logger.Error("unable to start pprof server", errPprofSrv)

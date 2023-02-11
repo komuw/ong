@@ -47,7 +47,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := Handler{h: jh, cBuf: cbuf, logID: id.New()}
+	h := handler{h: jh, cBuf: cbuf, logID: id.New()}
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
@@ -62,12 +62,12 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 }
 
-// Handler is an [slog.Handler]
+// handler is an [slog.handler]
 // It stores log messages into a [circular buffer]. Those log messages are only flushed to the underlying io.Writer when
 // a message with level >= [slog.LevelError] is logged.
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
-type Handler struct {
+type handler struct {
 	// This handler is similar to python's memory handler.
 	// https://github.com/python/cpython/blob/v3.11.1/Lib/logging/handlers.py#L1353-L1359
 	//
@@ -80,19 +80,19 @@ type Handler struct {
 	logID string
 }
 
-func (h Handler) Enabled(_ context.Context, _ slog.Level) bool {
+func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
 	return true /* support all logging levels*/
 }
 
-func (h Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return Handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
 }
 
-func (h Handler) WithGroup(name string) slog.Handler {
-	return Handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+func (h handler) WithGroup(name string) slog.Handler {
+	return handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
 }
 
-func (h Handler) Handle(r slog.Record) error {
+func (h handler) Handle(r slog.Record) error {
 	// Obey the following rules form the slog documentation:
 	// Handle methods that produce OUTPUT should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
