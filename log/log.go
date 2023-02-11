@@ -4,8 +4,6 @@ package log
 import (
 	"context"
 	"io"
-	stdLog "log"
-	"runtime"
 	"sync"
 	"time"
 
@@ -18,6 +16,9 @@ type logContextKeyType string
 
 // CtxKey is the name of the context key used to store the logID.
 const CtxKey = logContextKeyType("Ong-logID")
+
+// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
+const LevelImmediate = slog.Level(-6142973)
 
 // GetId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
@@ -46,7 +47,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := Handler{h: jh, cBuf: cbuf, logID: id.New(), immediate: false}
+	h := Handler{h: jh, cBuf: cbuf, logID: id.New()}
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
@@ -77,10 +78,6 @@ type Handler struct {
 	h     slog.Handler
 	cBuf  *circleBuf
 	logID string
-
-	// remove this once the following is implemnted
-	// https://github.com/golang/go/issues/56345#issuecomment-1407635269
-	immediate bool
 }
 
 func (h Handler) Enabled(_ context.Context, _ slog.Level) bool {
@@ -88,11 +85,11 @@ func (h Handler) Enabled(_ context.Context, _ slog.Level) bool {
 }
 
 func (h Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return Handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID, immediate: h.immediate}
+	return Handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h Handler) WithGroup(name string) slog.Handler {
-	return Handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID, immediate: h.immediate}
+	return Handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h Handler) Handle(r slog.Record) error {
@@ -103,6 +100,10 @@ func (h Handler) Handle(r slog.Record) error {
 	//   - If a group's key is empty, inline the group's Attrs.
 	//   - If a group has no Attrs (even if it has a non-empty key), ignore it.
 	// Note that this handler does not produce output and hence the above rules do not apply.
+
+	if r.Context == nil {
+		r.Context = context.Background()
+	}
 
 	// Convert time to UTC.
 	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
@@ -148,9 +149,7 @@ func (h Handler) Handle(r slog.Record) error {
 			}
 		}
 		h.cBuf.reset()
-	} else if h.immediate {
-		// remove once the following is implemnted.
-		// https://github.com/golang/go/issues/56345#issuecomment-1407635269
+	} else if r.Level == LevelImmediate {
 		err = h.h.Handle(r)
 	}
 
@@ -163,39 +162,6 @@ func (h Handler) Handle(r slog.Record) error {
 // see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
 //
 // TODO: to be fixed by: https://github.com/komuw/ong/issues/182
-
-// StdLogger returns an unstructured logger from the Go standard library log package.
-// That logger will use l as its output.
-func (h Handler) StdLogger() *stdLog.Logger {
-	return stdLog.New(h, "", 0)
-}
-
-// Write implements the io.Writer interface.
-// This is useful if you want to set this logger as a writer for the standard library log.
-func (h Handler) Write(p []byte) (n int, err error) {
-	n = len(p)
-	if n > 0 && p[n-1] == '\n' {
-		// Trim CR added by stdlog.
-		p = p[0 : n-1]
-	}
-
-	var pcs [1]uintptr
-	calldepth := 4
-	runtime.Callers(calldepth, pcs[:])
-
-	h.immediate = true
-	err = h.Handle(
-		slog.NewRecord(
-			time.Now(),
-			slog.LevelDebug,
-			string(p),
-			pcs[0],
-			context.Background(),
-		),
-	)
-
-	return
-}
 
 // circleBuf implements a very simple & naive circular buffer.
 // users of circleBuf are responsible for concurrency safety.

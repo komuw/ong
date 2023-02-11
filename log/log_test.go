@@ -257,17 +257,26 @@ func TestLogger(t *testing.T) {
 	t.Run("stdlibLog", func(t *testing.T) {
 		t.Parallel()
 
-		w := &bytes.Buffer{}
-		msg := "hey what up?"
-		l := New(w, 2)
-		logger := l(context.Background())
-		h, ok := logger.Handler().(Handler)
-		attest.True(t, ok)
+		{
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(w, 2)(context.Background())
 
-		stdLogger := h.StdLogger()
-		stdLogger.Println(msg)
-		attest.Subsequence(t, w.String(), msg)
-		attest.Subsequence(t, w.String(), "log/log_test.go:268")
+			stdLogger := slog.NewLogLogger(l.Handler(), slog.LevelInfo)
+			stdLogger.Println(msg)
+			attest.Zero(t, w.String())
+		}
+
+		{
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(w, 2)(context.Background())
+
+			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
+			stdLogger.Println(msg)
+			attest.Subsequence(t, w.String(), msg)
+			attest.Subsequence(t, w.String(), "log/log_test.go:276")
+		}
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
