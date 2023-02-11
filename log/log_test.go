@@ -257,7 +257,7 @@ func TestLogger(t *testing.T) {
 	t.Run("stdlibLog", func(t *testing.T) {
 		t.Parallel()
 
-		{
+		{ // normal loglevels go through circular buffer.
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
 			l := New(w, 2)(context.Background())
@@ -267,7 +267,7 @@ func TestLogger(t *testing.T) {
 			attest.Zero(t, w.String())
 		}
 
-		{
+		{ // `LevelImmediate` loglevel is logged ASAP.
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
 			l := New(w, 2)(context.Background())
