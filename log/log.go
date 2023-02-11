@@ -14,11 +14,13 @@ import (
 
 type logContextKeyType string
 
-// CtxKey is the name of the context key used to store the logID.
-const CtxKey = logContextKeyType("Ong-logID")
+const (
+	// CtxKey is the name of the context key used to store the logID.
+	CtxKey = logContextKeyType("Ong-logID")
 
-// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
-const LevelImmediate = slog.Level(-6142973)
+	// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
+	LevelImmediate = slog.Level(-6142973)
+)
 
 // GetId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
@@ -155,13 +157,6 @@ func (h handler) Handle(r slog.Record) error {
 
 	return err
 }
-
-// TODO: Remove the `handler.Write` and `handler.StdLogger` methods.
-//       Also make `Handler` private
-//       This is needed by things like http.Server.Errolog
-// see: https://github.com/golang/go/issues/56345#issuecomment-1407635269
-//
-// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
 
 // circleBuf implements a very simple & naive circular buffer.
 // users of circleBuf are responsible for concurrency safety.
