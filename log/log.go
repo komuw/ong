@@ -97,9 +97,12 @@ func (h Handler) WithGroup(name string) slog.Handler {
 
 func (h Handler) Handle(r slog.Record) error {
 	// Obey the following rules form the slog documentation:
-	// Handle methods that produce output should observe the following rules:
+	// Handle methods that produce OUTPUT should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
-	//   - If an Attr's key is the empty string, ignore the Attr.
+	//   - If an Attr's key is the empty string and the value is not a group, ignore the Attr.
+	//   - If a group's key is empty, inline the group's Attrs.
+	//   - If a group has no Attrs (even if it has a non-empty key), ignore it.
+	// Note that this handler does not produce output and hence the above rules do not apply.
 
 	// Convert time to UTC.
 	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
