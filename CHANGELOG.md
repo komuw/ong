@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.33
+- Remove log.Handler.StdLogger(), upstream slog now has an analogous function: https://github.com/komuw/ong/pull/219
+
 ## v0.0.32
 - Loadshedder should not re-order latencies: https://github.com/komuw/ong/pull/218
 
