@@ -269,17 +269,10 @@ func (a app) handleFileServer() http.HandlerFunc {
 	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqL := a.l.WithContext(r.Context())
-
 		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r))
 
-		// TODO: to be fixed by: https://github.com/komuw/ong/issues/182
-		lHandler, ok := reqL.Handler().(log.Handler)
-		if !ok {
-			e := fmt.Errorf("unable to convert %v(%T) into log.Handler", reqL.Handler(), reqL.Handler())
-			http.Error(w, e.Error(), http.StatusInternalServerError)
-			return
-		}
-		lHandler.StdLogger().Println("this is now a Go standard library logger")
+		slog.NewLogLogger(reqL.Handler(), log.LevelImmediate).
+			Println("this is now a Go standard library logger")
 
 		realHandler(w, r)
 	}
