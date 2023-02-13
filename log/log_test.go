@@ -208,7 +208,7 @@ func TestLogger(t *testing.T) {
 
 		attest.Subsequence(t, w.String(), "hey1")
 		attest.Subsequence(t, w.String(), logid1)
-		h, ok := l1.Handler().(handler)
+		h, ok := l1.Handler().(*handler)
 		attest.True(t, ok)
 		attest.Equal(t, len(h.cBuf.buf), 0)
 

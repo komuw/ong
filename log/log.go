@@ -49,7 +49,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := handler{h: jh, cBuf: cbuf, logID: id.New()}
+	h := &handler{h: jh, cBuf: cbuf, logID: id.New()}
 	l := slog.New(h)
 
 	return func(ctx context.Context) *slog.Logger {
@@ -86,15 +86,15 @@ func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
 	return true /* support all logging levels*/
 }
 
-func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
 }
 
-func (h handler) WithGroup(name string) slog.Handler {
-	return handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+func (h *handler) WithGroup(name string) slog.Handler {
+	return &handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
 }
 
-func (h handler) Handle(r slog.Record) error {
+func (h *handler) Handle(r slog.Record) error {
 	// Obey the following rules form the slog documentation:
 	// Handle methods that produce OUTPUT should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
