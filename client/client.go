@@ -24,6 +24,7 @@ const (
 // Most of the code here is insipired by(or taken from):
 //   (a) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang whose license(CC0 Public Domain) can be found here: https://creativecommons.org/publicdomain/zero/1.0
 //   (b) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang/media/ipaddress.go
+//   (c) https://dropbox.tech/security/bug-bounty-program-ssrf-attack
 // as of 9th/september/2022
 //
 
@@ -51,6 +52,14 @@ func new(ssrfSafe bool, l *slog.Logger) *http.Client {
 		// Using Dialer.ControlContext instead of Dialer.Control allows;
 		// - propagation of logging contexts, metric context or other metadata down to the callback.
 		// - cancellation if the callback potentially does I/O.
+		//
+		// ControlContext is called after creating the network connection but before actually dialing.
+		// Thus the Safe http client is still vulnerable to ssrf attacks in:
+		// (a) http redirection: Since we only validate the initial request, an attacker can redirect it to an internal address and bypass validation of subsequent requests.
+		// (b) dns rebinding: An attacker can return a safe IP in the first DNS lookup and a private IP in the second lookup to bypass validation.
+		// see:
+		//  (i) https://dropbox.tech/security/bug-bounty-program-ssrf-attack
+		//  (ii) https://github.com/komuw/ong/issues/221
 		ControlContext: ssrfSocketControl(ssrfSafe),
 		// see: net.DefaultResolver
 		Resolver: &net.Resolver{
