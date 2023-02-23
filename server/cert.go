@@ -49,6 +49,7 @@ func CreateDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 	defer l.Info("done creating dev tls cert and key")
 
 	if _, _, err := loadCA(); err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
@@ -62,12 +63,14 @@ func CreateDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 
 	privKey, err := generatePrivKey()
 	if err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 	pubKey := privKey.(crypto.Signer).Public()
 
 	serNum, err := randomSerialNumber()
 	if err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
@@ -88,20 +91,24 @@ func CreateDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 
 	cert, err := x509.CreateCertificate(rand.Reader, certTemplate, caCert, pubKey, caKey)
 	if err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
 	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	if err = os.WriteFile(certPath, pemCert, 0o644); err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
 	key, err := x509.MarshalPKCS8PrivateKey(privKey)
 	if err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key})
 	if err = os.WriteFile(keyPath, pemKey, 0o600); err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
