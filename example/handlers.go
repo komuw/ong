@@ -7,6 +7,9 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -265,8 +268,16 @@ func (a app) handleFileServer() http.HandlerFunc {
 	// Do NOT let `http.FileServer` be able to serve your root directory.
 	// Otherwise, your .git folder and other sensitive info(including http://localhost:65080/main.go) may be available
 	// instead create a folder that only has your templates and server that.
-	fs := http.FileServer(http.Dir("./stuff"))
-	realHandler := http.StripPrefix("somePrefix", fs).ServeHTTP
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	cwd = strings.TrimSuffix(cwd, "example")
+	dir := filepath.Join(cwd, "/example/serveDirectory")
+
+	fs := http.FileServer(http.Dir(dir))
+	realHandler := http.StripPrefix("/serveDirectory/", fs).ServeHTTP
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqL := a.l.WithContext(r.Context())
 		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r))
