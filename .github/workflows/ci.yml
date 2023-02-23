@@ -85,16 +85,14 @@ jobs:
           env
           set -x
 
-          # check integrity of codecov
-          curl -s https://codecov.io/bash > codecov;
-          VERSION=$(grep -o 'VERSION=\"[0-9\.]*\"' codecov | cut -d'"' -f2);
-          shasum --algorithm 512 --check <(curl -s "https://raw.githubusercontent.com/codecov/codecov-bash/${VERSION}/SHA512SUM" | grep codecov)
-          rm -rf codecov
-
           go test -timeout 1m -race -run=XXXX -bench=. ./...
-          go test -timeout 4m -v -race -cover -coverprofile=coverage.out ./... && bash <(curl -s https://codecov.io/bash)
+          go test -timeout 4m -v -race -cover -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
           go tool cover -func=coverage.out
+
+          wget -nc --output-document=/tmp/codecov https://github.com/codecov/uploader/releases/download/v0.3.5/codecov-linux
+          chmod +x /tmp/codecov
+          /tmp/codecov
         env:
           ONG_RUNNING_IN_TESTS: 'YES'
 
@@ -226,23 +224,30 @@ jobs:
 
       - name: whole program coverage
         run: |
+          set -x
           pwd; ls -lsha
           sudo apt -y update
           sudo apt -y install libnss3-tools # certutil
+
           mkdir -p coverage/
           rm -rf coverage/* ongExample
           go build -cover -o ongExample github.com/komuw/ong/example
-          GOCOVERDIR=coverage/ ./ongExample &
+          GOCOVERDIR=coverage/ ./ongExample > logs_one.json 2>&1 &
           sleep 10 && kill -15 $(pidof ongExample) && sleep 26
-          GOCOVERDIR=coverage/ ./ongExample &
+          cat logs_one.json
+
+          GOCOVERDIR=coverage/ ./ongExample > logs_two.json 2>&1 &
           sleep 10
+          cat logs_two.json
           ls -lsha coverage/
-          curl -vkL -X GET http://127.0.0.1:65080/health  # http redirection
-          curl -vkL -X GET https://127.0.0.1:65081/health # https
+          curl -vkL http://127.0.0.1:65080/health  # http redirection
+          curl -vkL https://127.0.0.1:65081/health # https
           curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
           curl -vkL https://127.0.0.1:65081/check/67
           kill -15 $(pidof ongExample)
           go tool covdata percent -i=coverage
+        env:
+          ONG_RUNNING_IN_TESTS: 'YES'
 
   # run_stress_test:
   #   name: run_stress_test
