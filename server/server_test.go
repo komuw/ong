@@ -77,7 +77,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)(context.Background())
+		l := log.New(os.Stdout, 500)(context.Background())
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
@@ -130,7 +130,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default tls opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)(context.Background())
+		l := log.New(os.Stdout, 500)(context.Background())
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
