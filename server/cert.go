@@ -368,21 +368,20 @@ func commandWithSudo(l *slog.Logger, cmd ...string) *exec.Cmd {
 }
 
 func rootCAcertKeyPaths() (string, string, error) {
-	const rootCACertName = "rootCA_cert.pem"
-	const rootCAKeyName = "rootCA_key.pem"
+	const (
+		rootCACertName = "rootCA_cert.pem"
+		rootCAKeyName  = "rootCA_key.pem"
+		caRootPath     = "/tmp/ong"
+	)
 
-	getCArootpath := func() string {
-		return "/tmp/ong"
-	}
-	caRoot := getCArootpath()
-	if _, err := os.Stat(caRoot); err != nil {
-		errMk := os.MkdirAll(caRoot, 0o761)
-		if errMk != nil {
+	_, err := os.Stat(caRootPath)
+	if err != nil {
+		if errMk := os.MkdirAll(caRootPath, 0o761); errMk != nil {
 			return "", "", errors.Wrap(errMk)
 		}
 	}
 
-	return filepath.Join(caRoot, rootCACertName), filepath.Join(caRoot, rootCAKeyName), nil
+	return filepath.Join(caRootPath, rootCACertName), filepath.Join(caRootPath, rootCAKeyName), nil
 }
 
 func certKeyPaths() (string, string) {
