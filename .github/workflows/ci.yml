@@ -224,6 +224,7 @@ jobs:
 
       - name: whole program coverage
         run: |
+          set -x
           pwd; ls -lsha
           sudo apt -y update
           sudo apt -y install libnss3-tools # certutil
