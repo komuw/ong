@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.34
+- Create dev certs if not exists or expired: https://github.com/komuw/ong/pull/224
+
 ## v0.0.33
 - Remove log.Handler.StdLogger(), upstream slog now has an analogous function: https://github.com/komuw/ong/pull/219
 
