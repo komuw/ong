@@ -10,6 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"os"
@@ -32,6 +33,16 @@ import (
 // This is only meant to be used for development/local settings.
 // The certificate is self-signed & a best effort is made to add its CA to the OS trust store.
 func CreateDevCertKey(l *slog.Logger) (certFile, keyFile string) {
+	certPath, _ := certKeyPaths()
+	rootCACertPath, _ := rootCAcertKeyPaths()
+
+	err1 := checkCertValidity(certPath)
+	err2 := checkCertValidity(rootCACertPath)
+	if err1 == nil && err2 == nil {
+		// certs exists and are valid.
+		return
+	}
+
 	l.Info("creating dev tls cert and key")
 	defer l.Info("done creating dev tls cert and key")
 
@@ -48,10 +59,10 @@ func CreateDevCertKey(l *slog.Logger) (certFile, keyFile string) {
 			OrganizationalUnit: []string{getOrg()},
 		},
 		DNSNames:  []string{"localhost"},
-		NotBefore: time.Now(),
+		NotBefore: time.Now().UTC(),
 		// The maximum for `NotAfter` should be 825days
 		// See https://support.apple.com/en-us/HT210176
-		NotAfter:    time.Now().Add(8 * time.Hour),
+		NotAfter:    time.Now().UTC().Add(8 * time.Hour),
 		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
@@ -227,8 +238,8 @@ func newCA() {
 			CommonName: "ong " + getOrg(),
 		},
 		SubjectKeyId:          skid[:],
-		NotAfter:              time.Now().AddDate(10, 0, 0), // 10years
-		NotBefore:             time.Now(),
+		NotBefore:             time.Now().UTC(),
+		NotAfter:              time.Now().UTC().AddDate(1, 0, 0), // 1year
 		KeyUsage:              x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
@@ -262,6 +273,33 @@ func newCA() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func checkCertValidity(path string) error {
+	certPEMBlock, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	certDERBlock, _ := pem.Decode(certPEMBlock)
+	if certDERBlock == nil || certDERBlock.Type != "CERTIFICATE" {
+		return err
+	}
+
+	cert, errX := x509.ParseCertificate(certDERBlock.Bytes)
+	if errX != nil {
+		return errX
+	}
+
+	now := time.Now().UTC()
+	if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+		return errors.New("certifiate date validity issue")
+	}
+
+	if len(cert.Issuer.Organization) != 1 {
+		return errors.New("certificate issued by bad organization")
+	}
+
+	return nil
 }
 
 func commandWithSudo(cmd ...string) *exec.Cmd {
