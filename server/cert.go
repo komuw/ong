@@ -29,12 +29,12 @@ import (
 //   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 
-// CreateDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
+// createDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
 //
 // This is only meant to be used for development/local settings.
 // The certificate is self-signed & a best effort is made to add its CA to the OS trust store.
 // This function panics on error with the exception of adding certificate to OS trust store.
-func CreateDevCertKey(l *slog.Logger) (certPath, keyPath string) {
+func createDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 	certPath, keyPath = certKeyPaths()
 	rootCACertPath, _, err1 := rootCAcertKeyPaths()
 

@@ -27,7 +27,7 @@ func TestCreateDevCertKey(t *testing.T) {
 		os.Remove(keyPath)
 
 		l := log.New(&bytes.Buffer{}, 500)(context.Background())
-		_, _ = CreateDevCertKey(l)
+		_, _ = createDevCertKey(l)
 
 		_, err := os.Stat(certPath)
 		attest.Ok(t, err)
