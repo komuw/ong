@@ -228,15 +228,18 @@ jobs:
           pwd; ls -lsha
           sudo apt -y update
           sudo apt -y install libnss3-tools # certutil
+
           mkdir -p coverage/
           rm -rf coverage/* ongExample
           go build -cover -o ongExample github.com/komuw/ong/example
-          GOCOVERDIR=coverage/ ./ongExample &
+          GOCOVERDIR=coverage/ ./ongExample > logs_one.json 2>&1 &
           sleep 10 && kill -15 $(pidof ongExample) && sleep 26
-          GOCOVERDIR=coverage/ ./ongExample > logs.json 2>&1 &
+          cat logs_one.json
+
+          GOCOVERDIR=coverage/ ./ongExample > logs_two.json 2>&1 &
           sleep 10
+          cat logs_two.json
           ls -lsha coverage/
-          cat logs.json
           curl -vkL http://127.0.0.1:65080/health  # http redirection
           curl -vkL https://127.0.0.1:65081/health # https
           curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
