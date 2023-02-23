@@ -69,11 +69,6 @@ func TestDrainDuration(t *testing.T) {
 func TestOpts(t *testing.T) {
 	t.Parallel()
 
-	{ // remove certs, so as to force new ones to get created.
-		certPath, _ := certKeyPaths()
-		os.RemoveAll(certPath)
-	}
-
 	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
