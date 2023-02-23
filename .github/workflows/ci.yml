@@ -232,9 +232,10 @@ jobs:
           go build -cover -o ongExample github.com/komuw/ong/example
           GOCOVERDIR=coverage/ ./ongExample &
           sleep 10 && kill -15 $(pidof ongExample) && sleep 26
-          GOCOVERDIR=coverage/ ./ongExample &
+          GOCOVERDIR=coverage/ ./ongExample > logs.json 2>&1 &
           sleep 10
           ls -lsha coverage/
+          cat logs.json
           curl -vkL http://127.0.0.1:65080/health  # http redirection
           curl -vkL https://127.0.0.1:65081/health # https
           curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
