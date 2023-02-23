@@ -207,7 +207,7 @@ func loadCA() (caCert *x509.Certificate, caKey any, err error) {
 		return nil, nil, errors.Wrap(err)
 	}
 
-	if _, err := os.Stat(rootCACertPath); err != nil {
+	if _, errSt := os.Stat(rootCACertPath); errSt != nil {
 		if e := newCA(); e != nil {
 			return nil, nil, e
 		}

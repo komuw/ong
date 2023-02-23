@@ -243,6 +243,8 @@ jobs:
           curl -vkL https://127.0.0.1:65081/check/67
           kill -15 $(pidof ongExample)
           go tool covdata percent -i=coverage
+        env:
+          ONG_RUNNING_IN_TESTS: 'YES'
 
   # run_stress_test:
   #   name: run_stress_test
