@@ -320,7 +320,7 @@ func newCA() error {
 	err = os.WriteFile(
 		rootCAKeyPath,
 		pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privDER}),
-		0o400,
+		0o600,
 	)
 	if err != nil {
 		return errors.Wrap(err)
