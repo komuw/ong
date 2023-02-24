@@ -5,7 +5,12 @@
 #  4. https://github.com/stellar/go/blob/master/.github/workflows/go.yml
 
 name: ong ci
-on: [pull_request]
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
 
