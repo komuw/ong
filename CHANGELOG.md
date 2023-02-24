@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 ## v0.0.36
 - Update to latest exp/slog changes: https://github.com/komuw/ong/pull/226
+- Add gvisor/checklocks analyzer: https://github.com/komuw/ong/pull/202
 
 ## v0.0.35
 - Run integration tests in CI: https://github.com/komuw/ong/pull/225

@@ -145,6 +145,7 @@ func (t *tb) allow() bool {
 }
 
 // limit is a private api(thus needs no locking). It should only ever be called by `tb.allow`
+// +checklocksignore
 func (t *tb) limit() {
 	for t.tokens < 1 {
 		t.addNewTokens()
@@ -155,6 +156,7 @@ func (t *tb) limit() {
 }
 
 // addNewTokens is a private api(thus needs no locking). It should only ever be called by `tb.limit`
+// +checklocksignore
 func (t *tb) addNewTokens() {
 	now := time.Now().UTC()
 	timeSinceUpdate := now.Sub(time.Unix(t.updatedAt, 0).UTC())
