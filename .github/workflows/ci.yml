@@ -227,11 +227,11 @@ jobs:
           sleep 10
           cat logs_two.json
           ls -lsha coverage/
-          curl -vkL http://127.0.0.1:65080/health  # http redirection
-          curl -vkL https://127.0.0.1:65081/health # https
-          curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
-          curl -vkL https://127.0.0.1:65081/check/67
+
+          ./.github/workflows/integration_test_coverage.sh
+
           kill -15 $(pidof ongExample)
+          ls -lsha coverage/
           go tool covdata percent -i=coverage
         env:
           ONG_RUNNING_IN_TESTS: 'YES'
