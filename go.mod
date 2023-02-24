@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	golang.org/x/crypto v0.6.0
-	golang.org/x/exp v0.0.0-20230210204819-062eb4c674ab
-	golang.org/x/net v0.6.0
+	golang.org/x/exp v0.0.0-20230223210539-50820d90acfd
+	golang.org/x/net v0.7.0
 	golang.org/x/sys v0.5.0
 )
 

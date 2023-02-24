@@ -114,6 +114,12 @@ func TestLogger(t *testing.T) {
 		l(context.Background()).Error(msg, errors.New(msg))
 
 		attest.Subsequence(t, w.String(), msg)
+
+		{
+			// it can log nils.
+			l(context.Background()).Info(msg, "someValue", nil)
+			l(context.Background()).Error(msg, nil)
+		}
 	})
 
 	t.Run("info logs are flushed on error", func(t *testing.T) {
@@ -275,7 +281,7 @@ func TestLogger(t *testing.T) {
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "log/log_test.go:276")
+			attest.Subsequence(t, w.String(), "log/log_test.go:282")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})

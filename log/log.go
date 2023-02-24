@@ -94,7 +94,7 @@ func (h handler) WithGroup(name string) slog.Handler {
 	return handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
 }
 
-func (h handler) Handle(r slog.Record) error {
+func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	// Obey the following rules form the slog documentation:
 	// Handle methods that produce OUTPUT should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
@@ -103,8 +103,8 @@ func (h handler) Handle(r slog.Record) error {
 	//   - If a group has no Attrs (even if it has a non-empty key), ignore it.
 	// Note that this handler does not produce output and hence the above rules do not apply.
 
-	if r.Context == nil {
-		r.Context = context.Background()
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
 	// Convert time to UTC.
@@ -116,11 +116,11 @@ func (h handler) Handle(r slog.Record) error {
 	r.Time = r.Time.UTC()
 
 	id := h.logID
-	if id2, ok := GetId(r.Context); ok {
+	if id2, ok := GetId(ctx); ok {
 		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
 	}
-	r.Context = context.WithValue(r.Context, CtxKey, id)
+	ctx = context.WithValue(ctx, CtxKey, id)
 
 	newAttrs := []slog.Attr{
 		{Key: "logID", Value: slog.StringValue(id)},
@@ -146,13 +146,13 @@ func (h handler) Handle(r slog.Record) error {
 	var err error
 	if r.Level >= slog.LevelError {
 		for _, v := range h.cBuf.buf {
-			if e := h.h.Handle(v); e != nil {
+			if e := h.h.Handle(ctx, v); e != nil {
 				err = e
 			}
 		}
 		h.cBuf.reset()
 	} else if r.Level == LevelImmediate {
-		err = h.h.Handle(r)
+		err = h.h.Handle(ctx, r)
 	}
 
 	return err
