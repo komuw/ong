@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.35
+- Run integration tests in CI: https://github.com/komuw/ong/pull/225
+
 ## v0.0.34
 - Create dev certs only if they do not exists or are expired: https://github.com/komuw/ong/pull/224
 
