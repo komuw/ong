@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -71,7 +72,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)
+		l := log.New(&bytes.Buffer{}, 500)(context.Background())
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
@@ -124,7 +125,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default tls opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)
+		l := log.New(&bytes.Buffer{}, 500)(context.Background())
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
@@ -163,7 +164,7 @@ func TestServer(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
@@ -188,7 +189,7 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			_, _ = CreateDevCertKey(l)
+			_, _ = createDevCertKey(l)
 			time.Sleep(1 * time.Second)
 			err := Run(mux, DevOpts(l), l)
 			attest.Ok(t, err)
@@ -279,7 +280,7 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := CreateDevCertKey(l)
+			certFile, keyFile := createDevCertKey(l)
 			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
 			attest.Ok(t, err)
 		}()

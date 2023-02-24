@@ -36,11 +36,17 @@ import (
 )
 
 func main() {
-	l := log.New(os.Stdout, 1000)
-	secretKey := "hard-password"
+	l := log.New(os.Stdout, 1000)(context.Background())
+	secretKey := "super-h@rd-pa$$word"
 	mux := mux.New(
 		l,
-		middleware.WithOpts("localhost", 65081, secretKey, l),
+		middleware.WithOpts(
+			"localhost",
+			65081,
+			secretKey,
+			middleware.DirectIpStrategy,
+			l,
+		),
 		nil,
 		mux.NewRoute(
 			"hello/",
@@ -54,7 +60,7 @@ func main() {
 		),
 	)
 
-	opts := server.DevOpts() // dev options.
+	opts := server.DevOpts(l) // dev options.
 	// alternatively for production:
 	//   opts := server.LetsEncryptOpts("email@email.com", "*.some-domain.com")
 	err := server.Run(mux, opts, l)

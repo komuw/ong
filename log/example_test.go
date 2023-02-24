@@ -1,34 +1,26 @@
 package log_test
 
 import (
+	"context"
 	"errors"
-	stdLog "log"
 	"os"
 
 	"github.com/komuw/ong/log"
 )
 
-func ExampleLogger_Error() {
+func ExampleNew() {
 	l := log.New(os.Stdout, 1000)
 
-	l.Info(log.F{"msg": "sending email", "email": "jane@example.com"})
-	l.Error(errors.New("sending email failed."), log.F{"email": "jane@example.com"})
+	hey := func(ctx context.Context) {
+		logger := l(ctx)
+
+		logger.Info("sending email", "email", "jane@example.com")
+		logger.Error("fail", errors.New("sending email failed."), "email", "jane@example.com")
+	}
+
+	hey(context.Background())
 
 	// example output:
-	//   {"email":"jane@example.com","level":"info","logID":"r73RdRZEExH7cnax2faY7A","msg":"sending email","timestamp":"2022-09-16T12:56:05.471496845Z"}
-	//   {"email":"jane@example.com","err":"sending email failed.","level":"error","logID":"r73RdRZEExH7cnax2faY7A","timestamp":"2022-09-16T12:56:05.471500752Z"}
-}
-
-func ExampleLogger_StdLogger() {
-	l := log.New(os.Stdout, 200)
-	stdLogger := l.StdLogger()
-
-	stdLogger.Println("hey")
-}
-
-func ExampleLogger_Write() {
-	l := log.New(os.Stdout, 200)
-	stdLogger := stdLog.New(l, "stdlib", stdLog.LstdFlags)
-
-	stdLogger.Println("hello world")
+	//   {"time":"2023-02-03T11:26:47.460792396Z","level":"INFO","source":"main.go:17","msg":"sending email","email":"jane@example.com","logID":"DQTXGs3HM8Xgx3yt"}
+	//   {"time":"2023-02-03T11:26:47.46080217Z","level":"ERROR","source":"main.go:18","msg":"fail","err":"sending email failed.","email":"jane@example.com","logID":"DQTXGs3HM8Xgx3yt"}
 }

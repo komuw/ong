@@ -3,9 +3,32 @@
 Most recent version is listed first.  
 
 
+## v0.0.36
+- Update to latest exp/slog changes: https://github.com/komuw/ong/pull/226
+- Add gvisor/checklocks analyzer: https://github.com/komuw/ong/pull/202
+
+## v0.0.35
+- Run integration tests in CI: https://github.com/komuw/ong/pull/225
+
+## v0.0.34
+- Create dev certs only if they do not exists or are expired: https://github.com/komuw/ong/pull/224
+
+## v0.0.33
+- Remove log.Handler.StdLogger(), upstream slog now has an analogous function: https://github.com/komuw/ong/pull/219
+
+## v0.0.32
+- Loadshedder should not re-order latencies: https://github.com/komuw/ong/pull/218
+
+## v0.0.31
+- Bugfix; immediately log when server gets os/interrupt signal: https://github.com/komuw/ong/commit/b9ed83a98e7bba0350a473b668ddc2ba8d4677cd
+
 ## v0.0.30
 - Update to Go v1.20: https://github.com/komuw/ong/pull/209
-- Add gvisor/checklocks analyzer: https://github.com/komuw/ong/pull/202
+- Use net.Dialer.ControlContext instead of use net.Dialer.Control: https://github.com/komuw/ong/pull/212
+- Re-enable golangci-lint: https://github.com/komuw/ong/pull/214
+- Use the new stdlib structured logger: https://github.com/komuw/ong/pull/208
+- Replace custom logger with slog: https://github.com/komuw/ong/pull/215
+- Add a trace middleware: https://github.com/komuw/ong/pull/216
 
 ## v0.0.29
 - WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196

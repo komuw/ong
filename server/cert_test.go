@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"testing"
 
@@ -25,8 +26,8 @@ func TestCreateDevCertKey(t *testing.T) {
 		os.Remove(certPath)
 		os.Remove(keyPath)
 
-		l := log.New(&bytes.Buffer{}, 500)
-		_, _ = CreateDevCertKey(l)
+		l := log.New(&bytes.Buffer{}, 500)(context.Background())
+		_, _ = createDevCertKey(l)
 
 		_, err := os.Stat(certPath)
 		attest.Ok(t, err)

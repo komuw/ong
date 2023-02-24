@@ -2,6 +2,7 @@ package mux
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -34,7 +35,7 @@ func thisIsAnitherMuxHandler() http.HandlerFunc {
 func TestNewRoute(t *testing.T) {
 	t.Parallel()
 
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	// succeds
 	_ = NewRoute(
@@ -71,7 +72,7 @@ func TestMux(t *testing.T) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	t.Run("unknown uri", func(t *testing.T) {
 		t.Parallel()
@@ -192,8 +193,8 @@ func TestMux(t *testing.T) {
 			rStr := fmt.Sprintf("%v", r)
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:23") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:29") // location where `thisIsAnitherMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:24") // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:30") // location where `thisIsAnitherMuxHandler` is declared.
 		}()
 
 		_ = New(
@@ -237,7 +238,7 @@ var result Mux //nolint:gochecknoglobals
 func BenchmarkMuxNew(b *testing.B) {
 	var r Mux
 
-	l := log.New(&bytes.Buffer{}, 500)
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	b.ReportAllocs()
 	b.ResetTimer()

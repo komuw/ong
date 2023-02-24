@@ -16,6 +16,7 @@ import (
 	"github.com/komuw/ong/automax"
 	"github.com/komuw/ong/log"
 
+	"golang.org/x/exp/slog"
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
@@ -127,15 +128,9 @@ func NewOpts(
 
 // DevOpts returns a new Opts that has sensible defaults for tls, especially for dev environments.
 // It also automatically creates the dev certifiates/key by internally calling [CreateDevCertKey]
-func DevOpts(l log.Logger) Opts {
-	if os.Getenv("ONG_RUNNING_IN_TESTS") == "" {
-		// This means we are not in CI. Thus, create dev certificates.
-		//
-		// This function call fails in CI with `permission denied`
-		// since it is trying to create certificates in filesystem.
-		_, _ = CreateDevCertKey(l)
-	}
-	certFile, keyFile := certKeyPaths()
+func DevOpts(l *slog.Logger) Opts {
+	certFile, keyFile := createDevCertKey(l)
+
 	return withOpts(65081, certFile, keyFile, "", "localhost")
 }
 
@@ -181,13 +176,13 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) Opts {
 // Likewise, if the Opts include an email address, the server will accept https traffic and automatically handle http->https redirect.
 //
 // The server shuts down cleanly after receiving any termination signal.
-func Run(h http.Handler, o Opts, l log.Logger) error {
+func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	logger := l.WithCtx(ctx).WithImmediate().WithFields(log.F{"pid": os.Getpid()})
+	logger := l.WithContext(ctx).With("pid", os.Getpid())
 
 	tlsConf, errTc := getTlsConfig(o)
 	if errTc != nil {
@@ -210,7 +205,7 @@ func Run(h http.Handler, o Opts, l log.Logger) error {
 		ReadTimeout:       o.readTimeout,
 		WriteTimeout:      o.writeTimeout,
 		IdleTimeout:       o.idleTimeout,
-		ErrorLog:          logger.StdLogger(),
+		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
@@ -244,7 +239,7 @@ func sigHandler(
 	srv *http.Server,
 	ctx context.Context,
 	cancel context.CancelFunc,
-	logger log.Logger,
+	logger *slog.Logger,
 	drainDur time.Duration,
 ) {
 	sigs := make(chan os.Signal, 1)
@@ -253,22 +248,21 @@ func sigHandler(
 		defer cancel()
 
 		sigCaught := <-sigs
-		logger.Info(log.F{
-			"msg":              "server got shutdown signal",
-			"signal":           fmt.Sprintf("%v", sigCaught),
-			"shutdownDuration": drainDur.String(),
-		})
+
+		sl := slog.NewLogLogger(logger.Handler(), log.LevelImmediate)
+		sl.Println("server got shutdown signal",
+			"signal", fmt.Sprintf("%v", sigCaught),
+			"shutdownDuration", drainDur.String(),
+		)
 
 		err := srv.Shutdown(ctx)
 		if err != nil {
-			logger.Error(err, log.F{
-				"msg": "server shutdown error",
-			})
+			logger.Error("server shutdown error", err)
 		}
 	}()
 }
 
-func serve(ctx context.Context, srv *http.Server, o Opts, logger log.Logger) error {
+func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) error {
 	{
 		// HTTP(non-tls) LISTERNER:
 		redirectSrv := &http.Server{
@@ -278,23 +272,22 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger log.Logger) err
 			ReadTimeout:       o.readTimeout,
 			WriteTimeout:      o.writeTimeout,
 			IdleTimeout:       o.idleTimeout,
-			ErrorLog:          logger.StdLogger(),
+			ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
 			BaseContext:       func(net.Listener) context.Context { return ctx },
 		}
 		go func() {
 			redirectSrvCfg := listenerConfig()
 			redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
 			if errL != nil {
-				logger.Error(errL, log.F{"msg": "redirect server, unable to create listener"})
+				logger.Error("redirect server, unable to create listener", errL)
 				return
 			}
 
-			logger.Info(log.F{
-				"msg": fmt.Sprintf("redirect server listening at %s", redirectSrv.Addr),
-			})
+			slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
+				Printf("redirect server listening at %s", redirectSrv.Addr)
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
-				logger.Error(errRedirectSrv, log.F{"msg": "unable to start redirect server"})
+				logger.Error("unable to start redirect server", errRedirectSrv)
 			}
 		}()
 	}
@@ -306,9 +299,8 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger log.Logger) err
 		if err != nil {
 			return err
 		}
-		logger.Info(log.F{
-			"msg": fmt.Sprintf("https server listening at %s", o.serverAddress),
-		})
+		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
+			Printf("https server listening at %s", o.serverAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`

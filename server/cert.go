@@ -18,7 +18,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/errors"
+
+	"golang.org/x/exp/slog"
 )
 
 // Most of the code here is insipired(or taken from) by:
@@ -27,52 +29,86 @@ import (
 //   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 
-// CreateDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
+// createDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
 //
 // This is only meant to be used for development/local settings.
 // The certificate is self-signed & a best effort is made to add its CA to the OS trust store.
-func CreateDevCertKey(l log.Logger) (certFile, keyFile string) {
-	l = l.WithImmediate()
-	l.Info(log.F{"msg": "creating dev tls cert and key"})
-	defer l.Info(log.F{"msg": "done creating dev tls cert and key"})
+// This function panics on error with the exception of adding certificate to OS trust store.
+func createDevCertKey(l *slog.Logger) (certPath, keyPath string) {
+	certPath, keyPath = certKeyPaths()
+	rootCACertPath, _, err1 := rootCAcertKeyPaths()
 
-	caCert, caKey := installCA(l)
-	certPath, keyPath := certKeyPaths()
+	err2 := checkCertValidity(certPath)
+	err3 := checkCertValidity(rootCACertPath)
+	if err1 == nil && err2 == nil && err3 == nil {
+		// certs exists and are valid.
+		return certPath, keyPath
+	}
 
-	privKey := generatePrivKey()
+	l.Info("creating dev tls cert and key")
+	defer l.Info("done creating dev tls cert and key")
+
+	if _, _, err := loadCA(); err != nil {
+		l.Error("CreateDevCertKey", err)
+		panic(err)
+	}
+
+	caCert, caKey, err := installCA(l)
+	if err != nil {
+		// We should not panic for this error.
+		// This is because this just represents a failure to add certs to CA store.
+		e := errors.Wrap(err)
+		l.Error("CreateDevCertKey", e)
+	}
+
+	privKey, err := generatePrivKey()
+	if err != nil {
+		l.Error("CreateDevCertKey", err)
+		panic(err)
+	}
 	pubKey := privKey.(crypto.Signer).Public()
 
+	serNum, err := randomSerialNumber()
+	if err != nil {
+		l.Error("CreateDevCertKey", err)
+		panic(err)
+	}
+
 	certTemplate := &x509.Certificate{
-		SerialNumber: randomSerialNumber(),
+		SerialNumber: serNum,
 		Subject: pkix.Name{
 			Organization:       []string{"ong development certificate"},
 			OrganizationalUnit: []string{getOrg()},
 		},
 		DNSNames:  []string{"localhost"},
-		NotBefore: time.Now(),
+		NotBefore: time.Now().UTC(),
 		// The maximum for `NotAfter` should be 825days
 		// See https://support.apple.com/en-us/HT210176
-		NotAfter:    time.Now().Add(8 * time.Hour),
+		NotAfter:    time.Now().UTC().Add(8 * time.Hour),
 		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 
 	cert, err := x509.CreateCertificate(rand.Reader, certTemplate, caCert, pubKey, caKey)
 	if err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
 	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	if err = os.WriteFile(certPath, pemCert, 0o644); err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
 	key, err := x509.MarshalPKCS8PrivateKey(privKey)
 	if err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key})
 	if err = os.WriteFile(keyPath, pemKey, 0o600); err != nil {
+		l.Error("CreateDevCertKey", err)
 		panic(err)
 	}
 
@@ -80,11 +116,14 @@ func CreateDevCertKey(l log.Logger) (certFile, keyFile string) {
 }
 
 // installCA adds the dev root CA to the linux/ubuntu certificate trust store.
-func installCA(l log.Logger) (caCert *x509.Certificate, caKey any) {
-	l.Info(log.F{"msg": "installing dev root CA"})
-	defer l.Info(log.F{"msg": "done installing dev root CA"})
+func installCA(l *slog.Logger) (caCert *x509.Certificate, caKey any, err error) {
+	l.Info("installing dev root CA")
+	defer l.Info("done installing dev root CA")
 
-	caCert, caKey = loadCA()
+	caCert, caKey, err = loadCA()
+	if err != nil {
+		return nil, nil, err
+	}
 
 	caUniqename := "ong_development_CA"
 	systemTrustFilename := func() string {
@@ -97,114 +136,132 @@ func installCA(l log.Logger) (caCert *x509.Certificate, caKey any) {
 	_, errVerify := caCert.Verify(x509.VerifyOptions{})
 	if errVerify == nil && errStat == nil {
 		// cert is already installed.
-		l.Info(log.F{"msg": "root CA was already installed"})
-		return caCert, caKey
+		l.Info("root CA was already installed")
+		return caCert, caKey, nil
 	}
 
-	rootCACertName, _ := rootCAcertKeyPaths()
-	cert, err := os.ReadFile(rootCACertName)
+	rootCACertPath, _, err := rootCAcertKeyPaths()
 	if err != nil {
-		panic(err)
+		return nil, nil, errors.Wrap(err)
 	}
 
-	cmd := commandWithSudo("tee", systemTrustFilename())
+	cert, err := os.ReadFile(rootCACertPath)
+	if err != nil {
+		return nil, nil, errors.Wrap(err)
+	}
+
+	cmd := commandWithSudo(l, "tee", systemTrustFilename())
 	cmd.Stdin = bytes.NewReader(cert)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		panic(err)
+		return nil, nil, errors.Wrap(err)
 	}
 
 	sysTrustCmd := []string{"update-ca-certificates"}
-	cmd = commandWithSudo(sysTrustCmd...)
+	cmd = commandWithSudo(l, sysTrustCmd...)
 	out, err = cmd.CombinedOutput()
-	l.Info(log.F{"msg": string(out)})
+	l.Info(string(out))
 	if err != nil {
-		panic(err)
+		return nil, nil, errors.Wrap(err)
 	}
 
-	installInNss := func() {
+	installInNss := func() error {
 		// certutil -V -d ~/.pki/nssdb -u L -n caUniqename # validate cert in NSS store.
 
 		u, errC := user.Current()
 		if errC != nil {
-			panic(errC)
+			return errors.Wrap(errC)
 		}
 		nssDb := filepath.Join(u.HomeDir, ".pki/nssdb")
 
 		createDir := []string{"mkdir", "-p", nssDb}
-		cmd = commandWithSudo(createDir...)
+		cmd = commandWithSudo(l, createDir...)
 		out, err = cmd.CombinedOutput()
-		l.Info(log.F{"msg": string(out), "args": cmd.Args, "err": err})
+		l.Info(string(out), "args", cmd.Args, "error", err)
 		if err != nil {
-			panic(err)
+			return errors.Wrap(err)
 		}
 
 		delete := []string{"certutil", "-D", "-d", nssDb, "-n", caUniqename}
-		cmd = commandWithSudo(delete...)
+		cmd = commandWithSudo(l, delete...)
 		out, err = cmd.CombinedOutput()
-		l.Info(log.F{"msg": string(out), "args": cmd.Args, "err": err})
+		l.Info(string(out), "args", cmd.Args, "error", err)
 		_ = err // ignore error
 
-		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertName}
-		cmd = commandWithSudo(add...)
+		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertPath}
+		cmd = commandWithSudo(l, add...)
 		out, err = cmd.CombinedOutput()
-		l.Info(log.F{"msg": string(out), "args": cmd.Args})
+		l.Info(string(out), "args", cmd.Args)
 		if err != nil {
-			panic(err)
+			return errors.Wrap(err)
 		}
-	}
-	installInNss()
 
-	return caCert, caKey
+		return nil
+	}
+	errNss := installInNss()
+
+	return caCert, caKey, errNss
 }
 
-func loadCA() (caCert *x509.Certificate, caKey any) {
-	rootCACertName, rootCAKeyName := rootCAcertKeyPaths()
-	if _, err := os.Stat(rootCACertName); err != nil {
-		newCA()
+func loadCA() (caCert *x509.Certificate, caKey any, err error) {
+	rootCACertPath, rootCAKeyPath, err := rootCAcertKeyPaths()
+	if err != nil {
+		return nil, nil, errors.Wrap(err)
 	}
 
-	certPEMBlock, err := os.ReadFile(rootCACertName)
+	if _, errSt := os.Stat(rootCACertPath); errSt != nil {
+		if e := newCA(); e != nil {
+			return nil, nil, e
+		}
+	}
+
+	certPEMBlock, err := os.ReadFile(rootCACertPath)
 	if err != nil {
-		panic(err)
+		return nil, nil, errors.Wrap(err)
 	}
 
 	certDERBlock, _ := pem.Decode(certPEMBlock)
 	if certDERBlock == nil || certDERBlock.Type != "CERTIFICATE" {
-		panic("failed to read CA cert.")
+		return nil, nil, errors.New("failed to read CA cert")
 	}
 
 	caCert, err = x509.ParseCertificate(certDERBlock.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, nil, errors.Wrap(err)
 	}
 
-	keyPEMBlock, err := os.ReadFile(rootCAKeyName)
+	keyPEMBlock, err := os.ReadFile(rootCAKeyPath)
 	if err != nil {
-		panic(err)
+		return nil, nil, errors.Wrap(err)
 	}
 
 	keyDERBlock, _ := pem.Decode(keyPEMBlock)
 	if keyDERBlock == nil || keyDERBlock.Type != "PRIVATE KEY" {
-		panic("failed to read CA key.")
+		return nil, nil, errors.New("failed to read CA key")
 	}
 	caKey, err = x509.ParsePKCS8PrivateKey(keyDERBlock.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, nil, errors.Wrap(err)
 	}
 
-	return caCert, caKey
+	return caCert, caKey, nil
 }
 
-func newCA() {
-	rootCACertName, rootCAKeyName := rootCAcertKeyPaths()
+func newCA() error {
+	rootCACertPath, rootCAKeyPath, err := rootCAcertKeyPaths()
+	if err != nil {
+		return errors.Wrap(err)
+	}
 
-	privKey := generatePrivKey()
+	privKey, err := generatePrivKey()
+	if err != nil {
+		return err
+	}
 	pubKey := privKey.(crypto.Signer).Public()
 
 	spkiASN1, err := x509.MarshalPKIXPublicKey(pubKey)
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err)
 	}
 
 	var spki struct {
@@ -213,12 +270,17 @@ func newCA() {
 	}
 	_, err = asn1.Unmarshal(spkiASN1, &spki)
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err)
+	}
+
+	serNum, err := randomSerialNumber()
+	if err != nil {
+		return errors.Wrap(err)
 	}
 
 	skid := sha1.Sum(spki.SubjectPublicKey.Bytes)
 	tpl := &x509.Certificate{
-		SerialNumber: randomSerialNumber(),
+		SerialNumber: serNum,
 		Subject: pkix.Name{
 			Organization:       []string{"ong development CA"},
 			OrganizationalUnit: []string{getOrg()},
@@ -228,8 +290,8 @@ func newCA() {
 			CommonName: "ong " + getOrg(),
 		},
 		SubjectKeyId:          skid[:],
-		NotAfter:              time.Now().AddDate(10, 0, 0), // 10years
-		NotBefore:             time.Now(),
+		NotBefore:             time.Now().UTC(),
+		NotAfter:              time.Now().UTC().AddDate(1, 0, 0), // 1year
 		KeyUsage:              x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
@@ -238,60 +300,88 @@ func newCA() {
 
 	cert, err := x509.CreateCertificate(rand.Reader, tpl, tpl, pubKey, privKey)
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err)
 	}
 
 	privDER, err := x509.MarshalPKCS8PrivateKey(privKey)
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err)
 	}
 
 	err = os.WriteFile(
-		rootCACertName,
+		rootCACertPath,
 		pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert}),
 		0o666,
 	)
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err)
 	}
 
 	err = os.WriteFile(
-		rootCAKeyName,
+		rootCAKeyPath,
 		pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privDER}),
-		0o400,
+		0o600,
 	)
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err)
 	}
+
+	return nil
 }
 
-func commandWithSudo(cmd ...string) *exec.Cmd {
+func checkCertValidity(path string) error {
+	certPEMBlock, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	certDERBlock, _ := pem.Decode(certPEMBlock)
+	if certDERBlock == nil || certDERBlock.Type != "CERTIFICATE" {
+		return err
+	}
+
+	cert, errX := x509.ParseCertificate(certDERBlock.Bytes)
+	if errX != nil {
+		return errX
+	}
+
+	now := time.Now().UTC()
+	if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+		return errors.New("certifiate date validity issue")
+	}
+
+	if len(cert.Issuer.Organization) != 1 {
+		return errors.New("certificate issued by bad organization")
+	}
+
+	return nil
+}
+
+func commandWithSudo(l *slog.Logger, cmd ...string) *exec.Cmd {
 	if u, err := user.Current(); err == nil && u.Uid == "0" {
 		return exec.Command(cmd[0], cmd[1:]...)
 	}
-	return exec.Command("sudo", append([]string{"--prompt=Sudo password:", "--"}, cmd...)...)
+
+	cmdToRun := exec.Command("sudo", append([]string{"--prompt=Sudo password:", "--"}, cmd...)...)
+	l.Info("commandWithSudo", "dir", cmdToRun.Dir, "path", cmdToRun.Path, "args", cmdToRun.Args)
+
+	return cmdToRun
 }
 
-func rootCAcertKeyPaths() (string, string) {
-	const rootCACertName = "rootCA_cert.pem"
-	const rootCAKeyName = "rootCA_key.pem"
+func rootCAcertKeyPaths() (string, string, error) {
+	const (
+		rootCACertName = "rootCA_cert.pem"
+		rootCAKeyName  = "rootCA_key.pem"
+		caRootPath     = "/tmp/ong"
+	)
 
-	getCArootpath := func() string {
-		u, err := user.Current()
-		if err != nil {
-			return "/tmp/ong"
-		}
-		return filepath.Join(u.HomeDir, "ong")
-	}
-	caRoot := getCArootpath()
-	if _, err := os.Stat(caRoot); err != nil {
-		errMk := os.MkdirAll(caRoot, 0o761)
-		if errMk != nil {
-			panic(errMk)
+	_, err := os.Stat(caRootPath)
+	if err != nil {
+		if errMk := os.MkdirAll(caRootPath, 0o761); errMk != nil {
+			return "", "", errors.Wrap(errMk)
 		}
 	}
 
-	return filepath.Join(caRoot, rootCACertName), filepath.Join(caRoot, rootCAKeyName)
+	return filepath.Join(caRootPath, rootCACertName), filepath.Join(caRootPath, rootCAKeyName), nil
 }
 
 func certKeyPaths() (string, string) {
@@ -300,22 +390,21 @@ func certKeyPaths() (string, string) {
 	return certPath, keyPath
 }
 
-func generatePrivKey() (key crypto.PrivateKey) {
-	var err error
+func generatePrivKey() (key crypto.PrivateKey, err error) {
 	key, err = rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
-		panic(err)
+		return nil, errors.Wrap(err)
 	}
-	return key
+	return key, nil
 }
 
-func randomSerialNumber() *big.Int {
+func randomSerialNumber() (*big.Int, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		panic(err)
+		return nil, errors.Wrap(err)
 	}
-	return serialNumber
+	return serialNumber, nil
 }
 
 func getOrg() string {

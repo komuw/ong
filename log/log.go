@@ -1,232 +1,26 @@
-// Package log implements a simple logging package
+// Package log implements a simple logging handler.
 package log
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"io"
-	stdLog "log"
-	"os"
-	"runtime"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
-	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slog"
 )
 
-// Most of the code here is insipired by(or taken from):
-//   (a) https://github.com/rs/zerolog whose license(MIT) can be found here:      https://github.com/rs/zerolog/blob/v1.27.0/LICENSE
-//   (b) https://github.com/sirupsen/logrus whose license(MIT) can be found here: https://github.com/sirupsen/logrus/blob/v1.8.1/LICENSE
-
-type (
-	// Level indicates the severity of a log event/message.
-	Level string
-	// F is the fields to use as a log event/message.
-	F                 map[string]interface{}
-	logContextKeyType string
-)
+type logContextKeyType string
 
 const (
-	// INFO is the log severity indicating an issue that is informational in nature.
-	INFO Level = "info"
-	// ERROR is the log severity indicating an issue that is critical in nature.
-	ERROR Level = "error"
 	// CtxKey is the name of the context key used to store the logID.
 	CtxKey = logContextKeyType("Ong-logID")
+
+	// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
+	LevelImmediate = slog.Level(-6142973)
 )
-
-// Logger represents an active logging object that generates lines of output to an io.Writer.
-// It stores log messages into a [circular buffer]. All those log events are only flushed to the underlying io.Writer when
-// a message with level [ERROR] is logged.
-//
-// It can be used simultaneously from multiple goroutines. Use [New] to get a valid Logger.
-//
-// [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
-type Logger struct {
-	w          io.Writer
-	cBuf       *circleBuf
-	logId      string // this is the id that was got from ctx and should be added in all logs.
-	addCallers bool
-	flds       F
-	immediate  bool // log without buffering. important especially when using logger as an output for the stdlib logger.
-}
-
-// todo: add heartbeat in the future.
-
-// New creates a new logger. The returned logger buffers upto maxMsgs log messages in a circular buffer.
-func New(w io.Writer, maxMsgs int) Logger {
-	if maxMsgs < 1 {
-		maxMsgs = 10
-	}
-	return Logger{
-		w:          w,
-		cBuf:       newCirleBuf(maxMsgs),
-		logId:      id.New(),
-		addCallers: false,
-		flds:       nil,
-		immediate:  false,
-	}
-}
-
-// WithCtx return a new logger, based on l, with the given ctx.
-func (l Logger) WithCtx(ctx context.Context) Logger {
-	id := l.logId
-	if id2, ok := GetId(ctx); ok {
-		// if ctx did not contain a logId, do not use it.
-		id = id2
-	}
-	return Logger{
-		w:          l.w,
-		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		logId:      id,
-		addCallers: l.addCallers,
-		flds:       l.flds,
-		immediate:  l.immediate,
-	}
-}
-
-// WithCaller return a new logger, based on l, that will include callers info in its output.
-func (l Logger) WithCaller() Logger {
-	return l.withcaller(true)
-}
-
-func (l Logger) withcaller(add bool) Logger {
-	return Logger{
-		w:          l.w,
-		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		logId:      l.logId,
-		addCallers: add,
-		flds:       l.flds,
-		immediate:  l.immediate,
-	}
-}
-
-// WithFields return a new logger, based on l, that will include the given fields in all its output.
-func (l Logger) WithFields(f F) Logger {
-	return Logger{
-		w:          l.w,
-		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		logId:      l.logId,
-		addCallers: l.addCallers,
-		flds:       f,
-		immediate:  l.immediate,
-	}
-}
-
-// WithImmediate return a new logger, based on l, that will log immediately without buffering.
-func (l Logger) WithImmediate() Logger {
-	return Logger{
-		w:          l.w,
-		cBuf:       l.cBuf, // we do not invalidate buffer; `l.cBuf.buf = l.cBuf.buf[:0]`
-		logId:      l.logId,
-		addCallers: l.addCallers,
-		flds:       l.flds,
-		immediate:  true,
-	}
-}
-
-// Info will log at the [INFO] level.
-func (l Logger) Info(f F) {
-	l.log(INFO, f)
-}
-
-// Error will log at the [ERROR] level.
-func (l Logger) Error(e error, fs ...F) {
-	dst := F{}
-	if e != nil {
-		dst = F{"err": e.Error()}
-		if stack := errors.StackTrace(e); stack != "" {
-			dst["stack"] = stack
-		}
-	}
-
-	for _, f := range fs {
-		for k, v := range f {
-			dst[k] = v
-		}
-	}
-
-	l.log(ERROR, dst)
-}
-
-// Write implements the io.Writer interface.
-//
-// This is useful if you want to set this logger as a writer for the standard library log.
-func (l Logger) Write(p []byte) (n int, err error) {
-	n = len(p)
-	if n > 0 && p[n-1] == '\n' {
-		// Trim CR added by stdlog.
-		p = p[0 : n-1]
-	}
-	// NB: we need to disable callers, otherwise this line is going to be listed as the caller..
-	//     the caller is the line where `.Info` or `.Error` is called.
-	l.withcaller(false).WithImmediate().Info(F{"message": string(p)})
-	return
-}
-
-// StdLogger returns a logger from the Go standard library log package.
-//
-// That logger will use l as its output.
-func (l Logger) StdLogger() *stdLog.Logger {
-	l = l.WithImmediate().WithCaller()
-	return stdLog.New(l, "", 0)
-}
-
-func (l Logger) log(lvl Level, f F) {
-	f["level"] = lvl
-	f["timestamp"] = time.Now().UTC()
-	f["logID"] = l.logId
-	if l.addCallers {
-		// the caller is the line where `.Info` or `.Error` is called.
-		if _, file, line, ok := runtime.Caller(2); ok {
-			f["line"] = fmt.Sprintf("%s:%d", file, line)
-		}
-	}
-
-	if l.flds != nil {
-		// Copy(dst, src)
-		maps.Copy(f, l.flds) // keys in dst(`f`) that are also in l.flds, are overwritten.
-	}
-
-	l.cBuf.store(f)
-
-	if lvl == ERROR || l.immediate {
-		// flush
-		l.flush()
-	}
-}
-
-func (l Logger) flush() {
-	b := &bytes.Buffer{}
-	encoder := json.NewEncoder(b)
-	encoder.SetEscapeHTML(false)
-
-	{
-		l.cBuf.mu.Lock()
-		for _, v := range l.cBuf.buf {
-			if v == nil {
-				continue
-			}
-			if err := encoder.Encode(v); err != nil {
-				if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-					panic(err)
-				}
-				continue
-			}
-		}
-		if _, err := l.w.Write(b.Bytes()); err != nil && os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			panic(err)
-		}
-		l.cBuf.mu.Unlock()
-	}
-
-	l.cBuf.reset()
-}
 
 // GetId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
@@ -241,12 +35,135 @@ func GetId(ctx context.Context) (string, bool) {
 	return id.New(), false
 }
 
+// New returns a function that returns an [slog.Logger]
+// The logger is backed by a handler that stores log messages into a [circular buffer].
+// Those log messages are only flushed to the underlying io.Writer when a message with level >= [slog.LevelError] is logged.
+// A unique logID is also added to the logs that acts as a correlation id of log events from diffrent components that
+// neverthless are related.
+//
+// [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
+func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
+	opts := slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	}
+	jh := opts.NewJSONHandler(w)
+	cbuf := newCirleBuf(maxMsgs)
+	h := handler{h: jh, cBuf: cbuf, logID: id.New()}
+	l := slog.New(h)
+
+	return func(ctx context.Context) *slog.Logger {
+		id := h.logID
+		if id2, ok := GetId(ctx); ok {
+			// if ctx did not contain a logId, do not use the generated one.
+			id = id2
+		}
+
+		ctx = context.WithValue(ctx, CtxKey, id)
+		return l.WithContext(ctx)
+	}
+}
+
+// handler is an [slog.handler]
+// It stores log messages into a [circular buffer]. Those log messages are only flushed to the underlying io.Writer when
+// a message with level >= [slog.LevelError] is logged.
+//
+// [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
+type handler struct {
+	// This handler is similar to python's memory handler.
+	// https://github.com/python/cpython/blob/v3.11.1/Lib/logging/handlers.py#L1353-L1359
+	//
+	// from [slog.Handler] documentation:
+	// Any of the Handler's methods may be called concurrently with itself or with other methods.
+	// It is the responsibility of the Handler to manage this concurrency.
+	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
+	h     slog.Handler
+	cBuf  *circleBuf
+	logID string
+}
+
+func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
+	return true /* support all logging levels*/
+}
+
+func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+}
+
+func (h handler) WithGroup(name string) slog.Handler {
+	return handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+}
+
+func (h handler) Handle(ctx context.Context, r slog.Record) error {
+	// Obey the following rules form the slog documentation:
+	// Handle methods that produce OUTPUT should observe the following rules:
+	//   - If r.Time is the zero time, ignore the time.
+	//   - If an Attr's key is the empty string and the value is not a group, ignore the Attr.
+	//   - If a group's key is empty, inline the group's Attrs.
+	//   - If a group has no Attrs (even if it has a non-empty key), ignore it.
+	// Note that this handler does not produce output and hence the above rules do not apply.
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// Convert time to UTC.
+	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
+	// If we ever need that functionality, we would do that in `r.Attrs()`
+	if r.Time.IsZero() {
+		r.Time = time.Now().UTC()
+	}
+	r.Time = r.Time.UTC()
+
+	id := h.logID
+	if id2, ok := GetId(ctx); ok {
+		// if ctx did not contain a logId, do not use the generated one.
+		id = id2
+	}
+	ctx = context.WithValue(ctx, CtxKey, id)
+
+	newAttrs := []slog.Attr{
+		{Key: "logID", Value: slog.StringValue(id)},
+	}
+
+	r.Attrs(func(a slog.Attr) {
+		if a.Key == slog.ErrorKey {
+			if e, ok := a.Value.Any().(error); ok {
+				if stack := errors.StackTrace(e); stack != "" {
+					newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+				}
+			}
+		}
+	})
+	r.AddAttrs(newAttrs...)
+
+	h.cBuf.mu.Lock()
+	defer h.cBuf.mu.Unlock()
+
+	// store record only after manipulating it.
+	h.cBuf.store(r)
+
+	var err error
+	if r.Level >= slog.LevelError {
+		for _, v := range h.cBuf.buf {
+			if e := h.h.Handle(ctx, v); e != nil {
+				err = e
+			}
+		}
+		h.cBuf.reset()
+	} else if r.Level == LevelImmediate {
+		err = h.h.Handle(ctx, r)
+	}
+
+	return err
+}
+
 // circleBuf implements a very simple & naive circular buffer.
+// users of circleBuf are responsible for concurrency safety.
 type circleBuf struct {
 	mu sync.Mutex // protects buf
 	// +checklocks:mu
-	buf []F
-
+	buf     []slog.Record
 	maxSize int
 }
 
@@ -255,17 +172,14 @@ func newCirleBuf(maxSize int) *circleBuf {
 		maxSize = 10
 	}
 	c := &circleBuf{
-		buf:     make([]F, maxSize),
+		buf:     make([]slog.Record, maxSize),
 		maxSize: maxSize,
 	}
 	c.reset() // remove the nils from `make()`
 	return c
 }
 
-func (c *circleBuf) store(f F) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
+func (c *circleBuf) store(r slog.Record) {
 	availableSpace := c.maxSize - len(c.buf)
 	if availableSpace <= 0 {
 		// clear space.
@@ -279,22 +193,9 @@ func (c *circleBuf) store(f F) {
 		c.buf = c.buf[:upto]
 	}
 
-	c.buf = append(c.buf, f)
+	c.buf = append(c.buf, r)
 }
 
 func (c *circleBuf) reset() {
-	c.mu.Lock()
 	c.buf = c.buf[:0]
-	c.mu.Unlock()
-}
-
-func (c *circleBuf) String() string {
-	var s strings.Builder
-	s.WriteString("circleBuf{\n")
-	for _, v := range c.buf {
-		s.WriteString(fmt.Sprintf("%v\n", v))
-	}
-	s.WriteString("\n}")
-
-	return s.String()
 }

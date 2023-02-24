@@ -5,7 +5,12 @@
 #  4. https://github.com/stellar/go/blob/master/.github/workflows/go.yml
 
 name: ong ci
-on: [pull_request]
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
 
@@ -67,15 +72,9 @@ jobs:
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
-        with:
-          # For pull requests, build and test the PR head not a merge of the PR with the destination.
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          # We need to full history for git-restore-mtime to know what modification dates to use.
-          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
-          fetch-depth: '0'
 
-      - name: custom setupGo
-        uses: ./.github/actions/setup-go
+      - name: Set up Go
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -85,22 +84,20 @@ jobs:
           env
           set -x
 
-          # check integrity of codecov
-          curl -s https://codecov.io/bash > codecov;
-          VERSION=$(grep -o 'VERSION=\"[0-9\.]*\"' codecov | cut -d'"' -f2);
-          shasum --algorithm 512 --check <(curl -s "https://raw.githubusercontent.com/codecov/codecov-bash/${VERSION}/SHA512SUM" | grep codecov)
-          rm -rf codecov
-
           go test -timeout 1m -race -run=XXXX -bench=. ./...
-          go test -timeout 4m -v -race -cover -coverprofile=coverage.out ./... && bash <(curl -s https://codecov.io/bash)
+          go test -timeout 4m -v -race -cover -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
           go tool cover -func=coverage.out
+
+          wget -nc --output-document=/tmp/codecov https://github.com/codecov/uploader/releases/download/v0.3.5/codecov-linux
+          chmod +x /tmp/codecov
+          /tmp/codecov
         env:
           ONG_RUNNING_IN_TESTS: 'YES'
 
   run_analysis:
     name: run_analysis
-    timeout-minutes: 5
+    timeout-minutes: 6
     strategy:
       matrix:
         go-version: ['>=1.20']
@@ -109,15 +106,9 @@ jobs:
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
-        with:
-          # For pull requests, build and test the PR head not a merge of the PR with the destination.
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          # We need to full history for git-restore-mtime to know what modification dates to use.
-          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
-          fetch-depth: '0'
 
-      - name: custom setupGo
-        uses: ./.github/actions/setup-go
+      - name: Set up Go
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -130,7 +121,7 @@ jobs:
       - name: install tools
         run: |
           set -x
-          go install honnef.co/go/tools/cmd/staticcheck@master
+          go install honnef.co/go/tools/cmd/staticcheck@latest
           go install github.com/securego/gosec/cmd/gosec@latest
           go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
           go install github.com/orijtech/structslop/cmd/structslop@latest
@@ -177,7 +168,7 @@ jobs:
           wget -nc --output-document=/tmp/semgrep-go.zip https://github.com/dgryski/semgrep-go/archive/refs/heads/master.zip
           unzip -o /tmp/semgrep-go.zip -d /tmp/semgrep-go
           go get github.com/quasilyte/go-ruleguard/dsl
-          # golangci-lint run --config .golangci.yml ./...
+          golangci-lint run --config .golangci.yml ./...
           go mod tidy
           python -m venv /tmp/.venv
           . /tmp/.venv/bin/activate
@@ -205,7 +196,7 @@ jobs:
   # https://go.dev/testing/coverage/
   integration_test_coverage:
     name: integration_test_coverage
-    timeout-minutes: 2
+    timeout-minutes: 3
     strategy:
       matrix:
         go-version: ['>=1.20']
@@ -214,37 +205,38 @@ jobs:
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
-        with:
-          # For pull requests, build and test the PR head not a merge of the PR with the destination.
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
-          # We need to full history for git-restore-mtime to know what modification dates to use.
-          # Otherwise, the Go test cache will fail (due to the modification time of fixtures changing).
-          fetch-depth: '0'
 
-      - name: custom setupGo
-        uses: ./.github/actions/setup-go
+      - name: Set up Go
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
 
       - name: whole program coverage
         run: |
+          set -x
           pwd; ls -lsha
           sudo apt -y update
           sudo apt -y install libnss3-tools # certutil
+
           mkdir -p coverage/
           rm -rf coverage/* ongExample
           go build -cover -o ongExample github.com/komuw/ong/example
-          GOCOVERDIR=coverage/ ./ongExample &
+          GOCOVERDIR=coverage/ ./ongExample > logs_one.json 2>&1 &
           sleep 10 && kill -15 $(pidof ongExample) && sleep 26
-          GOCOVERDIR=coverage/ ./ongExample &
+          cat logs_one.json
+
+          GOCOVERDIR=coverage/ ./ongExample > logs_two.json 2>&1 &
           sleep 10
+          cat logs_two.json
           ls -lsha coverage/
-          curl -vkL -X GET http://127.0.0.1:65080/health  # http redirection
-          curl -vkL -X GET https://127.0.0.1:65081/health # https
-          curl -vkL "http://127.0.0.1:65060/debug/pprof/profile?seconds=3" # pprof
-          curl -vkL https://127.0.0.1:65081/check/67
+
+          ./.github/workflows/integration_test_coverage.sh
+
           kill -15 $(pidof ongExample)
+          ls -lsha coverage/
           go tool covdata percent -i=coverage
+        env:
+          ONG_RUNNING_IN_TESTS: 'YES'
 
   # run_stress_test:
   #   name: run_stress_test
@@ -255,8 +247,8 @@ jobs:
   #       platform: [ubuntu-22.04]
   #   runs-on: ${{ matrix.platform }}
   #   steps:
-  # - name: custom setupGo
-  #   uses: ./.github/actions/setup-go
+  # - name: Set up Go
+  #   uses: actions/setup-go@v3
   #   with:
   #     go-version: ${{ matrix.go-version }}
   #     - name: stress test

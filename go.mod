@@ -3,10 +3,10 @@ module github.com/komuw/ong
 go 1.20
 
 require (
-	golang.org/x/crypto v0.5.0
-	golang.org/x/exp v0.0.0-20230131160201-f062dba9d201
-	golang.org/x/net v0.5.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/crypto v0.6.0
+	golang.org/x/exp v0.0.0-20230223210539-50820d90acfd
+	golang.org/x/net v0.7.0
+	golang.org/x/sys v0.5.0
 )
 
 require (
@@ -15,9 +15,10 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 )
 
 require (

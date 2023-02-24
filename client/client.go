@@ -3,6 +3,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/log"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -22,23 +24,24 @@ const (
 // Most of the code here is insipired by(or taken from):
 //   (a) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang whose license(CC0 Public Domain) can be found here: https://creativecommons.org/publicdomain/zero/1.0
 //   (b) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang/media/ipaddress.go
+//   (c) https://dropbox.tech/security/bug-bounty-program-ssrf-attack
 // as of 9th/september/2022
 //
 
 // Safe creates a http client that has some good defaults & is safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-func Safe(l log.Logger) *http.Client {
+func Safe(l *slog.Logger) *http.Client {
 	return new(true, l)
 }
 
 // Unsafe creates a http client that has some good defaults & is NOT safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-func Unsafe(l log.Logger) *http.Client {
+func Unsafe(l *slog.Logger) *http.Client {
 	return new(false, l)
 }
 
 // new creates a client. Use [Safe] or [Unsafe] instead.
-func new(ssrfSafe bool, l log.Logger) *http.Client {
+func new(ssrfSafe bool, l *slog.Logger) *http.Client {
 	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
 	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
 	// and the p95 response times for http POST requests is ~3seconds:
@@ -46,7 +49,18 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 	timeout := 3 * 2 * time.Second
 
 	dialer := &net.Dialer{
-		Control: ssrfSocketControl(ssrfSafe),
+		// Using Dialer.ControlContext instead of Dialer.Control allows;
+		// - propagation of logging contexts, metric context or other metadata down to the callback.
+		// - cancellation if the callback potentially does I/O.
+		//
+		// ControlContext is called after creating the network connection but before actually dialing.
+		// Thus the Safe http client is still vulnerable to ssrf attacks in:
+		// (a) http redirection: Since we only validate the initial request, an attacker can redirect it to an internal address and bypass validation of subsequent requests.
+		// (b) dns rebinding: An attacker can return a safe IP in the first DNS lookup and a private IP in the second lookup to bypass validation.
+		// see:
+		//  (i) https://dropbox.tech/security/bug-bounty-program-ssrf-attack
+		//  (ii) https://github.com/komuw/ong/issues/221
+		ControlContext: ssrfSocketControl(ssrfSafe),
 		// see: net.DefaultResolver
 		Resolver: &net.Resolver{
 			// Prefer Go's built-in DNS resolver.
@@ -71,7 +85,7 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 
 	lr := &loggingRT{
 		RoundTripper: transport,
-		l:            l.WithFields(log.F{"pid": os.Getpid()}),
+		l:            l.With("pid", os.Getpid()),
 	}
 
 	return &http.Client{
@@ -82,7 +96,7 @@ func new(ssrfSafe bool, l log.Logger) *http.Client {
 
 // loggingRT is a [http.RoundTripper] that logs requests and responses.
 type loggingRT struct {
-	l log.Logger
+	l *slog.Logger
 	http.RoundTripper
 }
 
@@ -90,19 +104,23 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 	ctx := req.Context()
 	start := time.Now()
 	defer func() {
-		l := lr.l.WithCtx(ctx)
-		flds := log.F{
-			"msg":        "http_client",
-			"method":     req.Method,
-			"url":        req.URL.Redacted(),
-			"durationMS": time.Since(start).Milliseconds(),
+		l := lr.l.WithContext(ctx)
+		msg := "http_client"
+		flds := []any{
+			"method", req.Method,
+			"url", req.URL.Redacted(),
+			"durationMS", time.Since(start).Milliseconds(),
 		}
+
 		if err != nil {
-			l.Error(err, flds)
+			l.Error(msg, err, flds...)
 		} else {
-			flds["code"] = res.StatusCode
-			flds["status"] = res.Status
-			l.Info(flds)
+			extra := []any{
+				"code", res.StatusCode,
+				"status", res.Status,
+			}
+			flds = append(flds, extra...)
+			l.Info(msg, flds...)
 		}
 	}()
 
@@ -112,12 +130,12 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 	return lr.RoundTripper.RoundTrip(req)
 }
 
-func ssrfSocketControl(ssrfSafe bool) func(network, address string, conn syscall.RawConn) error {
+func ssrfSocketControl(ssrfSafe bool) func(ctx context.Context, network, address string, c syscall.RawConn) error {
 	if !ssrfSafe {
 		return nil
 	}
 
-	return func(network, address string, conn syscall.RawConn) error {
+	return func(ctx context.Context, network, address string, c syscall.RawConn) error {
 		if !(network == "tcp4" || network == "tcp6") {
 			return fmt.Errorf("%s %s is not a safe network type", errPrefix, network)
 		}
