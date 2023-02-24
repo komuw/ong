@@ -84,7 +84,7 @@ func createDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 		NotBefore: time.Now().UTC(),
 		// The maximum for `NotAfter` should be 825days
 		// See https://support.apple.com/en-us/HT210176
-		NotAfter:    time.Now().UTC().Add(8 * time.Hour),
+		NotAfter:    time.Now().UTC().Add(26 * time.Hour),
 		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
