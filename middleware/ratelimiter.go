@@ -57,7 +57,8 @@ func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // rl is a ratelimiter per IP address.
 type rl struct {
-	mu  sync.RWMutex // protects mtb
+	mu sync.RWMutex // protects mtb
+	// +checklocks:mu
 	mtb map[string]*tb
 }
 
@@ -101,13 +102,19 @@ func (r *rl) reSize() {
 type tb struct {
 	mu sync.Mutex // protects all the other fields.
 
-	sendRate       float64 // In req/seconds
-	maxTokens      float64
-	tokens         float64
+	// +checklocks:mu
+	sendRate float64 // In req/seconds
+	// +checklocks:mu
+	maxTokens float64
+	// +checklocks:mu
+	tokens float64
+	// +checklocks:mu
 	delayForTokens time.Duration
 	// updatedAt is the time at which this operation took place.
 	// We could have ideally used a `time.Time` as its type; but we wanted the latency struct to be minimal in size.
-	updatedAt         int64
+	// +checklocks:mu
+	updatedAt int64
+	// +checklocks:mu
 	messagesDelivered float64
 }
 

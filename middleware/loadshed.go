@@ -102,6 +102,7 @@ type latencyQueue struct {
 		Since [latencyQueue.reSize] is called oftenly; all the latencies in the queue will
 		aways be within `samplingPeriod` give or take.
 	*/
+	// +checklocks:mu
 	sl []time.Duration
 }
 
