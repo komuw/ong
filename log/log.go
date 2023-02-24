@@ -179,6 +179,9 @@ func newCirleBuf(maxSize int) *circleBuf {
 	return c
 }
 
+// store is a private api(thus needs no locking).
+// It should only ever be called by `handler.Handle` which already takes a lock.
+// +checklocksignore
 func (c *circleBuf) store(r slog.Record) {
 	availableSpace := c.maxSize - len(c.buf)
 	if availableSpace <= 0 {
@@ -196,6 +199,9 @@ func (c *circleBuf) store(r slog.Record) {
 	c.buf = append(c.buf, r)
 }
 
+// reset is a private api(thus needs no locking).
+// It should only ever be called by `handler.Handle` which already takes a lock.
+// +checklocksignore
 func (c *circleBuf) reset() {
 	c.buf = c.buf[:0]
 }
