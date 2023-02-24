@@ -3,6 +3,8 @@ shopt -s nullglob globstar
 set -x # have bash print command been ran
 set -e # fail if any command fails
 
+# This file tests that the examples in the /example/ directory will continue to work correctly.
+
 https_redirection(){
   status_code=$(curl -k --write-out '%{http_code}' --silent --output /dev/null "http://127.0.0.1:65080/health")
   if [[ "$status_code" -ne 308 ]] ; then
