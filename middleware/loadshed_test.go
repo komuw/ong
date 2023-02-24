@@ -170,8 +170,8 @@ func TestLatencyQueue(t *testing.T) {
 		// 1. Add big latencies.
 		lq := newLatencyQueue()
 		for i := 1; i <= maxLatencyItems; i++ {
-			lq.sl = append(
-				lq.sl,
+			lq.sl = append( // +checklocksignore
+				lq.sl, // +checklocksignore
 				time.Duration(i)*time.Minute,
 			)
 		}
@@ -179,18 +179,18 @@ func TestLatencyQueue(t *testing.T) {
 		// 2. Add very small latency to be latest in the queue.
 		smallLatency := 1 * time.Nanosecond
 		for i := 1; i <= 20; i++ {
-			lq.sl = append(lq.sl, smallLatency)
+			lq.sl = append(lq.sl, smallLatency) // +checklocksignore
 		}
 
 		// 3. Call percentile which may mutate the latency slice.
-		_ = percentile(lq.sl, 90, len(lq.sl))
+		_ = percentile(lq.sl, 90, len(lq.sl)) // +checklocksignore
 
 		// 4. resize.
 		lq.reSize()
 
-		latest := lq.sl[len(lq.sl)-1]
-		secondLatest := lq.sl[len(lq.sl)-1]
-		first := lq.sl[0]
+		latest := lq.sl[len(lq.sl)-1]       // +checklocksignore
+		secondLatest := lq.sl[len(lq.sl)-1] // +checklocksignore
+		first := lq.sl[0]                   // +checklocksignore
 		attest.Equal(t, latest, smallLatency)
 		attest.Equal(t, secondLatest, smallLatency)
 		attest.NotEqual(t, first, smallLatency)
