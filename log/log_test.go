@@ -114,6 +114,12 @@ func TestLogger(t *testing.T) {
 		l(context.Background()).Error(msg, errors.New(msg))
 
 		attest.Subsequence(t, w.String(), msg)
+
+		{
+			// it can log nils.
+			l(context.Background()).Info(msg, "someValue", nil)
+			l(context.Background()).Error(msg, nil)
+		}
 	})
 
 	t.Run("info logs are flushed on error", func(t *testing.T) {
