@@ -27,12 +27,12 @@ func TestCircleBuf(t *testing.T) {
 		c.store(slog.Record{Message: "one"})
 		c.store(slog.Record{Message: "two"})
 
-		attest.Equal(t, c.buf[0].Message, "one") // +checklocksignore
+		attest.Equal(t, c.buf[0].Message, "one")
 
-		attest.Equal(t, c.buf[1].Message, "two") // +checklocksignore
+		attest.Equal(t, c.buf[1].Message, "two")
 
-		attest.Equal(t, len(c.buf), 2) // +checklocksignore
-		attest.Equal(t, cap(c.buf), 4) // +checklocksignore
+		attest.Equal(t, len(c.buf), 2)
+		attest.Equal(t, cap(c.buf), 4)
 	})
 
 	t.Run("does not exceed maxsize", func(t *testing.T) {
@@ -44,11 +44,11 @@ func TestCircleBuf(t *testing.T) {
 			x := fmt.Sprint(i)
 			c.store(slog.Record{Message: x})
 
-			attest.True(t, len(c.buf) <= maxSize) // +checklocksignore
-			attest.True(t, cap(c.buf) <= maxSize) // +checklocksignore
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
 		}
-		attest.True(t, len(c.buf) <= maxSize) // +checklocksignore
-		attest.True(t, cap(c.buf) <= maxSize) // +checklocksignore
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
 	})
 
 	t.Run("clears oldest first", func(t *testing.T) {
@@ -59,14 +59,14 @@ func TestCircleBuf(t *testing.T) {
 		for i := 0; i <= (6 * maxSize); i++ {
 			x := fmt.Sprint(i)
 			c.store(slog.Record{Message: x})
-			attest.True(t, len(c.buf) <= maxSize) // +checklocksignore
-			attest.True(t, cap(c.buf) <= maxSize) // +checklocksignore
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
 		}
-		attest.True(t, len(c.buf) <= maxSize) // +checklocksignore
-		attest.True(t, cap(c.buf) <= maxSize) // +checklocksignore
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
 
-		attest.Equal(t, c.buf[1].Message, "29") // +checklocksignore
-		attest.Equal(t, c.buf[2].Message, "30") // +checklocksignore
+		attest.Equal(t, c.buf[1].Message, "29")
+		attest.Equal(t, c.buf[2].Message, "30")
 	})
 
 	t.Run("reset", func(t *testing.T) {
@@ -77,16 +77,16 @@ func TestCircleBuf(t *testing.T) {
 		for i := 0; i <= (13 * maxSize); i++ {
 			x := fmt.Sprint(i)
 			c.store(slog.Record{Message: x})
-			attest.True(t, len(c.buf) <= maxSize) // +checklocksignore
-			attest.True(t, cap(c.buf) <= maxSize) // +checklocksignore
+			attest.True(t, len(c.buf) <= maxSize)
+			attest.True(t, cap(c.buf) <= maxSize)
 		}
-		attest.True(t, len(c.buf) <= maxSize) // +checklocksignore
-		attest.True(t, cap(c.buf) <= maxSize) // +checklocksignore
+		attest.True(t, len(c.buf) <= maxSize)
+		attest.True(t, cap(c.buf) <= maxSize)
 
 		c.reset()
 
-		attest.Equal(t, len(c.buf), 0)       // +checklocksignore
-		attest.Equal(t, cap(c.buf), maxSize) // +checklocksignore
+		attest.Equal(t, len(c.buf), 0)
+		attest.Equal(t, cap(c.buf), maxSize)
 	})
 }
 
@@ -216,7 +216,7 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), logid1)
 		h, ok := l1.Handler().(handler)
 		attest.True(t, ok)
-		attest.Equal(t, len(h.cBuf.buf), 0) // +checklocksignore
+		attest.Equal(t, len(h.cBuf.buf), 0)
 
 		w.Reset() // clear buffer.
 
