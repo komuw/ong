@@ -82,8 +82,10 @@ type handler struct {
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
-	h     slog.Handler
-	cBuf  *circleBuf
+	h    slog.Handler
+	cBuf *circleBuf
+
+	// TODO: (komuw), is this still needed?
 	logID string
 }
 
