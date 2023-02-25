@@ -23,6 +23,7 @@ const (
 	// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
 	LevelImmediate = slog.Level(-6142973)
 
+	// TODO: un-export this.
 	// LogIdFieldName is the name under which a logID will be logged as.
 	LogIDFieldName = "logID"
 )
@@ -60,11 +61,11 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := handler{h: jh, cBuf: cbuf, logID: id.New()}
-	l := slog.New(h)
+	hdlr := handler{h: jh, cBuf: cbuf, logID: id.New()}
+	l := slog.New(hdlr)
 
 	return func(ctx context.Context) *slog.Logger {
-		id := h.logID
+		id := hdlr.logID
 		if id2, ok := getId(ctx); ok {
 			// if ctx did not contain a logId, do not use the generated one.
 			id = id2
@@ -72,6 +73,21 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 
 		return l.With(LogIDFieldName, id)
 	}
+}
+
+// WithID returns a [slog.Logger] based on l, that includes a logID from ctx.
+// If ctx does not contain a logID, one will be auto-generated.
+func WithID(ctx context.Context, l *slog.Logger) *slog.Logger {
+	id, fromCtx := getId(ctx)
+
+	if hdlr, okHandler := l.Handler().(handler); okHandler {
+		id2 := hdlr.logID
+		if !fromCtx {
+			id = id2
+		}
+	}
+
+	return l.With(LogIDFieldName, id)
 }
 
 // handler is an [slog.handler]
