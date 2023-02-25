@@ -222,7 +222,7 @@ func TestLogger(t *testing.T) {
 
 		w.Reset() // clear buffer.
 
-		l2 := l1.WithGroup("group2")
+		l2 := l1.With("category", "load_balancers")
 		l2.Error("hey2", errors.New("cool2"))
 		attest.Subsequence(t, w.String(), "hey2")
 		attest.False(t, strings.Contains(w.String(), "hey1")) // hey1 is not loggged here.
@@ -284,6 +284,24 @@ func TestLogger(t *testing.T) {
 			attest.Subsequence(t, w.String(), "log/log_test.go:282")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
+	})
+
+	t.Run("ctx methods", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		w := &bytes.Buffer{}
+		msg := "hey what up?"
+		l := New(w, 3)(ctx)
+
+		l.InfoCtx(ctx, msg)
+		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), msg)
+
+		newId := "NEW-id-adh4e92427dajd"
+		ctx = context.WithValue(ctx, CtxKey, newId)
+		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), newId)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

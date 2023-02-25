@@ -87,10 +87,8 @@ type handler struct {
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
-	h    slog.Handler
-	cBuf *circleBuf
-
-	// TODO: (komuw), is this still needed?
+	h     slog.Handler
+	cBuf  *circleBuf
 	logID string
 }
 
@@ -127,18 +125,16 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	}
 	r.Time = r.Time.UTC()
 
-	// id := h.logID
-	// if id2, ok := GetId(ctx); ok {
-	// 	// if ctx did not contain a logId, do not use the generated one.
-	// 	id = id2
-	// }
-	// ctx = context.WithValue(ctx, CtxKey, id)
+	id := h.logID
+	if id2, ok := getId(ctx); ok {
+		// if ctx did not contain a logId, do not use the generated one.
+		id = id2
+	}
+	ctx = context.WithValue(ctx, CtxKey, id)
 
-	// newAttrs := []slog.Attr{
-	// 	{Key: "logID", Value: slog.StringValue(id)},
-	// }
-	newAttrs := []slog.Attr{}
-
+	newAttrs := []slog.Attr{
+		{Key: "logID", Value: slog.StringValue(id)},
+	}
 	r.Attrs(func(a slog.Attr) {
 		if a.Key == slog.ErrorKey {
 			if e, ok := a.Value.Any().(error); ok {
