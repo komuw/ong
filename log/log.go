@@ -12,8 +12,6 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-// TODO: (komuw), since we are no longer using logger.WithContext(ctx),
-// is this still needed?
 type logContextKeyType string
 
 const (
