@@ -2,8 +2,9 @@
 
 Most recent version is listed first.  
 
+
 ## v0.0.39
-- ss
+- Remove pid from logs: https://github.com/komuw/ong/pull/230
 
 ## v0.0.38
 - Update to latest exp/slog changes: https://github.com/komuw/ong/pull/229
