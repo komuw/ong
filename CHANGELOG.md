@@ -2,6 +2,9 @@
 
 Most recent version is listed first.  
 
+## v0.0.39
+- ss
+
 ## v0.0.38
 - Update to latest exp/slog changes: https://github.com/komuw/ong/pull/229
 

@@ -17,5 +17,5 @@ func ExampleSafe() {
 	_, _ = cli.Get(url)
 
 	// This will log something like:
-	// {"time":"2023-02-03T18:54:13.300137216Z","level":"ERROR","source":"client.go:108","msg":"http_client","pid":1521808,"err":"dial tcp 169.254.169.254:80: ong/client: address 169.254.169.254 IsLinkLocalUnicast","method":"GET","url":"http://169.254.169.254/latest/meta-data","durationMS":0,"logID":"DYGY3eedgARMAyXZ"}
+	// {"time":"2023-02-03T18:54:13.300137216Z","level":"ERROR","source":"client.go:108","msg":"http_client","err":"dial tcp 169.254.169.254:80: ong/client: address 169.254.169.254 IsLinkLocalUnicast","method":"GET","url":"http://169.254.169.254/latest/meta-data","durationMS":0,"logID":"DYGY3eedgARMAyXZ"}
 }

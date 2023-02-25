@@ -7,7 +7,6 @@ import (
 	mathRand "math/rand"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/komuw/ong/log"
@@ -21,8 +20,6 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 	// This makes debugging easier for developers.
 	//
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
-
-	pid := os.Getpid()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -38,7 +35,6 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 				"code", lrw.code,
 				"status", http.StatusText(lrw.code),
 				"durationMS", time.Since(start).Milliseconds(),
-				"pid", pid,
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				extra := []any{"ongError", ongError}

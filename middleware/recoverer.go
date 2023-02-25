@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
@@ -16,8 +15,6 @@ import (
 // recoverer is a middleware that recovers from panics in wrappedHandler.
 // When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
 func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
-	pid := os.Getpid()
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			errR := recover()
@@ -35,7 +32,6 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 					"path", r.URL.Redacted(),
 					"code", code,
 					"status", status,
-					"pid", pid,
 				}
 				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 					extra := []any{"ongError", ongError}
