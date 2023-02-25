@@ -114,7 +114,7 @@ func (a app) check(msg string) http.HandlerFunc {
 				return resp.StatusCode, nil
 			}
 
-			l := a.l.WithContext(ctx)
+			l := log.WithID(r.Context(), a.l)
 			code, err := makeReq("https://example.com")
 			if err != nil {
 				l.Error("handler error", err)
@@ -192,7 +192,7 @@ func (a app) login(secretKey string) http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqL := a.l.WithContext(r.Context())
+		reqL := log.WithID(r.Context(), a.l)
 
 		if r.Method != http.MethodPost {
 			data := struct {
@@ -279,7 +279,7 @@ func (a app) handleFileServer() http.HandlerFunc {
 	fs := http.FileServer(http.Dir(dir))
 	realHandler := http.StripPrefix("/serveDirectory/", fs).ServeHTTP
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqL := a.l.WithContext(r.Context())
+		reqL := log.WithID(r.Context(), a.l)
 		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r))
 
 		slog.NewLogLogger(reqL.Handler(), log.LevelImmediate).

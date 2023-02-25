@@ -135,8 +135,9 @@ func TestLogger(t *testing.T) {
 		errMsg := "oops, Houston we got 99 problems."
 		logger.Error("some-error", errors.New(errMsg))
 
-		logID, ok := GetId(logger.Context())
+		hdlr, ok := logger.Handler().(handler)
 		attest.True(t, ok)
+		logID := hdlr.logID
 
 		attest.Subsequence(t, w.String(), infoMsg)
 		attest.Subsequence(t, w.String(), errMsg)
@@ -159,7 +160,7 @@ func TestLogger(t *testing.T) {
 			l(context.Background()).Info(infoMsg)
 			l(context.Background()).Error("some-err", errors.New("bad"))
 
-			attest.Subsequence(t, w.String(), "logID")
+			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "source")
 			attest.Subsequence(t, w.String(), slog.ErrorKey)
@@ -174,7 +175,7 @@ func TestLogger(t *testing.T) {
 			l(context.Background()).Info(infoMsg)
 			l(context.Background()).Error("some-ong-err", ongErrors.New("bad"))
 
-			attest.Subsequence(t, w.String(), "logID")
+			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "stack")
 		}
 	})
@@ -208,8 +209,9 @@ func TestLogger(t *testing.T) {
 		maxMsgs := 3
 
 		l1 := New(w, maxMsgs)(context.Background())
-		logid1, ok := GetId(l1.Context())
+		hdlr, ok := l1.Handler().(handler)
 		attest.True(t, ok)
+		logid1 := hdlr.logID
 		l1.Error("hey1", errors.New("cool1"))
 
 		attest.Subsequence(t, w.String(), "hey1")
@@ -220,25 +222,24 @@ func TestLogger(t *testing.T) {
 
 		w.Reset() // clear buffer.
 
-		ctx := context.Background()
-		l2 := l1.WithContext(ctx)
+		l2 := l1.With("category", "load_balancers")
 		l2.Error("hey2", errors.New("cool2"))
-		fmt.Println(w.String())
 		attest.Subsequence(t, w.String(), "hey2")
 		attest.False(t, strings.Contains(w.String(), "hey1")) // hey1 is not loggged here.
 		attest.Subsequence(t, w.String(), logid1)
 	})
 
-	t.Run("WithContext does not invalidate buffer", func(t *testing.T) {
+	t.Run("New context does not invalidate buffer", func(t *testing.T) {
 		t.Parallel()
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
 		l := New(w, maxMsgs)
 		{
+			logger1 := l(context.Background())
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
-				l(context.Background()).Info(infoMsg)
+				logger1.Info(infoMsg)
 			}
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
@@ -247,10 +248,9 @@ func TestLogger(t *testing.T) {
 		}
 
 		{
-			xl := l(context.Background())
-			l := xl.WithContext(context.Background())
+			logger2 := l(context.Background()).With("name", "Kim")
 			errMsg := "oops, Houston we got 99 problems."
-			l.Error("some-error", errors.New(errMsg))
+			logger2.Error("some-error", errors.New(errMsg))
 
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
@@ -258,6 +258,24 @@ func TestLogger(t *testing.T) {
 			attest.Subsequence(t, w.String(), "hello world : 3")
 			attest.Subsequence(t, w.String(), errMsg)
 		}
+	})
+
+	t.Run("ctx methods", func(t *testing.T) {
+		t.Parallel()
+
+		ctx := context.Background()
+		w := &bytes.Buffer{}
+		msg := "hey what up?"
+		l := New(w, 3)(ctx)
+
+		l.InfoCtx(ctx, msg)
+		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), msg)
+
+		newId := "NEW-id-adh4e92427dajd"
+		ctx = context.WithValue(ctx, CtxKey, newId)
+		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), newId)
 	})
 
 	t.Run("stdlibLog", func(t *testing.T) {
@@ -281,7 +299,7 @@ func TestLogger(t *testing.T) {
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "log/log_test.go:282")
+			attest.Subsequence(t, w.String(), "log/log_test.go:300")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})

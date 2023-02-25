@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/komuw/ong/errors"
+	"github.com/komuw/ong/log"
 	"golang.org/x/exp/slog"
 )
 
@@ -21,7 +22,7 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 		defer func() {
 			errR := recover()
 			if errR != nil {
-				reqL := l.WithContext(r.Context())
+				reqL := log.WithID(r.Context(), l)
 
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)

@@ -20,11 +20,20 @@ const (
 
 	// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
 	LevelImmediate = slog.Level(-6142973)
+
+	// logIdFieldName is the name under which a logID will be logged as.
+	logIDFieldName = "logID"
 )
 
 // GetId gets a logId either from the provided context or auto-generated.
+func GetId(ctx context.Context) string {
+	id, _ := getId(ctx)
+	return id
+}
+
+// getId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
-func GetId(ctx context.Context) (string, bool) {
+func getId(ctx context.Context) (string, bool) {
 	if ctx != nil {
 		if vCtx := ctx.Value(CtxKey); vCtx != nil {
 			if s, ok := vCtx.(string); ok {
@@ -49,19 +58,33 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	h := handler{h: jh, cBuf: cbuf, logID: id.New()}
-	l := slog.New(h)
+	hdlr := handler{h: jh, cBuf: cbuf, logID: id.New()}
+	l := slog.New(hdlr)
 
 	return func(ctx context.Context) *slog.Logger {
-		id := h.logID
-		if id2, ok := GetId(ctx); ok {
+		id := hdlr.logID
+		if id2, ok := getId(ctx); ok {
 			// if ctx did not contain a logId, do not use the generated one.
 			id = id2
 		}
 
-		ctx = context.WithValue(ctx, CtxKey, id)
-		return l.WithContext(ctx)
+		return l.With(logIDFieldName, id)
 	}
+}
+
+// WithID returns a [slog.Logger] based on l, that includes a logID from ctx.
+// If ctx does not contain a logID, one will be auto-generated.
+func WithID(ctx context.Context, l *slog.Logger) *slog.Logger {
+	id, fromCtx := getId(ctx)
+
+	if hdlr, okHandler := l.Handler().(handler); okHandler {
+		id2 := hdlr.logID
+		if !fromCtx {
+			id = id2
+		}
+	}
+
+	return l.With(logIDFieldName, id)
 }
 
 // handler is an [slog.handler]
@@ -116,7 +139,7 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	r.Time = r.Time.UTC()
 
 	id := h.logID
-	if id2, ok := GetId(ctx); ok {
+	if id2, ok := getId(ctx); ok {
 		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
 	}
@@ -125,7 +148,6 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	newAttrs := []slog.Attr{
 		{Key: "logID", Value: slog.StringValue(id)},
 	}
-
 	r.Attrs(func(a slog.Attr) {
 		if a.Key == slog.ErrorKey {
 			if e, ok := a.Value.Any().(error); ok {

@@ -104,7 +104,6 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 	ctx := req.Context()
 	start := time.Now()
 	defer func() {
-		l := lr.l.WithContext(ctx)
 		msg := "http_client"
 		flds := []any{
 			"method", req.Method,
@@ -113,19 +112,18 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 		}
 
 		if err != nil {
-			l.Error(msg, err, flds...)
+			lr.l.ErrorCtx(ctx, msg, err, flds...)
 		} else {
 			extra := []any{
 				"code", res.StatusCode,
 				"status", res.Status,
 			}
 			flds = append(flds, extra...)
-			l.Info(msg, flds...)
+			lr.l.InfoCtx(ctx, msg, flds...)
 		}
 	}()
 
-	id, _ := log.GetId(ctx)
-	req.Header.Set(logIDHeader, id)
+	req.Header.Set(logIDHeader, log.GetId(ctx))
 
 	return lr.RoundTripper.RoundTrip(req)
 }
