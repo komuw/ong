@@ -182,7 +182,6 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	logger := l.With("pid", os.Getpid())
 
 	tlsConf, errTc := getTlsConfig(o)
 	if errTc != nil {
@@ -205,18 +204,18 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ReadTimeout:       o.readTimeout,
 		WriteTimeout:      o.writeTimeout,
 		IdleTimeout:       o.idleTimeout,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
+		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
 	drainDur := drainDuration(o)
-	sigHandler(server, ctx, cancel, logger, drainDur)
+	sigHandler(server, ctx, cancel, l, drainDur)
 
 	{
-		startPprofServer(logger)
+		startPprofServer(l)
 	}
 
-	err := serve(ctx, server, o, logger)
+	err := serve(ctx, server, o, l)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.

@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
-	"os"
 	"syscall"
 	"time"
 
@@ -85,7 +84,7 @@ func new(ssrfSafe bool, l *slog.Logger) *http.Client {
 
 	lr := &loggingRT{
 		RoundTripper: transport,
-		l:            l.With("pid", os.Getpid()),
+		l:            l,
 	}
 
 	return &http.Client{
