@@ -55,10 +55,7 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
 			// The logger should be in the defer block so that it uses the updated context containing the logID.
-			reqL := l.With(
-				log.LogIDFieldName,
-				log.GetId(r.Context()),
-			)
+			reqL := log.WithID(r.Context(), l)
 
 			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
 				// We are either in load shedding or rate-limiting.

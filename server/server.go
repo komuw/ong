@@ -182,7 +182,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	logger := l.WithContext(ctx).With("pid", os.Getpid())
+	logger := l.With("pid", os.Getpid())
 
 	tlsConf, errTc := getTlsConfig(o)
 	if errTc != nil {
