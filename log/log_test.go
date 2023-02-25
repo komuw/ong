@@ -200,33 +200,32 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), errMsg)
 	})
 
-	// t.Run("id reused across contexts", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("id reused across contexts", func(t *testing.T) {
+		t.Parallel()
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
+		w := &bytes.Buffer{}
+		maxMsgs := 3
 
-	// 	l1 := New(w, maxMsgs)(context.Background())
-	// 	logid1, ok := GetId(l1.Context())
-	// 	attest.True(t, ok)
-	// 	l1.Error("hey1", errors.New("cool1"))
+		l1 := New(w, maxMsgs)(context.Background())
+		hdlr, ok := l1.Handler().(handler)
+		attest.True(t, ok)
+		logid1 := hdlr.logID
+		l1.Error("hey1", errors.New("cool1"))
 
-	// 	attest.Subsequence(t, w.String(), "hey1")
-	// 	attest.Subsequence(t, w.String(), logid1)
-	// 	h, ok := l1.Handler().(handler)
-	// 	attest.True(t, ok)
-	// 	attest.Equal(t, len(h.cBuf.buf), 0)
+		attest.Subsequence(t, w.String(), "hey1")
+		attest.Subsequence(t, w.String(), logid1)
+		h, ok := l1.Handler().(handler)
+		attest.True(t, ok)
+		attest.Equal(t, len(h.cBuf.buf), 0)
 
-	// 	w.Reset() // clear buffer.
+		w.Reset() // clear buffer.
 
-	// 	ctx := context.Background()
-	// 	l2 := l1.WithContext(ctx)
-	// 	l2.Error("hey2", errors.New("cool2"))
-	// 	fmt.Println(w.String())
-	// 	attest.Subsequence(t, w.String(), "hey2")
-	// 	attest.False(t, strings.Contains(w.String(), "hey1")) // hey1 is not loggged here.
-	// 	attest.Subsequence(t, w.String(), logid1)
-	// })
+		l2 := l1.WithGroup("group2")
+		l2.Error("hey2", errors.New("cool2"))
+		attest.Subsequence(t, w.String(), "hey2")
+		attest.False(t, strings.Contains(w.String(), "hey1")) // hey1 is not loggged here.
+		attest.Subsequence(t, w.String(), logid1)
+	})
 
 	// t.Run("WithContext does not invalidate buffer", func(t *testing.T) {
 	// 	t.Parallel()
