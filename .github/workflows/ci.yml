@@ -134,7 +134,8 @@ jobs:
           go install mvdan.cc/gofumpt@latest
           go install golang.org/x/vuln/cmd/govulncheck@latest
           go install github.com/mdempsky/unconvert@latest
-          go install gvisor.dev/gvisor/tools/checklocks/cmd/checklocks@latest     
+          # go install gvisor.dev/gvisor/tools/checklocks/cmd/checklocks@latest
+          go install gvisor.dev/gvisor/tools/checklocks/cmd/checklocks@v0.0.0-20230224200604-34ff3ebe0556
 
           /home/runner/go/bin/staticcheck -version
         env:
