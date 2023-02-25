@@ -23,9 +23,8 @@ const (
 	// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
 	LevelImmediate = slog.Level(-6142973)
 
-	// TODO: un-export this.
-	// LogIdFieldName is the name under which a logID will be logged as.
-	LogIDFieldName = "logID"
+	// logIdFieldName is the name under which a logID will be logged as.
+	logIDFieldName = "logID"
 )
 
 // GetId gets a logId either from the provided context or auto-generated.
@@ -71,7 +70,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 			id = id2
 		}
 
-		return l.With(LogIDFieldName, id)
+		return l.With(logIDFieldName, id)
 	}
 }
 
@@ -87,7 +86,7 @@ func WithID(ctx context.Context, l *slog.Logger) *slog.Logger {
 		}
 	}
 
-	return l.With(LogIDFieldName, id)
+	return l.With(logIDFieldName, id)
 }
 
 // handler is an [slog.handler]

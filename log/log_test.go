@@ -160,7 +160,7 @@ func TestLogger(t *testing.T) {
 			l(context.Background()).Info(infoMsg)
 			l(context.Background()).Error("some-err", errors.New("bad"))
 
-			attest.Subsequence(t, w.String(), LogIDFieldName)
+			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "source")
 			attest.Subsequence(t, w.String(), slog.ErrorKey)
@@ -175,7 +175,7 @@ func TestLogger(t *testing.T) {
 			l(context.Background()).Info(infoMsg)
 			l(context.Background()).Error("some-ong-err", ongErrors.New("bad"))
 
-			attest.Subsequence(t, w.String(), LogIDFieldName)
+			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "stack")
 		}
 	})

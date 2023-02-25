@@ -22,10 +22,7 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 		defer func() {
 			errR := recover()
 			if errR != nil {
-				reqL := l.With(
-					log.LogIDFieldName,
-					log.GetId(r.Context()),
-				)
+				reqL := log.WithID(r.Context(), l)
 
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)

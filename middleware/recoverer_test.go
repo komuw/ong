@@ -89,7 +89,7 @@ func TestPanic(t *testing.T) {
 			msg,
 			fmt.Sprint(http.StatusInternalServerError),
 			http.StatusText(http.StatusInternalServerError),
-			log.LogIDFieldName,
+			"logID", // should match log.logIDFieldName
 			http.MethodGet,
 		} {
 			attest.Subsequence(t, logOutput.String(), v)
@@ -119,7 +119,7 @@ func TestPanic(t *testing.T) {
 			errMsg,
 			fmt.Sprint(http.StatusInternalServerError),
 			http.StatusText(http.StatusInternalServerError),
-			log.LogIDFieldName,
+			"logID", // should match log.logIDFieldName
 			http.MethodGet,
 			"stack",
 		} {
