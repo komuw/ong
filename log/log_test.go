@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	ongErrors "github.com/komuw/ong/errors"
 	"golang.org/x/exp/slog"
 )
 
@@ -144,37 +145,37 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), ">")
 	})
 
-	// t.Run("neccesary fields added", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("neccesary fields added", func(t *testing.T) {
+		t.Parallel()
 
-	// 	{
-	// 		w := &bytes.Buffer{}
-	// 		maxMsgs := 3
-	// 		l := New(w, maxMsgs)
+		{
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+			l := New(w, maxMsgs)
 
-	// 		infoMsg := "hello world"
-	// 		l(context.Background()).Info(infoMsg)
-	// 		l(context.Background()).Error("some-err", errors.New("bad"))
+			infoMsg := "hello world"
+			l(context.Background()).Info(infoMsg)
+			l(context.Background()).Error("some-err", errors.New("bad"))
 
-	// 		attest.Subsequence(t, w.String(), "logID")
-	// 		attest.Subsequence(t, w.String(), "level")
-	// 		attest.Subsequence(t, w.String(), "source")
-	// 		attest.Subsequence(t, w.String(), slog.ErrorKey)
-	// 	}
+			attest.Subsequence(t, w.String(), "logID")
+			attest.Subsequence(t, w.String(), "level")
+			attest.Subsequence(t, w.String(), "source")
+			attest.Subsequence(t, w.String(), slog.ErrorKey)
+		}
 
-	// 	{
-	// 		w := &bytes.Buffer{}
-	// 		maxMsgs := 3
-	// 		l := New(w, maxMsgs)
+		{
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+			l := New(w, maxMsgs)
 
-	// 		infoMsg := "hello world"
-	// 		l(context.Background()).Info(infoMsg)
-	// 		l(context.Background()).Error("some-ong-err", ongErrors.New("bad"))
+			infoMsg := "hello world"
+			l(context.Background()).Info(infoMsg)
+			l(context.Background()).Error("some-ong-err", ongErrors.New("bad"))
 
-	// 		attest.Subsequence(t, w.String(), "logID")
-	// 		attest.Subsequence(t, w.String(), "stack")
-	// 	}
-	// })
+			attest.Subsequence(t, w.String(), "logID")
+			attest.Subsequence(t, w.String(), "stack")
+		}
+	})
 
 	// t.Run("logs are rotated", func(t *testing.T) {
 	// 	t.Parallel()
