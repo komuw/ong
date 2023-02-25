@@ -92,7 +92,7 @@ func TestLogMiddleware(t *testing.T) {
 			"code",
 			fmt.Sprint(res.StatusCode),
 			"durationMS",
-			"logID",
+			log.LogIDFieldName,
 			"clientIP",
 			"ERROR",
 		} {

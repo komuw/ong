@@ -22,11 +22,20 @@ const (
 
 	// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
 	LevelImmediate = slog.Level(-6142973)
+
+	// LogIdFieldName is the name under which a logID will be logged as.
+	LogIDFieldName = "logID"
 )
 
 // GetId gets a logId either from the provided context or auto-generated.
+func GetId(ctx context.Context) string {
+	id, _ := getId(ctx)
+	return id
+}
+
+// getId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
-func GetId(ctx context.Context) (string, bool) {
+func getId(ctx context.Context) (string, bool) {
 	if ctx != nil {
 		if vCtx := ctx.Value(CtxKey); vCtx != nil {
 			if s, ok := vCtx.(string); ok {
@@ -56,16 +65,12 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 
 	return func(ctx context.Context) *slog.Logger {
 		id := h.logID
-		if id2, ok := GetId(ctx); ok {
+		if id2, ok := getId(ctx); ok {
 			// if ctx did not contain a logId, do not use the generated one.
 			id = id2
 		}
 
-		ctx = context.WithValue(ctx, CtxKey, id)
-		// TODO: (komuw)
-		// return l.WithContext(ctx)
-
-		return l.With("logID", id)
+		return l.With(LogIDFieldName, id)
 	}
 }
 

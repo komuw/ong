@@ -71,8 +71,7 @@ func getLogId(req *http.Request) string {
 	}
 
 	fromCtx := func(ctx context.Context) string {
-		id, _ := log.GetId(ctx) // we want a unique id, here.
-		return id
+		return log.GetId(ctx) // we want a unique id, here.
 	}
 
 	// get logid in order of preference;
