@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.37
+- Make gvisor/checklocks analyzer ignore tests: https://github.com/komuw/ong/pull/228
+
 ## v0.0.36
 - Update to latest exp/slog changes: https://github.com/komuw/ong/pull/226
 - Add gvisor/checklocks analyzer: https://github.com/komuw/ong/pull/202
