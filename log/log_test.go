@@ -258,31 +258,31 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
-	// t.Run("stdlibLog", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("stdlibLog", func(t *testing.T) {
+		t.Parallel()
 
-	// 	{ // normal loglevels go through circular buffer.
-	// 		w := &bytes.Buffer{}
-	// 		msg := "hey what up?"
-	// 		l := New(w, 2)(context.Background())
+		{ // normal loglevels go through circular buffer.
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(w, 2)(context.Background())
 
-	// 		stdLogger := slog.NewLogLogger(l.Handler(), slog.LevelInfo)
-	// 		stdLogger.Println(msg)
-	// 		attest.Zero(t, w.String())
-	// 	}
+			stdLogger := slog.NewLogLogger(l.Handler(), slog.LevelInfo)
+			stdLogger.Println(msg)
+			attest.Zero(t, w.String())
+		}
 
-	// 	{ // `LevelImmediate` loglevel is logged ASAP.
-	// 		w := &bytes.Buffer{}
-	// 		msg := "hey what up?"
-	// 		l := New(w, 2)(context.Background())
+		{ // `LevelImmediate` loglevel is logged ASAP.
+			w := &bytes.Buffer{}
+			msg := "hey what up?"
+			l := New(w, 2)(context.Background())
 
-	// 		stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
-	// 		stdLogger.Println(msg)
-	// 		attest.Subsequence(t, w.String(), msg)
-	// 		attest.Subsequence(t, w.String(), "log/log_test.go:282")
-	// 		attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
-	// 	}
-	// })
+			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
+			stdLogger.Println(msg)
+			attest.Subsequence(t, w.String(), msg)
+			attest.Subsequence(t, w.String(), "log/log_test.go:280")
+			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
+		}
+	})
 
 	// t.Run("concurrency safe", func(t *testing.T) {
 	// 	t.Parallel()
