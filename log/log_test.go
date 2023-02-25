@@ -5,7 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	mathRand "math/rand"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/akshayjshah/attest"
@@ -279,77 +281,77 @@ func TestLogger(t *testing.T) {
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "log/log_test.go:280")
+			attest.Subsequence(t, w.String(), "log/log_test.go:282")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})
 
-	// t.Run("concurrency safe", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 12
-	// 	l := New(w, maxMsgs)
+		w := &bytes.Buffer{}
+		maxMsgs := 12
+		l := New(w, maxMsgs)
 
-	// 	xl := l(context.Background())
+		xl := l(context.Background())
 
-	// 	tokens := []string{
-	// 		"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
-	// 		"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
-	// 		"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
-	// 		"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
-	// 		"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
-	// 		"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-	// 		"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-	// 		"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
-	// 		"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
-	// 		"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-	// 		"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
-	// 		"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
-	// 		"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
-	// 		"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
-	// 		"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-	// 		"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-	// 		"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
-	// 		"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
-	// 		"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
-	// 		"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
-	// 		"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
-	// 	}
+		tokens := []string{
+			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accomplish", "accomplished", "accordance", "according", "accordingly", "account", "accountability", "accounting", "accounts",
+			"about", "above", "abraham", "abroad", "abs", "absence", "absent", "absolute", "absolutely", "absorption", "abstract",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accessory", "accident", "accidents", "accommodate", "accommodation", "accommodations", "accompanied", "accompanying",
+			"accepted", "accepting", "accepts", "access", "accessed", "accessibility", "accessible", "accessing", "accessories",
+			"accreditation", "accredited", "accuracy", "accurate", "accurately", "accused", "acdbentity", "ace",
+			"abstracts", "abu", "abuse", "ac", "academic", "academics", "academy", "acc", "accent", "accept", "acceptable", "acceptance",
+		}
 
-	// 	for _, tok := range tokens {
-	// 		go func(t string) {
-	// 			l(context.Background()).Info("one" + t)
-	// 			xl.Info("one" + t)
-	// 		}(tok)
-	// 	}
+		for _, tok := range tokens {
+			go func(t string) {
+				l(context.Background()).Info("one" + t)
+				xl.Info("one" + t)
+			}(tok)
+		}
 
-	// 	for _, tok := range tokens {
-	// 		go func(t string) {
-	// 			l(context.Background()).Error("some-error", errors.New("bad"+t))
-	// 		}(tok)
-	// 	}
+		for _, tok := range tokens {
+			go func(t string) {
+				l(context.Background()).Error("some-error", errors.New("bad"+t))
+			}(tok)
+		}
 
-	// 	for _, tok := range tokens {
-	// 		go func(t string) {
-	// 			l(context.Background()).Error("some-other-error", errors.New("bad-two"+t))
-	// 		}(tok)
-	// 	}
+		for _, tok := range tokens {
+			go func(t string) {
+				l(context.Background()).Error("some-other-error", errors.New("bad-two"+t))
+			}(tok)
+		}
 
-	// 	wg := &sync.WaitGroup{}
-	// 	for _, tok := range tokens {
-	// 		wg.Add(1)
-	// 		go func(t string) {
-	// 			defer wg.Done()
-	// 			l(context.Background()).Info("four" + t)
-	// 			xl.Info("okay-" + t)
+		wg := &sync.WaitGroup{}
+		for _, tok := range tokens {
+			wg.Add(1)
+			go func(t string) {
+				defer wg.Done()
+				l(context.Background()).Info("four" + t)
+				xl.Info("okay-" + t)
 
-	// 			if mathRand.Intn(100) > 75 { // log errors 25% of the time.
-	// 				l(context.Background()).Error("hey", errors.New("some-err-"+t))
-	// 				xl.Error("some-xl-error", errors.New("other-err-"+t))
-	// 			}
-	// 		}(tok)
-	// 	}
-	// 	wg.Wait()
-	// })
+				if mathRand.Intn(100) > 75 { // log errors 25% of the time.
+					l(context.Background()).Error("hey", errors.New("some-err-"+t))
+					xl.Error("some-xl-error", errors.New("other-err-"+t))
+				}
+			}(tok)
+		}
+		wg.Wait()
+	})
 }
