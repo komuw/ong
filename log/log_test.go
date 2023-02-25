@@ -227,36 +227,36 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), logid1)
 	})
 
-	// t.Run("WithContext does not invalidate buffer", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("New context does not invalidate buffer", func(t *testing.T) {
+		t.Parallel()
 
-	// 	w := &bytes.Buffer{}
-	// 	maxMsgs := 3
-	// 	l := New(w, maxMsgs)
-	// 	{
-	// 		for i := 0; i <= (maxMsgs); i++ {
-	// 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
-	// 			l(context.Background()).Info(infoMsg)
-	// 		}
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 3"))
-	// 	}
+		w := &bytes.Buffer{}
+		maxMsgs := 3
+		l := New(w, maxMsgs)
+		{
+			logger1 := l(context.Background())
+			for i := 0; i <= (maxMsgs); i++ {
+				infoMsg := "hello world" + " : " + fmt.Sprint(i)
+				logger1.Info(infoMsg)
+			}
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 3"))
+		}
 
-	// 	{
-	// 		xl := l(context.Background())
-	// 		l := xl.WithContext(context.Background())
-	// 		errMsg := "oops, Houston we got 99 problems."
-	// 		l.Error("some-error", errors.New(errMsg))
+		{
+			logger2 := l(context.Background()).With("name", "Kim")
+			errMsg := "oops, Houston we got 99 problems."
+			logger2.Error("some-error", errors.New(errMsg))
 
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 0"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
-	// 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
-	// 		attest.Subsequence(t, w.String(), "hello world : 3")
-	// 		attest.Subsequence(t, w.String(), errMsg)
-	// 	}
-	// })
+			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
+			attest.False(t, strings.Contains(w.String(), "hello world : 2"))
+			attest.Subsequence(t, w.String(), "hello world : 3")
+			attest.Subsequence(t, w.String(), errMsg)
+		}
+	})
 
 	// t.Run("stdlibLog", func(t *testing.T) {
 	// 	t.Parallel()
