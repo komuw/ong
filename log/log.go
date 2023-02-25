@@ -12,6 +12,8 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+// TODO: (komuw), since we are no longer using logger.WithContext(ctx),
+// is this still needed?
 type logContextKeyType string
 
 const (
@@ -60,7 +62,10 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 		}
 
 		ctx = context.WithValue(ctx, CtxKey, id)
-		return l.WithContext(ctx)
+		// TODO: (komuw)
+		// return l.WithContext(ctx)
+
+		return l.With("logID", id)
 	}
 }
 
@@ -115,16 +120,17 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	}
 	r.Time = r.Time.UTC()
 
-	id := h.logID
-	if id2, ok := GetId(ctx); ok {
-		// if ctx did not contain a logId, do not use the generated one.
-		id = id2
-	}
-	ctx = context.WithValue(ctx, CtxKey, id)
+	// id := h.logID
+	// if id2, ok := GetId(ctx); ok {
+	// 	// if ctx did not contain a logId, do not use the generated one.
+	// 	id = id2
+	// }
+	// ctx = context.WithValue(ctx, CtxKey, id)
 
-	newAttrs := []slog.Attr{
-		{Key: "logID", Value: slog.StringValue(id)},
-	}
+	// newAttrs := []slog.Attr{
+	// 	{Key: "logID", Value: slog.StringValue(id)},
+	// }
+	newAttrs := []slog.Attr{}
 
 	r.Attrs(func(a slog.Attr) {
 		if a.Key == slog.ErrorKey {
