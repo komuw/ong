@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -28,19 +27,7 @@ func setEncryptedHandler(name, value, domain string, mAge time.Duration, secretK
 
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
-	exitCode := m.Run()
-	os.Exit(leakDetector(exitCode))
-}
-
-func leakDetector(exitCode int) int {
-	// see: https://github.com/uber-go/goleak/blob/v1.1.10/testmain.go#L40-L52
-	if exitCode == 0 {
-		if err := goleak.Find(); err != nil {
-			fmt.Fprintf(os.Stderr, "goleak: Errors on successful test run: %v\n", err)
-			exitCode = 1
-		}
-	}
-	return exitCode
+	goleak.VerifyTestMain(m)
 }
 
 func TestCookies(t *testing.T) {
