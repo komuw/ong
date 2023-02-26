@@ -7,7 +7,13 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
+}
 
 func TestSess(t *testing.T) {
 	t.Parallel()

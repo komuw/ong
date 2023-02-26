@@ -5,11 +5,17 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"go.uber.org/goleak"
 	"golang.org/x/exp/slices"
 )
 
 func getSecretKey() string {
 	return "hello world"
+}
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
 }
 
 func TestEnc(t *testing.T) {

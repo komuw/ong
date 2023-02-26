@@ -82,10 +82,7 @@ func new(ssrfSafe bool, l *slog.Logger) *http.Client {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	lr := &loggingRT{
-		RoundTripper: transport,
-		l:            l,
-	}
+	lr := &loggingRT{transport, l}
 
 	return &http.Client{
 		Transport: lr,
@@ -95,8 +92,8 @@ func new(ssrfSafe bool, l *slog.Logger) *http.Client {
 
 // loggingRT is a [http.RoundTripper] that logs requests and responses.
 type loggingRT struct {
+	*http.Transport
 	l *slog.Logger
-	http.RoundTripper
 }
 
 func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error) {
@@ -124,7 +121,7 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 
 	req.Header.Set(logIDHeader, log.GetId(ctx))
 
-	return lr.RoundTripper.RoundTrip(req)
+	return lr.Transport.RoundTrip(req)
 }
 
 func ssrfSocketControl(ssrfSafe bool) func(ctx context.Context, network, address string, c syscall.RawConn) error {

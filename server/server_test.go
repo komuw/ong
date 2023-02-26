@@ -24,6 +24,16 @@ func getSecretKey() string {
 	return key
 }
 
+// todo: enable this.
+//
+// This is disabled because `server.Run()` starts a http server(aka goroutine)
+// which is still running at the end of the test. Thus is technically a leak.
+//
+// func TestMain(m *testing.M) {
+// 	// call flag.Parse() here if TestMain uses flags
+// 	goleak.VerifyTestMain(m)
+// }
+
 func TestDrainDuration(t *testing.T) {
 	t.Parallel()
 
@@ -163,6 +173,11 @@ func TestServer(t *testing.T) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
+	t.Cleanup(func() {
+		// Without this, `uber/goleak` would report a leak.
+		// see: https://github.com/uber-go/goleak/issues/87
+		client.CloseIdleConnections()
+	})
 
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
@@ -240,6 +255,11 @@ func TestServer(t *testing.T) {
 				ForceAttemptHTTP2: true,
 			}
 			client2 := &http.Client{Transport: tr2}
+			t.Cleanup(func() {
+				// Without this, `uber/goleak` would report a leak.
+				// see: https://github.com/uber-go/goleak/issues/87
+				client2.CloseIdleConnections()
+			})
 			res, err := client2.Get(fmt.Sprintf(
 				// note: the https scheme.
 				"https://127.0.0.1:%d%s",

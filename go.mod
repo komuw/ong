@@ -15,7 +15,6 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
@@ -28,5 +27,6 @@ require (
 	github.com/rs/zerolog v1.29.0 // test
 	github.com/sirupsen/logrus v1.9.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
+	go.uber.org/goleak v1.2.1 // test
 	go.uber.org/zap v1.24.0 // test
 )

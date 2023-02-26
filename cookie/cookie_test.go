@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/akshayjshah/attest"
+	"go.uber.org/goleak"
 )
 
 func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) http.HandlerFunc {
@@ -22,6 +23,11 @@ func setEncryptedHandler(name, value, domain string, mAge time.Duration, secretK
 		SetEncrypted(r, w, name, value, domain, mAge, secretKey)
 		fmt.Fprint(w, "hello")
 	}
+}
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
 }
 
 func TestCookies(t *testing.T) {
