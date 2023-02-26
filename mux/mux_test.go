@@ -13,6 +13,7 @@ import (
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+	"go.uber.org/goleak"
 )
 
 func getSecretKey() string {
@@ -30,6 +31,11 @@ func thisIsAnitherMuxHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "thisIsAnitherMuxHandler")
 	}
+}
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
 }
 
 func TestNewRoute(t *testing.T) {
@@ -193,8 +199,8 @@ func TestMux(t *testing.T) {
 			rStr := fmt.Sprintf("%v", r)
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:24") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:30") // location where `thisIsAnitherMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:25") // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:31") // location where `thisIsAnitherMuxHandler` is declared.
 		}()
 
 		_ = New(
