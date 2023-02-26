@@ -30,13 +30,13 @@ pprof(){
 pprof
 
 static_file_server(){
-  status_code=$(curl -k --write-out '%{http_code}' --silent --output /dev/null "https://localhost:65081/serveDirectory/hello.css")
+  status_code=$(curl -k --write-out '%{http_code}' --silent --output /dev/null "https://localhost:65081/staticAssets/hello.css")
   if [[ "$status_code" -ne 401 ]] ; then
     echo "expected basic auth failure"
     exit 61;
   fi 
 
-  status_code=$(curl -u user:some-long-passwd -k --write-out '%{http_code}' --silent --output /dev/null "https://localhost:65081/serveDirectory/hello.css")
+  status_code=$(curl -u user:some-long-passwd -k --write-out '%{http_code}' --silent --output /dev/null "https://localhost:65081/staticAssets/hello.css")
   if [[ "$status_code" -ne 200 ]] ; then
     echo "expected success"
     exit 61;
