@@ -16,6 +16,7 @@ import (
 
 	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
+	"go.uber.org/goleak"
 )
 
 func someMiddlewareTestHandler(msg string) http.HandlerFunc {
@@ -33,6 +34,11 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 
 		fmt.Fprint(w, msg)
 	}
+}
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
 }
 
 func TestAllMiddleware(t *testing.T) {
