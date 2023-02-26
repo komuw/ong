@@ -4,9 +4,16 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 type ctxKey string
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
+}
 
 func TestDetach(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
