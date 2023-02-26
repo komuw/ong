@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.40
+- Detect leaks in tests: https://github.com/komuw/ong/pull/232
+
 ## v0.0.39
 - Remove pid from logs: https://github.com/komuw/ong/pull/230
 
