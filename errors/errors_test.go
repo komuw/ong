@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/akshayjshah/attest"
+	"go.uber.org/goleak"
 )
 
 func hello() error {
@@ -52,6 +53,11 @@ func lateWrapping() error {
 	return Wrap(hello())
 }
 
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
+}
+
 func TestStackError(t *testing.T) {
 	t.Parallel()
 
@@ -69,10 +75,10 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:29",
-				"ong/errors/errors_test.go:22",
-				"ong/errors/errors_test.go:16",
-				"ong/errors/errors_test.go:64",
+				"ong/errors/errors_test.go:30",
+				"ong/errors/errors_test.go:23",
+				"ong/errors/errors_test.go:17",
+				"ong/errors/errors_test.go:70",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -89,9 +95,9 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:44",
-				"ong/errors/errors_test.go:35",
-				"ong/errors/errors_test.go:84",
+				"ong/errors/errors_test.go:45",
+				"ong/errors/errors_test.go:36",
+				"ong/errors/errors_test.go:90",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -126,8 +132,8 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:108",
-				"ong/errors/errors_test.go:115",
+				"ong/errors/errors_test.go:114",
+				"ong/errors/errors_test.go:121",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -143,10 +149,10 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:29",
-				"ong/errors/errors_test.go:22",
-				"ong/errors/errors_test.go:16",
-				"ong/errors/errors_test.go:52",
+				"ong/errors/errors_test.go:30",
+				"ong/errors/errors_test.go:23",
+				"ong/errors/errors_test.go:17",
+				"ong/errors/errors_test.go:53",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -164,10 +170,10 @@ func TestStackError(t *testing.T) {
 
 		extendedFormatting := fmt.Sprintf("%+v", err)
 		for _, v := range []string{
-			"ong/errors/errors_test.go:29",
-			"ong/errors/errors_test.go:22",
-			"ong/errors/errors_test.go:16",
-			"ong/errors/errors_test.go:159",
+			"ong/errors/errors_test.go:30",
+			"ong/errors/errors_test.go:23",
+			"ong/errors/errors_test.go:17",
+			"ong/errors/errors_test.go:165",
 		} {
 			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
 		}
