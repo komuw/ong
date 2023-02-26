@@ -39,13 +39,15 @@ func TestClient(t *testing.T) {
 	}
 
 	clean := func(res *http.Response, cli *http.Client) {
-		if res != nil {
-			res.Body.Close()
-		}
+		t.Cleanup(func() {
+			if res != nil {
+				res.Body.Close()
+			}
 
-		// Without this, `uber/goleak` would report a leak.
-		// see: https://github.com/uber-go/goleak/issues/87
-		cli.CloseIdleConnections()
+			// Without this, `uber/goleak` would report a leak.
+			// see: https://github.com/uber-go/goleak/issues/87
+			cli.CloseIdleConnections()
+		})
 	}
 
 	t.Run("ssrf safe", func(t *testing.T) {
