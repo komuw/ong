@@ -274,10 +274,10 @@ func (a app) handleFileServer() http.HandlerFunc {
 		panic(err)
 	}
 	cwd = strings.TrimSuffix(cwd, "example")
-	dir := filepath.Join(cwd, "/example/serveDirectory")
+	dir := filepath.Join(cwd, "/example/staticAssets")
 
 	fs := http.FileServer(http.Dir(dir))
-	realHandler := http.StripPrefix("/serveDirectory/", fs).ServeHTTP
+	realHandler := http.StripPrefix("/staticAssets/", fs).ServeHTTP
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqL := log.WithID(r.Context(), a.l)
 		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r))

@@ -17,12 +17,15 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-const someLogHandlerHeader = "SomeLogHandlerHeader"
+const (
+	someLogHandlerHeader = "SomeLogHandlerHeader"
+	someLatencyMS        = 3
+)
 
 func someLogHandler(successMsg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// sleep so that the log middleware has some useful duration metrics to report.
-		time.Sleep(3 * time.Millisecond)
+		time.Sleep(someLatencyMS * time.Millisecond)
 		if r.Header.Get(someLogHandlerHeader) != "" {
 			http.Error(
 				w,
@@ -95,6 +98,7 @@ func TestLogMiddleware(t *testing.T) {
 			"logID", // should match log.logIDFieldName
 			"clientIP",
 			"ERROR",
+			fmt.Sprintf("%d", someLatencyMS), // latency in millisecond is recorded.
 		} {
 			attest.Subsequence(t, logOutput.String(), v)
 		}

@@ -25,7 +25,7 @@ func main() {
 			api.health(secretKey),
 		),
 		mux.NewRoute(
-			"serveDirectory/:file",
+			"staticAssets/:file",
 			mux.MethodAll,
 			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
 		),

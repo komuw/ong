@@ -54,8 +54,10 @@ func loadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		startReq := time.Now().UTC()
 		defer func() {
 			endReq := time.Now().UTC()
-			durReq := endReq.Sub(startReq)
-			lq.add(durReq)
+			durReq := endReq.Sub(startReq).Milliseconds()
+			lq.add(
+				time.Duration(durReq) * time.Millisecond,
+			)
 
 			// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > resizePeriod {
