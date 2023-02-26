@@ -24,6 +24,12 @@ func getSecretKey() string {
 	return key
 }
 
+// TODO: (komuw)
+// func TestMain(m *testing.M) {
+// 	// call flag.Parse() here if TestMain uses flags
+// 	goleak.VerifyTestMain(m)
+// }
+
 func TestDrainDuration(t *testing.T) {
 	t.Parallel()
 
