@@ -18,6 +18,11 @@ func getLogger() *slog.Logger {
 	return log.New(w, maxMsgs)(context.Background())
 }
 
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
+}
+
 func TestClient(t *testing.T) {
 	t.Parallel()
 
