@@ -25,6 +25,10 @@ func getSecretKey() string {
 }
 
 // todo: enable this.
+//
+// This is disabled because `server.Run()` starts a http server(aka goroutine)
+// which is still running at the end of the test. Thus is technically a leak.
+//
 // func TestMain(m *testing.M) {
 // 	// call flag.Parse() here if TestMain uses flags
 // 	goleak.VerifyTestMain(m)
