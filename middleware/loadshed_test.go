@@ -95,19 +95,20 @@ func TestPercentile(t *testing.T) {
 		t.Parallel()
 
 		{
-			lq := latencyQueue{
-				sl: []time.Duration{
-					5 * time.Second,
-					6 * time.Second,
-					7 * time.Second,
-					8 * time.Second,
-					9 * time.Second,
-					0 * time.Second,
-					1 * time.Second,
-					2 * time.Second,
-					3 * time.Second,
-					4 * time.Second,
-				},
+			lq := newLatencyQueue()
+			for _, dur := range []time.Duration{
+				5 * time.Second,
+				0 * time.Second,
+				6 * time.Second,
+				8 * time.Second,
+				9 * time.Second,
+				1 * time.Second,
+				2 * time.Second,
+				7 * time.Second,
+				3 * time.Second,
+				4 * time.Second,
+			} {
+				lq.add(dur)
 			}
 
 			got := percentile(lq.sl, 25, len(lq.sl))
@@ -116,10 +117,8 @@ func TestPercentile(t *testing.T) {
 		{
 			lq := latencyQueue{}
 			for i := 1; i <= 1000; i++ {
-				lq.sl = append(
-					lq.sl,
-					time.Duration(i)*time.Second,
-				)
+				dur := time.Duration(i) * time.Second
+				lq.add(dur)
 			}
 			got := percentile(lq.sl, 99, len(lq.sl))
 			attest.Equal(t, got.Seconds(), 991)
