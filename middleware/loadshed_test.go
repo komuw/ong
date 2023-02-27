@@ -121,8 +121,8 @@ func TestPercentile(t *testing.T) {
 				lq.add(dur)
 			}
 			got := percentile(lq.sl, 99, len(lq.sl))
-			gotMilli := time.Duration(got) * time.Millisecond
-			attest.Equal(t, gotMilli.Seconds(), 991)
+			gotM := time.Duration(got) * time.Millisecond
+			attest.Equal(t, gotM.Seconds(), 991)
 		}
 		{
 			lq := latencyQueue{}
@@ -131,8 +131,8 @@ func TestPercentile(t *testing.T) {
 				lq.add(dur)
 			}
 			got := percentile(lq.sl, 99, len(lq.sl))
-			gotMilli := time.Duration(got) * time.Millisecond
-			attest.Equal(t, gotMilli.Seconds(), 991)
+			gotM := time.Duration(got) * time.Millisecond
+			attest.Equal(t, gotM.Seconds(), 991)
 		}
 
 		{ // different duration units mixed in.
@@ -147,13 +147,13 @@ func TestPercentile(t *testing.T) {
 			}
 			{
 				got := percentile(lq.sl, 99, len(lq.sl))
-				gotMilli := time.Duration(got) * time.Millisecond
-				attest.Equal(t, gotMilli.Minutes(), 3)
+				gotM := time.Duration(got) * time.Millisecond
+				attest.Equal(t, gotM.Minutes(), 3)
 			}
 			{
 				got := percentile(lq.sl, 25, len(lq.sl))
-				gotMilli := time.Duration(got) * time.Millisecond
-				attest.Equal(t, gotMilli, 6*time.Millisecond)
+				gotM := time.Duration(got) * time.Millisecond
+				attest.Equal(t, gotM, 6*time.Millisecond)
 			}
 		}
 	})
