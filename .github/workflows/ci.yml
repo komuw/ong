@@ -219,7 +219,7 @@ jobs:
           sudo apt -y update
           sudo apt -y install libnss3-tools # certutil
 
-          go install github.com/tsenart/vegeta@v12.8.4
+          go install github.com/tsenart/vegeta@latest
 
           mkdir -p coverage/
           rm -rf coverage/* ongExample
