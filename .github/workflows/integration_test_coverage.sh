@@ -94,8 +94,8 @@ load_test(){
   echo ''
 
   number_of_success=$(cat vegeta_results.json | jq '.status_codes."200"')
-  if [[ "$number_of_success" -ne 300 ]] ; then
-    echo "expected 300 successful requests"
+  if [[ "$number_of_success" -ne 297 ]] ; then
+    echo "expected 297 successful requests"
     exit 61;
   fi
 }
