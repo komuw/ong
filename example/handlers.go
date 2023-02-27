@@ -98,6 +98,9 @@ func (a app) check(msg string) http.HandlerFunc {
 		}
 
 		go func(ctx context.Context) {
+			ctx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+			defer cancel()
+
 			makeReq := func(url string) (code int, errp error) {
 				defer errors.Dwrap(&errp)
 
