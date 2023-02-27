@@ -220,24 +220,24 @@ func TestLatencyQueue(t *testing.T) {
 		attest.NotEqual(t, first, smallLatency)
 	})
 
-	// 	t.Run("concurrency safe", func(t *testing.T) {
-	// 		t.Parallel()
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
 
-	// 		lq := newLatencyQueue()
+		lq := newLatencyQueue()
 
-	// 		wg := &sync.WaitGroup{}
-	// 		for rN := 0; rN <= 50+minSampleSize; rN++ {
-	// 			wg.Add(1)
-	// 			go func() {
-	// 				defer wg.Done()
+		wg := &sync.WaitGroup{}
+		for rN := 0; rN <= 50+minSampleSize; rN++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 
-	//				lq.add(1 * time.Second)
-	//				lq.reSize()
-	//				lq.getP99(3)
-	//			}()
-	//		}
-	//		wg.Wait()
-	//	})
+				lq.add(1 * time.Second)
+				lq.reSize()
+				lq.getP99(3)
+			}()
+		}
+		wg.Wait()
+	})
 }
 
 func loadShedderBenchmarkHandler() http.HandlerFunc {
