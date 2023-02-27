@@ -114,7 +114,7 @@ func (a app) check(msg string) http.HandlerFunc {
 				return resp.StatusCode, nil
 			}
 
-			l := log.WithID(r.Context(), a.l)
+			l := log.WithID(ctx, a.l)
 			code, err := makeReq("https://example.com")
 			if err != nil {
 				l.Error("handler error", err)
