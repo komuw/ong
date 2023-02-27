@@ -98,6 +98,9 @@ func (a app) check(msg string) http.HandlerFunc {
 		}
 
 		go func(ctx context.Context) {
+			ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+			defer cancel()
+
 			makeReq := func(url string) (code int, errp error) {
 				defer errors.Dwrap(&errp)
 
@@ -114,7 +117,7 @@ func (a app) check(msg string) http.HandlerFunc {
 				return resp.StatusCode, nil
 			}
 
-			l := log.WithID(r.Context(), a.l)
+			l := log.WithID(ctx, a.l)
 			code, err := makeReq("https://example.com")
 			if err != nil {
 				l.Error("handler error", err)
