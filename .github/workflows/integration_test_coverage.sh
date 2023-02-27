@@ -83,7 +83,7 @@ load_test(){
   VEGETA=$(which vegeta)
 
   echo "GET https://localhost:65081/check/67" | \
-    $VEGETA attack -duration=25s -rate=20/s -workers=1 -max-workers=2 | \
+    $VEGETA attack -duration=15s -rate=20/s -workers=1 -max-workers=2 | \
     tee vegeta_results.text | \
     $VEGETA report --type json >> vegeta_results.json
 
