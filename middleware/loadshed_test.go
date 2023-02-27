@@ -95,34 +95,66 @@ func TestPercentile(t *testing.T) {
 		t.Parallel()
 
 		{
-			lq := latencyQueue{
-				sl: []time.Duration{
-					5 * time.Second,
-					6 * time.Second,
-					7 * time.Second,
-					8 * time.Second,
-					9 * time.Second,
-					0 * time.Second,
-					1 * time.Second,
-					2 * time.Second,
-					3 * time.Second,
-					4 * time.Second,
-				},
+			lq := newLatencyQueue()
+			for _, dur := range []time.Duration{
+				5 * time.Second,
+				0 * time.Second,
+				6 * time.Second,
+				8 * time.Second,
+				9 * time.Second,
+				1 * time.Second,
+				2 * time.Second,
+				7 * time.Second,
+				3 * time.Second,
+				4 * time.Second,
+			} {
+				lq.add(dur)
 			}
 
 			got := percentile(lq.sl, 25, len(lq.sl))
-			attest.Equal(t, got, 2000*time.Millisecond) // ie, 2seconds
+			attest.Equal(t, got, 2000) // ie, 2000millisecond(2seconds)
 		}
 		{
 			lq := latencyQueue{}
 			for i := 1; i <= 1000; i++ {
-				lq.sl = append(
-					lq.sl,
-					time.Duration(i)*time.Second,
-				)
+				dur := time.Duration(i) * time.Second
+				lq.add(dur)
 			}
 			got := percentile(lq.sl, 99, len(lq.sl))
-			attest.Equal(t, got.Seconds(), 991)
+			gotM := time.Duration(got) * time.Millisecond
+			attest.Equal(t, gotM.Seconds(), 991)
+		}
+		{
+			lq := latencyQueue{}
+			for i := 1000; i >= 1; i-- {
+				dur := time.Duration(i) * time.Second
+				lq.add(dur)
+			}
+			got := percentile(lq.sl, 99, len(lq.sl))
+			gotM := time.Duration(got) * time.Millisecond
+			attest.Equal(t, gotM.Seconds(), 991)
+		}
+
+		{ // different duration units mixed in.
+			lq := newLatencyQueue()
+			for _, dur := range []time.Duration{
+				3 * time.Minute,
+				1 * time.Second,
+				4 * time.Microsecond,
+				6 * time.Millisecond,
+			} {
+				lq.add(dur)
+			}
+			{
+				got := percentile(lq.sl, 99, len(lq.sl))
+				gotM := time.Duration(got) * time.Millisecond
+				attest.Equal(t, gotM.Minutes(), 3)
+			}
+			{
+				got := percentile(lq.sl, 25, len(lq.sl))
+				gotM := time.Duration(got) * time.Millisecond
+				attest.Equal(t, gotM, 6*time.Millisecond)
+			}
 		}
 	})
 }
@@ -134,12 +166,9 @@ func TestLatencyQueue(t *testing.T) {
 		t.Parallel()
 
 		minSampleSize := 10
-		lq := latencyQueue{}
+		lq := newLatencyQueue()
 		for i := 1; i <= 1000; i++ {
-			lq.sl = append(
-				lq.sl,
-				time.Duration(i)*time.Second,
-			)
+			lq.add(time.Duration(i) * time.Second)
 		}
 
 		got := lq.getP99(minSampleSize)
@@ -150,12 +179,9 @@ func TestLatencyQueue(t *testing.T) {
 		t.Parallel()
 
 		minSampleSize := 10_000
-		lq := latencyQueue{}
+		lq := newLatencyQueue()
 		for i := 1; i <= (minSampleSize / 2); i++ {
-			lq.sl = append(
-				lq.sl,
-				time.Duration(i)*time.Second,
-			)
+			lq.add(time.Duration(i) * time.Second)
 		}
 
 		got := lq.getP99(minSampleSize)
@@ -170,16 +196,13 @@ func TestLatencyQueue(t *testing.T) {
 		// 1. Add big latencies.
 		lq := newLatencyQueue()
 		for i := 1; i <= maxLatencyItems; i++ {
-			lq.sl = append(
-				lq.sl,
-				time.Duration(i)*time.Minute,
-			)
+			lq.add(time.Duration(i) * time.Minute)
 		}
 
 		// 2. Add very small latency to be latest in the queue.
-		smallLatency := 1 * time.Nanosecond
+		smallLatency := 3 * time.Millisecond
 		for i := 1; i <= 20; i++ {
-			lq.sl = append(lq.sl, smallLatency)
+			lq.add(smallLatency)
 		}
 
 		// 3. Call percentile which may mutate the latency slice.
@@ -188,9 +211,10 @@ func TestLatencyQueue(t *testing.T) {
 		// 4. resize.
 		lq.reSize()
 
-		latest := lq.sl[len(lq.sl)-1]
-		secondLatest := lq.sl[len(lq.sl)-1]
-		first := lq.sl[0]
+		latest := time.Duration(lq.sl[len(lq.sl)-1]) * time.Millisecond
+		secondLatest := time.Duration(lq.sl[len(lq.sl)-1]) * time.Millisecond
+		first := time.Duration(lq.sl[0]) * time.Millisecond
+
 		attest.Equal(t, latest, smallLatency)
 		attest.Equal(t, secondLatest, smallLatency)
 		attest.NotEqual(t, first, smallLatency)

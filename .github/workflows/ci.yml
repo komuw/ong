@@ -217,7 +217,9 @@ jobs:
           set -x
           pwd; ls -lsha
           sudo apt -y update
-          sudo apt -y install libnss3-tools # certutil
+          sudo apt -y install libnss3-tools jq # certutil
+
+          go install github.com/tsenart/vegeta@latest
 
           mkdir -p coverage/
           rm -rf coverage/* ongExample

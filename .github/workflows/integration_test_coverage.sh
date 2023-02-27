@@ -78,3 +78,25 @@ panic(){
 }
 panic
 
+
+load_test(){
+  VEGETA=$(which vegeta)
+
+  rm -rf vegeta_results.text vegeta_results.json
+
+  echo "GET https://localhost:65081/check/67" | \
+    $VEGETA attack -duration=15s -rate=20/s -workers=1 -max-workers=2 | \
+    tee vegeta_results.text | \
+    $VEGETA report --type json >> vegeta_results.json
+
+  echo ''
+  cat vegeta_results.json
+  echo ''
+
+  number_of_success=$(cat vegeta_results.json | jq '.status_codes."200"')
+  if [[ "$number_of_success" -ne 297 ]] ; then
+    echo "expected 297 successful requests"
+    exit 61;
+  fi
+}
+load_test

@@ -54,10 +54,8 @@ func loadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		startReq := time.Now().UTC()
 		defer func() {
 			endReq := time.Now().UTC()
-			durReq := endReq.Sub(startReq).Milliseconds()
-			lq.add(
-				time.Duration(durReq) * time.Millisecond,
-			)
+			durReq := endReq.Sub(startReq)
+			lq.add(durReq)
 
 			// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > resizePeriod {
@@ -76,7 +74,7 @@ func loadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		}
 
 		p99 := lq.getP99(minSampleSize)
-		if p99 > breachLatency && !sendProbe {
+		if p99.Milliseconds() > breachLatency.Milliseconds() && !sendProbe {
 			// drop request
 			err := fmt.Errorf("ong/middleware: server is overloaded, retry after %s", retryAfter)
 			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. breachLatency: %s", err.Error(), p99, breachLatency))
@@ -104,16 +102,16 @@ type latencyQueue struct {
 		aways be within `samplingPeriod` give or take.
 	*/
 	// +checklocks:mu
-	sl []time.Duration
+	sl []int64
 }
 
 func newLatencyQueue() *latencyQueue {
-	return &latencyQueue{sl: []time.Duration{}}
+	return &latencyQueue{sl: []int64{}}
 }
 
 func (lq *latencyQueue) add(durReq time.Duration) {
 	lq.mu.Lock()
-	lq.sl = append(lq.sl, durReq)
+	lq.sl = append(lq.sl, durReq.Milliseconds())
 	lq.mu.Unlock()
 }
 
@@ -140,10 +138,10 @@ func (lq *latencyQueue) getP99(minSampleSize int) (p99latency time.Duration) {
 		return 0 * time.Millisecond
 	}
 
-	return percentile(lq.sl, 99, lenSl)
+	return time.Duration(percentile(lq.sl, 99, lenSl)) * time.Millisecond
 }
 
-func percentile(N []time.Duration, pctl float64, lenSl int) time.Duration {
+func percentile(N []int64, pctl float64, lenSl int) int64 {
 	newN := slices.Clone(N)
 
 	slices.Sort(newN)
