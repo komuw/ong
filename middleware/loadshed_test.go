@@ -132,6 +132,21 @@ func TestPercentile(t *testing.T) {
 			got := percentile(lq.sl, 99, len(lq.sl))
 			attest.Equal(t, got.Seconds(), 991)
 		}
+
+		{ // different duration units mixed in.
+			lq := newLatencyQueue()
+			for _, dur := range []time.Duration{
+				1 * time.Second,
+				2 * time.Millisecond,
+				3 * time.Minute,
+				4 * time.Microsecond,
+			} {
+				lq.add(dur)
+			}
+
+			got := percentile(lq.sl, 25, len(lq.sl))
+			attest.Equal(t, got, 3*time.Minute)
+		}
 	})
 }
 
