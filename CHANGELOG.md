@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.41
+- Better loadshed calculations: https://github.com/komuw/ong/pull/234
+
 ## v0.0.40
 - Detect leaks in tests: https://github.com/komuw/ong/pull/232
 - Bugfix; loadshed records latency in milliseconds: https://github.com/komuw/ong/pull/233
