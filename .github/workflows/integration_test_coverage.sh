@@ -85,7 +85,7 @@ load_test(){
   rm -rf vegeta_results.text vegeta_results.json
 
   echo "GET https://localhost:65081/check/67" | \
-    $VEGETA attack -duration=15s -rate=20/s -workers=1 -max-workers=2 | \
+    $VEGETA attack -duration=20s -rate=90/s -max-workers=500 | \
     tee vegeta_results.text | \
     $VEGETA report --type json >> vegeta_results.json
 
@@ -94,8 +94,8 @@ load_test(){
   echo ''
 
   number_of_success=$(cat vegeta_results.json | jq '.status_codes."200"')
-  if [[ "$number_of_success" -ne 297 ]] ; then
-    echo "expected 297 successful requests"
+  if [[ "$number_of_success" -ne 1782 ]] ; then
+    echo "expected 1782 successful requests"
     exit 61;
   fi
 }
