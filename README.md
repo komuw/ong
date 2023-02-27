@@ -10,7 +10,7 @@ Ong is a small http toolkit.
 It's name is derived from Tanzanian artiste, [Remmy Ongala](https://en.wikipedia.org/wiki/Remmy_Ongala).
 
 
-Taken mainly from the talk; `How I Write HTTP Web Services after Eight Years`[1][2] by Mat Ryer.    
+Inspired by; `How I Write HTTP Web Services after Eight Years`[1][2] by Mat Ryer.    
 
 
 You really should **not** use this library/toolkit.    
