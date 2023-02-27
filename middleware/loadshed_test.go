@@ -159,94 +159,86 @@ func TestPercentile(t *testing.T) {
 	})
 }
 
-// func TestLatencyQueue(t *testing.T) {
-// 	t.Parallel()
+func TestLatencyQueue(t *testing.T) {
+	t.Parallel()
 
-// 	t.Run("all samples taken within samplingPeriod", func(t *testing.T) {
-// 		t.Parallel()
+	t.Run("all samples taken within samplingPeriod", func(t *testing.T) {
+		t.Parallel()
 
-// 		minSampleSize := 10
-// 		lq := latencyQueue{}
-// 		for i := 1; i <= 1000; i++ {
-// 			lq.sl = append(
-// 				lq.sl,
-// 				time.Duration(i)*time.Second,
-// 			)
-// 		}
+		minSampleSize := 10
+		lq := newLatencyQueue()
+		for i := 1; i <= 1000; i++ {
+			lq.add(time.Duration(i) * time.Second)
+		}
 
-// 		got := lq.getP99(minSampleSize)
-// 		attest.Equal(t, got.Seconds(), 991)
-// 	})
+		got := lq.getP99(minSampleSize)
+		attest.Equal(t, got.Seconds(), 991)
+	})
 
-// 	t.Run("number of samples less than minSampleSize", func(t *testing.T) {
-// 		t.Parallel()
+	t.Run("number of samples less than minSampleSize", func(t *testing.T) {
+		t.Parallel()
 
-// 		minSampleSize := 10_000
-// 		lq := latencyQueue{}
-// 		for i := 1; i <= (minSampleSize / 2); i++ {
-// 			lq.sl = append(
-// 				lq.sl,
-// 				time.Duration(i)*time.Second,
-// 			)
-// 		}
+		minSampleSize := 10_000
+		lq := newLatencyQueue()
+		for i := 1; i <= (minSampleSize / 2); i++ {
+			lq.add(time.Duration(i) * time.Second)
+		}
 
-// 		got := lq.getP99(minSampleSize)
-// 		attest.Zero(t, got)
-// 	})
+		got := lq.getP99(minSampleSize)
+		attest.Zero(t, got)
+	})
 
-// 	t.Run("issues/217: order is preserved", func(t *testing.T) {
-// 		t.Parallel()
+	t.Run("issues/217: order is preserved", func(t *testing.T) {
+		t.Parallel()
 
-// 		// See: https://github.com/komuw/ong/issues/217
+		// See: https://github.com/komuw/ong/issues/217
 
-// 		// 1. Add big latencies.
-// 		lq := newLatencyQueue()
-// 		for i := 1; i <= maxLatencyItems; i++ {
-// 			lq.sl = append(
-// 				lq.sl,
-// 				time.Duration(i)*time.Minute,
-// 			)
-// 		}
+		// 1. Add big latencies.
+		lq := newLatencyQueue()
+		for i := 1; i <= maxLatencyItems; i++ {
+			lq.add(time.Duration(i) * time.Minute)
+		}
 
-// 		// 2. Add very small latency to be latest in the queue.
-// 		smallLatency := 1 * time.Nanosecond
-// 		for i := 1; i <= 20; i++ {
-// 			lq.sl = append(lq.sl, smallLatency)
-// 		}
+		// 2. Add very small latency to be latest in the queue.
+		smallLatency := 3 * time.Millisecond
+		for i := 1; i <= 20; i++ {
+			lq.add(smallLatency)
+		}
 
-// 		// 3. Call percentile which may mutate the latency slice.
-// 		_ = percentile(lq.sl, 90, len(lq.sl))
+		// 3. Call percentile which may mutate the latency slice.
+		_ = percentile(lq.sl, 90, len(lq.sl))
 
-// 		// 4. resize.
-// 		lq.reSize()
+		// 4. resize.
+		lq.reSize()
 
-// 		latest := lq.sl[len(lq.sl)-1]
-// 		secondLatest := lq.sl[len(lq.sl)-1]
-// 		first := lq.sl[0]
-// 		attest.Equal(t, latest, smallLatency)
-// 		attest.Equal(t, secondLatest, smallLatency)
-// 		attest.NotEqual(t, first, smallLatency)
-// 	})
+		latest := time.Duration(lq.sl[len(lq.sl)-1]) * time.Millisecond
+		secondLatest := time.Duration(lq.sl[len(lq.sl)-1]) * time.Millisecond
+		first := time.Duration(lq.sl[0]) * time.Millisecond
 
-// 	t.Run("concurrency safe", func(t *testing.T) {
-// 		t.Parallel()
+		attest.Equal(t, latest, smallLatency)
+		attest.Equal(t, secondLatest, smallLatency)
+		attest.NotEqual(t, first, smallLatency)
+	})
 
-// 		lq := newLatencyQueue()
+	// 	t.Run("concurrency safe", func(t *testing.T) {
+	// 		t.Parallel()
 
-// 		wg := &sync.WaitGroup{}
-// 		for rN := 0; rN <= 50+minSampleSize; rN++ {
-// 			wg.Add(1)
-// 			go func() {
-// 				defer wg.Done()
+	// 		lq := newLatencyQueue()
 
-// 				lq.add(1 * time.Second)
-// 				lq.reSize()
-// 				lq.getP99(3)
-// 			}()
-// 		}
-// 		wg.Wait()
-// 	})
-// }
+	// 		wg := &sync.WaitGroup{}
+	// 		for rN := 0; rN <= 50+minSampleSize; rN++ {
+	// 			wg.Add(1)
+	// 			go func() {
+	// 				defer wg.Done()
+
+	//				lq.add(1 * time.Second)
+	//				lq.reSize()
+	//				lq.getP99(3)
+	//			}()
+	//		}
+	//		wg.Wait()
+	//	})
+}
 
 func loadShedderBenchmarkHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
