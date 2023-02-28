@@ -208,15 +208,15 @@ func (a app) login(secretKey string) http.HandlerFunc {
 				CspNonceValue:  middleware.GetCspNonce(r.Context()),
 			}
 
-			if err = tmpl.Execute(w, data); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			if errE := tmpl.Execute(w, data); errE != nil {
+				http.Error(w, errE.Error(), http.StatusInternalServerError)
 				return
 			}
 			return
 		}
 
-		if err = r.ParseForm(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if errP := r.ParseForm(); errP != nil {
+			http.Error(w, errP.Error(), http.StatusInternalServerError)
 			return
 		}
 
