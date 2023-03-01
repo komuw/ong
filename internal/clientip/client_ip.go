@@ -50,7 +50,7 @@ const (
 // see ong/middleware for docs.
 func Get(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
-		if s, ok := vCtx.(string); ok {
+		if s, ok := vCtx.(string); ok && s != "" {
 			return s
 		}
 	}
