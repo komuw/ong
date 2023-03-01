@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.42
+ClientIP, use remoteAddress if IP is local adress: https://github.com/komuw/ong/pull/238
+
 ## v0.0.41
 - Better loadshed calculations: https://github.com/komuw/ong/pull/234
                               : https://github.com/komuw/ong/pull/237
