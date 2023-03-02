@@ -199,7 +199,25 @@ func TestUber(t *testing.T) {
 			totalMsgsDelivered := len(msgsDelivered)
 			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
 
-			fmt.Println("\t effectiveMessageRate: ", effectiveMessageRate)
+			fmt.Println("\t uber.effectiveMessageRate: ", effectiveMessageRate)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
+		}
+
+		{
+			sendRate := 200.0 // 200 requests/second
+			l := newTb(sendRate)
+
+			msgsDelivered := []int{}
+			start := time.Now().UTC()
+			for i := 0; i < int(sendRate*4); i++ {
+				l.allow()
+				msgsDelivered = append(msgsDelivered, 1)
+			}
+			timeTakenToDeliver := time.Now().UTC().Sub(start)
+			totalMsgsDelivered := len(msgsDelivered)
+			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
+
+			fmt.Println("\t old.effectiveMessageRate: ", effectiveMessageRate)
 			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
 		}
 	})

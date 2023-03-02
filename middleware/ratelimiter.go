@@ -171,9 +171,12 @@ func (t *tb) addNewTokens() {
 
 // //////////////////////////////////////////////////////
 type mutexLimiter struct {
-	sync.Mutex
-	last       time.Time
-	sleepFor   time.Duration
+	mu sync.Mutex // protects last and sleepFor
+	// +checklocks:mu
+	last time.Time
+	// +checklocks:mu
+	sleepFor time.Duration
+
 	perRequest time.Duration
 	maxSlack   time.Duration
 }
@@ -197,16 +200,16 @@ func newMutexBased(rate int) *mutexLimiter {
 
 // Take blocks to ensure that the time spent between multiple
 // Take calls is on average per/rate.
-func (t *mutexLimiter) Take() time.Time {
-	t.Lock()
-	defer t.Unlock()
+func (t *mutexLimiter) Take() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	now := time.Now()
 
-	// If this is our first request, then we allow it.
 	if t.last.IsZero() {
+		// this is first request, allow it.
 		t.last = now
-		return t.last
+		return
 	}
 
 	// sleepFor calculates how much time we should sleep based on
@@ -231,5 +234,5 @@ func (t *mutexLimiter) Take() time.Time {
 		t.last = now
 	}
 
-	return t.last
+	return
 }
