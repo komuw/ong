@@ -231,7 +231,7 @@ jobs:
           cat logs_two.json
           ls -lsha coverage/
 
-          go test -timeout 4m -v -race --tags=integration ./...
+          go test -timeout 4m -v -race --tags=integration github.com/komuw/ong/example
 
           kill -15 $(pidof ongExample)
           ls -lsha coverage/
