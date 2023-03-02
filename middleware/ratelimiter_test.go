@@ -144,15 +144,14 @@ func TestRl(t *testing.T) {
 			sendRate := 14.0
 			l := newTb(sendRate)
 
-			msgsDelivered := []int{}
+			msgsDelivered := 0
 			start := time.Now().UTC()
 			for i := 0; i < int(sendRate*4); i++ {
 				l.allow()
-				msgsDelivered = append(msgsDelivered, 1)
+				msgsDelivered = msgsDelivered + 1
 			}
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
-			totalMsgsDelivered := len(msgsDelivered)
-			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
+			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
 
 			attest.Approximately(t, effectiveMessageRate, int(sendRate), 3)
 		}
@@ -161,15 +160,14 @@ func TestRl(t *testing.T) {
 			sendRate := 200.0 // 200 requests/second
 			l := newTb(sendRate)
 
-			msgsDelivered := []int{}
+			msgsDelivered := 0
 			start := time.Now().UTC()
 			for i := 0; i < int(sendRate*4); i++ {
 				l.allow()
-				msgsDelivered = append(msgsDelivered, 1)
+				msgsDelivered = msgsDelivered + 1
 			}
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
-			totalMsgsDelivered := len(msgsDelivered)
-			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
+			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
 
 			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
 		}

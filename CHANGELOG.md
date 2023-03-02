@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.43
+- Add precision to ratelimiting: https://github.com/komuw/ong/pull/239
+
 ## v0.0.42
 ClientIP, use remoteAddress if IP is local adress: https://github.com/komuw/ong/pull/238
 

@@ -219,8 +219,6 @@ jobs:
           sudo apt -y update
           sudo apt -y install libnss3-tools jq # certutil
 
-          go install github.com/tsenart/vegeta@latest
-
           mkdir -p coverage/
           rm -rf coverage/* ongExample
           go build -cover -o ongExample github.com/komuw/ong/example
@@ -233,7 +231,7 @@ jobs:
           cat logs_two.json
           ls -lsha coverage/
 
-          ./.github/workflows/integration_test_coverage.sh
+          go test -timeout 4m -v -race --tags=integration github.com/komuw/ong/example
 
           kill -15 $(pidof ongExample)
           ls -lsha coverage/
