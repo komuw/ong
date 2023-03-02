@@ -3,6 +3,7 @@ module github.com/komuw/ong
 go 1.20
 
 require (
+	github.com/tsenart/vegeta/v12 v12.8.4
 	golang.org/x/crypto v0.6.0
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
 	golang.org/x/net v0.7.0
@@ -11,6 +12,8 @@ require (
 
 require (
 	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/influxdata/tdigest v0.0.0-20180711151920-a7d76c6f093a // indirect
+	github.com/mailru/easyjson v0.7.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
