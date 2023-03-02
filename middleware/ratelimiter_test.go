@@ -176,29 +176,29 @@ func TestRl(t *testing.T) {
 	})
 }
 
-// func TestTodo(t *testing.T) {
-// 	t.Parallel()
+func TestTodo(t *testing.T) {
+	t.Parallel()
 
-// 	t.Run("todo", func(t *testing.T) {
-// 		t.Parallel()
+	t.Run("todo", func(t *testing.T) {
+		t.Parallel()
 
-// 		{
-// 			sendRate := 10.0 // 10 requests/second
-// 			l := newTb(sendRate)
+		{
+			sendRate := 100.0 // 100 requests/second
+			l := newTb(sendRate)
 
-// 			msgsDelivered := []int{}
-// 			start := time.Now().UTC()
-// 			for i := 0; i < int(sendRate*2); i++ {
-// 				fmt.Println("\t l.allow(): ", l.allow())
-// 				msgsDelivered = append(msgsDelivered, 1)
-// 				// time.Sleep(1 * time.Second)
-// 			}
-// 			timeTakenToDeliver := time.Now().UTC().Sub(start)
-// 			totalMsgsDelivered := len(msgsDelivered)
-// 			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
+			msgsDelivered := []int{}
+			start := time.Now().UTC()
+			for i := 0; i < int(sendRate*4); i++ {
+				fmt.Println("\t l.allow(): ", l.allow())
+				msgsDelivered = append(msgsDelivered, 1)
+				// time.Sleep(1 * time.Second)
+			}
+			timeTakenToDeliver := time.Now().UTC().Sub(start)
+			totalMsgsDelivered := len(msgsDelivered)
+			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
 
-// 			fmt.Println("\t old.effectiveMessageRate: ", effectiveMessageRate)
-// 			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
-// 		}
-// 	})
-// }
+			fmt.Println("\t old.effectiveMessageRate: ", effectiveMessageRate)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
+		}
+	})
+}
