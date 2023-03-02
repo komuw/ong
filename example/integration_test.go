@@ -71,4 +71,34 @@ func TestIntegration(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 		}
 	})
+
+	t.Run("check_age", func(t *testing.T) {
+		t.Parallel()
+
+		c := &http.Client{}
+		res, err := c.Get("https://localhost:65081/check/67")
+		attest.Ok(t, err)
+		defer res.Body.Close()
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+	})
+
+	t.Run("login", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			c := &http.Client{}
+			res, err := c.Get("https://localhost:65081/login")
+			attest.Ok(t, err)
+			defer res.Body.Close()
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+		}
+
+		{ // with slash suffix
+			c := &http.Client{}
+			res, err := c.Get("https://localhost:65081/login/")
+			attest.Ok(t, err)
+			defer res.Body.Close()
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+		}
+	})
 }
