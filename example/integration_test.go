@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 package main_test
 
 import (
@@ -10,6 +13,7 @@ import (
 
 func TestIntegration(t *testing.T) {
 	t.Parallel()
+
 	rate := vegeta.Rate{Freq: 100, Per: time.Second}
 	duration := 4 * time.Second
 	targeter := vegeta.NewStaticTargeter(vegeta.Target{
