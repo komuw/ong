@@ -79,7 +79,7 @@ panic(){
 panic
 
 
-load_test(){
+rate_limit_test(){
   VEGETA=$(which vegeta)
 
   rm -rf vegeta_results.text vegeta_results.json
@@ -111,4 +111,4 @@ load_test(){
     exit 61;
   fi
 }
-load_test
+rate_limit_test
