@@ -98,7 +98,7 @@ load_test(){
     # Actually, we would expect 1800 successes(20 *90) since the sending rate is 90/secs
     # which is below the ratelimit of 100/sec.
     # But ratelimiting is imprecise; https://github.com/komuw/ong/issues/235
-    echo "expected at least $expected successful requests"
+    echo "expected at least 1780 successful requests"
     exit 61;
   fi
 
