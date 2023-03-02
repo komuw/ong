@@ -8,7 +8,7 @@ import (
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-func TestRl(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	t.Parallel()
 	rate := vegeta.Rate{Freq: 100, Per: time.Second}
 	duration := 4 * time.Second
