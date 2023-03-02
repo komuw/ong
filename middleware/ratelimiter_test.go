@@ -176,42 +176,22 @@ func TestRl(t *testing.T) {
 	})
 }
 
-func TestUber(t *testing.T) {
+func TestTodo(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("todo", func(t *testing.T) {
 		t.Parallel()
 
-		l := newMutexBased(100)
-		fmt.Println("\t l: ", l)
-
 		{
-			sendRate := 200 // 200 requests/second
-			l := newMutexBased(sendRate)
-
-			msgsDelivered := []int{}
-			start := time.Now().UTC()
-			for i := 0; i < int(sendRate*4); i++ {
-				l.Take()
-				msgsDelivered = append(msgsDelivered, 1)
-			}
-			timeTakenToDeliver := time.Now().UTC().Sub(start)
-			totalMsgsDelivered := len(msgsDelivered)
-			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
-
-			fmt.Println("\t uber.effectiveMessageRate: ", effectiveMessageRate)
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
-		}
-
-		{
-			sendRate := 200.0 // 200 requests/second
+			sendRate := 10.0 // 10 requests/second
 			l := newTb(sendRate)
 
 			msgsDelivered := []int{}
 			start := time.Now().UTC()
-			for i := 0; i < int(sendRate*4); i++ {
-				l.allow()
+			for i := 0; i < int(sendRate*2); i++ {
+				fmt.Println("\t l.allow(): ", l.allow())
 				msgsDelivered = append(msgsDelivered, 1)
+				// time.Sleep(1 * time.Second)
 			}
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			totalMsgsDelivered := len(msgsDelivered)

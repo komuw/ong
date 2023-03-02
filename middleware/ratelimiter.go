@@ -140,7 +140,13 @@ func (t *tb) allow() bool {
 		alw = false
 	}
 
-	t.limit()
+	if alw {
+		t.messagesDelivered = t.messagesDelivered + 1
+		t.tokens = t.tokens - 1
+	} else {
+		t.limit()
+	}
+
 	return alw
 }
 
@@ -151,8 +157,6 @@ func (t *tb) limit() {
 		t.addNewTokens()
 		time.Sleep(t.delayForTokens)
 	}
-	t.messagesDelivered = t.messagesDelivered + 1
-	t.tokens = t.tokens - 1
 }
 
 // addNewTokens is a private api(thus needs no locking). It should only ever be called by `tb.limit`
@@ -167,72 +171,4 @@ func (t *tb) addNewTokens() {
 		t.updatedAt = now.Unix()
 		t.messagesDelivered = 0
 	}
-}
-
-// //////////////////////////////////////////////////////
-type mutexLimiter struct {
-	mu sync.Mutex // protects last and sleepFor
-	// +checklocks:mu
-	last time.Time
-	// +checklocks:mu
-	sleepFor time.Duration
-
-	perRequest time.Duration
-	maxSlack   time.Duration
-}
-
-// newMutexBased returns a new atomic based limiter.
-func newMutexBased(rate int) *mutexLimiter {
-	var (
-		slack int           = 10
-		per   time.Duration = 1 * time.Second
-	)
-
-	perRequest := per / time.Duration(rate)
-	fmt.Println("\t perRequest: ", perRequest)
-
-	l := &mutexLimiter{
-		perRequest: perRequest,
-		maxSlack:   -1 * time.Duration(slack) * perRequest,
-	}
-	return l
-}
-
-// Take blocks to ensure that the time spent between multiple
-// Take calls is on average per/rate.
-func (t *mutexLimiter) Take() {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	now := time.Now()
-
-	if t.last.IsZero() {
-		// this is first request, allow it.
-		t.last = now
-		return
-	}
-
-	// sleepFor calculates how much time we should sleep based on
-	// the perRequest budget and how long the last request took.
-	// Since the request may take longer than the budget, this number
-	// can get negative, and is summed across requests.
-	t.sleepFor += t.perRequest - now.Sub(t.last)
-
-	// We shouldn't allow sleepFor to get too negative, since it would mean that
-	// a service that slowed down a lot for a short period of time would get
-	// a much higher RPS following that.
-	if t.sleepFor < t.maxSlack {
-		t.sleepFor = t.maxSlack
-	}
-
-	// If sleepFor is positive, then we should sleep now.
-	if t.sleepFor > 0 {
-		time.Sleep(t.sleepFor)
-		t.last = now.Add(t.sleepFor)
-		t.sleepFor = 0
-	} else {
-		t.last = now
-	}
-
-	return
 }
