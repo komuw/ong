@@ -1,3 +1,4 @@
+// go:build integration
 package main_test
 
 import (
@@ -6,8 +7,6 @@ import (
 
 	"github.com/akshayjshah/attest"
 )
-
-// go:build integration
 
 func TestIntegration(t *testing.T) {
 	t.Parallel()
