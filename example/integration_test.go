@@ -1,4 +1,3 @@
-// go:build integration
 package main_test
 
 import (
@@ -8,6 +7,8 @@ import (
 	"github.com/akshayjshah/attest"
 )
 
+// This tests depend on the functionality in the /example folder.
+// go:build integration
 func TestIntegration(t *testing.T) {
 	t.Parallel()
 
@@ -29,6 +30,42 @@ func TestIntegration(t *testing.T) {
 		{
 			c := &http.Client{}
 			res, err := c.Get("https://localhost:65081/health")
+			attest.Ok(t, err)
+			defer res.Body.Close()
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+		}
+	})
+
+	t.Run("pprof", func(t *testing.T) {
+		t.Parallel()
+
+		c := &http.Client{}
+		res, err := c.Get("http://127.0.0.1:65060/debug/pprof/profile?seconds=3")
+		attest.Ok(t, err)
+		defer res.Body.Close()
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+	})
+
+	t.Run("static_file_server", func(t *testing.T) {
+		t.Parallel()
+
+		url := "https://localhost:65081/staticAssets/hello.css"
+		{
+			c := &http.Client{}
+			req, err := http.NewRequest(http.MethodGet, url, nil)
+			attest.Ok(t, err)
+			res, err := c.Do(req)
+			attest.Ok(t, err)
+			defer res.Body.Close()
+			attest.Equal(t, res.StatusCode, http.StatusUnauthorized)
+		}
+		{
+			c := &http.Client{}
+			req, err := http.NewRequest(http.MethodGet, url, nil)
+			attest.Ok(t, err)
+			req.SetBasicAuth("user", "some-long-passwd")
+
+			res, err := c.Do(req)
 			attest.Ok(t, err)
 			defer res.Body.Close()
 			attest.Equal(t, res.StatusCode, http.StatusOK)
