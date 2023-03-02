@@ -8,7 +8,7 @@ import (
 )
 
 // This tests depend on the functionality in the /example folder.
-// go:build integration
+// go:build integration // TODO:
 func TestIntegration(t *testing.T) {
 	t.Parallel()
 
