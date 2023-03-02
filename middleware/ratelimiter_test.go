@@ -175,3 +175,32 @@ func TestRl(t *testing.T) {
 		}
 	})
 }
+
+func TestUber(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		l := newMutexBased(100)
+		fmt.Println("\t l: ", l)
+
+		{
+			sendRate := 200 // 200 requests/second
+			l := newMutexBased(sendRate)
+
+			msgsDelivered := []int{}
+			start := time.Now().UTC()
+			for i := 0; i < int(sendRate*4); i++ {
+				l.Take()
+				msgsDelivered = append(msgsDelivered, 1)
+			}
+			timeTakenToDeliver := time.Now().UTC().Sub(start)
+			totalMsgsDelivered := len(msgsDelivered)
+			effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
+
+			fmt.Println("\t effectiveMessageRate: ", effectiveMessageRate)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
+		}
+	})
+}
