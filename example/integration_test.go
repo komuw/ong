@@ -16,11 +16,10 @@ import (
 
 // This tests depend on the functionality in the /example folder.
 func TestIntegration(t *testing.T) {
-	t.Parallel()
+	// This tests should not run in parallel so as not to affect each other.
+	// t.Parallel()
 
 	t.Run("https_redirection", func(t *testing.T) {
-		t.Parallel()
-
 		{
 			c := &http.Client{
 				CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -43,8 +42,6 @@ func TestIntegration(t *testing.T) {
 	})
 
 	t.Run("pprof", func(t *testing.T) {
-		t.Parallel()
-
 		c := &http.Client{}
 		res, err := c.Get("http://127.0.0.1:65060/debug/pprof/profile?seconds=3")
 		attest.Ok(t, err)
@@ -53,8 +50,6 @@ func TestIntegration(t *testing.T) {
 	})
 
 	t.Run("static_file_server", func(t *testing.T) {
-		t.Parallel()
-
 		url := "https://localhost:65081/staticAssets/hello.css"
 		{
 			c := &http.Client{}
@@ -79,8 +74,6 @@ func TestIntegration(t *testing.T) {
 	})
 
 	t.Run("check_age", func(t *testing.T) {
-		t.Parallel()
-
 		c := &http.Client{}
 		res, err := c.Get("https://localhost:65081/check/67")
 		attest.Ok(t, err)
@@ -89,8 +82,6 @@ func TestIntegration(t *testing.T) {
 	})
 
 	t.Run("login", func(t *testing.T) {
-		t.Parallel()
-
 		{
 			c := &http.Client{}
 			res, err := c.Get("https://localhost:65081/login")
@@ -109,8 +100,6 @@ func TestIntegration(t *testing.T) {
 	})
 
 	t.Run("panic", func(t *testing.T) {
-		t.Parallel()
-
 		c := &http.Client{}
 		res, err := c.Get("https://localhost:65081/panic")
 		attest.Ok(t, err)
@@ -119,8 +108,6 @@ func TestIntegration(t *testing.T) {
 	})
 
 	t.Run("rate_limit_test", func(t *testing.T) {
-		t.Parallel()
-
 		rate := vegeta.Rate{
 			// this rate of 90/sec is less than the rateLimit used by ong of 100/sec
 			// https://github.com/komuw/ong/blob/v0.0.42/middleware/ratelimiter.go#L25
