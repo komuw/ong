@@ -2,12 +2,14 @@ package main_test
 
 import (
 	"fmt"
+	"testing"
 	"time"
 
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-func main() {
+func TestRl(t *testing.T) {
+	t.Parallel()
 	rate := vegeta.Rate{Freq: 100, Per: time.Second}
 	duration := 4 * time.Second
 	targeter := vegeta.NewStaticTargeter(vegeta.Target{
