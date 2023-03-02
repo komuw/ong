@@ -101,4 +101,14 @@ func TestIntegration(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 		}
 	})
+
+	t.Run("panic", func(t *testing.T) {
+		t.Parallel()
+
+		c := &http.Client{}
+		res, err := c.Get("https://localhost:65081/panic")
+		attest.Ok(t, err)
+		defer res.Body.Close()
+		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
+	})
 }
