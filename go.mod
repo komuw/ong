@@ -3,7 +3,6 @@ module github.com/komuw/ong
 go 1.20
 
 require (
-	github.com/tsenart/vegeta/v12 v12.8.4
 	golang.org/x/crypto v0.6.0
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
 	golang.org/x/net v0.7.0
@@ -30,6 +29,7 @@ require (
 	github.com/rs/zerolog v1.29.0 // test
 	github.com/sirupsen/logrus v1.9.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
+	github.com/tsenart/vegeta/v12 v12.8.4 // test
 	go.uber.org/goleak v1.2.1 // test
 	go.uber.org/zap v1.24.0 // test
 )
