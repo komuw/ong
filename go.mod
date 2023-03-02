@@ -11,8 +11,6 @@ require (
 
 require (
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/influxdata/tdigest v0.0.0-20180711151920-a7d76c6f093a // indirect
-	github.com/mailru/easyjson v0.7.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
@@ -29,7 +27,6 @@ require (
 	github.com/rs/zerolog v1.29.0 // test
 	github.com/sirupsen/logrus v1.9.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
-	github.com/tsenart/vegeta/v12 v12.8.4 // test
 	go.uber.org/goleak v1.2.1 // test
 	go.uber.org/zap v1.24.0 // test
 )
