@@ -173,34 +173,3 @@ func TestRl(t *testing.T) {
 		}
 	})
 }
-
-// func TestTodo(t *testing.T) {
-// 	t.Parallel()
-
-// 	t.Run("todo", func(t *testing.T) {
-// 		t.Parallel()
-
-// 		{
-// 			sendRate := 100.0 // 100 requests/second
-// 			l := newTb(sendRate)
-
-// 			msgsDelivered := 0
-// 			start := time.Now().UTC()
-// 			for i := 0; i < int(sendRate*9); i++ {
-// 				allowed := l.allow()
-// 				_ = allowed
-// 				// if allowed {
-// 				// fmt.Println("\t l.allow(): ", allowed)
-// 				msgsDelivered = msgsDelivered + 1
-// 				// time.Sleep(1 * time.Second)
-// 				// }
-// 			}
-// 			timeTakenToDeliver := time.Now().UTC().Sub(start)
-// 			// totalMsgsDelivered := len(msgsDelivered)
-// 			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
-
-// 			fmt.Println("\t old.effectiveMessageRate: ", effectiveMessageRate, msgsDelivered)
-// 			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
-// 		}
-// 	})
-// }
