@@ -50,8 +50,10 @@ func NewApp(d db, l *slog.Logger) app {
 func getJa3(ctx context.Context) string {
 	if ctx != nil {
 		if vCtx := ctx.Value(server.FingerPrintCtxKey); vCtx != nil {
-			if s, ok := vCtx.(string); ok {
-				return s
+			if s, ok := vCtx.(*server.Fingerprint); ok {
+				if ja3 := s.Val.Load(); ja3 != nil {
+					return *ja3
+				}
 			}
 		}
 	}
@@ -77,7 +79,11 @@ func (a app) health(secretKey string) http.HandlerFunc {
 			serverStart = time.Now().UTC()
 		})
 
-		fmt.Println("\n\t getJa3: ", getJa3(r.Context()), "\n.")
+		ja3Hash := getJa3(r.Context())
+		fmt.Println("\n\t getJa3: ", ja3Hash, "\n.")
+		if ja3Hash == "" {
+			panic("bad ja3Hash")
+		}
 
 		encryptedSrvID := enc.EncryptEncode(serverID)
 

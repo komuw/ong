@@ -211,7 +211,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 			if conn, ok := c.(*tls.Conn).NetConn().(*komuConn); ok {
 				if conn.fingerprint.Load() == nil {
-					conn.fingerprint.CompareAndSwap(nil, &fingerprint{})
+					conn.fingerprint.CompareAndSwap(nil, &Fingerprint{})
 				}
 				return context.WithValue(ctx, FingerPrintCtxKey, conn.fingerprint.Load())
 			}
@@ -401,13 +401,13 @@ func (l *komuListener) Addr() net.Addr {
 	return l.inner.Addr()
 }
 
-type fingerprint struct {
-	hex atomic.Pointer[string]
+type Fingerprint struct {
+	Val atomic.Pointer[string]
 }
 
 type komuConn struct {
 	net.Conn
-	fingerprint atomic.Pointer[fingerprint]
+	fingerprint atomic.Pointer[Fingerprint]
 }
 
 var (

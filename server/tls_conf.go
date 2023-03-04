@@ -90,7 +90,7 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 					fpHex := getFingerprint(info)
 
 					if conn, ok := info.Conn.(*komuConn); ok {
-						conn.fingerprint.Load().hex.Store(&fpHex)
+						conn.fingerprint.Load().Val.Store(&fpHex)
 					}
 				}
 
