@@ -4,12 +4,14 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -206,6 +208,16 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		IdleTimeout:       o.idleTimeout,
 		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
+		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+			if conn, ok := c.(*tls.Conn).NetConn().(*komuConn); ok {
+				if conn.fingerprint.Load() == nil {
+					conn.fingerprint.CompareAndSwap(nil, &fingerprint{})
+				}
+				return context.WithValue(ctx, FingerPrintCtxKey, conn.fingerprint.Load())
+			}
+
+			return ctx
+		},
 	}
 
 	drainDur := drainDuration(o)
@@ -298,6 +310,9 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 		if err != nil {
 			return err
 		}
+
+		l = &komuListener{inner: l}
+
 		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
 			Printf("https server listening at %s", o.serverAddress)
 		if errS := srv.ServeTLS(
@@ -364,3 +379,44 @@ func listenerConfig() *net.ListenConfig {
 		},
 	}
 }
+
+// ///////////////////////////////////////////////////
+type komuListener struct {
+	inner net.Listener
+}
+
+func (l *komuListener) Accept() (net.Conn, error) {
+	c, err := l.inner.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return &komuConn{Conn: c}, nil
+}
+
+func (l *komuListener) Close() error {
+	return l.inner.Close()
+}
+
+func (l *komuListener) Addr() net.Addr {
+	return l.inner.Addr()
+}
+
+type fingerprint struct {
+	hex atomic.Pointer[string]
+}
+
+type komuConn struct {
+	net.Conn
+	fingerprint atomic.Pointer[fingerprint]
+}
+
+var (
+	_ net.Listener = &komuListener{}
+	_ net.Conn     = &komuConn{}
+)
+
+type fingerPrintKeyType string
+
+const (
+	FingerPrintCtxKey = fingerPrintKeyType("fingerPrintKeyType")
+)

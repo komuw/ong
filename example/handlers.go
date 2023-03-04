@@ -21,6 +21,7 @@ import (
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
+	"github.com/komuw/ong/server"
 	"github.com/komuw/ong/sess"
 	"github.com/komuw/ong/xcontext"
 	"golang.org/x/exp/slog"
@@ -46,6 +47,18 @@ func NewApp(d db, l *slog.Logger) app {
 	}
 }
 
+func getJa3(ctx context.Context) string {
+	if ctx != nil {
+		if vCtx := ctx.Value(server.FingerPrintCtxKey); vCtx != nil {
+			if s, ok := vCtx.(string); ok {
+				return s
+			}
+		}
+	}
+
+	return "<EMPTY>"
+}
+
 // health handler showcases the use of:
 // - encryption/decryption.
 // - random id.
@@ -63,6 +76,8 @@ func (a app) health(secretKey string) http.HandlerFunc {
 		once.Do(func() {
 			serverStart = time.Now().UTC()
 		})
+
+		fmt.Println("\n\t getJa3: ", getJa3(r.Context()), "\n.")
 
 		encryptedSrvID := enc.EncryptEncode(serverID)
 

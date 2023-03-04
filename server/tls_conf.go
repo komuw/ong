@@ -80,6 +80,20 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
 				//
+
+				{
+					getFingerprint := func(info *tls.ClientHelloInfo) string {
+						// find ja3 hash
+						return "KomuJa3FingerPrint"
+					}
+
+					fpHex := getFingerprint(info)
+
+					if conn, ok := info.Conn.(*komuConn); ok {
+						conn.fingerprint.Load().hex.Store(&fpHex)
+					}
+				}
+
 				return &c, nil
 			},
 		}
