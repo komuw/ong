@@ -22,6 +22,7 @@ import (
 //   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 //   (e) https://github.com/bpowers/go-fingerprint-example whose license(ISC License) can be found here:                       https://github.com/bpowers/go-fingerprint-example/blob/d411f76d221249bd19085eb4baeff6f5c45b24c9/LICENSE
+//   (f) https://github.com/sleeyax/ja3rp whose license(MIT) can be found here:                                                https://github.com/sleeyax/ja3rp/blob/v0.0.1/LICENSE
 //
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
