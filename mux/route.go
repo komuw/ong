@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Most of the code here is insipired by(or taken from):
+// Most of the code here is inspired by(or taken from):
 //   (a) https://github.com/matryer/way whose license(MIT) can be found here: https://github.com/matryer/way/blob/9632d0c407b008073d19d0c4da1e0fc3e9477508/LICENSE
 
 // muxContextKey is the context key type for storing path parameters in context.Context.

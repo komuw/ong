@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Most of the code here is insipired by(or taken from):
+// Most of the code here is inspired by(or taken from):
 //   (a) https://github.com/golang/pkgsite whose license(BSD 3-Clause "New") can be found here: https://github.com/golang/pkgsite/blob/24f94ffc546bde6aae0552efa6a940041d9d28e1/LICENSE
 //
 
