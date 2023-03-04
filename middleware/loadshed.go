@@ -10,7 +10,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// Most of the code here is insipired by:
+// Most of the code here is inspired by:
 //   (a) https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/
 //   (b) https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/
 

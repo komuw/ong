@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
-// Most of the code here is insipired by(or taken from):
+// Most of the code here is inspired by(or taken from):
 //   (a) https://github.com/elithrar/simple-scrypt whose license(MIT) can be found here: https://github.com/elithrar/simple-scrypt/blob/v1.3.0/LICENSE
 
 const (

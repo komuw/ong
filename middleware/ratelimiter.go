@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Most of the code here is insipired by(or taken from):
+// Most of the code here is inspired by(or taken from):
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
 
 /*

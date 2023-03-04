@@ -6,7 +6,7 @@ import (
 	"github.com/komuw/ong/internal/clientip"
 )
 
-// Most of the code here is insipired by(or taken from):
+// Most of the code here is inspired by(or taken from):
 //
 //	(a) https://github.com/realclientip/realclientip-go whose license(BSD Zero Clause License) can be found here: https://github.com/realclientip/realclientip-go/blob/v1.0.0/LICENSE
 //
