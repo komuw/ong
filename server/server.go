@@ -209,18 +209,22 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
-			if netConn, ok := c.(*tls.Conn); ok {
-				if conn, ok := netConn.NetConn().(*komuConn); ok {
-					finger := conn.fingerprint.Load()
-					if finger == nil {
-						finger = &Fingerprint{}
-						conn.fingerprint.CompareAndSwap(nil, finger)
-					}
-					return context.WithValue(ctx, FingerPrintCtxKey, finger)
-				}
+			netConn, ok := c.(*tls.Conn)
+			if !ok {
+				return ctx
 			}
 
-			return ctx
+			conn, ok := netConn.NetConn().(*komuConn)
+			if !ok {
+				return ctx
+			}
+
+			finger := conn.fingerprint.Load()
+			if finger == nil {
+				finger = &Fingerprint{}
+				conn.fingerprint.CompareAndSwap(nil, finger)
+			}
+			return context.WithValue(ctx, FingerPrintCtxKey, finger)
 		},
 	}
 
