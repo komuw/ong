@@ -209,11 +209,13 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
-			if conn, ok := c.(*tls.Conn).NetConn().(*komuConn); ok {
-				if conn.fingerprint.Load() == nil {
-					conn.fingerprint.CompareAndSwap(nil, &Fingerprint{})
+			if netConn, ok := c.(*tls.Conn); ok {
+				if conn, ok := netConn.NetConn().(*komuConn); ok {
+					if conn.fingerprint.Load() == nil {
+						conn.fingerprint.CompareAndSwap(nil, &Fingerprint{})
+					}
+					return context.WithValue(ctx, FingerPrintCtxKey, conn.fingerprint.Load())
 				}
-				return context.WithValue(ctx, FingerPrintCtxKey, conn.fingerprint.Load())
 			}
 
 			return ctx
