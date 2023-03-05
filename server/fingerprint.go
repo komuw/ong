@@ -14,6 +14,7 @@ var (
 	_ net.Conn     = &fingerConn{}
 )
 
+// fingerListener is a [net.Listener] that enables collection of a TLS fingerprint.
 type fingerListener struct {
 	net.Listener
 }
@@ -30,6 +31,7 @@ type Fingerprint struct {
 	Val atomic.Pointer[string]
 }
 
+// fingerConn is a [net.Conn] that enables collection of a TLS fingerprint.
 type fingerConn struct {
 	net.Conn
 	fingerprint atomic.Pointer[Fingerprint]
