@@ -213,7 +213,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 				return ctx
 			}
 
-			conn, ok := tConn.NetConn().(*komuConn)
+			conn, ok := tConn.NetConn().(*fingerConn)
 			if !ok {
 				return ctx
 			}

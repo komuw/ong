@@ -11,7 +11,7 @@ const FingerPrintCtxKey = fingerPrintKeyType("fingerPrintKeyType")
 
 var (
 	_ net.Listener = &fingerListener{}
-	_ net.Conn     = &komuConn{}
+	_ net.Conn     = &fingerConn{}
 )
 
 type fingerListener struct {
@@ -23,14 +23,14 @@ func (l *fingerListener) Accept() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &komuConn{Conn: c}, nil
+	return &fingerConn{Conn: c}, nil
 }
 
 type Fingerprint struct {
 	Val atomic.Pointer[string]
 }
 
-type komuConn struct {
+type fingerConn struct {
 	net.Conn
 	fingerprint atomic.Pointer[Fingerprint]
 }

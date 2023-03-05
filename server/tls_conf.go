@@ -145,7 +145,7 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 						return hex.EncodeToString(hasher.Sum(nil))
 					}
 
-					if conn, ok := info.Conn.(*komuConn); ok {
+					if conn, ok := info.Conn.(*fingerConn); ok {
 						jHash := getFingerprint(info)
 						conn.fingerprint.Load().Val.Store(&jHash)
 					}
