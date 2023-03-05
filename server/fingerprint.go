@@ -13,6 +13,7 @@ import (
 // Most of the code here is inspired(or taken from) by:
 //   (a) https://github.com/bpowers/go-fingerprint-example whose license(ISC License) can be found here: https://github.com/bpowers/go-fingerprint-example/blob/d411f76d221249bd19085eb4baeff6f5c45b24c9/LICENSE
 //   (b) https://github.com/sleeyax/ja3rp whose license(MIT) can be found here:                          https://github.com/sleeyax/ja3rp/blob/v0.0.1/LICENSE
+//   (c) https://github.com/lwthiker/ts1 whose license(MIT) can be found here:                           https://github.com/lwthiker/ts1/blob/v0.1.6/LICENSE
 //
 
 type fingerPrintKeyType string
