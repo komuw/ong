@@ -211,10 +211,12 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 			if netConn, ok := c.(*tls.Conn); ok {
 				if conn, ok := netConn.NetConn().(*komuConn); ok {
-					if conn.fingerprint.Load() == nil {
-						conn.fingerprint.CompareAndSwap(nil, &Fingerprint{})
+					finger := conn.fingerprint.Load()
+					if finger == nil {
+						finger = &Fingerprint{}
+						conn.fingerprint.CompareAndSwap(nil, finger)
 					}
-					return context.WithValue(ctx, FingerPrintCtxKey, conn.fingerprint.Load())
+					return context.WithValue(ctx, FingerPrintCtxKey, finger)
 				}
 			}
 
