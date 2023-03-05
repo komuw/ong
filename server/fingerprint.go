@@ -5,25 +5,25 @@ import (
 	"sync/atomic"
 )
 
-// ///////////////////////////////////////////////////
-type komuListener struct {
-	inner net.Listener
+type fingerPrintKeyType string
+
+const FingerPrintCtxKey = fingerPrintKeyType("fingerPrintKeyType")
+
+var (
+	_ net.Listener = &fingerListener{}
+	_ net.Conn     = &komuConn{}
+)
+
+type fingerListener struct {
+	net.Listener
 }
 
-func (l *komuListener) Accept() (net.Conn, error) {
-	c, err := l.inner.Accept()
+func (l *fingerListener) Accept() (net.Conn, error) {
+	c, err := l.Listener.Accept()
 	if err != nil {
 		return nil, err
 	}
 	return &komuConn{Conn: c}, nil
-}
-
-func (l *komuListener) Close() error {
-	return l.inner.Close()
-}
-
-func (l *komuListener) Addr() net.Addr {
-	return l.inner.Addr()
 }
 
 type Fingerprint struct {
@@ -34,14 +34,3 @@ type komuConn struct {
 	net.Conn
 	fingerprint atomic.Pointer[Fingerprint]
 }
-
-var (
-	_ net.Listener = &komuListener{}
-	_ net.Conn     = &komuConn{}
-)
-
-type fingerPrintKeyType string
-
-const (
-	FingerPrintCtxKey = fingerPrintKeyType("fingerPrintKeyType")
-)

@@ -313,15 +313,14 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 	{
 		// HTTPS(tls) LISTERNER:
 		cfg := listenerConfig()
-		l, err := cfg.Listen(ctx, o.network, o.serverAddress)
+		cl, err := cfg.Listen(ctx, o.network, o.serverAddress)
 		if err != nil {
 			return err
 		}
 
-		l = &komuListener{inner: l}
+		l := &fingerListener{cl}
 
-		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
-			Printf("https server listening at %s", o.serverAddress)
+		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.serverAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`
