@@ -14,6 +14,9 @@ import (
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
+// TODO: add benchmark of how long it takes to send a request end-to-end
+//       in this branch versus main.
+
 // This tests depend on the functionality in the /example folder.
 func TestIntegration(t *testing.T) {
 	// This tests should not run in parallel so as not to affect each other.
