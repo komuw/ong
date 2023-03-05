@@ -209,12 +209,12 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
-			netConn, ok := c.(*tls.Conn)
+			tConn, ok := c.(*tls.Conn)
 			if !ok {
 				return ctx
 			}
 
-			conn, ok := netConn.NetConn().(*komuConn)
+			conn, ok := tConn.NetConn().(*komuConn)
 			if !ok {
 				return ctx
 			}
