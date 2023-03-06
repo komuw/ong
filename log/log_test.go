@@ -307,7 +307,7 @@ func TestLogger(t *testing.T) {
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "log/log_test.go:307")
+			attest.Subsequence(t, w.String(), "log/log_test.go:308")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})
