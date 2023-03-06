@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.44
+- Add support for TLS fingerprinting: https://github.com/komuw/ong/pull/244
+
 ## v0.0.43
 - Add precision to ratelimiting: https://github.com/komuw/ong/pull/239
 
