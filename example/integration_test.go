@@ -5,8 +5,11 @@ package main_test
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -145,4 +148,40 @@ func TestIntegration(t *testing.T) {
 			http.StatusText(http.StatusTooManyRequests),
 		)
 	})
+}
+
+func BenchmarkEndToEnd(b *testing.B) {
+	b.ReportAllocs()
+
+	for _, keepAlive := range [2]bool{true, false} {
+		b.Run(fmt.Sprintf("DisableKeepAlives: %v", keepAlive), func(b *testing.B) {
+			tr := &http.Transport{
+				// see: http.DefaultTransport
+				DisableKeepAlives: keepAlive,
+			}
+			c := &http.Client{Transport: tr}
+			url := "https://localhost:65081/health"
+			var count int32 = 1
+
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					// The loop body is executed b.N times total across all goroutines.
+					res, err := c.Get(url)
+					attest.Ok(b, err)
+
+					io.Copy(ioutil.Discard, res.Body)
+					res.Body.Close()
+
+					// We cannot assert that we got a `http 200`. This is because the requests may get rate limited.
+					// But this is okay since we are only interested in benchmarking the `ong/server`.
+					// Specifically, we want to see the effect of tls fingerprinting on requests throughput/latency.
+					//
+					// attest.Equal(b, res.StatusCode, http.StatusOK)
+					atomic.AddInt32(&count, 1)
+				}
+			})
+			b.ReportMetric(float64(count), "req/s")
+		})
+	}
 }
