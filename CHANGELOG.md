@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 ## v0.0.44
 - Organise imports: https://github.com/komuw/ong/pull/245
+- Create an internal/octx that houses context keys used by multiple ong packages: https://github.com/komuw/ong/pull/246
 
 ## v0.0.43
 - Add precision to ratelimiting: https://github.com/komuw/ong/pull/239
