@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/komuw/ong/cookie"
+	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
 )
 
-const logIDKey = string(log.CtxKey)
+const logIDKey = string(octx.LogCtxKey)
 
 // trace is a middleware that adds logID to request and response.
 func trace(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
@@ -21,7 +22,7 @@ func trace(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
 		ctx = context.WithValue(
 			ctx,
 			// using this custom key is important, instead of using `logIDKey`
-			log.CtxKey,
+			octx.LogCtxKey,
 			logID,
 		)
 		r = r.WithContext(ctx)
