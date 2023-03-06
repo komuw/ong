@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/id"
-	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/internal/octx"
 
 	"github.com/akshayjshah/attest"
 )
@@ -261,7 +261,7 @@ func TestGetLogId(t *testing.T) {
 
 		{
 			expected := "expected-two"
-			ctx := context.WithValue(context.Background(), log.CtxKey, expected)
+			ctx := context.WithValue(context.Background(), octx.LogCtxKey, expected)
 			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 			req = req.WithContext(ctx)
 			id := getLogId(req)
@@ -280,7 +280,7 @@ func TestGetLogId(t *testing.T) {
 			req.Header.Add(logIDKey, expected)
 
 			req = req.WithContext(
-				context.WithValue(context.Background(), log.CtxKey, "context-logID"),
+				context.WithValue(context.Background(), octx.LogCtxKey, "context-logID"),
 			)
 
 			id := getLogId(req)
