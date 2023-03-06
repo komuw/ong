@@ -6,10 +6,12 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -330,4 +332,65 @@ func TestServer(t *testing.T) {
 		}
 		wg.Wait()
 	})
+}
+
+func benchmarkFingerPrintHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, msg)
+	}
+}
+
+var result int //nolint:gochecknoglobals
+
+func BenchmarkFingerPrint(b *testing.B) {
+	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+
+	handler := benchmarkFingerPrintHandler("helloWorld")
+	go func() {
+		_, _ = createDevCertKey(l)
+		time.Sleep(1 * time.Second)
+		err := Run(handler, DevOpts(l), l)
+		attest.Ok(b, err)
+	}()
+
+	// await for the server to start.
+	time.Sleep(11 * time.Second)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for _, keepAlive := range [2]bool{true, false} {
+		b.Run(fmt.Sprintf("DisableKeepAlives: %v", keepAlive), func(b *testing.B) {
+			tr := &http.Transport{
+				// see: http.DefaultTransport
+				DisableKeepAlives: keepAlive,
+			}
+			c := &http.Client{Transport: tr}
+			url := "https://localhost:65081/"
+			var count int32 = 1
+			var r int
+
+			b.ResetTimer()
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					// The loop body is executed b.N times total across all goroutines.
+					res, err := c.Get(url)
+					attest.Ok(b, err)
+
+					io.Copy(ioutil.Discard, res.Body)
+					res.Body.Close()
+
+					// We want to see the effect of tls fingerprinting on requests throughput/latency.
+					//
+					attest.Equal(b, res.StatusCode, http.StatusOK)
+					atomic.AddInt32(&count, 1)
+					r = res.StatusCode
+				}
+			})
+			b.ReportMetric(float64(count), "req/s")
+			// always store the result to a package level variable
+			// so the compiler cannot eliminate the Benchmark itself.
+			result = r
+		})
+	}
 }
