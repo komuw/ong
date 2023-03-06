@@ -10,8 +10,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
 	ongErrors "github.com/komuw/ong/errors"
+	"github.com/komuw/ong/internal/octx"
+
+	"github.com/akshayjshah/attest"
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slog"
 )
@@ -279,7 +281,7 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), msg)
 
 		newId := "NEW-id-adh4e92427dajd"
-		ctx = context.WithValue(ctx, CtxKey, newId)
+		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
 		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
 		attest.Subsequence(t, w.String(), newId)
 	})
@@ -305,7 +307,7 @@ func TestLogger(t *testing.T) {
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "log/log_test.go:306")
+			attest.Subsequence(t, w.String(), "log/log_test.go:308")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})

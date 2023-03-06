@@ -15,10 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
+
+	"github.com/akshayjshah/attest"
 )
 
 func getSecretKey() string {

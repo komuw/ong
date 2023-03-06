@@ -9,9 +9,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/sess"
+
+	"github.com/akshayjshah/attest"
 )
 
 func bigMap() map[string]string {

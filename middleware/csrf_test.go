@@ -9,9 +9,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
+
+	"github.com/akshayjshah/attest"
 )
 
 func getSecretKey() string {
