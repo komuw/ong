@@ -10,9 +10,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
+
+	"github.com/akshayjshah/attest"
 	"go.uber.org/goleak"
 )
 
@@ -199,8 +200,8 @@ func TestMux(t *testing.T) {
 			rStr := fmt.Sprintf("%v", r)
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:25") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:31") // location where `thisIsAnitherMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:26") // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:32") // location where `thisIsAnitherMuxHandler` is declared.
 		}()
 
 		_ = New(

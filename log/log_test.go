@@ -10,8 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
 	ongErrors "github.com/komuw/ong/errors"
+
+	"github.com/akshayjshah/attest"
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slog"
 )
@@ -305,7 +306,7 @@ func TestLogger(t *testing.T) {
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "log/log_test.go:306")
+			attest.Subsequence(t, w.String(), "log/log_test.go:307")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})

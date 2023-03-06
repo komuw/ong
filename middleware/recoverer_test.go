@@ -14,9 +14,9 @@ import (
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
-	"golang.org/x/exp/slog"
 
 	"github.com/akshayjshah/attest"
+	"golang.org/x/exp/slog"
 )
 
 func handlerThatPanics(msg string, shouldPanic bool, err error) http.HandlerFunc {
