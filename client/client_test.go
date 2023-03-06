@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
+
+	"github.com/akshayjshah/attest"
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slog"
 )

@@ -11,9 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/log"
+
+	"github.com/akshayjshah/attest"
 	"golang.org/x/exp/slog"
 )
 

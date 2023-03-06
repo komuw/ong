@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
+
+	"github.com/akshayjshah/attest"
 )
 
 func TestPprofServer(t *testing.T) {

@@ -6,8 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/akshayjshah/attest"
 	"github.com/komuw/ong/log"
+
+	"github.com/akshayjshah/attest"
 )
 
 func TestCreateDevCertKey(t *testing.T) {

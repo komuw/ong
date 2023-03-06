@@ -8,10 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
-
-	"github.com/komuw/ong/cookie"
 )
 
 // Most of the code here is inspired by(or taken from):
