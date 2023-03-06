@@ -232,8 +232,6 @@ jobs:
           ls -lsha coverage/
 
           go test -timeout 4m -v -race --tags=integration github.com/komuw/ong/example
-          echo ''
-          go test -timeout 7m -v -count=3 -run=XXXX -bench=. --tags=integration github.com/komuw/ong/example
 
           kill -15 $(pidof ongExample)
           ls -lsha coverage/
