@@ -11,14 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
 
 	"golang.org/x/exp/slog"
 )
 
 const (
-	logIDHeader = string(octx.LogCtxKey)
+	logIDHeader = string(log.CtxKey)
 	errPrefix   = "ong/client:"
 )
 

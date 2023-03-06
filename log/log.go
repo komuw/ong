@@ -9,12 +9,16 @@ import (
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
-	"github.com/komuw/ong/internal/octx"
 
 	"golang.org/x/exp/slog"
 )
 
+type logContextKeyType string
+
 const (
+	// CtxKey is the name of the context key used to store the logID.
+	CtxKey = logContextKeyType("Ong-logID")
+
 	// ImmediateLevel is the severity which if a log event has, it is logged immediately without buffering.
 	LevelImmediate = slog.Level(-6142973)
 
@@ -32,7 +36,7 @@ func GetId(ctx context.Context) string {
 // It returns the logID and true if the id came from ctx else false
 func getId(ctx context.Context) (string, bool) {
 	if ctx != nil {
-		if vCtx := ctx.Value(octx.LogCtxKey); vCtx != nil {
+		if vCtx := ctx.Value(CtxKey); vCtx != nil {
 			if s, ok := vCtx.(string); ok {
 				return s, true
 			}
@@ -140,7 +144,7 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
 	}
-	ctx = context.WithValue(ctx, octx.LogCtxKey, id)
+	ctx = context.WithValue(ctx, CtxKey, id)
 
 	newAttrs := []slog.Attr{
 		{Key: "logID", Value: slog.StringValue(id)},

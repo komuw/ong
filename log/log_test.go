@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	ongErrors "github.com/komuw/ong/errors"
-	"github.com/komuw/ong/internal/octx"
 
 	"github.com/akshayjshah/attest"
 	"go.uber.org/goleak"
@@ -281,7 +280,7 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), msg)
 
 		newId := "NEW-id-adh4e92427dajd"
-		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
+		ctx = context.WithValue(ctx, CtxKey, newId)
 		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
 		attest.Subsequence(t, w.String(), newId)
 	})
