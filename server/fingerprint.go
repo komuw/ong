@@ -16,10 +16,6 @@ import (
 //   (c) https://github.com/lwthiker/ts1 whose license(MIT) can be found here:                           https://github.com/lwthiker/ts1/blob/v0.1.6/LICENSE
 //
 
-type fingerPrintKeyType string
-
-const FingerPrintCtxKey = fingerPrintKeyType("fingerPrintKeyType")
-
 var (
 	_ net.Listener = &fingerListener{}
 	_ net.Conn     = &fingerConn{}

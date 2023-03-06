@@ -21,7 +21,6 @@ import (
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
-	"github.com/komuw/ong/server"
 	"github.com/komuw/ong/sess"
 	"github.com/komuw/ong/xcontext"
 
@@ -46,20 +45,6 @@ func NewApp(d db, l *slog.Logger) app {
 		db: d,
 		l:  l,
 	}
-}
-
-func getJa3(ctx context.Context) string {
-	if ctx != nil {
-		if vCtx := ctx.Value(server.FingerPrintCtxKey); vCtx != nil {
-			if s, ok := vCtx.(*server.Fingerprint); ok {
-				if ja3 := s.Val.Load(); ja3 != nil {
-					return *ja3
-				}
-			}
-		}
-	}
-
-	return "<EMPTY>"
 }
 
 // health handler showcases the use of:

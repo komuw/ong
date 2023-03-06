@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/automax"
+	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
 
 	"golang.org/x/exp/slog"
@@ -223,7 +224,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 				finger = &Fingerprint{}
 				conn.fingerprint.CompareAndSwap(nil, finger)
 			}
-			return context.WithValue(ctx, FingerPrintCtxKey, finger)
+			return context.WithValue(ctx, octx.FingerPrintCtxKey, finger)
 		},
 	}
 

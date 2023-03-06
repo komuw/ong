@@ -22,6 +22,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/komuw/ong/internal/octx"
+	"github.com/komuw/ong/server"
+
 	"golang.org/x/exp/slog"
 )
 
@@ -350,4 +353,21 @@ func deleteH(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		wrappedHandler(w, r)
 	}
+}
+
+// TODO: add docs.
+func ClientFingerPrint(r *http.Request) string {
+	ctx := r.Context()
+
+	if ctx != nil {
+		if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
+			if s, ok := vCtx.(*server.Fingerprint); ok {
+				if hash := s.Val.Load(); hash != nil {
+					return *hash
+				}
+			}
+		}
+	}
+
+	return ""
 }
