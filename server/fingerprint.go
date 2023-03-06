@@ -49,6 +49,7 @@ type fingerConn struct {
 }
 
 // TODO: docs.
+// setFingerprint adds a TLS fingerprint to the connection.
 func setFingerprint(info *tls.ClientHelloInfo) {
 	conn, ok := info.Conn.(*fingerConn)
 	if !ok {
