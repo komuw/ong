@@ -65,10 +65,10 @@ func (a app) health(secretKey string) http.HandlerFunc {
 			serverStart = time.Now().UTC()
 		})
 
-		ja3Hash := getJa3(r.Context())
-		fmt.Println("\n\t getJa3: ", ja3Hash, "\n.")
-		if ja3Hash == "" {
-			panic("bad ja3Hash")
+		clientFingerprint := middleware.ClientFingerPrint(r)
+		fmt.Println("\n\t clientFingerprint: ", clientFingerprint, "\n.")
+		if clientFingerprint == "" {
+			panic("bad clientFingerprint")
 		}
 
 		encryptedSrvID := enc.EncryptEncode(serverID)
