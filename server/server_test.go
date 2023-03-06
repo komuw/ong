@@ -364,6 +364,12 @@ func BenchmarkFingerPrint(b *testing.B) {
 			tr := &http.Transport{
 				// see: http.DefaultTransport
 				DisableKeepAlives: keepAlive,
+
+				// since we are using self-signed certificates, we need to skip verification.
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				// using a non-zero `TLSClientConfig`(as above) disables http2.
+				// so we have to force it.
+				ForceAttemptHTTP2: true,
 			}
 			c := &http.Client{Transport: tr}
 			url := "https://localhost:65081/"
