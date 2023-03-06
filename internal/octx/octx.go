@@ -1,3 +1,4 @@
+// Package octx houses context keys used by multiple ong packages.
 package octx
 
 type logContextKeyType string
