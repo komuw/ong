@@ -17,6 +17,7 @@ import (
 	"github.com/komuw/ong/automax"
 	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
 
 	"golang.org/x/exp/slog"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -221,7 +222,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 
 			finger := conn.fingerprint.Load()
 			if finger == nil {
-				finger = &Fingerprint{}
+				finger = &middleware.Fingerprint{}
 				conn.fingerprint.CompareAndSwap(nil, finger)
 			}
 			return context.WithValue(ctx, octx.FingerPrintCtxKey, finger)

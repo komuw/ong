@@ -3,12 +3,15 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/komuw/ong/internal/octx"
-	"github.com/komuw/ong/server"
 )
 
-const fingerPrintKey = string(octx.FingerPrintCtxKey)
+// TODO: docs.
+type Fingerprint struct {
+	Val atomic.Pointer[string]
+}
 
 // TODO: docs
 func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
@@ -17,7 +20,7 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		fHash := ""
 
 		if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
-			if s, ok := vCtx.(*server.Fingerprint); ok {
+			if s, ok := vCtx.(*Fingerprint); ok {
 				if hash := s.Val.Load(); hash != nil {
 					fHash = *hash
 				}
@@ -26,7 +29,7 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		ctx = context.WithValue(
 			ctx,
-			fingerPrintKey,
+			octx.FingerPrintCtxKey,
 			fHash,
 		)
 		r = r.WithContext(ctx)
@@ -39,7 +42,7 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 func ClientFingerPrint(r *http.Request) string {
 	ctx := r.Context()
 
-	if vCtx := ctx.Value(fingerPrintKey); vCtx != nil {
+	if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {
 			return s
 		}

@@ -8,6 +8,8 @@ import (
 	"net"
 	"strings"
 	"sync/atomic"
+
+	"github.com/komuw/ong/middleware"
 )
 
 // Most of the code here is inspired(or taken from) by:
@@ -34,14 +36,10 @@ func (l *fingerListener) Accept() (net.Conn, error) {
 	return &fingerConn{Conn: c}, nil
 }
 
-type Fingerprint struct {
-	Val atomic.Pointer[string]
-}
-
 // fingerConn is a [net.Conn] that enables collection of a TLS fingerprint.
 type fingerConn struct {
 	net.Conn
-	fingerprint atomic.Pointer[Fingerprint]
+	fingerprint atomic.Pointer[middleware.Fingerprint]
 }
 
 // TODO: docs.
