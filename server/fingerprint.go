@@ -70,7 +70,6 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 			ver = v
 		}
 	}
-	// TODO: use strings builder.
 	s += fmt.Sprintf("%d,", ver)
 
 	vals := []string{}
