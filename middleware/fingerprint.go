@@ -10,7 +10,7 @@ import (
 
 // TODO: docs.
 type Fingerprint struct {
-	Val atomic.Pointer[string]
+	Hash atomic.Pointer[string]
 }
 
 // TODO: docs
@@ -21,7 +21,7 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 		if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
 			if s, ok := vCtx.(*Fingerprint); ok {
-				if hash := s.Val.Load(); hash != nil {
+				if hash := s.Hash.Load(); hash != nil {
 					fHash = *hash
 				}
 			}

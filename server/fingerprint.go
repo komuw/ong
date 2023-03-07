@@ -106,7 +106,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 
 	hasher := md5.New()
 	hasher.Write([]byte(s))
-	jHash := hex.EncodeToString(hasher.Sum(nil))
+	hash := hex.EncodeToString(hasher.Sum(nil))
 
-	conn.fingerprint.Load().Val.Store(&jHash)
+	conn.fingerprint.Load().Hash.Store(&hash)
 }
