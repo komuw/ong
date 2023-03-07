@@ -63,9 +63,9 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 	s := ""
 	ver := uint16(0)
 	for _, v := range info.SupportedVersions {
-		// TODO: explain this.
-		// ja3 wants the version chosen, not the list of versions.
-		// see: https://sourcegraph.com/github.com/golang/go@go1.19.4/-/blob/src/crypto/tls/handshake_client.go?L62-71
+		// SupportedVersions lists the TLS versions supported by the client.
+		// For TLS versions less than 1.3, this is extrapolated from the max version advertised by the client
+		// see: https://github.com/golang/go/blob/go1.20.2/src/crypto/tls/common.go#L434-L438
 		if v > ver {
 			ver = v
 		}
