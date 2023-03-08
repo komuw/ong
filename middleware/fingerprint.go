@@ -36,7 +36,7 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 
 // ClientFingerPrint returns the [TLS fingerprint] of the client.
 // It is provided on a best-effort basis.
-// There are different formats of fingerprinting, this library does not subscribe to a particular format.
+// There are different formats/algorithms of fingerprinting, this library(by design) does not subscribe to a particular format or algorithm.
 //
 // [TLS fingerprint]: https://github.com/LeeBrotherston/tls-fingerprinting
 func ClientFingerPrint(r *http.Request) string {
