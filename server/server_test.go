@@ -351,10 +351,11 @@ func BenchmarkServer(b *testing.B) {
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	handler := benchmarkServerHandler("helloWorld")
+	port := math.MaxUint16 - uint16(7)
 	go func() {
-		_, _ = createDevCertKey(l)
+		certFile, keyFile := createDevCertKey(l)
 		time.Sleep(1 * time.Second)
-		err := Run(handler, DevOpts(l), l)
+		err := Run(handler, withOpts(port, certFile, keyFile, "", "localhost"), l)
 		attest.Ok(b, err)
 	}()
 
@@ -377,7 +378,7 @@ func BenchmarkServer(b *testing.B) {
 				ForceAttemptHTTP2: true,
 			}
 			c := &http.Client{Transport: tr}
-			url := "https://localhost:65081/"
+			url := fmt.Sprintf("https://localhost:%d", port)
 			var count int32 = 1
 			var r int
 
