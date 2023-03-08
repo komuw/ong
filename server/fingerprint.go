@@ -42,23 +42,87 @@ type fingerConn struct {
 	fingerprint atomic.Pointer[middleware.Fingerprint]
 }
 
-// TODO: docs.
-// setFingerprint adds a TLS fingerprint to the connection.
+// setFingerprint adds a TLS fingerprint to the connection[net.Conn]
 func setFingerprint(info *tls.ClientHelloInfo) {
 	conn, ok := info.Conn.(*fingerConn)
 	if !ok {
 		return
 	}
 
-	// SSLVersion,Cipher,SSLExtension,EllipticCurve,EllipticCurvePointFormat
+	// The algorithm used here is based mainly on ja3 hash.
+	// Basically;
+	//   md5(SSLVersion, Cipher, SSLExtension, EllipticCurve, EllipticCurvePointFormat)
+	//
+	// https://github.com/sleeyax/ja3rp/blob/v0.0.1/crypto/tls/common.go#L462
 
-	// TODO: check if this table is upto date and accurate.
+	// TODO: use const array.
 	greaseTable := map[uint16]bool{
-		0x0a0a: true, 0x1a1a: true, 0x2a2a: true, 0x3a3a: true,
-		0x4a4a: true, 0x5a5a: true, 0x6a6a: true, 0x7a7a: true,
-		0x8a8a: true, 0x9a9a: true, 0xaaaa: true, 0xbaba: true,
-		0xcaca: true, 0xdada: true, 0xeaea: true, 0xfafa: true,
+		// The GREASE protocol is way where tls clients(like google-chrome) can generate
+		// random TLS values(especially for TLS extensions and/or cipherSuites).
+		// The client then sends this, together with normal request, to servers.
+		// This is intended to keep servers honest and not to be too bound to the current TLS
+		// 'standard'; ie, they should be open to future extensions.
+		//
+		// https://www.rfc-editor.org/rfc/rfc8701.html
+
+		// (a) GREASE values reserved for cipher suites and ALPN:
+		0x0A: true,
+		0x1A: true,
+		0x2A: true,
+		0x3A: true,
+		0x4A: true,
+		0x5A: true,
+		0x6A: true,
+		0x7A: true,
+		0x8A: true,
+		0x9A: true,
+		0xAA: true,
+		0xBA: true,
+		0xCA: true,
+		0xDA: true,
+		0xEA: true,
+		0xFA: true,
+
+		// (b) GREASE values reserved for extensions, named groups, signature algorithms, and versions:
+		0x0A0A: true,
+		0x1A1A: true,
+		0x2A2A: true,
+		0x3A3A: true,
+		0x4A4A: true,
+		0x5A5A: true,
+		0x6A6A: true,
+		0x7A7A: true,
+		0x8A8A: true,
+		0x9A9A: true,
+		0xAAAA: true,
+		0xBABA: true,
+		0xCACA: true,
+		0xDADA: true,
+		0xEAEA: true,
+		0xFAFA: true,
+
+		// (c) GREASE values reserved for for PskKeyExchangeModes:
+		0x0B: true,
+		// 0x2A: true, // duplicate in the map.
+		0x49: true,
+		0x68: true,
+		0x87: true,
+		0xA6: true,
+		0xC5: true,
+		0xE4: true,
+
+		// see: https://www.rfc-editor.org/rfc/rfc8701.html#name-grease-values
 	}
+	// GREASE values may be sent in;
+	// (i)   supported_versions
+	// (ii)  cipher_suites
+	// (iii) extensions
+	// (iv)  supported_groups
+	// (v)   signature_algorithms/signature_algorithms_cert
+	// (vi)  psk_key_exchange_modes
+	// (vii) application_layer_protocol_negotiation
+	//
+	// see: https://www.rfc-editor.org/rfc/rfc8701.html#name-client-behavior
 
 	s := ""
 	ver := uint16(0)
@@ -66,6 +130,11 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 		// SupportedVersions lists the TLS versions supported by the client.
 		// For TLS versions less than 1.3, this is extrapolated from the max version advertised by the client
 		// see: https://github.com/golang/go/blob/go1.20.2/src/crypto/tls/common.go#L434-L438
+
+		if _, ok := greaseTable[v]; ok {
+			continue
+		}
+
 		if v > ver {
 			ver = v
 		}
@@ -74,12 +143,17 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 
 	vals := []string{}
 	for _, v := range info.CipherSuites {
+		if _, ok := greaseTable[v]; ok {
+			continue
+		}
+
 		vals = append(vals, fmt.Sprintf("%d", v))
 	}
 	s += fmt.Sprintf("%s,", strings.Join(vals, "-"))
 
 	// Go currently does not expose `tls.ClientHelloInfo.extensions`.
 	// This could be fixed if https://github.com/golang/go/issues/32936 is ever implemented.
+	// Tracked in: https://github.com/komuw/ong/issues/194
 	extensions := []uint16{}
 	vals = []string{}
 	for _, v := range extensions {

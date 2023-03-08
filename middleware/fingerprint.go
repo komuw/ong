@@ -13,7 +13,8 @@ type Fingerprint struct {
 	Hash atomic.Pointer[string]
 }
 
-// TODO: docs
+// fingerprint is a middleware that adds the client's TLS fingerprint to the request context.
+// The fingerprint can be fetched using [ClientFingerPrint]
 func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -38,7 +39,11 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: add docs.
+// ClientFingerPrint returns the [TLS fingerprint] of the client.
+// It is provided on a best-effort basis.
+// There are different formats of fingerprinting, this library does not subscribe to a particular format.
+//
+// [TLS fingerprint]: https://github.com/LeeBrotherston/tls-fingerprinting
 func ClientFingerPrint(r *http.Request) string {
 	ctx := r.Context()
 
