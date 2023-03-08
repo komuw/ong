@@ -178,7 +178,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 	for _, v := range info.SupportedPoints {
 		vals = append(vals, fmt.Sprintf("%d", v))
 	}
-	s += fmt.Sprintf("%s", strings.Join(vals, "-"))
+	s += strings.Join(vals, "-")
 
 	hasher := md5.New()
 	hasher.Write([]byte(s))

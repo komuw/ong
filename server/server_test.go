@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
@@ -397,7 +396,7 @@ func BenchmarkServer(b *testing.B) {
 				res, err := c.Get(url)
 				attest.Ok(b, err)
 
-				io.Copy(ioutil.Discard, res.Body)
+				io.Copy(io.Discard, res.Body)
 				res.Body.Close()
 
 				attest.Equal(b, res.StatusCode, http.StatusOK)
