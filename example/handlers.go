@@ -65,12 +65,6 @@ func (a app) health(secretKey string) http.HandlerFunc {
 			serverStart = time.Now().UTC()
 		})
 
-		clientFingerprint := middleware.ClientFingerPrint(r)
-		fmt.Println("\n\t clientFingerprint: ", clientFingerprint, "\n.")
-		if clientFingerprint == "" {
-			panic("bad clientFingerprint")
-		}
-
 		encryptedSrvID := enc.EncryptEncode(serverID)
 
 		res := fmt.Sprintf("serverBoot=%s, serverStart=%s, serverId=%s\n", serverBoot, serverStart, encryptedSrvID)
@@ -273,6 +267,7 @@ func (a app) login(secretKey string) http.HandlerFunc {
 
 // handleFileServer handler showcases the use of:
 // - middleware.ClientIP
+// - middleware.ClientFingerPrint
 // - logging
 func (a app) handleFileServer() http.HandlerFunc {
 	// Do NOT let `http.FileServer` be able to serve your root directory.
@@ -290,7 +285,7 @@ func (a app) handleFileServer() http.HandlerFunc {
 	realHandler := http.StripPrefix("/staticAssets/", fs).ServeHTTP
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqL := log.WithID(r.Context(), a.l)
-		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r))
+		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r), "clientFingerPrint", middleware.ClientFingerPrint(r))
 
 		slog.NewLogLogger(reqL.Handler(), log.LevelImmediate).
 			Println("this is now a Go standard library logger")
