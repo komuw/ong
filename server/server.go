@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/komuw/ong/automax"
+	"github.com/komuw/ong/internal/finger"
 	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/middleware"
 
 	"golang.org/x/exp/slog"
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -220,12 +220,12 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 				return ctx
 			}
 
-			finger := conn.fingerprint.Load()
-			if finger == nil {
-				finger = &middleware.Fingerprint{}
-				conn.fingerprint.CompareAndSwap(nil, finger)
+			fPrint := conn.fingerprint.Load()
+			if fPrint == nil {
+				fPrint = &finger.Print{}
+				conn.fingerprint.CompareAndSwap(nil, fPrint)
 			}
-			return context.WithValue(ctx, octx.FingerPrintCtxKey, finger)
+			return context.WithValue(ctx, octx.FingerPrintCtxKey, fPrint)
 		},
 	}
 

@@ -3,15 +3,10 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"sync/atomic"
 
+	"github.com/komuw/ong/internal/finger"
 	"github.com/komuw/ong/internal/octx"
 )
-
-// TODO: docs.
-type Fingerprint struct {
-	Hash atomic.Pointer[string]
-}
 
 // fingerprint is a middleware that adds the client's TLS fingerprint to the request context.
 // The fingerprint can be fetched using [ClientFingerPrint]
@@ -21,7 +16,7 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		fHash := ""
 
 		if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
-			if s, ok := vCtx.(*Fingerprint); ok {
+			if s, ok := vCtx.(*finger.Print); ok {
 				if hash := s.Hash.Load(); hash != nil {
 					fHash = *hash
 				}

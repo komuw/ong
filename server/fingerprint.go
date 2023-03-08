@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/komuw/ong/middleware"
+	"github.com/komuw/ong/internal/finger"
 )
 
 // Most of the code here is inspired(or taken from) by:
@@ -41,7 +41,7 @@ func (l *fingerListener) Accept() (net.Conn, error) {
 // fingerConn is a [net.Conn] that enables collection of a TLS fingerprint.
 type fingerConn struct {
 	net.Conn
-	fingerprint atomic.Pointer[middleware.Fingerprint]
+	fingerprint atomic.Pointer[finger.Print]
 }
 
 // setFingerprint adds a TLS fingerprint to the connection[net.Conn]
