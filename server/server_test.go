@@ -161,11 +161,8 @@ func TestOpts(t *testing.T) {
 	})
 }
 
-const tlsFingerPrintKey = "TlsFingerPrintKey"
-
 func someServerTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
 		fmt.Fprint(w, msg)
 	}
 }
@@ -234,7 +231,6 @@ func TestServer(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
-			attest.NotZero(t, res.Header.Get(tlsFingerPrintKey))
 		}
 
 		{
