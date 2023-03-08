@@ -396,7 +396,7 @@ func BenchmarkServer(b *testing.B) {
 				res, err := c.Get(url)
 				attest.Ok(b, err)
 
-				io.Copy(io.Discard, res.Body)
+				_, _ = io.Copy(io.Discard, res.Body)
 				res.Body.Close()
 
 				attest.Equal(b, res.StatusCode, http.StatusOK)

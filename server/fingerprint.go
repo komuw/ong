@@ -23,7 +23,8 @@ import (
 var (
 	_           net.Listener = &fingerListener{}
 	_           net.Conn     = &fingerConn{}
-	greaseTable              = map[uint16]bool{
+	greaseTable              = map[uint16]bool{ //nolint:gochecknoglobals
+
 		// The GREASE protocol is way where tls clients(like google-chrome) can generate
 		// random TLS values(especially for TLS extensions and/or cipherSuites).
 		// The client then sends this, together with normal request, to servers.
