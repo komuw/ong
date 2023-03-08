@@ -180,6 +180,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 	}
 	s += strings.Join(vals, "-")
 
+	// todo: switch to a faster hasher like `hash/maphash`?
 	hasher := md5.New()
 	hasher.Write([]byte(s))
 	hash := hex.EncodeToString(hasher.Sum(nil))
