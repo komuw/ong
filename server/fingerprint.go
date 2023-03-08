@@ -55,6 +55,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 	//   md5(SSLVersion, Cipher, SSLExtension, EllipticCurve, EllipticCurvePointFormat)
 	//
 	// https://github.com/sleeyax/ja3rp/blob/v0.0.1/crypto/tls/common.go#L462
+	// https://github.com/salesforce/ja3/blob/382cd37ea2759bcfc5627d2d7071fe2466833e90/python/ja3.py
 
 	// TODO: use const array.
 	greaseTable := map[uint16]bool{
