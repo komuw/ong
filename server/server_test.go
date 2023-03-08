@@ -379,25 +379,24 @@ func BenchmarkServer(b *testing.B) {
 			}
 			c := &http.Client{Transport: tr}
 			url := fmt.Sprintf("https://localhost:%d", port)
-			var count int32 = 1
+			var count int64 = 0
 			var r int
 
 			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					// The loop body is executed b.N times total across all goroutines.
-					res, err := c.Get(url)
-					attest.Ok(b, err)
+			for n := 0; n < b.N; n++ {
+				// The loop body is executed b.N times total across all goroutines.
+				res, err := c.Get(url)
+				attest.Ok(b, err)
 
-					io.Copy(ioutil.Discard, res.Body)
-					res.Body.Close()
+				io.Copy(ioutil.Discard, res.Body)
+				res.Body.Close()
 
-					attest.Equal(b, res.StatusCode, http.StatusOK)
-					atomic.AddInt32(&count, 1)
-					r = res.StatusCode
-				}
-			})
-			b.ReportMetric(float64(count), "req/s")
+				attest.Equal(b, res.StatusCode, http.StatusOK)
+				atomic.AddInt64(&count, 1)
+				r = res.StatusCode
+			}
+			b.ReportMetric(float64(count)/b.Elapsed().Seconds(), "req/s")
+
 			// always store the result to a package level variable
 			// so the compiler cannot eliminate the Benchmark itself.
 			result = r
