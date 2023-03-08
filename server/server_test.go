@@ -365,11 +365,11 @@ func BenchmarkServer(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for _, keepAlive := range [2]bool{true, false} {
-		b.Run(fmt.Sprintf("DisableKeepAlives: %v", keepAlive), func(b *testing.B) {
+	for _, disableKeepAlive := range [2]bool{true, false} {
+		b.Run(fmt.Sprintf("DisableKeepAlives: %v", disableKeepAlive), func(b *testing.B) {
 			tr := &http.Transport{
 				// see: http.DefaultTransport
-				DisableKeepAlives: keepAlive,
+				DisableKeepAlives: disableKeepAlive,
 
 				// since we are using self-signed certificates, we need to skip verification.
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
