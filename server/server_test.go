@@ -344,13 +344,23 @@ func benchmarkServerHandler(msg string) http.HandlerFunc {
 var result int //nolint:gochecknoglobals
 
 func BenchmarkServer(b *testing.B) {
+	// This benchmarks the server end-to-end.
+	// For example we can use it to see the effect of tls fingerprinting on requests throughput/latency.
+	//
+
+	if os.Getenv("GITHUB_ACTIONS") != "" {
+		// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
+		return
+	}
+
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	handler := benchmarkServerHandler("helloWorld")
+	port := math.MaxUint16 - uint16(7)
 	go func() {
-		_, _ = createDevCertKey(l)
+		certFile, keyFile := createDevCertKey(l)
 		time.Sleep(1 * time.Second)
-		err := Run(handler, DevOpts(l), l)
+		err := Run(handler, withOpts(port, certFile, keyFile, "", "localhost"), l)
 		attest.Ok(b, err)
 	}()
 
@@ -360,11 +370,11 @@ func BenchmarkServer(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for _, keepAlive := range [2]bool{true, false} {
-		b.Run(fmt.Sprintf("DisableKeepAlives: %v", keepAlive), func(b *testing.B) {
+	for _, disableKeepAlive := range [2]bool{true, false} {
+		b.Run(fmt.Sprintf("DisableKeepAlives: %v", disableKeepAlive), func(b *testing.B) {
 			tr := &http.Transport{
 				// see: http.DefaultTransport
-				DisableKeepAlives: keepAlive,
+				DisableKeepAlives: disableKeepAlive,
 
 				// since we are using self-signed certificates, we need to skip verification.
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -373,28 +383,25 @@ func BenchmarkServer(b *testing.B) {
 				ForceAttemptHTTP2: true,
 			}
 			c := &http.Client{Transport: tr}
-			url := "https://localhost:65081/"
-			var count int32 = 1
+			url := fmt.Sprintf("https://localhost:%d", port)
+			var count int64 = 0
 			var r int
 
 			b.ResetTimer()
-			b.RunParallel(func(pb *testing.PB) {
-				for pb.Next() {
-					// The loop body is executed b.N times total across all goroutines.
-					res, err := c.Get(url)
-					attest.Ok(b, err)
+			for n := 0; n < b.N; n++ {
+				// The loop body is executed b.N times total across all goroutines.
+				res, err := c.Get(url)
+				attest.Ok(b, err)
 
-					io.Copy(ioutil.Discard, res.Body)
-					res.Body.Close()
+				io.Copy(ioutil.Discard, res.Body)
+				res.Body.Close()
 
-					// We want to see the effect of tls fingerprinting on requests throughput/latency.
-					//
-					attest.Equal(b, res.StatusCode, http.StatusOK)
-					atomic.AddInt32(&count, 1)
-					r = res.StatusCode
-				}
-			})
-			b.ReportMetric(float64(count), "req/s")
+				attest.Equal(b, res.StatusCode, http.StatusOK)
+				atomic.AddInt64(&count, 1)
+				r = res.StatusCode
+			}
+			b.ReportMetric(float64(count)/b.Elapsed().Seconds(), "req/s")
+
 			// always store the result to a package level variable
 			// so the compiler cannot eliminate the Benchmark itself.
 			result = r
