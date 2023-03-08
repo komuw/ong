@@ -335,7 +335,7 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func benchmarkFingerPrintHandler(msg string) http.HandlerFunc {
+func benchmarkServerHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, msg)
 	}
@@ -343,10 +343,14 @@ func benchmarkFingerPrintHandler(msg string) http.HandlerFunc {
 
 var result int //nolint:gochecknoglobals
 
-func BenchmarkFingerPrint(b *testing.B) {
+func BenchmarkServer(b *testing.B) {
+	// This benchmarks the server end-to-end.
+	// For example we can use it to see the effect of tls fingerprinting on requests throughput/latency.
+	//
+
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
-	handler := benchmarkFingerPrintHandler("helloWorld")
+	handler := benchmarkServerHandler("helloWorld")
 	go func() {
 		_, _ = createDevCertKey(l)
 		time.Sleep(1 * time.Second)
@@ -387,8 +391,6 @@ func BenchmarkFingerPrint(b *testing.B) {
 					io.Copy(ioutil.Discard, res.Body)
 					res.Body.Close()
 
-					// We want to see the effect of tls fingerprinting on requests throughput/latency.
-					//
 					attest.Equal(b, res.StatusCode, http.StatusOK)
 					atomic.AddInt32(&count, 1)
 					r = res.StatusCode
