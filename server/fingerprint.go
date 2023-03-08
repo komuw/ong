@@ -21,45 +21,9 @@ import (
 //
 
 var (
-	_ net.Listener = &fingerListener{}
-	_ net.Conn     = &fingerConn{}
-)
-
-// fingerListener is a [net.Listener] that enables collection of a TLS fingerprint.
-type fingerListener struct {
-	net.Listener
-}
-
-func (l *fingerListener) Accept() (net.Conn, error) {
-	c, err := l.Listener.Accept()
-	if err != nil {
-		return nil, err
-	}
-	return &fingerConn{Conn: c}, nil
-}
-
-// fingerConn is a [net.Conn] that enables collection of a TLS fingerprint.
-type fingerConn struct {
-	net.Conn
-	fingerprint atomic.Pointer[finger.Print]
-}
-
-// setFingerprint adds a TLS fingerprint to the connection[net.Conn]
-func setFingerprint(info *tls.ClientHelloInfo) {
-	conn, okConn := info.Conn.(*fingerConn)
-	if !okConn {
-		return
-	}
-
-	// The algorithm used here is based mainly on ja3 hash.
-	// Basically;
-	//   md5(SSLVersion, Cipher, SSLExtension, EllipticCurve, EllipticCurvePointFormat)
-	//
-	// https://github.com/sleeyax/ja3rp/blob/v0.0.1/crypto/tls/common.go#L462
-	// https://github.com/salesforce/ja3/blob/382cd37ea2759bcfc5627d2d7071fe2466833e90/python/ja3.py
-
-	// TODO: use const array.
-	greaseTable := map[uint16]bool{
+	_           net.Listener = &fingerListener{}
+	_           net.Conn     = &fingerConn{}
+	greaseTable              = map[uint16]bool{
 		// The GREASE protocol is way where tls clients(like google-chrome) can generate
 		// random TLS values(especially for TLS extensions and/or cipherSuites).
 		// The client then sends this, together with normal request, to servers.
@@ -116,6 +80,42 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 
 		// see: https://www.rfc-editor.org/rfc/rfc8701.html#name-grease-values
 	}
+)
+
+// fingerListener is a [net.Listener] that enables collection of a TLS fingerprint.
+type fingerListener struct {
+	net.Listener
+}
+
+func (l *fingerListener) Accept() (net.Conn, error) {
+	c, err := l.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return &fingerConn{Conn: c}, nil
+}
+
+// fingerConn is a [net.Conn] that enables collection of a TLS fingerprint.
+type fingerConn struct {
+	net.Conn
+	fingerprint atomic.Pointer[finger.Print]
+}
+
+// setFingerprint adds a TLS fingerprint to the connection[net.Conn]
+func setFingerprint(info *tls.ClientHelloInfo) {
+	conn, okConn := info.Conn.(*fingerConn)
+	if !okConn {
+		return
+	}
+
+	// The algorithm used here is based mainly on ja3 hash.
+	// Basically;
+	//   md5(SSLVersion, Cipher, SSLExtension, EllipticCurve, EllipticCurvePointFormat)
+	//
+	// https://github.com/sleeyax/ja3rp/blob/v0.0.1/crypto/tls/common.go#L462
+	// https://github.com/salesforce/ja3/blob/382cd37ea2759bcfc5627d2d7071fe2466833e90/python/ja3.py
+	//
+
 	// GREASE values may be sent in;
 	// (i)   supported_versions
 	// (ii)  cipher_suites
