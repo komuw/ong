@@ -46,8 +46,8 @@ type fingerConn struct {
 
 // setFingerprint adds a TLS fingerprint to the connection[net.Conn]
 func setFingerprint(info *tls.ClientHelloInfo) {
-	conn, ok := info.Conn.(*fingerConn)
-	if !ok {
+	conn, okConn := info.Conn.(*fingerConn)
+	if !okConn {
 		return
 	}
 
@@ -134,7 +134,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 		// For TLS versions less than 1.3, this is extrapolated from the max version advertised by the client
 		// see: https://github.com/golang/go/blob/go1.20.2/src/crypto/tls/common.go#L434-L438
 
-		if _, ok := greaseTable[v]; ok {
+		if _, okVer := greaseTable[v]; okVer {
 			continue
 		}
 
@@ -146,7 +146,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 
 	vals := []string{}
 	for _, v := range info.CipherSuites {
-		if _, ok := greaseTable[v]; ok {
+		if _, okCipher := greaseTable[v]; okCipher {
 			continue
 		}
 
@@ -160,7 +160,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 	extensions := []uint16{}
 	vals = []string{}
 	for _, v := range extensions {
-		if _, ok := greaseTable[v]; ok {
+		if _, okExt := greaseTable[v]; okExt {
 			continue
 		}
 
