@@ -348,6 +348,11 @@ func BenchmarkServer(b *testing.B) {
 	// For example we can use it to see the effect of tls fingerprinting on requests throughput/latency.
 	//
 
+	if os.Getenv("GITHUB_ACTIONS") != "" {
+		// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
+		return
+	}
+
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	handler := benchmarkServerHandler("helloWorld")
