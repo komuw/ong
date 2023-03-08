@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"sync/atomic"
@@ -183,7 +184,7 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 
 	// todo: switch to a faster hasher like `hash/maphash`?
 	hasher := md5.New()
-	hasher.Write([]byte(s))
+	_, _ = io.WriteString(hasher, s)
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
 	conn.fingerprint.Load().Hash.Store(&hash)
