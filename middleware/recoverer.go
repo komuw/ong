@@ -29,6 +29,7 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 				flds := []any{
 					"error", fmt.Sprint(errR),
 					"clientIP", ClientIP(r),
+					"clientFingerPrint", ClientFingerPrint(r),
 					"method", r.Method,
 					"path", r.URL.Redacted(),
 					"code", code,

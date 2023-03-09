@@ -4,6 +4,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -14,6 +15,8 @@ import (
 	"time"
 
 	"github.com/komuw/ong/automax"
+	"github.com/komuw/ong/internal/finger"
+	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
 
 	"golang.org/x/exp/slog"
@@ -206,6 +209,24 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		IdleTimeout:       o.idleTimeout,
 		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
+		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+			tConn, ok := c.(*tls.Conn)
+			if !ok {
+				return ctx
+			}
+
+			conn, ok := tConn.NetConn().(*fingerConn)
+			if !ok {
+				return ctx
+			}
+
+			fPrint := conn.fingerprint.Load()
+			if fPrint == nil {
+				fPrint = &finger.Print{}
+				conn.fingerprint.CompareAndSwap(nil, fPrint)
+			}
+			return context.WithValue(ctx, octx.FingerPrintCtxKey, fPrint)
+		},
 	}
 
 	drainDur := drainDuration(o)
@@ -294,12 +315,14 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 	{
 		// HTTPS(tls) LISTERNER:
 		cfg := listenerConfig()
-		l, err := cfg.Listen(ctx, o.network, o.serverAddress)
+		cl, err := cfg.Listen(ctx, o.network, o.serverAddress)
 		if err != nil {
 			return err
 		}
-		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
-			Printf("https server listening at %s", o.serverAddress)
+
+		l := &fingerListener{cl}
+
+		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.serverAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`

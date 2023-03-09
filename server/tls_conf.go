@@ -80,6 +80,9 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
 				//
+
+				setFingerprint(info)
+
 				return &c, nil
 			},
 		}

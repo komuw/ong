@@ -98,6 +98,7 @@ func TestLogMiddleware(t *testing.T) {
 			"durationMS",
 			"logID", // should match log.logIDFieldName
 			"clientIP",
+			"clientFingerPrint",
 			"ERROR",
 			fmt.Sprintf("%d", someLatencyMS), // latency in millisecond is recorded.
 		} {

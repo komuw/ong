@@ -161,8 +161,11 @@ func TestOpts(t *testing.T) {
 	})
 }
 
+const tlsFingerPrintKey = "TlsFingerPrintKey"
+
 func someServerTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
 		fmt.Fprint(w, msg)
 	}
 }
@@ -231,6 +234,7 @@ func TestServer(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
+			attest.NotZero(t, res.Header.Get(tlsFingerPrintKey))
 		}
 
 		{
@@ -392,7 +396,7 @@ func BenchmarkServer(b *testing.B) {
 				res, err := c.Get(url)
 				attest.Ok(b, err)
 
-				io.Copy(io.Discard, res.Body)
+				_, _ = io.Copy(io.Discard, res.Body)
 				res.Body.Close()
 
 				attest.Equal(b, res.StatusCode, http.StatusOK)

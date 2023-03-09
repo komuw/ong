@@ -31,6 +31,7 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 			msg := "http_server"
 			flds := []any{
 				"clientIP", ClientIP(r),
+				"clientFingerPrint", ClientFingerPrint(r),
 				"method", r.Method,
 				"path", r.URL.Redacted(),
 				"code", lrw.code,
