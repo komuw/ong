@@ -130,7 +130,7 @@ func NewOpts(
 }
 
 // DevOpts returns a new Opts that has sensible defaults for tls, especially for dev environments.
-// It also automatically creates the dev certifiates/key by internally calling [CreateDevCertKey]
+// It also automatically creates the dev certifiates/key.
 func DevOpts(l *slog.Logger) Opts {
 	certFile, keyFile := createDevCertKey(l)
 

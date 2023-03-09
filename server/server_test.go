@@ -190,7 +190,7 @@ func TestServer(t *testing.T) {
 		t.Parallel()
 
 		if os.Getenv("GITHUB_ACTIONS") != "" {
-			// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
+			// createDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
 			return
 		}
 
@@ -287,7 +287,7 @@ func TestServer(t *testing.T) {
 		t.Parallel()
 
 		if os.Getenv("GITHUB_ACTIONS") != "" {
-			// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
+			// createDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
 			return
 		}
 
@@ -352,7 +352,7 @@ func BenchmarkServer(b *testing.B) {
 	//
 
 	if os.Getenv("GITHUB_ACTIONS") != "" {
-		// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
+		// createDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
 		return
 	}
 
