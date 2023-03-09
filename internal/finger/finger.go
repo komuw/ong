@@ -1,3 +1,4 @@
+// Package finger provides(in a best effort manner) a client's TLS fingerprint.
 package finger
 
 import "sync/atomic"

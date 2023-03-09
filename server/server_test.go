@@ -8,7 +8,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -189,11 +188,6 @@ func TestServer(t *testing.T) {
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
-		if os.Getenv("GITHUB_ACTIONS") != "" {
-			// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
-			return
-		}
-
 		port := uint16(65081)
 		uri := "/api"
 		msg := "hello world"
@@ -286,11 +280,6 @@ func TestServer(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		if os.Getenv("GITHUB_ACTIONS") != "" {
-			// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
-			return
-		}
-
 		port := math.MaxUint16 - uint16(3)
 		uri := "/api"
 		msg := "hello world"
@@ -350,11 +339,6 @@ func BenchmarkServer(b *testing.B) {
 	// This benchmarks the server end-to-end.
 	// For example we can use it to see the effect of tls fingerprinting on requests throughput/latency.
 	//
-
-	if os.Getenv("GITHUB_ACTIONS") != "" {
-		// CreateDevCertKey() fails in github actions with error: `panic: open /home/runner/ong/rootCA_key.pem: permission denied`
-		return
-	}
 
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
