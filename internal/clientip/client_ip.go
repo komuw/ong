@@ -1,4 +1,4 @@
-// Package clientip provides(in a best effort manner) client IP addresses.
+// Package clientip provides(in a best effort manner) a client's IP address.
 package clientip
 
 import (
