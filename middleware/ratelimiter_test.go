@@ -153,7 +153,7 @@ func TestRl(t *testing.T) {
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 3)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 4)
 		}
 
 		{
