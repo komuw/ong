@@ -42,9 +42,11 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
 				if e, ok := errR.(error); ok {
-					reqL.Error(msg, errors.Wrap(e), flds...) // wrap with ong/errors so that the log will have a stacktrace.
+					extra := []any{"err", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
+					flds = append(flds, extra...)
+					reqL.Error(msg, flds...)
 				} else {
-					reqL.Error(msg, nil, flds...)
+					reqL.Error(msg, flds...)
 				}
 
 				// respond.

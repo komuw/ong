@@ -166,12 +166,12 @@ func TestLogger(t *testing.T) {
 
 			infoMsg := "hello world"
 			l(context.Background()).Info(infoMsg)
-			l(context.Background()).Error("some-err", errors.New("bad"))
+			l(context.Background()).Error("some-err", errors.New("this-ting-is-bad"))
 
 			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "source")
-			attest.Subsequence(t, w.String(), slog.ErrorKey)
+			attest.Subsequence(t, w.String(), "this-ting-is-bad")
 		}
 
 		{
@@ -185,6 +185,7 @@ func TestLogger(t *testing.T) {
 
 			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "stack")
+			attest.Subsequence(t, w.String(), "log/log_test.go:184") // stacktrace added.
 		}
 	})
 
@@ -307,7 +308,7 @@ func TestLogger(t *testing.T) {
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), "log/log_test.go:308")
+			attest.Subsequence(t, w.String(), "log/log_test.go:309")
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})
