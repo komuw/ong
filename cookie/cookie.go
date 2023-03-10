@@ -12,6 +12,7 @@ import (
 
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/internal/clientip"
+	"github.com/komuw/ong/internal/finger"
 )
 
 const (
@@ -146,15 +147,21 @@ func SetEncrypted(
 		// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
 		r,
 	)
+	fingerprint := finger.Get(
+		// might also be spoofed??
+		r,
+	)
 	expires := strconv.Itoa(
 		int(
 			time.Now().UTC().Add(mAge).Unix(),
 		),
 	)
-	combined := ip + expires + value
+	combined := ip + fingerprint + expires + value
 	encryptedEncodedVal := fmt.Sprintf(
-		"%d%s%d%s%s",
+		"%d%s%d%s%d%s%s",
 		len(ip),
+		sep,
+		len(fingerprint),
 		sep,
 		len(expires),
 		sep,
@@ -187,6 +194,7 @@ func GetEncrypted(
 	}
 
 	subs := strings.Split(c.Value, sep)
+	fmt.Println("\t subs: ", subs)
 	if len(subs) != 3 {
 		return nil, errors.New("ong/cookie: invalid cookie")
 	}

@@ -40,13 +40,5 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 //
 // [TLS fingerprint]: https://github.com/LeeBrotherston/tls-fingerprinting
 func ClientFingerPrint(r *http.Request) string {
-	ctx := r.Context()
-
-	if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
-		if s, ok := vCtx.(string); ok {
-			return s
-		}
-	}
-
-	return ""
+	return finger.Get(r)
 }
