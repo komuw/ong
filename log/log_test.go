@@ -166,12 +166,12 @@ func TestLogger(t *testing.T) {
 
 			infoMsg := "hello world"
 			l(context.Background()).Info(infoMsg)
-			l(context.Background()).Error("some-err", errors.New("bad"))
+			l(context.Background()).Error("some-err", errors.New("this-ting-is-bad"))
 
 			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "level")
 			attest.Subsequence(t, w.String(), "source")
-			attest.Subsequence(t, w.String(), slog.ErrorKey)
+			attest.Subsequence(t, w.String(), "this-ting-is-bad")
 		}
 
 		{

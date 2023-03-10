@@ -60,11 +60,11 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 				// Only log 10% of the errors.
 				shouldLog := mathRand.Intn(100) > 90
 				if shouldLog {
-					reqL.Error(msg, nil, flds...)
+					reqL.Error(msg, flds...)
 				}
 			} else if lrw.code >= http.StatusBadRequest {
 				// both client and server errors.
-				reqL.Error(msg, nil, flds...)
+				reqL.Error(msg, flds...)
 			} else {
 				reqL.Info(msg, flds...)
 			}
