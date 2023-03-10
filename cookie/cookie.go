@@ -194,8 +194,7 @@ func GetEncrypted(
 	}
 
 	subs := strings.Split(c.Value, sep)
-	fmt.Println("\t subs: ", subs)
-	if len(subs) != 3 {
+	if len(subs) != 4 {
 		return nil, errors.New("ong/cookie: invalid cookie")
 	}
 
@@ -204,22 +203,28 @@ func GetEncrypted(
 		return nil, err
 	}
 
-	lenOfExpires, err := strconv.Atoi(subs[1])
+	lenOfFingerprint, err := strconv.Atoi(subs[1])
 	if err != nil {
 		return nil, err
 	}
 
-	decryptedVal, err := enc.DecryptDecode(subs[2])
+	lenOfExpires, err := strconv.Atoi(subs[2])
 	if err != nil {
 		return nil, err
 	}
 
-	ip, expiresStr, val := decryptedVal[:lenOfIp],
-		decryptedVal[lenOfIp:lenOfIp+lenOfExpires],
-		decryptedVal[lenOfIp+lenOfExpires:]
+	decryptedVal, err := enc.DecryptDecode(subs[3])
+	if err != nil {
+		return nil, err
+	}
+
+	ip, fingerprint, expiresStr, val := decryptedVal[:lenOfIp],
+		decryptedVal[lenOfIp:lenOfIp+lenOfFingerprint],
+		decryptedVal[lenOfIp+lenOfFingerprint:lenOfIp+lenOfFingerprint+lenOfExpires],
+		decryptedVal[lenOfIp+lenOfFingerprint+lenOfExpires:]
 
 	{
-		// Try and prevent replay attacks.
+		// Try and prevent replay attacks & session hijacking(https://twitter.com/4A4133/status/1615103474739429377)
 		// This does not completely stop them, but it is better than nothing.
 		incomingIP := clientip.Get(
 			// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
@@ -227,6 +232,14 @@ func GetEncrypted(
 		)
 		if ip != incomingIP {
 			return nil, errors.New("ong/cookie: mismatched IP addresses")
+		}
+
+		incomingFingerprint := finger.Get(
+			// might also be spoofed??
+			r,
+		)
+		if fingerprint != incomingFingerprint {
+			return nil, errors.New("ong/cookie: mismatched TLS fingerprints")
 		}
 
 		expires, errP := strconv.ParseInt(expiresStr, 10, 64)

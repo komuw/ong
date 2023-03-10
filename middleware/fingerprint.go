@@ -35,7 +35,7 @@ func fingerprint(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 }
 
 // ClientFingerPrint returns the [TLS fingerprint] of the client.
-// It is provided on a best-effort basis.
+// It is provided on a best-effort basis. If a fingerprint is not found, it returns a string that has the substring "NotFound" in it.
 // There are different formats/algorithms of fingerprinting, this library(by design) does not subscribe to a particular format or algorithm.
 //
 // [TLS fingerprint]: https://github.com/LeeBrotherston/tls-fingerprinting

@@ -25,5 +25,5 @@ func Get(r *http.Request) string {
 		}
 	}
 
-	return ""
+	return "FingerPrintNotFound"
 }
