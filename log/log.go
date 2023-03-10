@@ -146,13 +146,11 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 		{Key: "logID", Value: slog.StringValue(id)},
 	}
 	r.Attrs(func(a slog.Attr) {
-		// if a.Key == slog.ErrorKey {
 		if e, ok := a.Value.Any().(error); ok {
 			if stack := errors.StackTrace(e); stack != "" {
 				newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
 			}
 		}
-		// }
 	})
 	r.AddAttrs(newAttrs...)
 
