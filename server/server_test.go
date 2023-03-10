@@ -188,7 +188,7 @@ func TestServer(t *testing.T) {
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
-		port := uint16(65081)
+		port := math.MaxUint16 - uint16(10)
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
@@ -203,9 +203,8 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			_, _ = createDevCertKey(l)
-			time.Sleep(1 * time.Second)
-			err := Run(mux, DevOpts(l), l)
+			certFile, keyFile := createDevCertKey(l)
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
 			attest.Ok(t, err)
 		}()
 
@@ -280,7 +279,7 @@ func TestServer(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		port := math.MaxUint16 - uint16(3)
+		port := math.MaxUint16 - uint16(12)
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
@@ -343,7 +342,8 @@ func BenchmarkServer(b *testing.B) {
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	handler := benchmarkServerHandler("helloWorld")
-	port := math.MaxUint16 - uint16(7)
+	port := math.MaxUint16 - uint16(14)
+
 	go func() {
 		certFile, keyFile := createDevCertKey(l)
 		time.Sleep(1 * time.Second)

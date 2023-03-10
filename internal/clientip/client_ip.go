@@ -48,7 +48,7 @@ const (
 )
 
 // Get returns the "real" client IP address.
-// see ong/middleware for docs.
+// See [github.com/komuw/ong/middleware.ClientIP]
 func Get(r *http.Request) string {
 	if vCtx := r.Context().Value(clientIPctxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok && s != "" {
