@@ -151,10 +151,9 @@ func SetEncrypted(
 		// might also be spoofed??
 		r,
 	)
-	expires := strconv.Itoa(
-		int(
-			time.Now().UTC().Add(mAge).Unix(),
-		),
+	expires := strconv.FormatInt(
+		time.Now().UTC().Add(mAge).Unix(),
+		10,
 	)
 	combined := ip + fingerprint + expires + value
 	encryptedEncodedVal := fmt.Sprintf(
