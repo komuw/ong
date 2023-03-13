@@ -107,39 +107,46 @@ func TestIntegration(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
 	})
 
-	t.Run("rate_limit_test", func(t *testing.T) {
-		rate := vegeta.Rate{
-			// this rate of 90/sec is less than the rateLimit used by ong of 100/sec
-			// https://github.com/komuw/ong/blob/v0.0.42/middleware/ratelimiter.go#L25
-			Freq: 90,
-			Per:  1 * time.Second,
-		}
-		duration := 20 * time.Second
-		targeter := vegeta.NewStaticTargeter(vegeta.Target{
-			Method: "GET",
-			URL:    "https://localhost:65081/check/67",
+	for _, sendRate := range []int{
+		// The rate of 90/sec is less than the rateLimit used by ong of 100/sec
+		// Whereas 150/sec is greater.
+		//
+		// https://github.com/komuw/ong/blob/v0.0.42/middleware/ratelimiter.go#L25
+		90,
+		150,
+	} {
+		t.Run(fmt.Sprintf("rate_limit_test, sendRate=%v/sec", sendRate), func(t *testing.T) {
+			rate := vegeta.Rate{
+				Freq: sendRate,
+				Per:  1 * time.Second,
+			}
+			duration := 20 * time.Second
+			targeter := vegeta.NewStaticTargeter(vegeta.Target{
+				Method: "GET",
+				URL:    "https://localhost:65081/check/67",
+			})
+			attacker := vegeta.NewAttacker()
+
+			var metrics vegeta.Metrics
+			for res := range attacker.Attack(targeter, rate, duration, "rate_limit_test") {
+				metrics.Add(res)
+			}
+			metrics.Close()
+
+			expectedSuccesses := 1782
+			attest.Approximately(t,
+				// Actually, we would expect 1800 successes(20 *90) since the sending rate is 90/secs
+				// which is below the ratelimit of 100/sec.
+				// But ratelimiting is imprecise; https://github.com/komuw/ong/issues/235
+				metrics.StatusCodes[fmt.Sprintf("%d", http.StatusOK)],
+				expectedSuccesses,
+				3,
+			)
+
+			attest.Subsequence(t,
+				strings.Join(metrics.Errors, " "),
+				http.StatusText(http.StatusTooManyRequests),
+			)
 		})
-		attacker := vegeta.NewAttacker()
-
-		var metrics vegeta.Metrics
-		for res := range attacker.Attack(targeter, rate, duration, "rate_limit_test") {
-			metrics.Add(res)
-		}
-		metrics.Close()
-
-		expectedSuccesses := 1782
-		attest.Approximately(t,
-			// Actually, we would expect 1800 successes(20 *90) since the sending rate is 90/secs
-			// which is below the ratelimit of 100/sec.
-			// But ratelimiting is imprecise; https://github.com/komuw/ong/issues/235
-			metrics.StatusCodes[fmt.Sprintf("%d", http.StatusOK)],
-			expectedSuccesses,
-			3,
-		)
-
-		attest.Subsequence(t,
-			strings.Join(metrics.Errors, " "),
-			http.StatusText(http.StatusTooManyRequests),
-		)
-	})
+	}
 }
