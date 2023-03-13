@@ -128,7 +128,6 @@ func (t *tb) allow() bool {
 	defer t.mu.Unlock()
 
 	now := time.Now()
-
 	alw := true
 
 	if t.last.IsZero() {
