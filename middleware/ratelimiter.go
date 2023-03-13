@@ -150,7 +150,6 @@ func (t *tb) allow() bool {
 	}
 
 	// If sleepFor is positive, then we should sleep now.
-	// fmt.Println("\t t.sleepFor: ", t.sleepFor)
 	if t.sleepFor > 0 {
 		time.Sleep(t.sleepFor)
 		t.last = now.Add(t.sleepFor)
