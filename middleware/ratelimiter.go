@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -10,6 +9,8 @@ import (
 
 // Most of the code here is inspired by(or taken from):
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
+//   (b) https://github.com/uber-go/ratelimit whose license(MIT) can be found here:                        https://github.com/uber-go/ratelimit/blob/v0.2.0/LICENSE
+//
 
 /*
 	Github uses a rate limit of 5_000 reqs/hr(1req/sec)
@@ -100,31 +101,25 @@ func (r *rl) reSize() {
 // tb is a simple implementation of the token bucket rate limiting algorithm
 // https://en.wikipedia.org/wiki/Token_bucket
 type tb struct {
-	mu sync.Mutex // protects all the other fields.
+	mu sync.Mutex // protects last and sleepFor
+	// +checklocks:mu
+	last time.Time
+	// +checklocks:mu
+	sleepFor time.Duration
 
-	// +checklocks:mu
-	sendRate float64 // In req/seconds
-	// +checklocks:mu
-	maxTokens float64
-	// +checklocks:mu
-	tokens float64
-	// +checklocks:mu
-	delayForTokens time.Duration
-	// updatedAt is the time at which this operation took place.
-	// We could have ideally used a `time.Time` as its type; but we wanted the latency struct to be minimal in size.
-	// +checklocks:mu
-	updatedAt int64
+	perRequest time.Duration
+	maxSlack   time.Duration
 }
 
 func newTb(sendRate float64) *tb {
+	slack := 10
+	per := 1 * time.Second
+	perRequest := per / time.Duration(sendRate)
+	maxSlack := (-1 * time.Duration(slack) * perRequest)
+
 	return &tb{
-		sendRate:  sendRate,
-		maxTokens: sendRate,
-		tokens:    sendRate,
-		// if sendRate is in req/Sec, delayForTokens ought to be in seconds.
-		// if sendRate is in req/ms, delayForTokens ought to be in ms.
-		delayForTokens: 1 * time.Second,
-		updatedAt:      time.Now().UTC().Unix(),
+		perRequest: perRequest,
+		maxSlack:   maxSlack,
 	}
 }
 
@@ -132,38 +127,39 @@ func (t *tb) allow() bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	now := time.Now()
+
 	alw := true
-	if t.tokens < 1 {
-		alw = false
+
+	if t.last.IsZero() {
+		// this is first request, allow it.
+		t.last = now
+		return alw
 	}
 
-	if alw {
-		t.tokens = t.tokens - 1
+	// sleepFor calculates how much time we should sleep based on
+	// the perRequest budget and how long the last request took.
+	// Since the request may take longer than the budget, this number
+	// can get negative, and is summed across requests.
+	t.sleepFor += t.perRequest - now.Sub(t.last)
+
+	// We shouldn't allow sleepFor to get too negative, since it would mean that
+	// a service that slowed down a lot for a short period of time would get
+	// a much higher RPS following that.
+	if t.sleepFor < t.maxSlack {
+		t.sleepFor = t.maxSlack
+	}
+
+	// If sleepFor is positive, then we should sleep now.
+	// fmt.Println("\t t.sleepFor: ", t.sleepFor)
+	if t.sleepFor > 0 {
+		time.Sleep(t.sleepFor)
+		t.last = now.Add(t.sleepFor)
+		t.sleepFor = 0
+		alw = false
 	} else {
-		t.limit()
+		t.last = now
 	}
 
 	return alw
-}
-
-// limit is a private api(thus needs no locking). It should only ever be called by `tb.allow`
-// +checklocksignore
-func (t *tb) limit() {
-	for t.tokens < 1 {
-		t.addNewTokens()
-		time.Sleep(t.delayForTokens)
-	}
-}
-
-// addNewTokens is a private api(thus needs no locking). It should only ever be called by `tb.limit`
-// +checklocksignore
-func (t *tb) addNewTokens() {
-	now := time.Now().UTC()
-	timeSinceUpdate := now.Sub(time.Unix(t.updatedAt, 0).UTC())
-	newTokens := timeSinceUpdate.Seconds() * t.sendRate
-
-	if newTokens > 1 {
-		t.tokens = math.Min((t.tokens + newTokens), t.maxTokens)
-		t.updatedAt = now.Unix()
-	}
 }
