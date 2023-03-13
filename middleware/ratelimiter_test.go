@@ -184,7 +184,7 @@ func BenchmarkRl(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < int(sendRate)*b.N; n++ {
+	for n := 0; n < b.N; n++ {
 		r = l.allow()
 	}
 
