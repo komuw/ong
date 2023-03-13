@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.47
+- Improve ratelimiter accuracy: https://github.com/komuw/ong/pull/252
+
 ## v0.0.46
 - Include TLS fingerprint in encrypted cookies: https://github.com/komuw/ong/pull/250
 - Update to latest exp/slog: https://github.com/komuw/ong/pull/251
