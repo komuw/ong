@@ -140,7 +140,7 @@ func (t *tb) allow() bool {
 	// the perRequest budget and how long the last request took.
 	// Since the request may take longer than the budget, this number
 	// can get negative, and is summed across requests.
-	t.sleepFor += t.perRequest - now.Sub(t.last)
+	t.sleepFor = (t.sleepFor + t.perRequest) - now.Sub(t.last)
 
 	// We shouldn't allow sleepFor to get too negative, since it would mean that
 	// a service that slowed down a lot for a short period of time would get
