@@ -246,7 +246,7 @@ func GetEncrypted(
 			return nil, errP
 		}
 
-		// You cannot trust anything about the incoing cookie except its value.
+		// You cannot trust anything about the incoming cookie except its value.
 		// This is because, it is the only thing that was encrypted/authenticated.
 		// So we cannot use `c.MaxAge` here, since a client could have modified that.
 		diff := expires - time.Now().UTC().Unix()
