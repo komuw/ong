@@ -178,6 +178,9 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 // circleBuf implements a very simple & naive circular buffer.
 // users of circleBuf are responsible for concurrency safety.
 type circleBuf struct {
+	// An alternative is https://go.dev/play/p/HKcIZtxr_dp
+	// todo: benchmark to find the fastest.
+
 	mu sync.Mutex // protects buf
 	// +checklocks:mu
 	buf     []slog.Record
