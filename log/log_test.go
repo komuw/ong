@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/internal/octx"
@@ -96,6 +97,29 @@ func TestCircleBuf(t *testing.T) {
 		attest.Equal(t, len(c.buf), 0)
 		attest.Equal(t, cap(c.buf), maxSize)
 	})
+}
+
+var benchmarkCircleBufResult int
+
+func BenchmarkCircleBuf(b *testing.B) {
+	maxN := 0
+	maxSize := 100
+	c := newCirleBuf(maxSize)
+	rec := slog.NewRecord(time.Now(), slog.LevelError, "hello", 0)
+
+	b.StopTimer()
+	b.StartTimer()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		c.store(rec)
+		maxN = n
+	}
+	b.StopTimer()
+
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	benchmarkCircleBufResult = maxN
 }
 
 func TestLogger(t *testing.T) {
