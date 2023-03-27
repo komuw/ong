@@ -55,7 +55,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	}
 	jh := opts.NewJSONHandler(w)
 	cbuf := newCirleBuf(maxMsgs)
-	hdlr := handler{h: jh, cBuf: cbuf, logID: id.New()}
+	hdlr := handler{wrappedHandler: jh, cBuf: cbuf, logID: id.New()}
 	l := slog.New(hdlr)
 
 	return func(ctx context.Context) *slog.Logger {
@@ -97,9 +97,9 @@ type handler struct {
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
-	h     slog.Handler
-	cBuf  *circleBuf
-	logID string
+	wrappedHandler slog.Handler
+	cBuf           *circleBuf
+	logID          string
 }
 
 func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
@@ -107,11 +107,11 @@ func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
 }
 
 func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return handler{h: h.h.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+	return handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h handler) WithGroup(name string) slog.Handler {
-	return handler{h: h.h.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+	return handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h handler) Handle(ctx context.Context, r slog.Record) error {
@@ -163,13 +163,13 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	var err error
 	if r.Level >= slog.LevelError {
 		for _, v := range h.cBuf.buf {
-			if e := h.h.Handle(ctx, v); e != nil {
+			if e := h.wrappedHandler.Handle(ctx, v); e != nil {
 				err = e
 			}
 		}
 		h.cBuf.reset()
 	} else if r.Level == LevelImmediate {
-		err = h.h.Handle(ctx, r)
+		err = h.wrappedHandler.Handle(ctx, r)
 	}
 
 	return err
