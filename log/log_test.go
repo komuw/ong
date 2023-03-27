@@ -104,7 +104,7 @@ var benchmarkCircleBufResult int
 func BenchmarkCircleBuf(b *testing.B) {
 	maxN := 0
 	maxSize := 100
-	c := newCirleBuf(maxSize)
+	c := newRingBufferf(maxSize)
 	rec := slog.NewRecord(time.Now(), slog.LevelError, "hello", 0)
 
 	b.StopTimer()

@@ -225,3 +225,38 @@ func (c *circleBuf) store(r slog.Record) {
 func (c *circleBuf) reset() {
 	c.buf = c.buf[:0]
 }
+
+// ///////////////////////////////
+
+// https://go-review.googlesource.com/c/go/+/478200/3/src/log/slog/internal/benchmarks/handlers.go#121
+type ringBuffer struct {
+	buf     []slog.Record
+	next    int
+	maxSize int
+}
+
+func newRingBufferf(maxSize int) *ringBuffer {
+	if maxSize <= 0 {
+		maxSize = 10
+	}
+
+	r := &ringBuffer{
+		buf:     make([]slog.Record, maxSize),
+		next:    0,
+		maxSize: maxSize,
+	}
+
+	// r.reset() // remove the nils from `make()`
+
+	return r
+}
+
+func (r *ringBuffer) store(a slog.Record) {
+	r.buf[r.next] = a
+	r.next = (r.next + 1) % r.maxSize
+}
+
+func (r *ringBuffer) reset() {
+	r.buf = r.buf[:0]
+	r.next = 0
+}
