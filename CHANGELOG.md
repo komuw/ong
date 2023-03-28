@@ -4,7 +4,7 @@ Most recent version is listed first.
 
 
 ## v0.0.47
-- TODO: https://github.com/komuw/ong/pull/255
+- Leave http.server.DisableGeneralOptionsHandler at its default value: https://github.com/komuw/ong/pull/255
 
 ## v0.0.46
 - Include TLS fingerprint in encrypted cookies: https://github.com/komuw/ong/pull/250
