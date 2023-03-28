@@ -163,9 +163,7 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	var err error
 	if r.Level >= slog.LevelError {
 		for _, v := range h.cBuf.buf {
-			if e := h.wrappedHandler.Handle(ctx, v); e != nil {
-				err = e
-			}
+			err = h.wrappedHandler.Handle(ctx, v)
 		}
 		h.cBuf.reset()
 	} else if r.Level == LevelImmediate {
