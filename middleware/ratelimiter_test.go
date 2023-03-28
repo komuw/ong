@@ -153,7 +153,7 @@ func TestRl(t *testing.T) {
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 4)
+			attest.Equal(t, effectiveMessageRate, int(sendRate))
 		}
 
 		{
@@ -169,7 +169,26 @@ func TestRl(t *testing.T) {
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
+			attest.Equal(t, effectiveMessageRate, int(sendRate))
 		}
 	})
+}
+
+var resultBenchmarkRl bool
+
+func BenchmarkRl(b *testing.B) {
+	var r bool
+
+	sendRate := 23.0
+	l := newTb(sendRate)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		r = l.allow()
+	}
+
+	// always store the result to a package level variable
+	// so the compiler cannot eliminate the Benchmark itself.
+	resultBenchmarkRl = r
 }
