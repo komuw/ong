@@ -56,6 +56,12 @@ const (
 	// django appears to use 32 random characters for its csrf token.
 	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
 	csrfBytesTokenLength = 32
+
+	// This value should not be changed without thinking about it.
+	// This has to be a character that `id.Random()` cannot generate.
+	// The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
+	// So `sep` should not be any of those.
+	sep = ":"
 )
 
 // csrf is a middleware that provides protection against Cross Site Request Forgeries.
@@ -66,12 +72,6 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 		enc = cry.New(secretKey)
 	})
 	msgToEncrypt := id.Random(16)
-
-	// This value should not be changed without thinking about it.
-	// This has to be a character that `id.Random()` cannot generate.
-	// The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
-	// So `sep` should not be any of those.
-	const sep = ":"
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -135,8 +135,6 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 				return
 			}
 
-			fmt.Println("\t tokVal: ", tokVal)
-
 			res := strings.Split(tokVal, sep)
 			if len(res) != 2 {
 				cookie.Delete(w, csrfCookieName, domain)
@@ -186,7 +184,6 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 		tokenToIssue := enc.EncryptEncode(
 			fmt.Sprintf("%s%s%s", msgToEncrypt, sep, expires),
 		)
-		fmt.Println("\t tokenToIssue: ", tokenToIssue)
 
 		// 3. create cookie
 		cookie.Set(
