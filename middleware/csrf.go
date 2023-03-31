@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,9 +23,11 @@ import (
 var (
 	// errCsrfTokenNotFound is returned when a request using a non-safe http method
 	// either does not supply a csrf token, or the supplied token is not recognized by the server.
-	errCsrfTokenNotFound = errors.New("ong/middleware: csrf token not found")
-	once                 sync.Once //nolint:gochecknoglobals
-	enc                  cry.Enc   //nolint:gochecknoglobals
+	errCsrfTokenNotFound    = errors.New("ong/middleware: csrf token not found")
+	errCsrfTokenExpired     = errors.New("ong/middleware: csrf token is expired")
+	errCsrfTokenWrongFormat = errors.New("ong/middleware: csrf token wrong format")
+	once                    sync.Once //nolint:gochecknoglobals
+	enc                     cry.Enc   //nolint:gochecknoglobals
 )
 
 type csrfContextKey string
@@ -131,7 +134,32 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 				)
 				return
 			}
+
 			fmt.Println("\t tokVal: ", tokVal)
+
+			res := strings.Split(tokVal, sep)
+			if len(res) != 2 {
+				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenWrongFormat.Error())
+				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+				return
+			}
+
+			expires, errP := strconv.ParseInt(res[1], 10, 64)
+			if errP != nil {
+				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(ongMiddlewareErrorHeader, errP.Error())
+				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+				return
+			}
+
+			diff := expires - time.Now().UTC().Unix()
+			if diff <= 0 {
+				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenExpired.Error())
+				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+				return
+			}
 		}
 
 		// 2. generate a new token.
@@ -158,6 +186,7 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 		tokenToIssue := enc.EncryptEncode(
 			fmt.Sprintf("%s%s%s", msgToEncrypt, sep, expires),
 		)
+		fmt.Println("\t tokenToIssue: ", tokenToIssue)
 
 		// 3. create cookie
 		cookie.Set(
