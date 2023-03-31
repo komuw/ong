@@ -182,6 +182,7 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 			10,
 		)
 		tokenToIssue := enc.EncryptEncode(
+			// see: https://github.com/golang/net/blob/v0.8.0/xsrftoken/xsrf.go#L33-L46
 			fmt.Sprintf("%s%s%s", msgToEncrypt, sep, expires),
 		)
 
