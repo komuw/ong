@@ -5,9 +5,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
@@ -300,7 +302,10 @@ func TestCsrf(t *testing.T) {
 
 		key := getSecretKey()
 		enc2 := cry.New(key)
-		reqCsrfTok := enc2.EncryptEncode("msgToEncrypt")
+		expires := strconv.FormatInt(time.Now().UTC().Add(tokenMaxAge).Unix(), 10)
+		reqCsrfTok := enc2.EncryptEncode(
+			fmt.Sprintf("%s%s%s", "msgToEncrypt", sep, expires),
+		)
 
 		{
 			// make GET request
@@ -399,7 +404,10 @@ func TestCsrf(t *testing.T) {
 
 		key := getSecretKey()
 		enc2 := cry.New(key)
-		reqCsrfTok := enc2.EncryptEncode("msgToEncrypt")
+		expires := strconv.FormatInt(time.Now().UTC().Add(tokenMaxAge).Unix(), 10)
+		reqCsrfTok := enc2.EncryptEncode(
+			fmt.Sprintf("%s%s%s", "msgToEncrypt", sep, expires),
+		)
 
 		{
 			// make GET request

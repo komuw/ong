@@ -111,6 +111,7 @@ func Get(r *http.Request, name string) (*http.Cookie, error) {
 }
 
 // This value should not be changed without thinking about it.
+// This has to be a character that `id.Random()` cannot generate.
 // The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
 // So `sep` should not be any of those.
 const sep = ":"

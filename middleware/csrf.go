@@ -3,8 +3,11 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"mime"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,9 +23,11 @@ import (
 var (
 	// errCsrfTokenNotFound is returned when a request using a non-safe http method
 	// either does not supply a csrf token, or the supplied token is not recognized by the server.
-	errCsrfTokenNotFound = errors.New("ong/middleware: csrf token not found")
-	once                 sync.Once //nolint:gochecknoglobals
-	enc                  cry.Enc   //nolint:gochecknoglobals
+	errCsrfTokenNotFound    = errors.New("ong/middleware: csrf token not found")
+	errCsrfTokenExpired     = errors.New("ong/middleware: csrf token is expired")
+	errCsrfTokenWrongFormat = errors.New("ong/middleware: csrf token wrong format")
+	once                    sync.Once //nolint:gochecknoglobals
+	enc                     cry.Enc   //nolint:gochecknoglobals
 )
 
 type csrfContextKey string
@@ -51,6 +56,12 @@ const (
 	// django appears to use 32 random characters for its csrf token.
 	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
 	csrfBytesTokenLength = 32
+
+	// This value should not be changed without thinking about it.
+	// This has to be a character that `id.Random()` cannot generate.
+	// The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
+	// So `sep` should not be any of those.
+	sep = ":"
 )
 
 // csrf is a middleware that provides protection against Cross Site Request Forgeries.
@@ -100,7 +111,7 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 				break
 			}
 
-			_, errN := enc.DecryptDecode(actualToken)
+			tokVal, errN := enc.DecryptDecode(actualToken)
 			if errN != nil {
 				// We should redirect the request since it means that the server is not aware of such a token.
 				// It shoulbe be a temporary redirect to the same page but this time send a http GET request.
@@ -123,6 +134,30 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 				)
 				return
 			}
+
+			res := strings.Split(tokVal, sep)
+			if len(res) != 2 {
+				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenWrongFormat.Error())
+				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+				return
+			}
+
+			expires, errP := strconv.ParseInt(res[1], 10, 64)
+			if errP != nil {
+				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(ongMiddlewareErrorHeader, errP.Error())
+				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+				return
+			}
+
+			diff := expires - time.Now().UTC().Unix()
+			if diff <= 0 {
+				cookie.Delete(w, csrfCookieName, domain)
+				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenExpired.Error())
+				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+				return
+			}
 		}
 
 		// 2. generate a new token.
@@ -142,7 +177,14 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 			1. http://breachattack.com/
 			2. https://security.stackexchange.com/a/172646
 		*/
-		tokenToIssue := enc.EncryptEncode(msgToEncrypt)
+		expires := strconv.FormatInt(
+			time.Now().UTC().Add(tokenMaxAge).Unix(),
+			10,
+		)
+		tokenToIssue := enc.EncryptEncode(
+			// see: https://github.com/golang/net/blob/v0.8.0/xsrftoken/xsrf.go#L33-L46
+			fmt.Sprintf("%s%s%s", msgToEncrypt, sep, expires),
+		)
 
 		// 3. create cookie
 		cookie.Set(
