@@ -3,8 +3,10 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"mime"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -62,6 +64,12 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 	})
 	msgToEncrypt := id.Random(16)
 
+	// This value should not be changed without thinking about it.
+	// This has to be a character that `id.Random()` cannot generate.
+	// The cookie spec allows a sequence of characters excluding semi-colon, comma and white space.
+	// So `sep` should not be any of those.
+	const sep = ":"
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
 		// - https://github.com/django/django/blob/4.0.5/django/middleware/csrf.py
@@ -100,7 +108,7 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 				break
 			}
 
-			_, errN := enc.DecryptDecode(actualToken)
+			tokVal, errN := enc.DecryptDecode(actualToken)
 			if errN != nil {
 				// We should redirect the request since it means that the server is not aware of such a token.
 				// It shoulbe be a temporary redirect to the same page but this time send a http GET request.
@@ -123,6 +131,7 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 				)
 				return
 			}
+			fmt.Println("\t tokVal: ", tokVal)
 		}
 
 		// 2. generate a new token.
@@ -142,7 +151,13 @@ func csrf(wrappedHandler http.HandlerFunc, secretKey, domain string) http.Handle
 			1. http://breachattack.com/
 			2. https://security.stackexchange.com/a/172646
 		*/
-		tokenToIssue := enc.EncryptEncode(msgToEncrypt)
+		expires := strconv.FormatInt(
+			time.Now().UTC().Add(tokenMaxAge).Unix(),
+			10,
+		)
+		tokenToIssue := enc.EncryptEncode(
+			fmt.Sprintf("%s%s%s", msgToEncrypt, sep, expires),
+		)
 
 		// 3. create cookie
 		cookie.Set(
