@@ -43,6 +43,7 @@ const (
 	errPrefix           = "ong/internal/clientip:"
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
+	proxyHeader         = "PROXY"
 	// clientIPctxKey is the name of the context key used to store the client IP address.
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 )
@@ -203,7 +204,7 @@ func Rightmost(headers http.Header) string {
 //
 // [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
 func ProxyHeader(headers http.Header) string {
-	s := headers.Get("PROXY")
+	s := headers.Get(proxyHeader)
 
 	if len(s) < 56 {
 		// The maximum line lengths of proxy-protocol line including the CRLF are:
