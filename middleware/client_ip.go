@@ -31,6 +31,12 @@ const (
 	//
 	// See the warning in [ClientIP]
 	RightIpStrategy = ClientIPstrategy("RightIpStrategy")
+
+	// ProxyStrategy derives the client IP from the [PROXY protocol v1].
+	// This should be used when your application is behind a TCP proxy that uses the v1 PROXY protocol.
+	//
+	// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
+	ProxyStrategy = ClientIPstrategy("ProxyStrategy")
 )
 
 // SingleIpStrategy derives the client IP from http header headerName.
@@ -43,7 +49,7 @@ func SingleIpStrategy(headerName string) ClientIPstrategy {
 	return ClientIPstrategy(headerName)
 }
 
-// ClientIP returns the "real" client IP address.
+// ClientIP returns the "real" client IP address. This will be based on the [ClientIPstrategy] that you chose.
 //
 // Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
@@ -72,6 +78,8 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy ClientIPstrategy) http.H
 			clientAddr = clientip.Leftmost(r.Header)
 		case RightIpStrategy:
 			clientAddr = clientip.Rightmost(r.Header)
+		case ProxyStrategy:
+			clientAddr = clientip.ProxyHeader(r.Header)
 		default:
 			// treat everything else as a `singleIP` strategy
 			clientAddr = clientip.SingleIPHeader(string(v), r.Header)
