@@ -270,9 +270,9 @@ func sigHandler(
 		sigCaught := <-sigs
 
 		sl := slog.NewLogLogger(logger.Handler(), log.LevelImmediate)
-		sl.Println("server got shutdown signal",
-			"signal", fmt.Sprintf("%v", sigCaught),
-			"shutdownDuration", drainDur.String(),
+		sl.Println("server got shutdown signal.",
+			"signal =", fmt.Sprintf("%v.", sigCaught),
+			"shutdownDuration =", drainDur.String(),
 		)
 
 		err := srv.Shutdown(ctx)
