@@ -20,13 +20,13 @@ const (
 	// See the warning in [ClientIP]
 	DirectIpStrategy = ClientIPstrategy("DirectIpStrategy")
 
-	// LeftIpStrategy derives the client IP from the leftmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	// LeftIpStrategy derives the client IP from the leftmost valid & non-private IP address in the `X-Fowarded-For`/`Forwarded` header.
 	// Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
 	//
 	// See the warning in [ClientIP]
 	LeftIpStrategy = ClientIPstrategy("LeftIpStrategy")
 
-	// RightIpStrategy derives the client IP from the rightmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	// RightIpStrategy derives the client IP from the rightmost valid & non-private IP address in the `X-Fowarded-For`/`Forwarded` header.
 	//
 	// See the warning in [ClientIP]
 	RightIpStrategy = ClientIPstrategy("RightIpStrategy")
@@ -40,7 +40,7 @@ const (
 
 // SingleIpStrategy derives the client IP from http header headerName.
 //
-// headerName MUST not be either `X-Forwarded-For` or `Forwarded`.
+// headerName MUST NOT be either `X-Forwarded-For` or `Forwarded`.
 // It can be something like `CF-Connecting-IP`, `Fastly-Client-IP`, `Fly-Client-IP`, etc; depending on your usecase.
 //
 // See the warning in [ClientIP]
