@@ -72,11 +72,8 @@ func ExampleAll() {
 
 	handler := middleware.All(myHandler, opts)
 
-	http.HandleFunc("/", handler)
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		panic(err)
-	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handler)
 
 	// Output:
 }
