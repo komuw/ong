@@ -49,7 +49,7 @@ func SingleIpStrategy(headerName string) ClientIPstrategy {
 	return ClientIPstrategy(headerName)
 }
 
-// ClientIP returns the "real" client IP address. This will be based on the [ClientIPstrategy] that you choose.
+// ClientIP returns the "real" client IP address. This will be based on the [ClientIPstrategy] that you chose.
 //
 // Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
