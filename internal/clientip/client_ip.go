@@ -206,9 +206,10 @@ func Rightmost(headers http.Header) string {
 func ProxyHeader(headers http.Header) string {
 	s := headers.Get(proxyHeader)
 
-	if len(s) < 56 {
+	if len(s) <= 15 {
 		// The maximum line lengths of proxy-protocol line including the CRLF are:
 		// ipv4: 56 chars, ipv6: 104 chars, unknown: 15 chars.
+		// Thus any string of length less-than-or-equal-to 15 does not contain a valid client_ip.
 		//
 		// see: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
 		return ""
