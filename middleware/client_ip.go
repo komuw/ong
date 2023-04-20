@@ -12,7 +12,6 @@ import (
 //
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
-// The strategies supported are [DirectIpStrategy], [LeftIpStrategy], [RightIpStrategy] & [SingleIpStrategy]
 type ClientIPstrategy string
 
 const (
