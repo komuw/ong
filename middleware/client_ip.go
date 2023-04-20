@@ -12,30 +12,36 @@ import (
 //
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
-// The strategies supported are [DirectIpStrategy], [LeftIpStrategy], [RightIpStrategy] & [SingleIpStrategy]
 type ClientIPstrategy string
 
 const (
-	// DirectIpStrategy should be used if the server accepts direct connections, rather than through a proxy.
+	// DirectIpStrategy derives the client IP from [http.Request.RemoteAddr].
+	// It should be used if the server accepts direct connections, rather than through a proxy.
 	//
 	// See the warning in [ClientIP]
 	DirectIpStrategy = ClientIPstrategy("DirectIpStrategy")
 
-	// LeftIpStrategy derives the client IP from the leftmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
-	// Note: This MUST NOT be used for security purposes. This IP can be trivially SPOOFED.
+	// LeftIpStrategy derives the client IP from the leftmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
 	//
 	// See the warning in [ClientIP]
 	LeftIpStrategy = ClientIPstrategy("LeftIpStrategy")
 
-	// RightIpStrategy derives the client IP from the rightmost valid and non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	// RightIpStrategy derives the client IP from the rightmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
 	//
 	// See the warning in [ClientIP]
 	RightIpStrategy = ClientIPstrategy("RightIpStrategy")
+
+	// ProxyStrategy derives the client IP from the [PROXY protocol v1].
+	// This should be used when your application is behind a TCP proxy that uses the v1 PROXY protocol.
+	//
+	// 	See the warning in [ClientIP]
+	// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
+	ProxyStrategy = ClientIPstrategy("ProxyStrategy")
 )
 
 // SingleIpStrategy derives the client IP from http header headerName.
 //
-// headerName MUST not be either `X-Forwarded-For` or `Forwarded`.
+// headerName MUST NOT be either `X-Forwarded-For` or `Forwarded`.
 // It can be something like `CF-Connecting-IP`, `Fastly-Client-IP`, `Fly-Client-IP`, etc; depending on your usecase.
 //
 // See the warning in [ClientIP]
@@ -43,7 +49,7 @@ func SingleIpStrategy(headerName string) ClientIPstrategy {
 	return ClientIPstrategy(headerName)
 }
 
-// ClientIP returns the "real" client IP address.
+// ClientIP returns the "real" client IP address. This will be based on the [ClientIPstrategy] that you chose.
 //
 // Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
@@ -72,6 +78,8 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy ClientIPstrategy) http.H
 			clientAddr = clientip.Leftmost(r.Header)
 		case RightIpStrategy:
 			clientAddr = clientip.Rightmost(r.Header)
+		case ProxyStrategy:
+			clientAddr = clientip.ProxyHeader(r.Header)
 		default:
 			// treat everything else as a `singleIP` strategy
 			clientAddr = clientip.SingleIPHeader(string(v), r.Header)

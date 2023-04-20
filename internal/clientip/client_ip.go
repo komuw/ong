@@ -43,6 +43,7 @@ const (
 	errPrefix           = "ong/internal/clientip:"
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
+	proxyHeader         = "PROXY"
 	// clientIPctxKey is the name of the context key used to store the client IP address.
 	clientIPctxKey = clientIPcontextKeyType("clientIPcontextKeyType")
 )
@@ -85,10 +86,12 @@ func DirectAddress(remoteAddr string) string {
 // This strategy should be used when the given header is added by a trusted reverse proxy.
 // You MUST ensure that this header is not spoofable (as is possible with Akamai's use of
 // True-Client-IP, Fastly's default use of Fastly-Client-IP, and Azure's X-Azure-ClientIP).
-// See the single-IP wiki page for more info: https://github.com/realclientip/realclientip-go/wiki/Single-IP-Headers
+// See the [single-IP wiki] page for more info.
 //
 // The returned IP may contain a zone identifier.
 // If no valid IP can be derived, empty string will be returned.
+//
+// [single-IP wiki]: https://github.com/realclientip/realclientip-go/wiki/Single-IP-Headers
 func SingleIPHeader(headerName string, headers http.Header) string {
 	headerName = http.CanonicalHeaderKey(headerName)
 
@@ -195,6 +198,55 @@ func Rightmost(headers http.Header) string {
 
 	// We failed to find any valid, non-private IP
 	return theIP
+}
+
+// ProxyHeader derives an IP address based off the [PROXY protocol v1].
+//
+// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
+func ProxyHeader(headers http.Header) string {
+	s := headers.Get(proxyHeader)
+
+	if len(s) <= 15 {
+		// The maximum line lengths of proxy-protocol line including the CRLF are:
+		// ipv4: 56 chars, ipv6: 104 chars, unknown: 15 chars.
+		// Thus any string of length less-than-or-equal-to 15 does not contain a valid client_ip.
+		//
+		// see: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
+		return ""
+	}
+
+	// The proxy protocol line is a single line that ends with a carriage return and line feed ("\r\n"), and has the following form:
+	/*
+		  PROXY_STRING +
+		  single space +
+		  INET_PROTOCOL +
+		  single space +
+		  CLIENT_IP +
+		  single space +
+		  PROXY_IP +
+		  single space +
+		  CLIENT_PORT +
+		  single space +
+		  PROXY_PORT +
+		  "\r\n"
+
+		eg:
+		  PROXY TCP4 198.51.100.22 203.0.113.7 35646 80\r\n
+		  PROXY TCP6 2001:DB8::21f:5bff:febf:ce22:8a2e 2001:DB8::12f:8baa:eafc:ce29:6b2e 35646 80\r\n
+
+		- https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-proxy-protocol.html
+	*/
+
+	s1 := s[11:] // len("PROXY TCP6 ")
+	ipStr := strings.Split(s1, " ")[0]
+
+	ipAddr := goodIPAddr(ipStr)
+	if ipAddr == nil {
+		// The header value is invalid
+		return ""
+	}
+
+	return ipAddr.String()
 }
 
 // goodIPAddr parses IP address and adds a check for unspecified (like "::") and zero-value addresses (like "0.0.0.0").

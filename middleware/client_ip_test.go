@@ -14,6 +14,7 @@ import (
 const (
 	xForwardedForHeader = "X-Forwarded-For"
 	forwardedHeader     = "Forwarded"
+	proxyHeader         = "PROXY"
 )
 
 func someClientIpHandler(msg string) http.HandlerFunc {
@@ -89,6 +90,19 @@ func TestClientIP(t *testing.T) {
 				req: func() *http.Request {
 					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 					r.Header.Add(xForwardedForHeader, publicIP)
+					return r
+				},
+				expected: publicIP,
+			},
+			{
+				name:     "ProxyStrategy",
+				strategy: ProxyStrategy,
+				req: func() *http.Request {
+					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+					r.Header.Add(proxyHeader,
+						// https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-proxy-protocol.html
+						fmt.Sprintf("PROXY TCP4 %s 203.0.113.7 35646 80\r\n", publicIP),
+					)
 					return r
 				},
 				expected: publicIP,
