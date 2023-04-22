@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -274,6 +275,46 @@ func TestServer(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
 		}
+	})
+
+	t.Run("request body size", func(t *testing.T) {
+		t.Parallel()
+
+		port := math.MaxUint16 - uint16(12)
+		uri := "/api"
+		msg := "hello world"
+		mux := mux.New(
+			l,
+			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
+			nil,
+			mux.NewRoute(
+				uri,
+				mux.MethodPost,
+				someServerTestHandler(msg),
+			),
+		)
+
+		go func() {
+			certFile, keyFile := createDevCertKey(l)
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
+			attest.Ok(t, err)
+		}()
+
+		// await for the server to start.
+		time.Sleep(11 * time.Second)
+
+		postMsg := "my name is John"
+		body := strings.NewReader(postMsg)
+		url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
+		res, err := client.Post(url, "text/plain", body)
+		attest.Ok(t, err)
+
+		defer res.Body.Close()
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
