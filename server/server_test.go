@@ -304,7 +304,7 @@ func TestServer(t *testing.T) {
 		time.Sleep(11 * time.Second)
 
 		t.Run("smallSize", func(t *testing.T) {
-			postMsg := "my name is John"
+			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
 			body := strings.NewReader(postMsg)
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
 			res, err := client.Post(url, "text/plain", body)
