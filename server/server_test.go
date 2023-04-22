@@ -332,7 +332,10 @@ func TestServer(t *testing.T) {
 			attest.Ok(t, err)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
+			// The error message is guaranteed by Go's compatibility promise.
+			// see: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1153-L1156
+			errMsg := "request body too large"
+			attest.Equal(t, string(rb), errMsg)
 		})
 	})
 
