@@ -317,6 +317,23 @@ func TestServer(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
 		})
+
+		t.Run("largeSize", func(t *testing.T) {
+			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*3))
+			body := strings.NewReader(postMsg)
+
+			fmt.Println("\n\t body.Len(): ", body.Len())
+			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
+			res, err := client.Post(url, "text/plain", body)
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		})
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

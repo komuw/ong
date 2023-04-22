@@ -220,6 +220,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	if errTc != nil {
 		return errTc
 	}
+	fmt.Println("\n\t o.maxBodyBytes: ", o.maxBodyBytes)
 	server := &http.Server{
 		Addr:      o.serverPort,
 		TLSConfig: tlsConf,
@@ -229,10 +230,14 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
 		Handler: http.TimeoutHandler(
-			h,
+			http.MaxBytesHandler(
+				h,
+				int64(o.maxBodyBytes), // limit in bytes.
+			),
 			o.handlerTimeout,
 			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
 		),
+
 		ReadHeaderTimeout: o.readHeaderTimeout,
 		ReadTimeout:       o.readTimeout,
 		WriteTimeout:      o.writeTimeout,
