@@ -29,7 +29,7 @@ const (
 	// [Nginx] uses a default value of 1MB, [Apache] uses default of 1GB whereas [Haproxy] does not have such a limit.
 	//
 	// The max size for http [forms] in Go is 10MB. The max size of the entire bible in text form is ~5MB.
-	// Thus here, we are going to use the 3 times the default size for forms.
+	// Thus here, we are going to use the 2 times the default size for forms.
 	// Note that; from the [code] and [docs], it looks like; if you set the maxBodyBytes, this also becomes the maxFormSize.
 	//
 	// [Nginx]: http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
@@ -38,7 +38,7 @@ const (
 	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
-	defaultMaxBodyBytes = uint64(3 * 1024 * 1024) // 1GB
+	defaultMaxBodyBytes = uint64(2 * 10 * 1024 * 1024) // 20MB
 )
 
 type tlsOpts struct {
