@@ -166,6 +166,13 @@ const tlsFingerPrintKey = "TlsFingerPrintKey"
 func someServerTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
+
+		// This read is needed for the test that checks request body size.
+		b, _ := io.ReadAll(r.Body)
+		if len(b) > 0 {
+			defer r.Body.Close()
+		}
+
 		fmt.Fprint(w, msg)
 	}
 }
@@ -280,6 +287,18 @@ func TestServer(t *testing.T) {
 	t.Run("request body size", func(t *testing.T) {
 		t.Parallel()
 
+		tr := &http.Transport{
+			// since we are using self-signed certificates, we need to skip verification.
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+			DisableCompression: true,
+		}
+		client := &http.Client{Transport: tr}
+		t.Cleanup(func() {
+			// Without this, `uber/goleak` would report a leak.
+			// see: https://github.com/uber-go/goleak/issues/87
+			client.CloseIdleConnections()
+		})
+
 		port := math.MaxUint16 - uint16(12)
 		uri := "/api"
 		msg := "hello world"
@@ -319,12 +338,18 @@ func TestServer(t *testing.T) {
 		})
 
 		t.Run("largeSize", func(t *testing.T) {
-			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*3))
+			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*12))
 			body := strings.NewReader(postMsg)
 
 			fmt.Println("\n\t body.Len(): ", body.Len())
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
-			res, err := client.Post(url, "text/plain", body)
+			req, err := http.NewRequest("POST", url, body)
+			attest.Ok(t, err)
+			req.ContentLength = int64(body.Len())
+			req.Header.Set("Content-Type", "text/plain")
+			req.Header.Set("Accept-Encoding", "identity")
+
+			res, err := client.Do(req)
 			attest.Ok(t, err)
 
 			defer res.Body.Close()
