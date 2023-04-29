@@ -198,10 +198,10 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler: http.TimeoutHandler(
+		Handler: timeoutHandler(
 			h,
 			o.handlerTimeout,
-			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
+			// fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
 		),
 		ReadHeaderTimeout: o.readHeaderTimeout,
 		ReadTimeout:       o.readTimeout,
@@ -385,5 +385,24 @@ func listenerConfig() *net.ListenConfig {
 				)
 			})
 		},
+	}
+}
+
+func timeoutHandler(wrappedHandler http.Handler, handlerTimeout time.Duration) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rc := http.NewResponseController(w)
+
+		handlerTimeout := 2 * time.Second
+		now := time.Now()
+
+		if err := rc.SetReadDeadline(now.Add(handlerTimeout)); err != nil {
+			fmt.Printf("\n\n\t SetReadDeadline err= %v\n", err)
+		}
+
+		if err := rc.SetWriteDeadline(now.Add(handlerTimeout)); err != nil {
+			fmt.Printf("\n\n\t SetWriteDeadline err= %v\n", err)
+		}
+
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
