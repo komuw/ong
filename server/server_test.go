@@ -45,48 +45,6 @@ func getPort() uint16 {
 // 	goleak.VerifyTestMain(m)
 // }
 
-func TestDrainDuration(t *testing.T) {
-	t.Parallel()
-
-	t.Run("all in same units", func(t *testing.T) {
-		t.Parallel()
-
-		handlerTimeout := 170 * time.Second
-		o := Opts{
-			port:              65080,
-			host:              "127.0.0.1",
-			network:           "tcp",
-			readHeaderTimeout: 1 * time.Second,
-			readTimeout:       1 * time.Second,
-			writeTimeout:      160 * time.Second,
-			handlerTimeout:    handlerTimeout,
-			idleTimeout:       120 * time.Second,
-		}
-		got := drainDuration(o)
-		want := handlerTimeout + (10 * time.Second)
-		attest.Equal(t, got, want)
-	})
-
-	t.Run("different units", func(t *testing.T) {
-		t.Parallel()
-
-		writeTimeout := 3 * time.Minute
-		o := Opts{
-			port:              65080,
-			host:              "127.0.0.1",
-			network:           "tcp",
-			readHeaderTimeout: 1 * time.Nanosecond,
-			readTimeout:       1 * time.Minute,
-			writeTimeout:      writeTimeout,
-			handlerTimeout:    170 * time.Millisecond,
-			idleTimeout:       120 * time.Second,
-		}
-		got := drainDuration(o)
-		want := writeTimeout + (10 * time.Second)
-		attest.Equal(t, got, want)
-	})
-}
-
 func TestOpts(t *testing.T) {
 	t.Parallel()
 
@@ -105,6 +63,7 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
+			drainTimeout:      defaultDrainDuration,
 			serverPort:        ":65081",
 			serverAddress:     "127.0.0.1:65081",
 			httpPort:          ":65080",
@@ -133,6 +92,7 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
+			drainTimeout:      defaultDrainDuration,
 			serverPort:        ":80",
 			serverAddress:     "0.0.0.0:80",
 			httpPort:          ":79",
@@ -160,6 +120,7 @@ func TestOpts(t *testing.T) {
 			writeTimeout:      3 * time.Second,
 			handlerTimeout:    13 * time.Second,
 			idleTimeout:       113 * time.Second,
+			drainTimeout:      defaultDrainDuration,
 			tls: tlsOpts{
 				certFile: "/tmp/ong_dev_certificate.pem",
 				keyFile:  "/tmp/ong_dev_key.pem",
