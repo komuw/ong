@@ -312,7 +312,8 @@ func sigHandler(
 			// (a) & (b) are done concurrently. Thus (b) can occur before (a);
 			// if that is the case; your app will shutdown while k8s is still sending traffic to it.
 			// This sleep here, minimizes the duration of that race condition.
-			// See: https://twitter.com/ProgrammerDude/status/1660238268863066114
+			// - https://twitter.com/ProgrammerDude/status/1660238268863066114
+			// - https://twitter.com/thockin/status/1560398974929973248
 			time.Sleep(drainDur)
 		}
 
