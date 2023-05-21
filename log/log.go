@@ -49,11 +49,11 @@ func getId(ctx context.Context) (string, bool) {
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
-	opts := slog.HandlerOptions{
+	opts := &slog.HandlerOptions{
 		AddSource: true,
 		Level:     slog.LevelDebug,
 	}
-	jh := slog.NewJSONHandler(w, &opts)
+	jh := slog.NewJSONHandler(w, opts)
 	cbuf := newCirleBuf(maxMsgs)
 	hdlr := handler{wrappedHandler: jh, cBuf: cbuf, logID: id.New()}
 	l := slog.New(hdlr)
