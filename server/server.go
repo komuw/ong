@@ -220,7 +220,6 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	if errTc != nil {
 		return errTc
 	}
-	fmt.Println("\n\t o.maxBodyBytes: ", o.maxBodyBytes)
 	server := &http.Server{
 		Addr:      o.serverPort,
 		TLSConfig: tlsConf,

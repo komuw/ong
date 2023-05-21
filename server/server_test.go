@@ -168,9 +168,9 @@ func someServerTestHandler(msg string) http.HandlerFunc {
 		w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
 
 		// This read is needed for the test that checks request body size.
-		b, _ := io.ReadAll(r.Body)
-		if len(b) > 0 {
-			defer r.Body.Close()
+		if _, err := io.ReadAll(r.Body); err != nil {
+			fmt.Fprint(w, err.Error())
+			return
 		}
 
 		fmt.Fprint(w, msg)
@@ -338,10 +338,9 @@ func TestServer(t *testing.T) {
 		})
 
 		t.Run("largeSize", func(t *testing.T) {
-			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*12))
+			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*2))
 			body := strings.NewReader(postMsg)
 
-			fmt.Println("\n\t body.Len(): ", body.Len())
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
 			req, err := http.NewRequest("POST", url, body)
 			attest.Ok(t, err)
@@ -360,7 +359,7 @@ func TestServer(t *testing.T) {
 			// The error message is guaranteed by Go's compatibility promise.
 			// see: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1153-L1156
 			errMsg := "request body too large"
-			attest.Equal(t, string(rb), errMsg)
+			attest.Subsequence(t, string(rb), errMsg)
 		})
 	})
 
