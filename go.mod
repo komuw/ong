@@ -3,10 +3,10 @@ module github.com/komuw/ong
 go 1.20
 
 require (
-	golang.org/x/crypto v0.7.0
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
-	golang.org/x/net v0.8.0
-	golang.org/x/sys v0.6.0
+	golang.org/x/crypto v0.9.0
+	golang.org/x/exp v0.0.0-20230519143937-03e91628a987
+	golang.org/x/net v0.10.0
+	golang.org/x/sys v0.8.0
 )
 
 require (
@@ -17,18 +17,18 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
-	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/sync v0.2.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 )
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // test
 	github.com/akshayjshah/attest v0.4.0 // test
-	github.com/klauspost/compress v1.16.3 // test
-	github.com/rs/zerolog v1.29.0 // test
-	github.com/sirupsen/logrus v1.9.0 // test
+	github.com/klauspost/compress v1.16.5 // test
+	github.com/rs/zerolog v1.29.1 // test
+	github.com/sirupsen/logrus v1.9.2 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
 	github.com/tsenart/vegeta/v12 v12.8.4 // test
 	go.uber.org/goleak v1.2.1 // test
