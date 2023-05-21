@@ -167,8 +167,9 @@ func someServerTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
 
-		// This read is needed for the test that checks request body size.
 		if _, err := io.ReadAll(r.Body); err != nil {
+			// This is where the error produced by `http.MaxBytesHandler` is produced at.
+			// ie, its produced when a read is made.
 			fmt.Fprint(w, err.Error())
 			return
 		}
