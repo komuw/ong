@@ -279,13 +279,6 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		return err // already wrapped in the `serve` func.
 	}
 
-	{
-		// wait for server.Shutdown() to return.
-		// cancel context incase drainDuration expires befure server.Shutdown() has completed.
-		time.Sleep(drainDur)
-		cancel()
-	}
-
 	return nil
 }
 
@@ -308,6 +301,17 @@ func sigHandler(
 			"signal =", fmt.Sprintf("%v.", sigCaught),
 			"shutdownDuration =", drainDur.String(),
 		)
+
+		{
+			// If your app is running in kubernetes(k8s), if a pod is deleted;
+			// (a) it gets deleted from service endpoints.
+			// (b) it receives a SIGTERM from kubelet.
+			// (a) & (b) are done concurrently. Thus (b) can occur before (a);
+			// if that is the case; your app will shutdown while k8s is still sending traffic to it.
+			// This sleep here, minimizes the duration of that race condition.
+			// See: https://twitter.com/ProgrammerDude/status/1660238268863066114
+			time.Sleep(drainDur)
+		}
 
 		err := srv.Shutdown(ctx)
 		if err != nil {
