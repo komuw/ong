@@ -39,6 +39,9 @@ const (
 	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
 	defaultMaxBodyBytes = uint64(2 * 10 * 1024 * 1024) // 20MB
+
+	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
+	defaultDrainDuration = 10 * time.Second
 )
 
 type tlsOpts struct {
@@ -376,7 +379,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 
 // drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
 func drainDuration(o Opts) time.Duration {
-	dur := 1 * time.Second
+	dur := defaultDrainDuration
 
 	if o.handlerTimeout > dur {
 		dur = o.handlerTimeout
@@ -393,9 +396,6 @@ func drainDuration(o Opts) time.Duration {
 
 	// drainDuration should not take into account o.idleTimeout
 	// because server.Shutdown() already closes all idle connections.
-
-	dur = dur + (10 * time.Second)
-
 	return dur
 }
 

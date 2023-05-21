@@ -63,7 +63,7 @@ func TestDrainDuration(t *testing.T) {
 			idleTimeout:       120 * time.Second,
 		}
 		got := drainDuration(o)
-		want := handlerTimeout + (10 * time.Second)
+		want := handlerTimeout
 		attest.Equal(t, got, want)
 	})
 
@@ -82,7 +82,26 @@ func TestDrainDuration(t *testing.T) {
 			idleTimeout:       120 * time.Second,
 		}
 		got := drainDuration(o)
-		want := writeTimeout + (10 * time.Second)
+		want := writeTimeout
+		attest.Equal(t, got, want)
+	})
+
+	t.Run("default", func(t *testing.T) {
+		t.Parallel()
+
+		smallDur := 10 * time.Nanosecond
+		o := Opts{
+			port:              65080,
+			host:              "127.0.0.1",
+			network:           "tcp",
+			readHeaderTimeout: smallDur,
+			readTimeout:       smallDur,
+			writeTimeout:      smallDur,
+			handlerTimeout:    smallDur,
+			idleTimeout:       smallDur,
+		}
+		got := drainDuration(o)
+		want := defaultDrainDuration
 		attest.Equal(t, got, want)
 	})
 }
