@@ -53,7 +53,7 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 		AddSource: true,
 		Level:     slog.LevelDebug,
 	}
-	jh := opts.NewJSONHandler(w)
+	jh := slog.NewJSONHandler(w, &opts)
 	cbuf := newCirleBuf(maxMsgs)
 	hdlr := handler{wrappedHandler: jh, cBuf: cbuf, logID: id.New()}
 	l := slog.New(hdlr)
@@ -145,12 +145,13 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	newAttrs := []slog.Attr{
 		{Key: "logID", Value: slog.StringValue(id)},
 	}
-	r.Attrs(func(a slog.Attr) {
+	r.Attrs(func(a slog.Attr) bool {
 		if e, ok := a.Value.Any().(error); ok {
 			if stack := errors.StackTrace(e); stack != "" {
 				newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
 			}
 		}
+		return true
 	})
 	r.AddAttrs(newAttrs...)
 
