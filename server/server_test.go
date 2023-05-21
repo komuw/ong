@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -24,6 +25,14 @@ import (
 func getSecretKey() string {
 	key := "hard-password"
 	return key
+}
+
+// getPort returns a random port.
+// The idea is that different tests should run on different independent ports to avoid collisions.
+func getPort() uint16 {
+	r := rand.Intn(100) + 1
+	p := math.MaxUint16 - uint16(r)
+	return p
 }
 
 // todo: enable this.
@@ -200,7 +209,7 @@ func TestServer(t *testing.T) {
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
-		port := math.MaxUint16 - uint16(10)
+		port := getPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
@@ -303,7 +312,7 @@ func TestServer(t *testing.T) {
 			client.CloseIdleConnections()
 		})
 
-		port := math.MaxUint16 - uint16(12)
+		port := getPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
@@ -370,7 +379,7 @@ func TestServer(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		port := math.MaxUint16 - uint16(12)
+		port := getPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
@@ -433,7 +442,7 @@ func BenchmarkServer(b *testing.B) {
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	handler := benchmarkServerHandler("helloWorld")
-	port := math.MaxUint16 - uint16(14)
+	port := getPort()
 
 	go func() {
 		certFile, keyFile := createDevCertKey(l)
