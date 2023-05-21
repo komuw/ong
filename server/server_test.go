@@ -88,6 +88,7 @@ func TestOpts(t *testing.T) {
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
+			maxBodyBytes:      defaultMaxBodyBytes,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -115,6 +116,7 @@ func TestOpts(t *testing.T) {
 
 		want := Opts{
 			port:              80,
+			maxBodyBytes:      defaultMaxBodyBytes,
 			host:              "0.0.0.0",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -141,6 +143,7 @@ func TestOpts(t *testing.T) {
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
+			maxBodyBytes:      defaultMaxBodyBytes,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
