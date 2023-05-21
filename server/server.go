@@ -23,6 +23,24 @@ import (
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
+const (
+	// defaultMaxBodyBytes the value used as the limit for incoming request bodies, if a custom value was not provided.
+	//
+	// [Nginx] uses a default value of 1MB, [Apache] uses default of 1GB whereas [Haproxy] does not have such a limit.
+	//
+	// The max size for http [forms] in Go is 10MB. The max size of the entire bible in text form is ~5MB.
+	// Thus here, we are going to use the 2 times the default size for forms.
+	// Note that; from the [code] and [docs], it looks like; if you set the maxBodyBytes, this also becomes the maxFormSize.
+	//
+	// [Nginx]: http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
+	// [Apache]: https://httpd.apache.org/docs/2.4/mod/core.html#limitrequestbody
+	// [Haproxy]: https://discourse.haproxy.org/t/how-can-you-configure-the-nginx-client-max-body-size-equivalent-in-haproxy/1690/2
+	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
+	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
+	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
+	defaultMaxBodyBytes = uint64(2 * 10 * 1024 * 1024) // 20MB
+)
+
 type tlsOpts struct {
 	// if certFile is present, tls will be served from certificates on disk.
 	certFile string
@@ -41,6 +59,7 @@ type tlsOpts struct {
 // Use either [NewOpts], [DevOpts], [CertOpts] or [LetsEncryptOpts] to get a valid Opts.
 type Opts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
+	maxBodyBytes      uint64 // max size of request body allowed.
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
@@ -65,6 +84,8 @@ func (o Opts) Equal(other Opts) bool {
 //
 // port is the port at which the server should listen on.
 //
+// maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
+//
 // readHeaderTimeout is the amount of time a server will be allowed to read request headers.
 // readTimeout is the maximum duration a server will use for reading the entire request, including the body.
 // writeTimeout is the maximum duration before a server times out writes of the response.
@@ -83,6 +104,7 @@ func (o Opts) Equal(other Opts) bool {
 // [letsencrypt]: https://letsencrypt.org/
 func NewOpts(
 	port uint16,
+	maxBodyBytes uint64,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
@@ -107,8 +129,13 @@ func NewOpts(
 		httpPort = port - 1
 	}
 
+	if maxBodyBytes <= 0 {
+		maxBodyBytes = defaultMaxBodyBytes
+	}
+
 	return Opts{
 		port:              port,
+		maxBodyBytes:      maxBodyBytes,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
@@ -158,8 +185,11 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) Opts {
 	handlerTimeout := writeTimeout + (10 * time.Second)
 	idleTimeout := handlerTimeout + (100 * time.Second)
 
+	maxBodyBytes := defaultMaxBodyBytes
+
 	return NewOpts(
 		port,
+		maxBodyBytes,
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
@@ -199,10 +229,14 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
 		Handler: http.TimeoutHandler(
-			h,
+			http.MaxBytesHandler(
+				h,
+				int64(o.maxBodyBytes), // limit in bytes.
+			),
 			o.handlerTimeout,
 			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
 		),
+
 		ReadHeaderTimeout: o.readHeaderTimeout,
 		ReadTimeout:       o.readTimeout,
 		WriteTimeout:      o.writeTimeout,

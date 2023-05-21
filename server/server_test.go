@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -23,6 +25,14 @@ import (
 func getSecretKey() string {
 	key := "hard-password"
 	return key
+}
+
+// getPort returns a random port.
+// The idea is that different tests should run on different independent ports to avoid collisions.
+func getPort() uint16 {
+	r := rand.Intn(100) + 1
+	p := math.MaxUint16 - uint16(r)
+	return p
 }
 
 // todo: enable this.
@@ -87,6 +97,7 @@ func TestOpts(t *testing.T) {
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
+			maxBodyBytes:      defaultMaxBodyBytes,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -114,6 +125,7 @@ func TestOpts(t *testing.T) {
 
 		want := Opts{
 			port:              80,
+			maxBodyBytes:      defaultMaxBodyBytes,
 			host:              "0.0.0.0",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -140,6 +152,7 @@ func TestOpts(t *testing.T) {
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
+			maxBodyBytes:      defaultMaxBodyBytes,
 			host:              "127.0.0.1",
 			network:           "tcp",
 			readHeaderTimeout: 1 * time.Second,
@@ -165,6 +178,14 @@ const tlsFingerPrintKey = "TlsFingerPrintKey"
 func someServerTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
+
+		if _, err := io.ReadAll(r.Body); err != nil {
+			// This is where the error produced by `http.MaxBytesHandler` is produced at.
+			// ie, its produced when a read is made.
+			fmt.Fprint(w, err.Error())
+			return
+		}
+
 		fmt.Fprint(w, msg)
 	}
 }
@@ -188,7 +209,7 @@ func TestServer(t *testing.T) {
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
-		port := math.MaxUint16 - uint16(10)
+		port := getPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
@@ -276,10 +297,89 @@ func TestServer(t *testing.T) {
 		}
 	})
 
+	t.Run("request body size", func(t *testing.T) {
+		t.Parallel()
+
+		trReqBody := &http.Transport{
+			// since we are using self-signed certificates, we need to skip verification.
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+			DisableCompression: true,
+		}
+		clientReqBody := &http.Client{Transport: trReqBody}
+		t.Cleanup(func() {
+			// Without this, `uber/goleak` would report a leak.
+			// see: https://github.com/uber-go/goleak/issues/87
+			clientReqBody.CloseIdleConnections()
+		})
+
+		port := getPort()
+		uri := "/api"
+		msg := "hello world"
+		mux := mux.New(
+			l,
+			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
+			nil,
+			mux.NewRoute(
+				uri,
+				mux.MethodPost,
+				someServerTestHandler(msg),
+			),
+		)
+
+		go func() {
+			certFile, keyFile := createDevCertKey(l)
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
+			attest.Ok(t, err)
+		}()
+
+		// await for the server to start.
+		time.Sleep(11 * time.Second)
+
+		t.Run("smallSize", func(t *testing.T) {
+			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
+			body := strings.NewReader(postMsg)
+			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
+			res, err := clientReqBody.Post(url, "text/plain", body)
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		})
+
+		t.Run("largeSize", func(t *testing.T) {
+			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*2))
+			body := strings.NewReader(postMsg)
+
+			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
+			req, err := http.NewRequest("POST", url, body)
+			attest.Ok(t, err)
+			req.ContentLength = int64(body.Len())
+			req.Header.Set("Content-Type", "text/plain")
+			req.Header.Set("Accept-Encoding", "identity")
+
+			res, err := clientReqBody.Do(req)
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			// The error message is guaranteed by Go's compatibility promise.
+			// see: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1153-L1156
+			errMsg := "request body too large"
+			attest.Subsequence(t, string(rb), errMsg)
+		})
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		port := math.MaxUint16 - uint16(12)
+		port := getPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
@@ -342,7 +442,7 @@ func BenchmarkServer(b *testing.B) {
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	handler := benchmarkServerHandler("helloWorld")
-	port := math.MaxUint16 - uint16(14)
+	port := getPort()
 
 	go func() {
 		certFile, keyFile := createDevCertKey(l)
