@@ -79,7 +79,7 @@ func ExampleAll() {
 }
 
 func ExampleWithOpts() {
-	l := slog.New(slog.NewTextHandler(os.Stdout))
+	l := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	opts := middleware.WithOpts(
 		"example.com",
 		443,
