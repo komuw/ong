@@ -41,7 +41,7 @@ const (
 	defaultMaxBodyBytes = uint64(2 * 10 * 1024 * 1024) // 20MB
 
 	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
-	defaultDrainDuration = 10 * time.Second
+	defaultDrainDuration = 13 * time.Second
 )
 
 type tlsOpts struct {
@@ -68,6 +68,7 @@ type Opts struct {
 	writeTimeout      time.Duration
 	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
+	drainTimeout      time.Duration
 	tls               tlsOpts
 	// the following ones are created automatically
 	host          string
@@ -94,6 +95,8 @@ func (o Opts) Equal(other Opts) bool {
 // writeTimeout is the maximum duration before a server times out writes of the response.
 // handlerTimeout is the maximum duration that handlers on the server will serve a request before timing out.
 // idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
+// drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
+// This is important especially in applications running in places like kubernetes.
 //
 // certFile is a path to a tls certificate.
 // keyFile is a path to a tls key.
@@ -113,6 +116,7 @@ func NewOpts(
 	writeTimeout time.Duration,
 	handlerTimeout time.Duration,
 	idleTimeout time.Duration,
+	drainTimeout time.Duration,
 	certFile string,
 	keyFile string,
 	email string, // if present, tls will be served from letsencrypt certifiates.
@@ -144,6 +148,7 @@ func NewOpts(
 		writeTimeout:      writeTimeout,
 		handlerTimeout:    handlerTimeout,
 		idleTimeout:       idleTimeout,
+		drainTimeout:      drainTimeout,
 		tls: tlsOpts{
 			certFile: certFile,
 			keyFile:  keyFile,
@@ -180,13 +185,13 @@ func LetsEncryptOpts(email, domain string) Opts {
 // withOpts returns a new Opts that has sensible defaults given port.
 func withOpts(port uint16, certFile, keyFile, email, domain string) Opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
-	// drainDuration = max(readHeaderTimeout , readTimeout , writeTimeout , handlerTimeout)
 
 	readHeaderTimeout := 1 * time.Second
 	readTimeout := readHeaderTimeout + (1 * time.Second)
 	writeTimeout := readTimeout + (1 * time.Second)
 	handlerTimeout := writeTimeout + (10 * time.Second)
 	idleTimeout := handlerTimeout + (100 * time.Second)
+	drainTimeout := defaultDrainDuration
 
 	maxBodyBytes := defaultMaxBodyBytes
 
@@ -198,6 +203,7 @@ func withOpts(port uint16, certFile, keyFile, email, domain string) Opts {
 		writeTimeout,
 		handlerTimeout,
 		idleTimeout,
+		drainTimeout,
 		certFile,
 		keyFile,
 		email,
@@ -266,8 +272,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		},
 	}
 
-	drainDur := drainDuration(o)
-	sigHandler(server, ctx, cancel, l, drainDur)
+	sigHandler(server, ctx, cancel, l, o.drainTimeout)
 
 	{
 		startPprofServer(l)
@@ -376,28 +381,6 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 	}
 
 	return nil
-}
-
-// drainDuration determines how long to wait for the server to shutdown after it has received a shutdown signal.
-func drainDuration(o Opts) time.Duration {
-	dur := defaultDrainDuration
-
-	if o.handlerTimeout > dur {
-		dur = o.handlerTimeout
-	}
-	if o.readHeaderTimeout > dur {
-		dur = o.readHeaderTimeout
-	}
-	if o.readTimeout > dur {
-		dur = o.readTimeout
-	}
-	if o.writeTimeout > dur {
-		dur = o.writeTimeout
-	}
-
-	// drainDuration should not take into account o.idleTimeout
-	// because server.Shutdown() already closes all idle connections.
-	return dur
 }
 
 // listenerConfig creates a net listener config that reuses address and port.
