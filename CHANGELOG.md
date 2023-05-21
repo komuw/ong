@@ -8,6 +8,7 @@ Most recent version is listed first.
 - Validate expiry of csrf tokens: https://github.com/komuw/ong/pull/257
 - Add support for PROXY protocol in clientIP: https://github.com/komuw/ong/pull/258
 - Add nilness vet check: https://github.com/komuw/ong/pull/259
+- Add option to restrict size of request bodies: https://github.com/komuw/ong/pull/261
 
 ## v0.0.46
 - Include TLS fingerprint in encrypted cookies: https://github.com/komuw/ong/pull/250
