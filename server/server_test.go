@@ -300,16 +300,16 @@ func TestServer(t *testing.T) {
 	t.Run("request body size", func(t *testing.T) {
 		t.Parallel()
 
-		tr := &http.Transport{
+		trReqBody := &http.Transport{
 			// since we are using self-signed certificates, we need to skip verification.
 			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 			DisableCompression: true,
 		}
-		client := &http.Client{Transport: tr}
+		clientReqBody := &http.Client{Transport: trReqBody}
 		t.Cleanup(func() {
 			// Without this, `uber/goleak` would report a leak.
 			// see: https://github.com/uber-go/goleak/issues/87
-			client.CloseIdleConnections()
+			clientReqBody.CloseIdleConnections()
 		})
 
 		port := getPort()
@@ -339,7 +339,7 @@ func TestServer(t *testing.T) {
 			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
 			body := strings.NewReader(postMsg)
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
-			res, err := client.Post(url, "text/plain", body)
+			res, err := clientReqBody.Post(url, "text/plain", body)
 			attest.Ok(t, err)
 
 			defer res.Body.Close()
@@ -361,7 +361,7 @@ func TestServer(t *testing.T) {
 			req.Header.Set("Content-Type", "text/plain")
 			req.Header.Set("Accept-Encoding", "identity")
 
-			res, err := client.Do(req)
+			res, err := clientReqBody.Do(req)
 			attest.Ok(t, err)
 
 			defer res.Body.Close()
