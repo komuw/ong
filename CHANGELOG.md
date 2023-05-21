@@ -10,6 +10,7 @@ Most recent version is listed first.
 - Add nilness vet check: https://github.com/komuw/ong/pull/259
 - Add option to restrict size of request bodies: https://github.com/komuw/ong/pull/261
 - Gracefully handle application termniation in kubernetes: https://github.com/komuw/ong/pull/263
+- Update to latest exp/slog: https://github.com/komuw/ong/pull/262
 
 ## v0.0.46
 - Include TLS fingerprint in encrypted cookies: https://github.com/komuw/ong/pull/250
