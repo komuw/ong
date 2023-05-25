@@ -1,0 +1,22 @@
+[
+ {
+  "Description": "Generic API Key",
+  "StartLine": 34,
+  "EndLine": 35,
+  "StartColumn": 3,
+  "EndColumn": 1,
+  "Match": "keyLen  = chacha20poly1305.KeySize",
+  "Secret": "chacha20poly1305.KeySize",
+  "File": "cry/enc.go",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 4.0849624,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "RuleID": "generic-api-key",
+  "Fingerprint": "cry/enc.go:generic-api-key:34"
+ }
+]
