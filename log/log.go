@@ -53,7 +53,13 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 		AddSource: true,
 		Level:     slog.LevelDebug,
 	}
-	jh := slog.NewJSONHandler(w, opts)
+	jh := slog.NewJSONHandler(
+		// os.Stderr is not buffered. Thus it will make a sycall for every write.
+		// os.Stdout on the other hand is buffered.
+		// https://eklitzke.org/stdout-buffering
+		w,
+		opts,
+	)
 	cbuf := newCirleBuf(maxMsgs)
 	hdlr := handler{wrappedHandler: jh, cBuf: cbuf, logID: id.New()}
 	l := slog.New(hdlr)
