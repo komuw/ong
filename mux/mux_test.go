@@ -13,7 +13,7 @@ import (
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
 )
 

@@ -25,12 +25,12 @@ require (
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // test
-	github.com/akshayjshah/attest v0.4.0 // test
 	github.com/klauspost/compress v1.16.5 // test
 	github.com/rs/zerolog v1.29.1 // test
 	github.com/sirupsen/logrus v1.9.2 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
 	github.com/tsenart/vegeta/v12 v12.8.4 // test
+	go.akshayshah.org/attest v1.0.2 // test
 	go.uber.org/goleak v1.2.1 // test
 	go.uber.org/zap v1.24.0 // test
 )

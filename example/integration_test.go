@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/akshayjshah/attest"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
+	"go.akshayshah.org/attest"
 )
 
 // This tests depend on the functionality in the /example folder.

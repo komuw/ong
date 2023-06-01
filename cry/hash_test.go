@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func TestHash(t *testing.T) {

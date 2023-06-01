@@ -12,7 +12,7 @@ import (
 	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/sess"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func bigMap() map[string]string {

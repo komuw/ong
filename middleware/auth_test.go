@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func protectedHandler(msg string) http.HandlerFunc {

@@ -19,7 +19,7 @@ import (
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func getSecretKey() string {

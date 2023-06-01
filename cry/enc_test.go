@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slices"
 )

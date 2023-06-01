@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 
 	nytimes "github.com/NYTimes/gziphandler"
 	klauspost "github.com/klauspost/compress/gzhttp"
