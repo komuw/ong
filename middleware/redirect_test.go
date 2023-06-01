@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func someHttpsRedirectorHandler(msg string) http.HandlerFunc {

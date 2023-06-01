@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 	"golang.org/x/exp/slices"
 )
 

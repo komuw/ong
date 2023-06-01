@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.48
+- Change attest import path: https://github.com/komuw/ong/pull/265
+
 ## v0.0.47
 - Leave http.server.DisableGeneralOptionsHandler at its default value: https://github.com/komuw/ong/pull/255
 - Validate expiry of csrf tokens: https://github.com/komuw/ong/pull/257
@@ -220,7 +223,7 @@ ClientIP, use remoteAddress if IP is local adress: https://github.com/komuw/ong/
 - pass logger as an arg to the middlewares: https://github.com/komuw/ong/pull/84
 - disable gzip: https://github.com/komuw/ong/pull/86
 - a more efficient error stack trace: https://github.com/komuw/ong/pull/87
-- update github.com/akshayjshah/attest: https://github.com/komuw/ong/pull/93
+- update go.akshayshah.org/attest: https://github.com/komuw/ong/pull/93
 - update to Go 1.19: https://github.com/komuw/ong/pull/102
 - remove rlimit code, go1.19 does automatically: https://github.com/komuw/ong/pull/104
 - automatically set GOMEMLIMIT in container environments: https://github.com/komuw/ong/pull/105

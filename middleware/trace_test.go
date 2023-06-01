@@ -13,7 +13,7 @@ import (
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/internal/octx"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 const someTraceHandlerHeader = "someTraceHandlerHeader"

@@ -8,7 +8,7 @@ import (
 
 	"github.com/komuw/ong/log"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func TestCreateDevCertKey(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
 )
 

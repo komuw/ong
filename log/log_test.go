@@ -13,7 +13,7 @@ import (
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/internal/octx"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slog"
 )

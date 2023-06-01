@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 const (

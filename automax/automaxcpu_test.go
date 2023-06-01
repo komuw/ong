@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func TestSetCpu(t *testing.T) {

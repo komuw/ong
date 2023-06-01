@@ -14,7 +14,7 @@ import (
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
 
-	"github.com/akshayjshah/attest"
+	"go.akshayshah.org/attest"
 )
 
 func getSecretKey() string {
