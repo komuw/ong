@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+## v0.0.48
+- Change attest import path: https://github.com/komuw/ong/pull/265
+
 ## v0.0.47
 - Leave http.server.DisableGeneralOptionsHandler at its default value: https://github.com/komuw/ong/pull/255
 - Validate expiry of csrf tokens: https://github.com/komuw/ong/pull/257
