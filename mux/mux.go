@@ -4,6 +4,7 @@ package mux
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/komuw/ong/middleware"
@@ -124,7 +125,14 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
 func (m Mux) Resolve(path string) Route {
 	// TODO: unify this logic with that found in `router.serveHTTP`
-	segs := pathSegments(path)
+	var zero = Route{}
+
+	u, err := url.Parse(path)
+	if err != nil {
+		return zero
+	}
+
+	segs := pathSegments(u.Path)
 	for _, rt := range m.router.routes {
 		if _, ok := rt.match(context.Background(), segs); ok {
 			return rt
@@ -132,7 +140,7 @@ func (m Mux) Resolve(path string) Route {
 		}
 	}
 
-	return Route{}
+	return zero
 }
 
 // Param gets the path/url parameter from the specified Context.

@@ -257,8 +257,29 @@ func TestMux(t *testing.T) {
 			stackPath string
 		}{
 			{
-				"success",
+				"success with no slashes",
 				"api",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"success with prefix slash",
+				"/api",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"success with suffix slash",
+				"api/",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"success with all slashes",
+				"/api/",
 				"/api/",
 				MethodGet,
 				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
@@ -273,6 +294,13 @@ func TestMux(t *testing.T) {
 			{
 				"url with param",
 				"check/2625",
+				"/check/:age/",
+				MethodAll,
+				"ong/mux/mux_test.go:38", // location where `checkAgeHandler` is declared.
+			},
+			{
+				"url with domain name",
+				"https://localhost/check/2625",
 				"/check/:age/",
 				MethodAll,
 				"ong/mux/mux_test.go:38", // location where `checkAgeHandler` is declared.
