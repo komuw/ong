@@ -13,22 +13,26 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func loginHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		cspNonce := middleware.GetCspNonce(r.Context())
-		_ = cspNonce // use CSP nonce
+func loginHandler() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			cspNonce := middleware.GetCspNonce(r.Context())
+			_ = cspNonce // use CSP nonce
 
-		_, _ = fmt.Fprint(w, "welcome to your favorite website.")
-	}
+			_, _ = fmt.Fprint(w, "welcome to your favorite website.")
+		},
+	)
 }
 
-func welcomeHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		csrfToken := middleware.GetCsrfToken(r.Context())
-		_ = csrfToken // use CSRF token
+func welcomeHandler() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			csrfToken := middleware.GetCsrfToken(r.Context())
+			_ = csrfToken // use CSRF token
 
-		_, _ = fmt.Fprint(w, "welcome.")
-	}
+			_, _ = fmt.Fprint(w, "welcome.")
+		},
+	)
 }
 
 func Example_getCspNonce() {
@@ -66,14 +70,16 @@ func ExampleAll() {
 	l := log.New(os.Stdout, 100)(context.Background())
 	opts := middleware.WithOpts("example.com", 443, "secretKey", middleware.DirectIpStrategy, l)
 
-	myHandler := func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.WriteString(w, "Hello from a HandleFunc \n")
-	}
+	myHandler := http.HandlerFunc(
+		func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = io.WriteString(w, "Hello from a HandleFunc \n")
+		},
+	)
 
 	handler := middleware.All(myHandler, opts)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler)
+	mux.Handle("/", handler)
 
 	// Output:
 }

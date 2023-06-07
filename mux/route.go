@@ -23,8 +23,8 @@ type Route struct {
 	method          string
 	pattern         string
 	segments        []string
-	originalHandler http.HandlerFunc // This is only needed to enhance the debug/panic message when conflicting routes are detected.
-	wrappingHandler http.HandlerFunc
+	originalHandler http.Handler // This is only needed to enhance the debug/panic message when conflicting routes are detected.
+	wrappingHandler http.Handler
 }
 
 func (r Route) String() string {
@@ -76,13 +76,13 @@ func (r Route) match(ctx context.Context, segs []string) (context.Context, bool)
 type router struct {
 	routes []Route
 	// notFoundHandler is the handler to call when no routes match.
-	notFoundHandler http.HandlerFunc
+	notFoundHandler http.Handler
 }
 
 // NewRouter makes a new Router.
-func newRouter(notFoundHandler http.HandlerFunc) *router {
+func newRouter(notFoundHandler http.Handler) *router {
 	if notFoundHandler == nil {
-		notFoundHandler = http.NotFound
+		notFoundHandler = http.NotFoundHandler()
 	}
 
 	return &router{notFoundHandler: notFoundHandler}
@@ -95,7 +95,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.HandlerFunc) {
+func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check

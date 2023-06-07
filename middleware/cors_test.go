@@ -11,10 +11,12 @@ import (
 	"go.akshayshah.org/attest"
 )
 
-func someCorsHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, msg)
-	}
+func someCorsHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestCorsPreflight(t *testing.T) {

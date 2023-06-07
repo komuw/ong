@@ -115,11 +115,13 @@ func TestGetToken(t *testing.T) {
 
 const tokenHeader = "CUSTOM-CSRF-TOKEN-TEST-HEADER"
 
-func someCsrfHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(tokenHeader, GetCsrfToken(r.Context()))
-		fmt.Fprint(w, msg)
-	}
+func someCsrfHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set(tokenHeader, GetCsrfToken(r.Context()))
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestCsrf(t *testing.T) {

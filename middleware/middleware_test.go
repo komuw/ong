@@ -20,21 +20,23 @@ import (
 	"go.uber.org/goleak"
 )
 
-func someMiddlewareTestHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			b, e := io.ReadAll(r.Body)
-			if e != nil {
-				panic(e)
+func someMiddlewareTestHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				b, e := io.ReadAll(r.Body)
+				if e != nil {
+					panic(e)
+				}
+				if len(b) > 1 {
+					_, _ = w.Write(b)
+					return
+				}
 			}
-			if len(b) > 1 {
-				_, _ = w.Write(b)
-				return
-			}
-		}
 
-		fmt.Fprint(w, msg)
-	}
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestMain(m *testing.M) {
@@ -57,7 +59,7 @@ func TestAllMiddleware(t *testing.T) {
 	errMsg := "not allowed. only allows http"
 	tests := []struct {
 		name               string
-		middleware         func(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc
+		middleware         func(wrappedHandler http.Handler, o Opts) http.Handler
 		httpMethod         string
 		expectedStatusCode int
 		expectedMsg        string
@@ -355,13 +357,15 @@ func TestMiddlewareServer(t *testing.T) {
 	})
 }
 
-func someBenchmarkAllMiddlewaresHandler() http.HandlerFunc {
+func someBenchmarkAllMiddlewaresHandler() http.Handler {
 	// bound stack growth.
 	// see: https://github.com/komuw/ong/issues/54
 	msg := strings.Repeat("hello world", 2)
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, msg)
-	}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals

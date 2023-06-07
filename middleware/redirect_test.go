@@ -13,19 +13,21 @@ import (
 	"go.akshayshah.org/attest"
 )
 
-func someHttpsRedirectorHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			p := make([]byte, 16)
-			_, err := r.Body.Read(p)
-			if err == nil || err == io.EOF {
-				_, _ = w.Write(p)
-				return
+func someHttpsRedirectorHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				p := make([]byte, 16)
+				_, err := r.Body.Read(p)
+				if err == nil || err == io.EOF {
+					_, _ = w.Write(p)
+					return
+				}
 			}
-		}
 
-		fmt.Fprint(w, msg)
-	}
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 const locationHeader = "Location"

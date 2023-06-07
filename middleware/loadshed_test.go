@@ -16,16 +16,18 @@ import (
 
 const loadShedderTestHeader = "LoadShedderTestHeader"
 
-func someLoadShedderHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		lat := r.Header.Get(loadShedderTestHeader)
-		latency, err := strconv.Atoi(lat)
-		if err != nil {
-			panic(err)
-		}
-		time.Sleep(time.Duration(latency) * time.Millisecond)
-		fmt.Fprint(w, msg)
-	}
+func someLoadShedderHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			lat := r.Header.Get(loadShedderTestHeader)
+			latency, err := strconv.Atoi(lat)
+			if err != nil {
+				panic(err)
+			}
+			time.Sleep(time.Duration(latency) * time.Millisecond)
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestLoadShedder(t *testing.T) {
@@ -240,12 +242,14 @@ func TestLatencyQueue(t *testing.T) {
 	})
 }
 
-func loadShedderBenchmarkHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		latency := time.Duration(rand.Intn(100)+1) * time.Millisecond
-		time.Sleep(latency)
-		fmt.Fprint(w, "hey")
-	}
+func loadShedderBenchmarkHandler() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			latency := time.Duration(rand.Intn(100)+1) * time.Millisecond
+			time.Sleep(latency)
+			fmt.Fprint(w, "hey")
+		},
+	)
 }
 
 func BenchmarkLoadShedder(b *testing.B) {

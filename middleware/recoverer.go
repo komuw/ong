@@ -15,49 +15,51 @@ import (
 
 // recoverer is a middleware that recovers from panics in wrappedHandler.
 // When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
-func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			errR := recover()
-			if errR != nil {
-				reqL := log.WithID(r.Context(), l)
+func recoverer(wrappedHandler http.Handler, l *slog.Logger) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				errR := recover()
+				if errR != nil {
+					reqL := log.WithID(r.Context(), l)
 
-				code := http.StatusInternalServerError
-				status := http.StatusText(code)
+					code := http.StatusInternalServerError
+					status := http.StatusText(code)
 
-				msg := "http_server"
-				flds := []any{
-					"error", fmt.Sprint(errR),
-					"clientIP", ClientIP(r),
-					"clientFingerPrint", ClientFingerPrint(r),
-					"method", r.Method,
-					"path", r.URL.Redacted(),
-					"code", code,
-					"status", status,
+					msg := "http_server"
+					flds := []any{
+						"error", fmt.Sprint(errR),
+						"clientIP", ClientIP(r),
+						"clientFingerPrint", ClientFingerPrint(r),
+						"method", r.Method,
+						"path", r.URL.Redacted(),
+						"code", code,
+						"status", status,
+					}
+					if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
+						extra := []any{"ongError", ongError}
+						flds = append(flds, extra...)
+					}
+					w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
+
+					if e, ok := errR.(error); ok {
+						extra := []any{"err", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
+						flds = append(flds, extra...)
+						reqL.Error(msg, flds...)
+					} else {
+						reqL.Error(msg, flds...)
+					}
+
+					// respond.
+					http.Error(
+						w,
+						status,
+						code,
+					)
 				}
-				if ongError := w.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
-					extra := []any{"ongError", ongError}
-					flds = append(flds, extra...)
-				}
-				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
+			}()
 
-				if e, ok := errR.(error); ok {
-					extra := []any{"err", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
-					flds = append(flds, extra...)
-					reqL.Error(msg, flds...)
-				} else {
-					reqL.Error(msg, flds...)
-				}
-
-				// respond.
-				http.Error(
-					w,
-					status,
-					code,
-				)
-			}
-		}()
-
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }

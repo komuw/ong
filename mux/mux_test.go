@@ -22,23 +22,29 @@ func getSecretKey() string {
 	return key
 }
 
-func someMuxHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, msg)
-	}
+func someMuxHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
-func thisIsAnotherMuxHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "thisIsAnotherMuxHandler")
-	}
+func thisIsAnotherMuxHandler() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, "thisIsAnotherMuxHandler")
+		},
+	)
 }
 
-func checkAgeHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		age := Param(r.Context(), "age")
-		_, _ = fmt.Fprintf(w, "Age is %s", age)
-	}
+func checkAgeHandler() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			age := Param(r.Context(), "age")
+			_, _ = fmt.Fprintf(w, "Age is %s", age)
+		},
+	)
 }
 
 func TestMain(m *testing.M) {

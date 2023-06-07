@@ -17,12 +17,14 @@ const (
 	proxyHeader         = "PROXY"
 )
 
-func someClientIpHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ip := ClientIP(r)
-		res := fmt.Sprintf("message: %s, ip: %s", msg, ip)
-		fmt.Fprint(w, res)
-	}
+func someClientIpHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			ip := ClientIP(r)
+			res := fmt.Sprintf("message: %s, ip: %s", msg, ip)
+			fmt.Fprint(w, res)
+		},
+	)
 }
 
 func TestClientIP(t *testing.T) {

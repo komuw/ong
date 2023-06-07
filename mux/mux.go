@@ -32,7 +32,7 @@ const (
 func NewRoute(
 	pattern string,
 	method string,
-	handler http.HandlerFunc,
+	handler http.Handler,
 ) Route {
 	h := getfunc(handler)
 	if strings.Contains(h, "ong/middleware/") &&
@@ -70,7 +70,7 @@ type Mux struct {
 // Typically, an application should only have one Mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, routes ...Route) Mux {
+func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux {
 	m := Mux{
 		l:      l,
 		router: newRouter(notFoundHandler),
@@ -106,7 +106,7 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, 
 	return m
 }
 
-func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.HandlerFunc) {
+func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
 	m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
 

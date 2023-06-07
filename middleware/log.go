@@ -15,63 +15,65 @@ import (
 )
 
 // logger is a middleware that logs http requests and responses using [log.Logger].
-func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
+func logger(wrappedHandler http.Handler, l *slog.Logger) http.Handler {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
 	//
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		lrw := &logRW{
-			ResponseWriter: w,
-		}
-		defer func() {
-			msg := "http_server"
-			flds := []any{
-				"clientIP", ClientIP(r),
-				"clientFingerPrint", ClientFingerPrint(r),
-				"method", r.Method,
-				"path", r.URL.Redacted(),
-				"code", lrw.code,
-				"status", http.StatusText(lrw.code),
-				"durationMS", time.Since(start).Milliseconds(),
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			lrw := &logRW{
+				ResponseWriter: w,
 			}
-			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
-				extra := []any{"ongError", ongError}
-				flds = append(flds, extra...)
-			}
-
-			// Remove header so that users dont see it.
-			//
-			// Note that this may not actually work.
-			// According to: https://pkg.go.dev/net/http#ResponseWriter
-			// Changing the header map after a call to WriteHeader (or
-			// Write) has no effect unless the HTTP status code was of the
-			// 1xx class or the modified headers are trailers.
-			lrw.Header().Del(ongMiddlewareErrorHeader)
-
-			// The logger should be in the defer block so that it uses the updated context containing the logID.
-			reqL := log.WithID(r.Context(), l)
-
-			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
-				// We are either in load shedding or rate-limiting.
-				// Only log 10% of the errors.
-				shouldLog := mathRand.Intn(100) > 90
-				if shouldLog {
-					reqL.Error(msg, flds...)
+			defer func() {
+				msg := "http_server"
+				flds := []any{
+					"clientIP", ClientIP(r),
+					"clientFingerPrint", ClientFingerPrint(r),
+					"method", r.Method,
+					"path", r.URL.Redacted(),
+					"code", lrw.code,
+					"status", http.StatusText(lrw.code),
+					"durationMS", time.Since(start).Milliseconds(),
 				}
-			} else if lrw.code >= http.StatusBadRequest {
-				// both client and server errors.
-				reqL.Error(msg, flds...)
-			} else {
-				reqL.Info(msg, flds...)
-			}
-		}()
+				if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
+					extra := []any{"ongError", ongError}
+					flds = append(flds, extra...)
+				}
 
-		wrappedHandler(lrw, r)
-	}
+				// Remove header so that users dont see it.
+				//
+				// Note that this may not actually work.
+				// According to: https://pkg.go.dev/net/http#ResponseWriter
+				// Changing the header map after a call to WriteHeader (or
+				// Write) has no effect unless the HTTP status code was of the
+				// 1xx class or the modified headers are trailers.
+				lrw.Header().Del(ongMiddlewareErrorHeader)
+
+				// The logger should be in the defer block so that it uses the updated context containing the logID.
+				reqL := log.WithID(r.Context(), l)
+
+				if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
+					// We are either in load shedding or rate-limiting.
+					// Only log 10% of the errors.
+					shouldLog := mathRand.Intn(100) > 90
+					if shouldLog {
+						reqL.Error(msg, flds...)
+					}
+				} else if lrw.code >= http.StatusBadRequest {
+					// both client and server errors.
+					reqL.Error(msg, flds...)
+				} else {
+					reqL.Info(msg, flds...)
+				}
+			}()
+
+			wrappedHandler.ServeHTTP(lrw, r)
+		},
+	)
 }
 
 // logRW provides an http.ResponseWriter interface, which logs requests/responses.

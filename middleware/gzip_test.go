@@ -19,31 +19,35 @@ import (
 	tmthrgd "github.com/tmthrgd/gziphandler"
 )
 
-func someGzipHandler(msg string) http.HandlerFunc {
+func someGzipHandler(msg string) http.Handler {
 	// bound stack growth.
 	// see: https://github.com/komuw/ong/issues/54
 	fMsg := strings.Repeat(msg, 3)
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, fMsg)
-	}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, fMsg)
+		},
+	)
 }
 
-func handlerImplementingFlush(msg string) http.HandlerFunc {
+func handlerImplementingFlush(msg string) http.Handler {
 	iterations := 3
-	return func(w http.ResponseWriter, r *http.Request) {
-		if f, ok := w.(http.Flusher); ok {
-			msg = "FlusherCalled::" + strings.Repeat(msg, iterations)
-			fmt.Fprint(w, msg)
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if f, ok := w.(http.Flusher); ok {
+				msg = "FlusherCalled::" + strings.Repeat(msg, iterations)
+				fmt.Fprint(w, msg)
 
-			f.Flush()
-		} else {
-			msg = strings.Repeat(msg, iterations)
-			fmt.Fprint(w, msg)
-		}
-	}
+				f.Flush()
+			} else {
+				msg = strings.Repeat(msg, iterations)
+				fmt.Fprint(w, msg)
+			}
+		},
+	)
 }
 
-func login() http.HandlerFunc {
+func login() http.Handler {
 	tmpl, err := template.New("myTpl").Parse(`<!DOCTYPE html>
 <html>
 
@@ -70,29 +74,31 @@ func login() http.HandlerFunc {
 		panic(err)
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			data := struct {
-				CsrfTokenName  string
-				CsrfTokenValue string
-				CspNonceValue  string
-			}{
-				CsrfTokenName:  CsrfTokenFormName,
-				CsrfTokenValue: GetCsrfToken(r.Context()),
-				CspNonceValue:  GetCspNonce(r.Context()),
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				data := struct {
+					CsrfTokenName  string
+					CsrfTokenValue string
+					CspNonceValue  string
+				}{
+					CsrfTokenName:  CsrfTokenFormName,
+					CsrfTokenValue: GetCsrfToken(r.Context()),
+					CspNonceValue:  GetCspNonce(r.Context()),
+				}
+				if err = tmpl.Execute(w, data); err != nil {
+					panic(err)
+				}
+				return
 			}
-			if err = tmpl.Execute(w, data); err != nil {
+
+			if err = r.ParseForm(); err != nil {
 				panic(err)
 			}
-			return
-		}
 
-		if err = r.ParseForm(); err != nil {
-			panic(err)
-		}
-
-		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
-	}
+			_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
+		},
+	)
 }
 
 func readBody(t *testing.T, res *http.Response) (strBody string) {
@@ -302,15 +308,17 @@ BenchmarkNytimesGzip-8     	       4	 315_386_476 ns/op	 3_813_934 B/op	     116
 BenchmarkTmthrgdGzip-8     	       4	 319_786_254 ns/op	 3_527_012 B/op	     116 allocs/op
 */
 
-func gzipBenchmarkHandler() http.HandlerFunc {
+func gzipBenchmarkHandler() http.Handler {
 	bin, err := os.ReadFile("testdata/benchmark.json")
 	if err != nil {
 		panic(err)
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, bin)
-	}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, bin)
+		},
+	)
 }
 
 var result int //nolint:gochecknoglobals

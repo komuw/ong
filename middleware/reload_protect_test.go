@@ -11,30 +11,32 @@ import (
 	"go.akshayshah.org/attest"
 )
 
-func someReloadProtectorHandler(msg, expectedFormName, expectedFormValue string) http.HandlerFunc {
+func someReloadProtectorHandler(msg, expectedFormName, expectedFormValue string) http.Handler {
 	// count is state that is affected by form submission.
 	// eg, when a form is submitted; we create a new user.
 	count := 0
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			err := r.ParseForm()
-			if err != nil {
-				panic(err)
-			}
-			val := r.Form.Get(expectedFormName)
-			if val != expectedFormValue {
-				panic(fmt.Sprintf("expected = %v got = %v", expectedFormValue, val))
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				err := r.ParseForm()
+				if err != nil {
+					panic(err)
+				}
+				val := r.Form.Get(expectedFormName)
+				if val != expectedFormValue {
+					panic(fmt.Sprintf("expected = %v got = %v", expectedFormValue, val))
+				}
+
+				count = count + 1
+				if count > 1 {
+					// form re-submission happened
+					panic("form re-submission happened")
+				}
 			}
 
-			count = count + 1
-			if count > 1 {
-				// form re-submission happened
-				panic("form re-submission happened")
-			}
-		}
-
-		fmt.Fprint(w, msg)
-	}
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestReloadProtector(t *testing.T) {

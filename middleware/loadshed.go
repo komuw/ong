@@ -44,51 +44,53 @@ const (
 )
 
 // loadShedder is a middleware that sheds load based on http response latencies.
-func loadShedder(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func loadShedder(wrappedHandler http.Handler) http.Handler {
 	// lq should not be a global variable, we want it to be per handler.
 	// This is because different handlers(URIs) could have different latencies and we want each to be loadshed independently.
 	lq := newLatencyQueue()
 	loadShedCheckStart := time.Now().UTC()
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		startReq := time.Now().UTC()
-		defer func() {
-			endReq := time.Now().UTC()
-			durReq := endReq.Sub(startReq)
-			lq.add(durReq)
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			startReq := time.Now().UTC()
+			defer func() {
+				endReq := time.Now().UTC()
+				durReq := endReq.Sub(startReq)
+				lq.add(durReq)
 
-			// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
-			if endReq.Sub(loadShedCheckStart) > resizePeriod {
-				// lets reduce the size of latencyQueue
-				lq.reSize()
-				loadShedCheckStart = endReq
+				// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
+				if endReq.Sub(loadShedCheckStart) > resizePeriod {
+					// lets reduce the size of latencyQueue
+					lq.reSize()
+					loadShedCheckStart = endReq
+				}
+			}()
+
+			sendProbe := false
+			{
+				// Even if the server is overloaded, we want to send a percentage of the requests through.
+				// These requests act as a probe. If the server eventually recovers,
+				// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
+				sendProbe = mathRand.Intn(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
 			}
-		}()
 
-		sendProbe := false
-		{
-			// Even if the server is overloaded, we want to send a percentage of the requests through.
-			// These requests act as a probe. If the server eventually recovers,
-			// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
-			sendProbe = mathRand.Intn(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
-		}
+			p99 := lq.getP99(minSampleSize)
+			if p99.Milliseconds() > breachLatency.Milliseconds() && !sendProbe {
+				// drop request
+				err := fmt.Errorf("ong/middleware: server is overloaded, retry after %s", retryAfter)
+				w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. breachLatency: %s", err.Error(), p99, breachLatency))
+				w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
+				http.Error(
+					w,
+					err.Error(),
+					http.StatusServiceUnavailable,
+				)
+				return
+			}
 
-		p99 := lq.getP99(minSampleSize)
-		if p99.Milliseconds() > breachLatency.Milliseconds() && !sendProbe {
-			// drop request
-			err := fmt.Errorf("ong/middleware: server is overloaded, retry after %s", retryAfter)
-			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. breachLatency: %s", err.Error(), p99, breachLatency))
-			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
-			http.Error(
-				w,
-				err.Error(),
-				http.StatusServiceUnavailable,
-			)
-			return
-		}
-
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }
 
 type latencyQueue struct {

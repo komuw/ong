@@ -60,29 +60,31 @@ const (
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 func cors(
-	wrappedHandler http.HandlerFunc,
+	wrappedHandler http.Handler,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
-) http.HandlerFunc {
+) http.Handler {
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
-			// handle preflight request
-			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders)
-			// Preflight requests are standalone and should stop the chain as some other
-			// middleware may not handle OPTIONS requests correctly. One typical example
-			// is authentication middleware ; OPTIONS requests won't carry authentication headers.
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			// handle actual request
-			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods)
-			wrappedHandler(w, r)
-		}
-	}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
+				// handle preflight request
+				handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders)
+				// Preflight requests are standalone and should stop the chain as some other
+				// middleware may not handle OPTIONS requests correctly. One typical example
+				// is authentication middleware ; OPTIONS requests won't carry authentication headers.
+				w.WriteHeader(http.StatusNoContent)
+			} else {
+				// handle actual request
+				handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods)
+				wrappedHandler.ServeHTTP(w, r)
+			}
+		},
+	)
 }
 
 func handlePreflight(

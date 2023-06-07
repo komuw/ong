@@ -105,9 +105,9 @@ func WithOpts(
 //
 //	allDefaultMiddlewares(wh, WithOpts("example.com", 443, "secretKey", RightIpStrategy, log.New(os.Stdout, 10)))
 func allDefaultMiddlewares(
-	wrappedHandler http.HandlerFunc,
+	wrappedHandler http.Handler,
 	o Opts,
-) http.HandlerFunc {
+) http.Handler {
 	domain := o.domain
 	httpsPort := o.httpsPort
 	allowedOrigins := o.allowedOrigins
@@ -200,137 +200,147 @@ func allDefaultMiddlewares(
 // All is a middleware that allows all http methods.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func All(wrappedHandler http.Handler, o Opts) http.Handler {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
 		o,
 	)
 }
 
-func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		wrappedHandler(w, r)
-	}
+func all(wrappedHandler http.Handler) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Get(wrappedHandler http.Handler, o Opts) http.Handler {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
 		o,
 	)
 }
 
-func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func get(wrappedHandler http.Handler) http.Handler {
 	msg := "http method: %s not allowed. only allows http GET"
-	return func(w http.ResponseWriter, r *http.Request) {
-		// We do not need to allow `http.MethodOptions` here.
-		// This is coz, the cors middleware has already handled that for us and it comes before the Get middleware.
-		if r.Method != http.MethodGet {
-			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-			http.Error(
-				w,
-				errMsg,
-				http.StatusMethodNotAllowed,
-			)
-			return
-		}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// We do not need to allow `http.MethodOptions` here.
+			// This is coz, the cors middleware has already handled that for us and it comes before the Get middleware.
+			if r.Method != http.MethodGet {
+				errMsg := fmt.Sprintf(msg, r.Method)
+				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+				http.Error(
+					w,
+					errMsg,
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
 
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Post(wrappedHandler http.Handler, o Opts) http.Handler {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
 		o,
 	)
 }
 
-func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func post(wrappedHandler http.Handler) http.Handler {
 	msg := "http method: %s not allowed. only allows http POST"
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-			http.Error(
-				w,
-				errMsg,
-				http.StatusMethodNotAllowed,
-			)
-			return
-		}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				errMsg := fmt.Sprintf(msg, r.Method)
+				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+				http.Error(
+					w,
+					errMsg,
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
 
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Head(wrappedHandler http.Handler, o Opts) http.Handler {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
 	)
 }
 
-func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func head(wrappedHandler http.Handler) http.Handler {
 	msg := "http method: %s not allowed. only allows http HEAD"
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodHead {
-			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-			http.Error(
-				w,
-				errMsg,
-				http.StatusMethodNotAllowed,
-			)
-			return
-		}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodHead {
+				errMsg := fmt.Sprintf(msg, r.Method)
+				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+				http.Error(
+					w,
+					errMsg,
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
 
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Put(wrappedHandler http.Handler, o Opts) http.Handler {
 	return allDefaultMiddlewares(
 		put(wrappedHandler),
 		o,
 	)
 }
 
-func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func put(wrappedHandler http.Handler) http.Handler {
 	msg := "http method: %s not allowed. only allows http PUT"
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
-			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-			http.Error(
-				w,
-				errMsg,
-				http.StatusMethodNotAllowed,
-			)
-			return
-		}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPut {
+				errMsg := fmt.Sprintf(msg, r.Method)
+				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+				http.Error(
+					w,
+					errMsg,
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
 
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Delete(wrappedHandler http.Handler, o Opts) http.Handler {
 	return allDefaultMiddlewares(
 		deleteH(wrappedHandler),
 		o,
@@ -338,20 +348,22 @@ func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 }
 
 // this is not called `delete` since that is a Go builtin func for deleting from maps.
-func deleteH(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func deleteH(wrappedHandler http.Handler) http.Handler {
 	msg := "http method: %s not allowed. only allows http DELETE"
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
-			errMsg := fmt.Sprintf(msg, r.Method)
-			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-			http.Error(
-				w,
-				errMsg,
-				http.StatusMethodNotAllowed,
-			)
-			return
-		}
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodDelete {
+				errMsg := fmt.Sprintf(msg, r.Method)
+				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+				http.Error(
+					w,
+					errMsg,
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
 
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }

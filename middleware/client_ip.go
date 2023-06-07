@@ -68,24 +68,26 @@ func ClientIP(r *http.Request) string {
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
 //
 // [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
-func clientIP(wrappedHandler http.HandlerFunc, strategy ClientIPstrategy) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var clientAddr string
-		switch v := strategy; v {
-		case DirectIpStrategy:
-			clientAddr = clientip.DirectAddress(r.RemoteAddr)
-		case LeftIpStrategy:
-			clientAddr = clientip.Leftmost(r.Header)
-		case RightIpStrategy:
-			clientAddr = clientip.Rightmost(r.Header)
-		case ProxyStrategy:
-			clientAddr = clientip.ProxyHeader(r.Header)
-		default:
-			// treat everything else as a `singleIP` strategy
-			clientAddr = clientip.SingleIPHeader(string(v), r.Header)
-		}
+func clientIP(wrappedHandler http.Handler, strategy ClientIPstrategy) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			var clientAddr string
+			switch v := strategy; v {
+			case DirectIpStrategy:
+				clientAddr = clientip.DirectAddress(r.RemoteAddr)
+			case LeftIpStrategy:
+				clientAddr = clientip.Leftmost(r.Header)
+			case RightIpStrategy:
+				clientAddr = clientip.Rightmost(r.Header)
+			case ProxyStrategy:
+				clientAddr = clientip.ProxyHeader(r.Header)
+			default:
+				// treat everything else as a `singleIP` strategy
+				clientAddr = clientip.SingleIPHeader(string(v), r.Header)
+			}
 
-		r = clientip.With(r, clientAddr)
-		wrappedHandler(w, r)
-	}
+			r = clientip.With(r, clientAddr)
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }

@@ -18,22 +18,24 @@ import (
 
 const someTraceHandlerHeader = "someTraceHandlerHeader"
 
-func someTraceHandler(successMsg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// sleep so that the trace middleware has some useful duration metrics to report.
-		time.Sleep(3 * time.Millisecond)
-		if r.Header.Get(someTraceHandlerHeader) != "" {
-			http.Error(
-				w,
-				r.Header.Get(someTraceHandlerHeader),
-				http.StatusInternalServerError,
-			)
-			return
-		} else {
-			fmt.Fprint(w, successMsg)
-			return
-		}
-	}
+func someTraceHandler(successMsg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// sleep so that the trace middleware has some useful duration metrics to report.
+			time.Sleep(3 * time.Millisecond)
+			if r.Header.Get(someTraceHandlerHeader) != "" {
+				http.Error(
+					w,
+					r.Header.Get(someTraceHandlerHeader),
+					http.StatusInternalServerError,
+				)
+				return
+			} else {
+				fmt.Fprint(w, successMsg)
+				return
+			}
+		},
+	)
 }
 
 func TestTraceMiddleware(t *testing.T) {

@@ -21,16 +21,18 @@ const (
 // It lets you store and retrieve arbitrary data on a per-site-visitor basis.
 //
 // This middleware works best when used together with the [sess] package.
-func session(wrappedHandler http.HandlerFunc, secretKey, domain string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Read from cookies and check for session cookie.
-		// 2. Get that cookie and save it to r.context
-		r = sess.Initialise(r, secretKey)
+func session(wrappedHandler http.Handler, secretKey, domain string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// 1. Read from cookies and check for session cookie.
+			// 2. Get that cookie and save it to r.context
+			r = sess.Initialise(r, secretKey)
 
-		srw := newSessRW(w, r, domain, secretKey)
+			srw := newSessRW(w, r, domain, secretKey)
 
-		wrappedHandler(srw, r)
-	}
+			wrappedHandler.ServeHTTP(srw, r)
+		},
+	)
 }
 
 // sessRW provides an http.ResponseWriter interface, which provides http session functionality.

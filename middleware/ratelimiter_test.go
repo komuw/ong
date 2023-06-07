@@ -13,10 +13,12 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func someRateLimiterHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, msg)
-	}
+func someRateLimiterHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestRateLimiter(t *testing.T) {

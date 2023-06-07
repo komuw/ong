@@ -25,34 +25,36 @@ import (
 var rateLimiterSendRate = 100.00 //nolint:gochecknoglobals
 
 // rateLimiter is a middleware that limits requests by IP address.
-func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func rateLimiter(wrappedHandler http.Handler) http.Handler {
 	rl := newRl()
 	const retryAfter = 15 * time.Minute
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		rl.reSize()
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			rl.reSize()
 
-		host := ClientIP(r)
-		tb := rl.get(host, rateLimiterSendRate)
+			host := ClientIP(r)
+			tb := rl.get(host, rateLimiterSendRate)
 
-		if !tb.allow() {
-			err := fmt.Errorf("ong/middleware: rate limited, retry after %s", retryAfter)
-			w.Header().Set(ongMiddlewareErrorHeader, err.Error())
-			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
-			http.Error(
-				w,
-				err.Error(),
-				http.StatusTooManyRequests,
-			)
-			return
-		}
+			if !tb.allow() {
+				err := fmt.Errorf("ong/middleware: rate limited, retry after %s", retryAfter)
+				w.Header().Set(ongMiddlewareErrorHeader, err.Error())
+				w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
+				http.Error(
+					w,
+					err.Error(),
+					http.StatusTooManyRequests,
+				)
+				return
+			}
 
-		// todo: maybe also limit max body size using something like `http.MaxBytesHandler`
-		// todo: also maybe add another limiter for IP subnet.
-		//      see limitation: https://github.com/komuw/ong/issues/17#issuecomment-1114551281
+			// todo: maybe also limit max body size using something like `http.MaxBytesHandler`
+			// todo: also maybe add another limiter for IP subnet.
+			//      see limitation: https://github.com/komuw/ong/issues/17#issuecomment-1114551281
 
-		wrappedHandler(w, r)
-	}
+			wrappedHandler.ServeHTTP(w, r)
+		},
+	)
 }
 
 // rl is a ratelimiter per IP address.
