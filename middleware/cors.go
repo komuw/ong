@@ -64,27 +64,25 @@ func cors(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
-) http.Handler {
+) http.HandlerFunc {
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
 
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
-				// handle preflight request
-				handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders)
-				// Preflight requests are standalone and should stop the chain as some other
-				// middleware may not handle OPTIONS requests correctly. One typical example
-				// is authentication middleware ; OPTIONS requests won't carry authentication headers.
-				w.WriteHeader(http.StatusNoContent)
-			} else {
-				// handle actual request
-				handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods)
-				wrappedHandler.ServeHTTP(w, r)
-			}
-		},
-	)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
+			// handle preflight request
+			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders)
+			// Preflight requests are standalone and should stop the chain as some other
+			// middleware may not handle OPTIONS requests correctly. One typical example
+			// is authentication middleware ; OPTIONS requests won't carry authentication headers.
+			w.WriteHeader(http.StatusNoContent)
+		} else {
+			// handle actual request
+			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods)
+			wrappedHandler.ServeHTTP(w, r)
+		}
+	}
 }
 
 func handlePreflight(

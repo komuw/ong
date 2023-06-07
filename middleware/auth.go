@@ -9,7 +9,7 @@ import (
 const minPasswdSize = 16
 
 // BasicAuth is a middleware that protects wrappedHandler using basic authentication.
-func BasicAuth(wrappedHandler http.Handler, user, passwd string) http.Handler {
+func BasicAuth(wrappedHandler http.Handler, user, passwd string) http.HandlerFunc {
 	const realm = "enter username and password"
 
 	if len(passwd) < minPasswdSize {
@@ -23,25 +23,23 @@ func BasicAuth(wrappedHandler http.Handler, user, passwd string) http.Handler {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	}
 
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			u, p, ok := r.BasicAuth()
-			if u == "" || p == "" || !ok {
-				e(w)
-				return
-			}
+	return func(w http.ResponseWriter, r *http.Request) {
+		u, p, ok := r.BasicAuth()
+		if u == "" || p == "" || !ok {
+			e(w)
+			return
+		}
 
-			if subtle.ConstantTimeCompare([]byte(u), []byte(user)) != 1 {
-				e(w)
-				return
-			}
+		if subtle.ConstantTimeCompare([]byte(u), []byte(user)) != 1 {
+			e(w)
+			return
+		}
 
-			if subtle.ConstantTimeCompare([]byte(p), []byte(passwd)) != 1 {
-				e(w)
-				return
-			}
+		if subtle.ConstantTimeCompare([]byte(p), []byte(passwd)) != 1 {
+			e(w)
+			return
+		}
 
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }

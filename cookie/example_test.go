@@ -15,31 +15,29 @@ type shoppingCart struct {
 	Price    uint8
 }
 
-func shoppingCartHandler() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			cookieName := "cart"
-			secretKey := "superSecret"
-			item := shoppingCart{ItemName: "shoe", Price: 89}
+func shoppingCartHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookieName := "cart"
+		secretKey := "superSecret"
+		item := shoppingCart{ItemName: "shoe", Price: 89}
 
-			b, err := json.Marshal(item)
-			if err != nil {
-				panic(err)
-			}
+		b, err := json.Marshal(item)
+		if err != nil {
+			panic(err)
+		}
 
-			cookie.SetEncrypted(
-				r,
-				w,
-				cookieName,
-				string(b),
-				"example.com",
-				2*time.Hour,
-				secretKey,
-			)
+		cookie.SetEncrypted(
+			r,
+			w,
+			cookieName,
+			string(b),
+			"example.com",
+			2*time.Hour,
+			secretKey,
+		)
 
-			fmt.Fprint(w, "thanks for shopping!")
-		},
-	)
+		fmt.Fprint(w, "thanks for shopping!")
+	}
 }
 
 func ExampleSetEncrypted() {

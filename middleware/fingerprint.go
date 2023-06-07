@@ -10,30 +10,28 @@ import (
 
 // fingerprint is a middleware that adds the client's TLS fingerprint to the request context.
 // The fingerprint can be fetched using [ClientFingerPrint]
-func fingerprint(wrappedHandler http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			fHash := ""
+func fingerprint(wrappedHandler http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		fHash := ""
 
-			if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
-				if s, ok := vCtx.(*finger.Print); ok {
-					if hash := s.Hash.Load(); hash != nil {
-						fHash = *hash
-					}
+		if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
+			if s, ok := vCtx.(*finger.Print); ok {
+				if hash := s.Hash.Load(); hash != nil {
+					fHash = *hash
 				}
 			}
+		}
 
-			ctx = context.WithValue(
-				ctx,
-				octx.FingerPrintCtxKey,
-				fHash,
-			)
-			r = r.WithContext(ctx)
+		ctx = context.WithValue(
+			ctx,
+			octx.FingerPrintCtxKey,
+			fHash,
+		)
+		r = r.WithContext(ctx)
 
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }
 
 // ClientFingerPrint returns the [TLS fingerprint] of the client.

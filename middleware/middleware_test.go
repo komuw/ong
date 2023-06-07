@@ -20,23 +20,21 @@ import (
 	"go.uber.org/goleak"
 )
 
-func someMiddlewareTestHandler(msg string) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodPost {
-				b, e := io.ReadAll(r.Body)
-				if e != nil {
-					panic(e)
-				}
-				if len(b) > 1 {
-					_, _ = w.Write(b)
-					return
-				}
+func someMiddlewareTestHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			b, e := io.ReadAll(r.Body)
+			if e != nil {
+				panic(e)
 			}
+			if len(b) > 1 {
+				_, _ = w.Write(b)
+				return
+			}
+		}
 
-			fmt.Fprint(w, msg)
-		},
-	)
+		fmt.Fprint(w, msg)
+	}
 }
 
 func TestMain(m *testing.M) {
@@ -357,15 +355,13 @@ func TestMiddlewareServer(t *testing.T) {
 	})
 }
 
-func someBenchmarkAllMiddlewaresHandler() http.Handler {
+func someBenchmarkAllMiddlewaresHandler() http.HandlerFunc {
 	// bound stack growth.
 	// see: https://github.com/komuw/ong/issues/54
 	msg := strings.Repeat("hello world", 2)
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, msg)
-		},
-	)
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, msg)
+	}
 }
 
 var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals

@@ -11,21 +11,17 @@ import (
 	"github.com/komuw/ong/mux"
 )
 
-func LoginHandler() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			_, _ = fmt.Fprint(w, "welcome to your favorite website.")
-		},
-	)
+func LoginHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, "welcome to your favorite website.")
+	}
 }
 
-func BooksByAuthorHandler() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			author := mux.Param(r.Context(), "author")
-			_, _ = fmt.Fprintf(w, "fetching books by author: %s", author)
-		},
-	)
+func BooksByAuthorHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		author := mux.Param(r.Context(), "author")
+		_, _ = fmt.Fprintf(w, "fetching books by author: %s", author)
+	}
 }
 
 func ExampleMux() {

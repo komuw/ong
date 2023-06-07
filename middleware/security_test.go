@@ -16,13 +16,11 @@ import (
 const nonceHeader = "CUSTOM-CSP-NONCE-TEST-HEADER"
 
 // echoHandler echos back in the response, the msg that was passed in.
-func echoHandler(msg string) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set(nonceHeader, GetCspNonce(r.Context()))
-			fmt.Fprint(w, msg)
-		},
-	)
+func echoHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(nonceHeader, GetCspNonce(r.Context()))
+		fmt.Fprint(w, msg)
+	}
 }
 
 func TestSecurity(t *testing.T) {

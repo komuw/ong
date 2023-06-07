@@ -107,7 +107,7 @@ func WithOpts(
 func allDefaultMiddlewares(
 	wrappedHandler http.Handler,
 	o Opts,
-) http.Handler {
+) http.HandlerFunc {
 	domain := o.domain
 	httpsPort := o.httpsPort
 	allowedOrigins := o.allowedOrigins
@@ -200,14 +200,14 @@ func allDefaultMiddlewares(
 // All is a middleware that allows all http methods.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func All(wrappedHandler http.Handler, o Opts) http.Handler {
+func All(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
 		o,
 	)
 }
 
-func all(wrappedHandler http.Handler) http.Handler {
+func all(wrappedHandler http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			wrappedHandler.ServeHTTP(w, r)
@@ -218,14 +218,14 @@ func all(wrappedHandler http.Handler) http.Handler {
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Get(wrappedHandler http.Handler, o Opts) http.Handler {
+func Get(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
 		o,
 	)
 }
 
-func get(wrappedHandler http.Handler) http.Handler {
+func get(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http GET"
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -250,14 +250,14 @@ func get(wrappedHandler http.Handler) http.Handler {
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Post(wrappedHandler http.Handler, o Opts) http.Handler {
+func Post(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
 		o,
 	)
 }
 
-func post(wrappedHandler http.Handler) http.Handler {
+func post(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http POST"
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -280,14 +280,14 @@ func post(wrappedHandler http.Handler) http.Handler {
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Head(wrappedHandler http.Handler, o Opts) http.Handler {
+func Head(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
 	)
 }
 
-func head(wrappedHandler http.Handler) http.Handler {
+func head(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http HEAD"
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -310,14 +310,14 @@ func head(wrappedHandler http.Handler) http.Handler {
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Put(wrappedHandler http.Handler, o Opts) http.Handler {
+func Put(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		put(wrappedHandler),
 		o,
 	)
 }
 
-func put(wrappedHandler http.Handler) http.Handler {
+func put(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http PUT"
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -340,7 +340,7 @@ func put(wrappedHandler http.Handler) http.Handler {
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Delete(wrappedHandler http.Handler, o Opts) http.Handler {
+func Delete(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		deleteH(wrappedHandler),
 		o,
@@ -348,7 +348,7 @@ func Delete(wrappedHandler http.Handler, o Opts) http.Handler {
 }
 
 // this is not called `delete` since that is a Go builtin func for deleting from maps.
-func deleteH(wrappedHandler http.Handler) http.Handler {
+func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http DELETE"
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {

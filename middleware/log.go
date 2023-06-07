@@ -15,15 +15,14 @@ import (
 )
 
 // logger is a middleware that logs http requests and responses using [log.Logger].
-func logger(wrappedHandler http.Handler, l *slog.Logger) http.Handler {
+func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
 	//
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
+	return  func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			lrw := &logRW{
 				ResponseWriter: w,
@@ -72,9 +71,7 @@ func logger(wrappedHandler http.Handler, l *slog.Logger) http.Handler {
 			}()
 
 			wrappedHandler.ServeHTTP(lrw, r)
-		},
-	)
-}
+		}
 
 // logRW provides an http.ResponseWriter interface, which logs requests/responses.
 type logRW struct {

@@ -13,26 +13,22 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func loginHandler() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			cspNonce := middleware.GetCspNonce(r.Context())
-			_ = cspNonce // use CSP nonce
+func loginHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cspNonce := middleware.GetCspNonce(r.Context())
+		_ = cspNonce // use CSP nonce
 
-			_, _ = fmt.Fprint(w, "welcome to your favorite website.")
-		},
-	)
+		_, _ = fmt.Fprint(w, "welcome to your favorite website.")
+	}
 }
 
-func welcomeHandler() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			csrfToken := middleware.GetCsrfToken(r.Context())
-			_ = csrfToken // use CSRF token
+func welcomeHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		csrfToken := middleware.GetCsrfToken(r.Context())
+		_ = csrfToken // use CSRF token
 
-			_, _ = fmt.Fprint(w, "welcome.")
-		},
-	)
+		_, _ = fmt.Fprint(w, "welcome.")
+	}
 }
 
 func Example_getCspNonce() {

@@ -29,37 +29,35 @@ const (
 )
 
 // gzip is a middleware that transparently gzips the http response body, for clients that support it.
-func gzip(wrappedHandler http.Handler) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add(varyHeader, acceptEncodingHeader)
+func gzip(wrappedHandler http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add(varyHeader, acceptEncodingHeader)
 
-			if !shouldGzipReq(r) {
-				wrappedHandler.ServeHTTP(w, r)
-				return
-			}
+		if !shouldGzipReq(r) {
+			wrappedHandler.ServeHTTP(w, r)
+			return
+		}
 
-			gzipWriter, _ := stdGzip.NewWriterLevel(w, stdGzip.BestSpeed)
-			grw := &gzipRW{
-				ResponseWriter: w,
-				// Bytes written during ServeHTTP are redirected to this gzip writer
-				// before being written to the underlying response.
-				gw: gzipWriter,
-			}
-			defer func() { _ = grw.Close() }() // errcheck made me do this.
+		gzipWriter, _ := stdGzip.NewWriterLevel(w, stdGzip.BestSpeed)
+		grw := &gzipRW{
+			ResponseWriter: w,
+			// Bytes written during ServeHTTP are redirected to this gzip writer
+			// before being written to the underlying response.
+			gw: gzipWriter,
+		}
+		defer func() { _ = grw.Close() }() // errcheck made me do this.
 
-			// We do not handle range requests when compression is used, as the
-			// range specified applies to the compressed data, not to the uncompressed one.
-			// see: https://github.com/nytimes/gziphandler/issues/83
-			r.Header.Del(rangeHeader)
+		// We do not handle range requests when compression is used, as the
+		// range specified applies to the compressed data, not to the uncompressed one.
+		// see: https://github.com/nytimes/gziphandler/issues/83
+		r.Header.Del(rangeHeader)
 
-			// todo: we could detect if `w` is a `http.CloseNotifier` and do something special here.
-			// see: https://github.com/klauspost/compress/blob/4a97174a615ed745c450077edf0e1f7e97aabd58/gzhttp/compress.go#L383-L385
-			// However `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
+		// todo: we could detect if `w` is a `http.CloseNotifier` and do something special here.
+		// see: https://github.com/klauspost/compress/blob/4a97174a615ed745c450077edf0e1f7e97aabd58/gzhttp/compress.go#L383-L385
+		// However `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 
-			wrappedHandler.ServeHTTP(grw, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(grw, r)
+	}
 }
 
 // gzipRW provides an http.ResponseWriter interface, which gzips

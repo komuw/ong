@@ -12,12 +12,10 @@ import (
 	"go.akshayshah.org/attest"
 )
 
-func protectedHandler(msg string) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprint(w, msg)
-		},
-	)
+func protectedHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, msg)
+	}
 }
 
 func TestBasicAuth(t *testing.T) {

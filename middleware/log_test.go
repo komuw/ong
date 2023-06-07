@@ -23,24 +23,22 @@ const (
 	someLatencyMS        = 3
 )
 
-func someLogHandler(successMsg string) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			// sleep so that the log middleware has some useful duration metrics to report.
-			time.Sleep(someLatencyMS * time.Millisecond)
-			if r.Header.Get(someLogHandlerHeader) != "" {
-				http.Error(
-					w,
-					r.Header.Get(someLogHandlerHeader),
-					http.StatusInternalServerError,
-				)
-				return
-			} else {
-				fmt.Fprint(w, successMsg)
-				return
-			}
-		},
-	)
+func someLogHandler(successMsg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// sleep so that the log middleware has some useful duration metrics to report.
+		time.Sleep(someLatencyMS * time.Millisecond)
+		if r.Header.Get(someLogHandlerHeader) != "" {
+			http.Error(
+				w,
+				r.Header.Get(someLogHandlerHeader),
+				http.StatusInternalServerError,
+			)
+			return
+		} else {
+			fmt.Fprint(w, successMsg)
+			return
+		}
+	}
 }
 
 func TestLogMiddleware(t *testing.T) {

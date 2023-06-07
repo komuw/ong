@@ -19,34 +19,30 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func handlerThatPanics(msg string, shouldPanic bool, err error) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			x := 3 + 9
-			_ = x
-			if shouldPanic {
-				panic(msg)
-			}
-			if err != nil {
-				panic(err)
-			}
+func handlerThatPanics(msg string, shouldPanic bool, err error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		x := 3 + 9
+		_ = x
+		if shouldPanic {
+			panic(msg)
+		}
+		if err != nil {
+			panic(err)
+		}
 
-			fmt.Fprint(w, msg)
-		},
-	)
+		fmt.Fprint(w, msg)
+	}
 }
 
-func anotherHandlerThatPanics() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			_ = 90
-			someSlice := []string{"zero", "one", "two"}
-			_ = "kilo"
-			_ = someSlice[16] // panic
+func anotherHandlerThatPanics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_ = 90
+		someSlice := []string{"zero", "one", "two"}
+		_ = "kilo"
+		_ = someSlice[16] // panic
 
-			fmt.Fprint(w, "anotherHandlerThatPanics")
-		},
-	)
+		fmt.Fprint(w, "anotherHandlerThatPanics")
+	}
 }
 
 func TestPanic(t *testing.T) {
