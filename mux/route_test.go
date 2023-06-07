@@ -302,16 +302,20 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 	attest.Equal(t, match, "POST")
 }
 
-func firstRoute(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, msg)
-	}
+func firstRoute(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			_, _ = fmt.Fprint(w, msg)
+		},
+	)
 }
 
-func secondRoute(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, msg)
-	}
+func secondRoute(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			_, _ = fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestConflicts(t *testing.T) {

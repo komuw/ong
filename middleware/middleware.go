@@ -1,5 +1,5 @@
 // Package middleware provides helpful functions that implement some common functionalities in http servers.
-// A middleware is a function that returns a [http.HandlerFunc]
+// A middleware is a function that returns a [http.Handler]
 //
 // The middlewares [All], [Get], [Post], [Head], [Put] & [Delete] wrap other internal middleware.
 // The effect of this is that the aforementioned middleware, in addition to their specialised functionality, will:

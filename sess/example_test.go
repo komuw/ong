@@ -12,17 +12,19 @@ import (
 	"github.com/komuw/ong/sess"
 )
 
-func loginHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		mySession := map[string]string{
-			"name":           "John Doe",
-			"favorite_color": "red",
-			"height":         "5 feet 6 inches",
-		}
-		sess.SetM(r, mySession)
+func loginHandler() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			mySession := map[string]string{
+				"name":           "John Doe",
+				"favorite_color": "red",
+				"height":         "5 feet 6 inches",
+			}
+			sess.SetM(r, mySession)
 
-		fmt.Fprint(w, "welcome again.")
-	}
+			fmt.Fprint(w, "welcome again.")
+		},
+	)
 }
 
 func ExampleSetM() {

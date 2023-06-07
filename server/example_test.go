@@ -47,20 +47,24 @@ func ExampleRun() {
 	}
 }
 
-func hello(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		cspNonce := middleware.GetCspNonce(r.Context())
-		csrfToken := middleware.GetCsrfToken(r.Context())
-		fmt.Printf("hello called cspNonce: %s, csrfToken: %s", cspNonce, csrfToken)
+func hello(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			cspNonce := middleware.GetCspNonce(r.Context())
+			csrfToken := middleware.GetCsrfToken(r.Context())
+			fmt.Printf("hello called cspNonce: %s, csrfToken: %s", cspNonce, csrfToken)
 
-		// use msg, which is a dependency specific to this handler
-		fmt.Fprint(w, msg)
-	}
+			// use msg, which is a dependency specific to this handler
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
-func check() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		age := mux.Param(r.Context(), "age")
-		_, _ = fmt.Fprintf(w, "Age is %s", age)
-	}
+func check() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			age := mux.Param(r.Context(), "age")
+			_, _ = fmt.Fprintf(w, "Age is %s", age)
+		},
+	)
 }

@@ -136,19 +136,21 @@ func TestOpts(t *testing.T) {
 
 const tlsFingerPrintKey = "TlsFingerPrintKey"
 
-func someServerTestHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
+func someServerTestHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set(tlsFingerPrintKey, middleware.ClientFingerPrint(r))
 
-		if _, err := io.ReadAll(r.Body); err != nil {
-			// This is where the error produced by `http.MaxBytesHandler` is produced at.
-			// ie, its produced when a read is made.
-			fmt.Fprint(w, err.Error())
-			return
-		}
+			if _, err := io.ReadAll(r.Body); err != nil {
+				// This is where the error produced by `http.MaxBytesHandler` is produced at.
+				// ie, its produced when a read is made.
+				fmt.Fprint(w, err.Error())
+				return
+			}
 
-		fmt.Fprint(w, msg)
-	}
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 func TestServer(t *testing.T) {
@@ -387,10 +389,12 @@ func TestServer(t *testing.T) {
 	})
 }
 
-func benchmarkServerHandler(msg string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, msg)
-	}
+func benchmarkServerHandler(msg string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, msg)
+		},
+	)
 }
 
 var result int //nolint:gochecknoglobals

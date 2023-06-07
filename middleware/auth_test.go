@@ -13,9 +13,10 @@ import (
 )
 
 func protectedHandler(msg string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, msg)
-	},
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, msg)
+		},
 	)
 }
 

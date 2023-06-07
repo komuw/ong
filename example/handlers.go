@@ -50,7 +50,7 @@ func NewApp(d db, l *slog.Logger) app {
 // health handler showcases the use of:
 // - encryption/decryption.
 // - random id.
-func (a app) health(secretKey string) http.HandlerFunc {
+func (a app) health(secretKey string) http.Handler {
 	var (
 		once        sync.Once
 		serverBoot  time.Time = time.Now().UTC()
@@ -59,17 +59,19 @@ func (a app) health(secretKey string) http.HandlerFunc {
 		enc         = cry.New(secretKey)
 	)
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		// intialize somethings only once for perfomance.
-		once.Do(func() {
-			serverStart = time.Now().UTC()
-		})
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// intialize somethings only once for perfomance.
+			once.Do(func() {
+				serverStart = time.Now().UTC()
+			})
 
-		encryptedSrvID := enc.EncryptEncode(serverID)
+			encryptedSrvID := enc.EncryptEncode(serverID)
 
-		res := fmt.Sprintf("serverBoot=%s, serverStart=%s, serverId=%s\n", serverBoot, serverStart, encryptedSrvID)
-		_, _ = io.WriteString(w, res)
-	}
+			res := fmt.Sprintf("serverBoot=%s, serverStart=%s, serverId=%s\n", serverBoot, serverStart, encryptedSrvID)
+			_, _ = io.WriteString(w, res)
+		},
+	)
 }
 
 // check handler showcases the use of:
@@ -78,60 +80,62 @@ func (a app) health(secretKey string) http.HandlerFunc {
 // - xcontext.Detach.
 // - safe http client.
 // - error wrapping.
-func (a app) check(msg string) http.HandlerFunc {
+func (a app) check(msg string) http.Handler {
 	cli := client.Safe(a.l)
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		cartID := "afakHda8eqL"
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			cartID := "afakHda8eqL"
 
-		age := mux.Param(r.Context(), "age")
-		sess.SetM(r, sess.M{
-			"name":    "John Doe",
-			"age":     age,
-			"cart_id": cartID,
-		})
+			age := mux.Param(r.Context(), "age")
+			sess.SetM(r, sess.M{
+				"name":    "John Doe",
+				"age":     age,
+				"cart_id": cartID,
+			})
 
-		if sess.Get(r, "cart_id") != "" {
-			if sess.Get(r, "cart_id") != cartID {
-				http.Error(w, "wrong cartID", http.StatusBadRequest)
-				return
-			}
-		}
-
-		go func(ctx context.Context) {
-			ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			defer cancel()
-
-			makeReq := func(url string) (code int, errp error) {
-				defer errors.Dwrap(&errp)
-
-				req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-				if err != nil {
-					return 0, err
+			if sess.Get(r, "cart_id") != "" {
+				if sess.Get(r, "cart_id") != cartID {
+					http.Error(w, "wrong cartID", http.StatusBadRequest)
+					return
 				}
-				resp, err := cli.Do(req)
-				if err != nil {
-					return 0, err
+			}
+
+			go func(ctx context.Context) {
+				ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				defer cancel()
+
+				makeReq := func(url string) (code int, errp error) {
+					defer errors.Dwrap(&errp)
+
+					req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+					if err != nil {
+						return 0, err
+					}
+					resp, err := cli.Do(req)
+					if err != nil {
+						return 0, err
+					}
+					defer func() { _ = resp.Body.Close() }()
+
+					return resp.StatusCode, nil
 				}
-				defer func() { _ = resp.Body.Close() }()
 
-				return resp.StatusCode, nil
-			}
+				l := log.WithID(ctx, a.l)
+				code, err := makeReq("https://example.com")
+				if err != nil {
+					l.Error("handler error", err)
+				}
+				l.Info("req succeded", "code", code)
+			}(
+				// we need to detach context,
+				// since this goroutine can outlive the http request lifecycle.
+				xcontext.Detach(r.Context()),
+			)
 
-			l := log.WithID(ctx, a.l)
-			code, err := makeReq("https://example.com")
-			if err != nil {
-				l.Error("handler error", err)
-			}
-			l.Info("req succeded", "code", code)
-		}(
-			// we need to detach context,
-			// since this goroutine can outlive the http request lifecycle.
-			xcontext.Detach(r.Context()),
-		)
-
-		_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
-	}
+			_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
+		},
+	)
 }
 
 // login handler showcases the use of:
@@ -139,7 +143,7 @@ func (a app) check(msg string) http.HandlerFunc {
 // - csp tokens.
 // - encrypted cookies
 // - hashing passwords.
-func (a app) login(secretKey string) http.HandlerFunc {
+func (a app) login(secretKey string) http.Handler {
 	tmpl, err := template.New("myTpl").Parse(`<!DOCTYPE html>
 <html>
 <head>
@@ -195,81 +199,83 @@ func (a app) login(secretKey string) http.HandlerFunc {
 		Name  string
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		reqL := log.WithID(r.Context(), a.l)
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			reqL := log.WithID(r.Context(), a.l)
 
-		if r.Method != http.MethodPost {
-			data := struct {
-				CsrfTokenName  string
-				CsrfTokenValue string
-				CspNonceValue  string
-			}{
-				CsrfTokenName:  middleware.CsrfTokenFormName,
-				CsrfTokenValue: middleware.GetCsrfToken(r.Context()),
-				CspNonceValue:  middleware.GetCspNonce(r.Context()),
-			}
+			if r.Method != http.MethodPost {
+				data := struct {
+					CsrfTokenName  string
+					CsrfTokenValue string
+					CspNonceValue  string
+				}{
+					CsrfTokenName:  middleware.CsrfTokenFormName,
+					CsrfTokenValue: middleware.GetCsrfToken(r.Context()),
+					CspNonceValue:  middleware.GetCspNonce(r.Context()),
+				}
 
-			if errE := tmpl.Execute(w, data); errE != nil {
-				http.Error(w, errE.Error(), http.StatusInternalServerError)
+				if errE := tmpl.Execute(w, data); errE != nil {
+					http.Error(w, errE.Error(), http.StatusInternalServerError)
+					return
+				}
 				return
 			}
-			return
-		}
 
-		if errP := r.ParseForm(); errP != nil {
-			http.Error(w, errP.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		email := r.FormValue("email")
-		firstName := r.FormValue("firstName")
-		password := r.FormValue("password")
-
-		u := &User{Email: email, Name: firstName}
-
-		s, errM := json.Marshal(u)
-		if errM != nil {
-			http.Error(w, errM.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		cookieName := "example_session_cookie"
-		c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
-		reqL.Info("login handler log cookie",
-			"err", errM,
-			"cookie", c,
-		)
-
-		cookie.SetEncrypted(
-			r,
-			w,
-			cookieName,
-			string(s),
-			"localhost",
-			23*24*time.Hour,
-			secretKey,
-		)
-
-		existingPasswdHash := a.db.Get("passwd")
-		if e := cry.Eql(password, existingPasswdHash); e != nil {
-			// passwd did not exist before.
-			hashedPasswd, errH := cry.Hash(password)
-			if errH != nil {
-				http.Error(w, errH.Error(), http.StatusInternalServerError)
+			if errP := r.ParseForm(); errP != nil {
+				http.Error(w, errP.Error(), http.StatusInternalServerError)
 				return
 			}
-			a.db.Set("passwd", hashedPasswd)
-		}
 
-		_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
-	}
+			email := r.FormValue("email")
+			firstName := r.FormValue("firstName")
+			password := r.FormValue("password")
+
+			u := &User{Email: email, Name: firstName}
+
+			s, errM := json.Marshal(u)
+			if errM != nil {
+				http.Error(w, errM.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			cookieName := "example_session_cookie"
+			c, errM := cookie.GetEncrypted(r, cookieName, secretKey)
+			reqL.Info("login handler log cookie",
+				"err", errM,
+				"cookie", c,
+			)
+
+			cookie.SetEncrypted(
+				r,
+				w,
+				cookieName,
+				string(s),
+				"localhost",
+				23*24*time.Hour,
+				secretKey,
+			)
+
+			existingPasswdHash := a.db.Get("passwd")
+			if e := cry.Eql(password, existingPasswdHash); e != nil {
+				// passwd did not exist before.
+				hashedPasswd, errH := cry.Hash(password)
+				if errH != nil {
+					http.Error(w, errH.Error(), http.StatusInternalServerError)
+					return
+				}
+				a.db.Set("passwd", hashedPasswd)
+			}
+
+			_, _ = fmt.Fprintf(w, "you have submitted: %s", r.Form)
+		},
+	)
 }
 
 // handleFileServer handler showcases the use of:
 // - middleware.ClientIP
 // - middleware.ClientFingerPrint
 // - logging
-func (a app) handleFileServer() http.HandlerFunc {
+func (a app) handleFileServer() http.Handler {
 	// Do NOT let `http.FileServer` be able to serve your root directory.
 	// Otherwise, your .git folder and other sensitive info(including http://localhost:65080/main.go) may be available
 	// instead create a folder that only has your templates and server that.
@@ -283,25 +289,30 @@ func (a app) handleFileServer() http.HandlerFunc {
 
 	fs := http.FileServer(http.Dir(dir))
 	realHandler := http.StripPrefix("/staticAssets/", fs).ServeHTTP
-	return func(w http.ResponseWriter, r *http.Request) {
-		reqL := log.WithID(r.Context(), a.l)
-		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r), "clientFingerPrint", middleware.ClientFingerPrint(r))
 
-		slog.NewLogLogger(reqL.Handler(), log.LevelImmediate).
-			Println("this is now a Go standard library logger")
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			reqL := log.WithID(r.Context(), a.l)
+			reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r), "clientFingerPrint", middleware.ClientFingerPrint(r))
 
-		realHandler(w, r)
-	}
+			slog.NewLogLogger(reqL.Handler(), log.LevelImmediate).
+				Println("this is now a Go standard library logger")
+
+			realHandler(w, r)
+		},
+	)
 }
 
 // panic handler showcases the use of:
 // - recoverer middleware.
-func (a app) panic() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		names := []string{"John", "Jane", "Kamau"}
-		_ = 93
-		msg := "hey"
-		n := names[934]
-		_, _ = io.WriteString(w, fmt.Sprintf("%s %s", msg, n))
-	}
+func (a app) panic() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			names := []string{"John", "Jane", "Kamau"}
+			_ = 93
+			msg := "hey"
+			n := names[934]
+			_, _ = io.WriteString(w, fmt.Sprintf("%s %s", msg, n))
+		},
+	)
 }

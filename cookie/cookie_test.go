@@ -11,18 +11,22 @@ import (
 	"go.uber.org/goleak"
 )
 
-func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		Set(w, name, value, domain, mAge, jsAccess)
-		fmt.Fprint(w, "hello")
-	}
+func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			Set(w, name, value, domain, mAge, jsAccess)
+			fmt.Fprint(w, "hello")
+		},
+	)
 }
 
-func setEncryptedHandler(name, value, domain string, mAge time.Duration, secretKey string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		SetEncrypted(r, w, name, value, domain, mAge, secretKey)
-		fmt.Fprint(w, "hello")
-	}
+func setEncryptedHandler(name, value, domain string, mAge time.Duration, secretKey string) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			SetEncrypted(r, w, name, value, domain, mAge, secretKey)
+			fmt.Fprint(w, "hello")
+		},
+	)
 }
 
 func TestMain(m *testing.M) {
@@ -185,12 +189,14 @@ func TestCookies(t *testing.T) {
 	})
 }
 
-func deleteHandler(name, value, domain string, mAge time.Duration) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		Set(w, name, value, domain, mAge, false)
-		Delete(w, name, domain)
-		fmt.Fprint(w, "hello")
-	}
+func deleteHandler(name, value, domain string, mAge time.Duration) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			Set(w, name, value, domain, mAge, false)
+			Delete(w, name, domain)
+			fmt.Fprint(w, "hello")
+		},
+	)
 }
 
 func TestDelete(t *testing.T) {
