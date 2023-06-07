@@ -283,6 +283,8 @@ func TestMux(t *testing.T) {
 			tt := tt
 
 			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
 				rt := mux.Resolve(tt.path)
 				fmt.Println(tt.path, " : ", rt) // TODO: remove.
 				attest.Equal(t, rt.method, tt.method)
