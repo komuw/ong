@@ -28,9 +28,9 @@ func someMuxHandler(msg string) http.HandlerFunc {
 	}
 }
 
-func thisIsAnitherMuxHandler() http.HandlerFunc {
+func thisIsAnotherMuxHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "thisIsAnitherMuxHandler")
+		fmt.Fprint(w, "thisIsAnotherMuxHandler")
 	}
 }
 
@@ -201,7 +201,7 @@ func TestMux(t *testing.T) {
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
 			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:26") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:32") // location where `thisIsAnitherMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:32") // location where `thisIsAnotherMuxHandler` is declared.
 		}()
 
 		_ = New(
@@ -216,7 +216,7 @@ func TestMux(t *testing.T) {
 			NewRoute(
 				uri2,
 				method,
-				thisIsAnitherMuxHandler(),
+				thisIsAnotherMuxHandler(),
 			),
 		)
 	})
@@ -225,6 +225,7 @@ func TestMux(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
+		expectedHandler := someMuxHandler(msg)
 		mux := New(
 			l,
 			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
@@ -232,13 +233,16 @@ func TestMux(t *testing.T) {
 			NewRoute(
 				"/api",
 				MethodGet,
-				someMuxHandler(msg),
+				expectedHandler,
 			),
 		)
 
 		h := mux.Resolve("api")
-		fmt.Println("\n\t handler: ", h)
-		fmt.Println("\n\t handler: ", getfunc(h))
+		fmt.Println(h)
+		attest.Equal(t, h.method, MethodGet)
+		attest.Equal(t, h.originalHandler, expectedHandler)
+		attest.Subsequence(t, h.String(), "api")
+
 	})
 }
 

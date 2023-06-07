@@ -43,7 +43,7 @@ func NewRoute(
 	return Route{
 		method:          method,
 		pattern:         pattern,
-		segs:            pathSegments(pattern),
+		segments:        pathSegments(pattern),
 		originalHandler: handler,
 	}
 }
@@ -120,17 +120,22 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // It is not intended for use in production setting, it is more of a dev/debugging tool.
 // It is inspired by django's [resolve] url utility.
 // [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
-func (m Mux) Resolve(path string) http.HandlerFunc {
+func (m Mux) Resolve(path string) Route {
 	// TODO: unify this logic with that found in `router.serveHTTP`
 	segs := pathSegments(path)
 	for _, rt := range m.router.routes {
 		if _, ok := rt.match(context.Background(), segs); ok {
-			return rt.wrappedHandler
+			return rt
 
 		}
 	}
 
-	return m.router.notFoundHandler
+	return Route{
+		method:          "unknown",
+		pattern:         "unknown",
+		segments:        []string{"unknown"},
+		originalHandler: m.router.notFoundHandler,
+	}
 }
 
 // Param gets the path/url parameter from the specified Context.
