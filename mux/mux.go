@@ -116,7 +116,9 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.serveHTTP(w, r)
 }
 
-// Resolve resolves a URL path to the corresponding http handler.
+// Resolve resolves a URL path to its corresponding [Route] and hence http handler.
+// If no corresponding route/handler is found, a zero value [Route] is returned.
+//
 // It is not intended for use in production setting, it is more of a dev/debugging tool.
 // It is inspired by django's [resolve] url utility.
 // [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
@@ -130,12 +132,7 @@ func (m Mux) Resolve(path string) Route {
 		}
 	}
 
-	return Route{
-		method:          "unknown",
-		pattern:         "unknown",
-		segments:        []string{"unknown"},
-		originalHandler: m.router.notFoundHandler,
-	}
+	return Route{}
 }
 
 // Param gets the path/url parameter from the specified Context.
