@@ -22,27 +22,36 @@ type muxContextKey string
 type Route struct {
 	method          string
 	pattern         string
-	segs            []string
+	segments        []string
 	originalHandler http.HandlerFunc // This is only needed to enhance the debug/panic message when conflicting routes are detected.
-	wrappedHandler  http.HandlerFunc
+	wrappingHandler http.HandlerFunc
 }
 
 func (r Route) String() string {
+	originHandler := ""
+	if r.originalHandler != nil {
+		originHandler = getfunc(r.originalHandler)
+	}
+	wrappingHandler := ""
+	if r.wrappingHandler != nil {
+		wrappingHandler = getfunc(r.wrappingHandler)
+	}
+
 	return fmt.Sprintf(`
 Route{
   method: %s,
   pattern: %s,
-  segs: %s,
+  segments: %s,
   originalHandler: %s,
-  wrappedHandler: %s,
-}`, r.method, r.pattern, r.segs, getfunc(r.originalHandler), getfunc(r.wrappedHandler))
+  wrappingHandler: %s,
+}`, r.method, r.pattern, r.segments, originHandler, wrappingHandler)
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
-	if len(segs) > len(r.segs) {
+	if len(segs) > len(r.segments) {
 		return nil, false
 	}
-	for i, seg := range r.segs {
+	for i, seg := range r.segments {
 		if i > len(segs)-1 {
 			return nil, false
 		}
@@ -86,7 +95,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
+func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.HandlerFunc) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -102,11 +111,11 @@ func (r *router) handle(method, pattern string, originalHandler, wrappedHandler 
 	r.detectConflict(method, pattern, originalHandler)
 
 	rt := Route{
-		method:          strings.ToLower(method),
+		method:          strings.ToUpper(method),
 		pattern:         pattern,
-		segs:            pathSegments(pattern),
+		segments:        pathSegments(pattern),
 		originalHandler: originalHandler,
-		wrappedHandler:  wrappedHandler,
+		wrappingHandler: wrappingHandler,
 	}
 	r.routes = append(r.routes, rt)
 }
@@ -116,7 +125,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	segs := pathSegments(req.URL.Path)
 	for _, rt := range r.routes {
 		if ctx, ok := rt.match(req.Context(), segs); ok {
-			rt.wrappedHandler.ServeHTTP(w, req.WithContext(ctx))
+			rt.wrappingHandler.ServeHTTP(w, req.WithContext(ctx))
 			return
 		}
 	}
@@ -146,7 +155,7 @@ func (r *router) detectConflict(method, pattern string, originalHandler http.Han
 
 	incomingSegments := pathSegments(pattern)
 	for _, rt := range r.routes {
-		existingSegments := rt.segs
+		existingSegments := rt.segments
 		sameLen := len(incomingSegments) == len(existingSegments)
 		if !sameLen {
 			// no conflict
@@ -167,7 +176,7 @@ already exists and would conflict.`,
 			pattern,
 			strings.ToUpper(method),
 			getfunc(originalHandler),
-			path.Join(rt.segs...),
+			path.Join(rt.segments...),
 			strings.ToUpper(rt.method),
 			getfunc(rt.originalHandler),
 		)
@@ -186,7 +195,7 @@ already exists and would conflict.`,
 	}
 }
 
-func getfunc(handler interface{}) string {
+func getfunc(handler http.Handler) string {
 	fn := runtime.FuncForPC(reflect.ValueOf(handler).Pointer())
 	file, line := fn.FileLine(fn.Entry())
 	return fmt.Sprintf("%s - %s:%d", fn.Name(), file, line)

@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.49
+- Add mux Resolve function: https://github.com/komuw/ong/pull/268
+
 ## v0.0.48
 - Change attest import path: https://github.com/komuw/ong/pull/265
 

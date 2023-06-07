@@ -4,6 +4,7 @@ package mux
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/komuw/ong/middleware"
@@ -43,7 +44,7 @@ func NewRoute(
 	return Route{
 		method:          method,
 		pattern:         pattern,
-		segs:            pathSegments(pattern),
+		segments:        pathSegments(pattern),
 		originalHandler: handler,
 	}
 }
@@ -105,6 +106,10 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, 
 	return m
 }
 
+func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.HandlerFunc) {
+	m.router.handle(method, pattern, originalHandler, wrappingHandler)
+}
+
 // ServeHTTP implements a http.Handler
 //
 // It routes incoming http requests based on method and path extracting path parameters as it goes.
@@ -112,8 +117,31 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.serveHTTP(w, r)
 }
 
-func (m Mux) addPattern(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
-	m.router.handle(method, pattern, originalHandler, wrappedHandler)
+// Resolve resolves a URL path to its corresponding [Route] and hence http handler.
+// If no corresponding route/handler is found, a zero value [Route] is returned.
+//
+// It is not intended for use in production settings, it is more of a dev/debugging tool.
+// It is inspired by django's [resolve] url utility.
+// [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
+func (m Mux) Resolve(path string) Route {
+	zero := Route{}
+
+	u, err := url.Parse(path)
+	if err != nil {
+		return zero
+	}
+
+	{
+		// todo: unify this logic with that found in `router.serveHTTP`
+		segs := pathSegments(u.Path)
+		for _, rt := range m.router.routes {
+			if _, ok := rt.match(context.Background(), segs); ok {
+				return rt
+			}
+		}
+	}
+
+	return zero
 }
 
 // Param gets the path/url parameter from the specified Context.

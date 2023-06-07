@@ -28,9 +28,16 @@ func someMuxHandler(msg string) http.HandlerFunc {
 	}
 }
 
-func thisIsAnitherMuxHandler() http.HandlerFunc {
+func thisIsAnotherMuxHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "thisIsAnitherMuxHandler")
+		fmt.Fprint(w, "thisIsAnotherMuxHandler")
+	}
+}
+
+func checkAgeHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		age := Param(r.Context(), "age")
+		_, _ = fmt.Fprintf(w, "Age is %s", age)
 	}
 }
 
@@ -201,7 +208,7 @@ func TestMux(t *testing.T) {
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
 			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:26") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:32") // location where `thisIsAnitherMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:32") // location where `thisIsAnotherMuxHandler` is declared.
 		}()
 
 		_ = New(
@@ -216,9 +223,102 @@ func TestMux(t *testing.T) {
 			NewRoute(
 				uri2,
 				method,
-				thisIsAnitherMuxHandler(),
+				thisIsAnotherMuxHandler(),
 			),
 		)
+	})
+
+	t.Run("resolve url", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		expectedHandler := someMuxHandler(msg)
+		mux := New(
+			l,
+			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+			nil,
+			NewRoute(
+				"/api",
+				MethodGet,
+				expectedHandler,
+			),
+			NewRoute(
+				"check/:age/",
+				MethodAll,
+				checkAgeHandler(),
+			),
+		)
+
+		tests := []struct {
+			name      string
+			path      string
+			pattern   string
+			method    string
+			stackPath string
+		}{
+			{
+				"success with no slashes",
+				"api",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"success with prefix slash",
+				"/api",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"success with suffix slash",
+				"api/",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"success with all slashes",
+				"/api/",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"failure",
+				"/",
+				"",
+				"",
+				"",
+			},
+			{
+				"url with param",
+				"check/2625",
+				"/check/:age/",
+				MethodAll,
+				"ong/mux/mux_test.go:38", // location where `checkAgeHandler` is declared.
+			},
+			{
+				"url with domain name",
+				"https://localhost/check/2625",
+				"/check/:age/",
+				MethodAll,
+				"ong/mux/mux_test.go:38", // location where `checkAgeHandler` is declared.
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				rt := mux.Resolve(tt.path)
+				attest.Equal(t, rt.method, tt.method)
+				attest.Equal(t, rt.pattern, tt.pattern)
+				attest.Subsequence(t, rt.String(), tt.stackPath)
+			})
+		}
 	})
 }
 

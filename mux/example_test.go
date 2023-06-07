@@ -51,3 +51,26 @@ func ExampleMux() {
 		panic(err)
 	}
 }
+
+func ExampleMux_Resolve() {
+	l := log.New(os.Stdout, 1000)(context.Background())
+	mux := mux.New(
+		l,
+		middleware.WithOpts("localhost", 8080, "secretKey", middleware.DirectIpStrategy, l),
+		nil,
+		mux.NewRoute(
+			"login/",
+			mux.MethodGet,
+			LoginHandler(),
+		),
+		mux.NewRoute(
+			"/books/:author",
+			mux.MethodAll,
+			BooksByAuthorHandler(),
+		),
+	)
+
+	fmt.Println(mux.Resolve("nonExistentPath"))
+	fmt.Println(mux.Resolve("login/"))
+	fmt.Println(mux.Resolve("https://localhost/books/SidneySheldon"))
+}
