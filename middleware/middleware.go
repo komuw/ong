@@ -1,5 +1,5 @@
 // Package middleware provides helpful functions that implement some common functionalities in http servers.
-// A middleware is a function that returns a [http.Handler]
+// A middleware is a function that takes in a [http.Handler] as one of its arguments and returns a [http.Handler]
 //
 // The middlewares [All], [Get], [Post], [Head], [Put] & [Delete] wrap other internal middleware.
 // The effect of this is that the aforementioned middleware, in addition to their specialised functionality, will:
@@ -208,11 +208,9 @@ func All(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 }
 
 func all(wrappedHandler http.Handler) http.HandlerFunc {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+	return func(w http.ResponseWriter, r *http.Request) {
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
@@ -227,24 +225,22 @@ func Get(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 
 func get(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http GET"
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			// We do not need to allow `http.MethodOptions` here.
-			// This is coz, the cors middleware has already handled that for us and it comes before the Get middleware.
-			if r.Method != http.MethodGet {
-				errMsg := fmt.Sprintf(msg, r.Method)
-				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-				http.Error(
-					w,
-					errMsg,
-					http.StatusMethodNotAllowed,
-				)
-				return
-			}
+	return func(w http.ResponseWriter, r *http.Request) {
+		// We do not need to allow `http.MethodOptions` here.
+		// This is coz, the cors middleware has already handled that for us and it comes before the Get middleware.
+		if r.Method != http.MethodGet {
+			errMsg := fmt.Sprintf(msg, r.Method)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			http.Error(
+				w,
+				errMsg,
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
 
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
@@ -259,22 +255,20 @@ func Post(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 
 func post(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http POST"
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPost {
-				errMsg := fmt.Sprintf(msg, r.Method)
-				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-				http.Error(
-					w,
-					errMsg,
-					http.StatusMethodNotAllowed,
-				)
-				return
-			}
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			errMsg := fmt.Sprintf(msg, r.Method)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			http.Error(
+				w,
+				errMsg,
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
 
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
@@ -289,22 +283,20 @@ func Head(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 
 func head(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http HEAD"
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodHead {
-				errMsg := fmt.Sprintf(msg, r.Method)
-				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-				http.Error(
-					w,
-					errMsg,
-					http.StatusMethodNotAllowed,
-				)
-				return
-			}
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodHead {
+			errMsg := fmt.Sprintf(msg, r.Method)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			http.Error(
+				w,
+				errMsg,
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
 
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
@@ -319,22 +311,20 @@ func Put(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 
 func put(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http PUT"
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPut {
-				errMsg := fmt.Sprintf(msg, r.Method)
-				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-				http.Error(
-					w,
-					errMsg,
-					http.StatusMethodNotAllowed,
-				)
-				return
-			}
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			errMsg := fmt.Sprintf(msg, r.Method)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			http.Error(
+				w,
+				errMsg,
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
 
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
@@ -350,20 +340,18 @@ func Delete(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 // this is not called `delete` since that is a Go builtin func for deleting from maps.
 func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http DELETE"
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodDelete {
-				errMsg := fmt.Sprintf(msg, r.Method)
-				w.Header().Set(ongMiddlewareErrorHeader, errMsg)
-				http.Error(
-					w,
-					errMsg,
-					http.StatusMethodNotAllowed,
-				)
-				return
-			}
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			errMsg := fmt.Sprintf(msg, r.Method)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			http.Error(
+				w,
+				errMsg,
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
 
-			wrappedHandler.ServeHTTP(w, r)
-		},
-	)
+		wrappedHandler.ServeHTTP(w, r)
+	}
 }
