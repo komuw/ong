@@ -24,7 +24,7 @@ type Route struct {
 	pattern         string
 	segments        []string
 	originalHandler http.HandlerFunc // This is only needed to enhance the debug/panic message when conflicting routes are detected.
-	wrappedHandler  http.HandlerFunc
+	wrappingHandler http.HandlerFunc
 }
 
 func (r Route) String() string {
@@ -32,9 +32,9 @@ func (r Route) String() string {
 	if r.originalHandler != nil {
 		originHandler = getfunc(r.originalHandler)
 	}
-	wrappedHandler := ""
-	if r.wrappedHandler != nil {
-		wrappedHandler = getfunc(r.wrappedHandler)
+	wrappingHandler := ""
+	if r.wrappingHandler != nil {
+		wrappingHandler = getfunc(r.wrappingHandler)
 	}
 
 	return fmt.Sprintf(`
@@ -43,8 +43,8 @@ Route{
   pattern: %s,
   segments: %s,
   originalHandler: %s,
-  wrappedHandler: %s,
-}`, r.method, r.pattern, r.segments, originHandler, wrappedHandler)
+  wrappingHandler: %s,
+}`, r.method, r.pattern, r.segments, originHandler, wrappingHandler)
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
@@ -95,7 +95,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
+func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.HandlerFunc) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -115,7 +115,7 @@ func (r *router) handle(method, pattern string, originalHandler, wrappedHandler 
 		pattern:         pattern,
 		segments:        pathSegments(pattern),
 		originalHandler: originalHandler,
-		wrappedHandler:  wrappedHandler,
+		wrappingHandler: wrappingHandler,
 	}
 	r.routes = append(r.routes, rt)
 }
@@ -125,7 +125,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	segs := pathSegments(req.URL.Path)
 	for _, rt := range r.routes {
 		if ctx, ok := rt.match(req.Context(), segs); ok {
-			rt.wrappedHandler.ServeHTTP(w, req.WithContext(ctx))
+			rt.wrappingHandler.ServeHTTP(w, req.WithContext(ctx))
 			return
 		}
 	}

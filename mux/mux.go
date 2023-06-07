@@ -106,8 +106,8 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, 
 	return m
 }
 
-func (m Mux) addPattern(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
-	m.router.handle(method, pattern, originalHandler, wrappedHandler)
+func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.HandlerFunc) {
+	m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
 
 // ServeHTTP implements a http.Handler
