@@ -314,7 +314,6 @@ func TestMux(t *testing.T) {
 				t.Parallel()
 
 				rt := mux.Resolve(tt.path)
-				fmt.Println(tt.path, " : ", rt) // TODO: remove.
 				attest.Equal(t, rt.method, tt.method)
 				attest.Equal(t, rt.pattern, tt.pattern)
 				attest.Subsequence(t, rt.String(), tt.stackPath)

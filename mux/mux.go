@@ -132,7 +132,7 @@ func (m Mux) Resolve(path string) Route {
 	}
 
 	{
-		// TODO: unify this logic with that found in `router.serveHTTP`
+		// todo: unify this logic with that found in `router.serveHTTP`
 		segs := pathSegments(u.Path)
 		for _, rt := range m.router.routes {
 			if _, ok := rt.match(context.Background(), segs); ok {
