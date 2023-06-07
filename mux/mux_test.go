@@ -34,6 +34,13 @@ func thisIsAnotherMuxHandler() http.HandlerFunc {
 	}
 }
 
+func checkAgeHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		age := Param(r.Context(), "age")
+		_, _ = fmt.Fprintf(w, "Age is %s", age)
+	}
+}
+
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
 	goleak.VerifyTestMain(m)
@@ -235,6 +242,11 @@ func TestMux(t *testing.T) {
 				MethodGet,
 				expectedHandler,
 			),
+			NewRoute(
+				"check/:age/",
+				MethodAll,
+				checkAgeHandler(),
+			),
 		)
 
 		tests := []struct {
@@ -257,6 +269,13 @@ func TestMux(t *testing.T) {
 				"",
 				"",
 				"",
+			},
+			{
+				"url with param",
+				"check/2625",
+				"/check/:age/",
+				MethodAll,
+				"ong/mux/mux_test.go:38", // location where `checkAgeHandler` is declared.
 			},
 		}
 
