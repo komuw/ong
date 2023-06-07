@@ -240,8 +240,8 @@ func TestMux(t *testing.T) {
 		h := mux.Resolve("api")
 		fmt.Println(h)
 		attest.Equal(t, h.method, MethodGet)
-		attest.Equal(t, h.originalHandler, expectedHandler)
-		attest.Subsequence(t, h.String(), "api")
+		attest.Equal(t, h.pattern, "/api/")
+		attest.Subsequence(t, h.String(), "ong/mux/mux_test.go:26") // location where `someMuxHandler` is declared.
 
 	})
 }
