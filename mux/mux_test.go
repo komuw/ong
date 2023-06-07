@@ -237,11 +237,40 @@ func TestMux(t *testing.T) {
 			),
 		)
 
-		h := mux.Resolve("api")
-		fmt.Println(h)
-		attest.Equal(t, h.method, MethodGet)
-		attest.Equal(t, h.pattern, "/api/")
-		attest.Subsequence(t, h.String(), "ong/mux/mux_test.go:26") // location where `someMuxHandler` is declared.
+		tests := []struct {
+			name      string
+			path      string
+			pattern   string
+			method    string
+			stackPath string
+		}{
+			{
+				"success",
+				"api",
+				"/api/",
+				MethodGet,
+				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+			},
+			{
+				"failure",
+				"/",
+				"",
+				"",
+				"",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+
+			t.Run(tt.name, func(t *testing.T) {
+				rt := mux.Resolve(tt.path)
+				fmt.Println(tt.path, " : ", rt) // TODO: remove.
+				attest.Equal(t, rt.method, tt.method)
+				attest.Equal(t, rt.pattern, tt.pattern)
+				attest.Subsequence(t, rt.String(), tt.stackPath)
+			})
+		}
 
 	})
 }

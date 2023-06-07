@@ -28,6 +28,15 @@ type Route struct {
 }
 
 func (r Route) String() string {
+	originHandler := ""
+	if r.originalHandler != nil {
+		originHandler = getfunc(r.originalHandler)
+	}
+	wrappedHandler := ""
+	if r.wrappedHandler != nil {
+		wrappedHandler = getfunc(r.wrappedHandler)
+	}
+
 	return fmt.Sprintf(`
 Route{
   method: %s,
@@ -35,7 +44,7 @@ Route{
   segments: %s,
   originalHandler: %s,
   wrappedHandler: %s,
-}`, r.method, r.pattern, r.segments, getfunc(r.originalHandler), getfunc(r.wrappedHandler))
+}`, r.method, r.pattern, r.segments, originHandler, wrappedHandler)
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
