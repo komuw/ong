@@ -124,7 +124,7 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // It is inspired by django's [resolve] url utility.
 // [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
 func (m Mux) Resolve(path string) Route {
-	var zero = Route{}
+	zero := Route{}
 
 	u, err := url.Parse(path)
 	if err != nil {
@@ -137,7 +137,6 @@ func (m Mux) Resolve(path string) Route {
 		for _, rt := range m.router.routes {
 			if _, ok := rt.match(context.Background(), segs); ok {
 				return rt
-
 			}
 		}
 	}

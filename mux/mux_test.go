@@ -320,7 +320,6 @@ func TestMux(t *testing.T) {
 				attest.Subsequence(t, rt.String(), tt.stackPath)
 			})
 		}
-
 	})
 }
 
