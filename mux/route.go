@@ -186,7 +186,7 @@ already exists and would conflict.`,
 	}
 }
 
-func getfunc(handler interface{}) string {
+func getfunc(handler http.Handler) string {
 	fn := runtime.FuncForPC(reflect.ValueOf(handler).Pointer())
 	file, line := fn.FileLine(fn.Entry())
 	return fmt.Sprintf("%s - %s:%d", fn.Name(), file, line)

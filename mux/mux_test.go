@@ -220,6 +220,26 @@ func TestMux(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("resolve url", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		mux := New(
+			l,
+			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+			nil,
+			NewRoute(
+				"/api",
+				MethodGet,
+				someMuxHandler(msg),
+			),
+		)
+
+		h := mux.Resolve("api")
+		fmt.Println("\n\t handler: ", h)
+		fmt.Println("\n\t handler: ", getfunc(h))
+	})
 }
 
 func getManyRoutes() []Route {

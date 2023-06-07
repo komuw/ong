@@ -105,6 +105,10 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.HandlerFunc, 
 	return m
 }
 
+func (m Mux) addPattern(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
+	m.router.handle(method, pattern, originalHandler, wrappedHandler)
+}
+
 // ServeHTTP implements a http.Handler
 //
 // It routes incoming http requests based on method and path extracting path parameters as it goes.
@@ -112,8 +116,21 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.serveHTTP(w, r)
 }
 
-func (m Mux) addPattern(method, pattern string, originalHandler, wrappedHandler http.HandlerFunc) {
-	m.router.handle(method, pattern, originalHandler, wrappedHandler)
+// Resolve resolves a URL path to the corresponding http handler.
+// It is not intended for use in production setting, it is more of a dev/debugging tool.
+// It is inspired by django's [resolve] url utility.
+// [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
+func (m Mux) Resolve(path string) http.HandlerFunc {
+	// TODO: unify this logic with that found in `router.serveHTTP`
+	segs := pathSegments(path)
+	for _, rt := range m.router.routes {
+		if _, ok := rt.match(context.Background(), segs); ok {
+			return rt.wrappedHandler
+
+		}
+	}
+
+	return m.router.notFoundHandler
 }
 
 // Param gets the path/url parameter from the specified Context.
