@@ -35,6 +35,7 @@ const (
 	// This should be used when your application is behind a TCP proxy that uses the v1 PROXY protocol.
 	//
 	// 	See the warning in [ClientIP]
+	//
 	// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
 	ProxyStrategy = ClientIPstrategy("ProxyStrategy")
 )

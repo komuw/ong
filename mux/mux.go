@@ -122,6 +122,7 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //
 // It is not intended for use in production settings, it is more of a dev/debugging tool.
 // It is inspired by django's [resolve] url utility.
+//
 // [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
 func (m Mux) Resolve(path string) Route {
 	zero := Route{}
