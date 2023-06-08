@@ -3,6 +3,8 @@
 #  2. https://github.com/mvdan/github-actions-golang/issues/22
 #  3. https://github.com/stellar/go/blob/master/.github/actions/setup-go/action.yml
 #  4. https://github.com/stellar/go/blob/master/.github/workflows/go.yml
+#  5. https://github.com/mvdan/github-actions-golang#how-do-i-set-up-caching-between-builds
+#  6. https://github.com/golang/go/issues/58571
 
 name: ong ci
 
