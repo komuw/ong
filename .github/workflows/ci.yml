@@ -87,7 +87,7 @@ jobs:
           set -x
 
           go test -timeout 1m -race -run=XXXX -bench=. ./...
-          go test -timeout 4m -v -race -cover -coverprofile=coverage.out ./...
+          go test -timeout 4m -race -cover -coverprofile=coverage.out ./...
           go tool cover -html=coverage.out -o coverage.html
           go tool cover -func=coverage.out
 
@@ -192,7 +192,7 @@ jobs:
           find . -name "*.go" | xargs -n 1 sed -i.backup 's/sync.Mutex/deadlock.Mutex/'
           find . -name '*.backup' -delete
           /home/runner/go/bin/goimports -w .
-          go test -timeout 4m -v -race ./...
+          go test -timeout 4m -race ./...
           go mod tidy
 
           # TODO: add https://github.com/system-pclub/GCatch
@@ -237,7 +237,7 @@ jobs:
           cat logs_two.json
           ls -lsha coverage/
 
-          go test -timeout 4m -v -race --tags=integration github.com/komuw/ong/example
+          go test -timeout 4m -race --tags=integration github.com/komuw/ong/example
 
           kill -15 $(pidof ongExample)
           ls -lsha coverage/
