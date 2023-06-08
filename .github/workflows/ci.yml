@@ -74,7 +74,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4 # since v4, it added cache by default.
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -108,7 +108,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -212,7 +212,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -253,7 +253,7 @@ jobs:
   #   runs-on: ${{ matrix.platform }}
   #   steps:
   # - name: Set up Go
-  #   uses: actions/setup-go@v3
+  #   uses: actions/setup-go@v4
   #   with:
   #     go-version: ${{ matrix.go-version }}
   #     - name: stress test
