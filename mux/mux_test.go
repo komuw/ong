@@ -285,7 +285,7 @@ func TestMux(t *testing.T) {
 				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
 			},
 			{
-				"failure",
+				"bad",
 				"/",
 				"",
 				"",

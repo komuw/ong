@@ -20,6 +20,11 @@ import (
 const (
 	logIDHeader = string(octx.LogCtxKey)
 	errPrefix   = "ong/client:"
+	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
+	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
+	// and the p95 response times for http POST requests is ~3seconds:
+	// Thus, we set the timeout to be twice that.
+	defaultTimeout = 3 * 2 * time.Second
 )
 
 // Most of the code here is inspired by(or taken from):
@@ -31,24 +36,28 @@ const (
 
 // Safe creates a http client that has some good defaults & is safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-func Safe(l *slog.Logger) *http.Client {
-	return new(true, l)
+// The timeout is optional.
+func Safe(l *slog.Logger, timeout ...time.Duration) *http.Client {
+	t := defaultTimeout
+	if len(timeout) > 0 {
+		t = timeout[0]
+	}
+	return new(true, t, l)
 }
 
 // Unsafe creates a http client that has some good defaults & is NOT safe from server-side request forgery (SSRF).
 // It also logs requests and responses using [log.Logger]
-func Unsafe(l *slog.Logger) *http.Client {
-	return new(false, l)
+// The timeout is optional
+func Unsafe(l *slog.Logger, timeout ...time.Duration) *http.Client {
+	t := defaultTimeout
+	if len(timeout) > 0 {
+		t = timeout[0]
+	}
+	return new(false, t, l)
 }
 
 // new creates a client. Use [Safe] or [Unsafe] instead.
-func new(ssrfSafe bool, l *slog.Logger) *http.Client {
-	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
-	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
-	// and the p95 response times for http POST requests is ~3seconds:
-	// Thus, we set the timeout to be twice that.
-	timeout := 3 * 2 * time.Second
-
+func new(ssrfSafe bool, timeout time.Duration, l *slog.Logger) *http.Client {
 	dialer := &net.Dialer{
 		// Using Dialer.ControlContext instead of Dialer.Control allows;
 		// - propagation of logging contexts, metric context or other metadata down to the callback.
@@ -81,7 +90,7 @@ func new(ssrfSafe bool, l *slog.Logger) *http.Client {
 		MaxIdleConns:          100,
 		IdleConnTimeout:       3 * timeout,
 		TLSHandshakeTimeout:   timeout,
-		ExpectContinueTimeout: 1 * time.Second,
+		ExpectContinueTimeout: (timeout / 5),
 	}
 
 	lr := &loggingRT{transport, l}
