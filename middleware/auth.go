@@ -9,7 +9,7 @@ import (
 const minPasswdSize = 16
 
 // BasicAuth is a middleware that protects wrappedHandler using basic authentication.
-func BasicAuth(wrappedHandler http.HandlerFunc, user, passwd string) http.HandlerFunc {
+func BasicAuth(wrappedHandler http.Handler, user, passwd string) http.HandlerFunc {
 	const realm = "enter username and password"
 
 	if len(passwd) < minPasswdSize {
@@ -40,6 +40,6 @@ func BasicAuth(wrappedHandler http.HandlerFunc, user, passwd string) http.Handle
 			return
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }

@@ -15,7 +15,7 @@ import (
 )
 
 // logger is a middleware that logs http requests and responses using [log.Logger].
-func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
+func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
@@ -70,7 +70,7 @@ func logger(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
 			}
 		}()
 
-		wrappedHandler(lrw, r)
+		wrappedHandler.ServeHTTP(lrw, r)
 	}
 }
 

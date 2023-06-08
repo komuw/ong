@@ -68,7 +68,7 @@ func ClientIP(r *http.Request) string {
 // Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
 //
 // [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
-func clientIP(wrappedHandler http.HandlerFunc, strategy ClientIPstrategy) http.HandlerFunc {
+func clientIP(wrappedHandler http.Handler, strategy ClientIPstrategy) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var clientAddr string
 		switch v := strategy; v {
@@ -86,6 +86,6 @@ func clientIP(wrappedHandler http.HandlerFunc, strategy ClientIPstrategy) http.H
 		}
 
 		r = clientip.With(r, clientAddr)
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }

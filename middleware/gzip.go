@@ -29,12 +29,12 @@ const (
 )
 
 // gzip is a middleware that transparently gzips the http response body, for clients that support it.
-func gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func gzip(wrappedHandler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(varyHeader, acceptEncodingHeader)
 
 		if !shouldGzipReq(r) {
-			wrappedHandler(w, r)
+			wrappedHandler.ServeHTTP(w, r)
 			return
 		}
 
@@ -56,7 +56,7 @@ func gzip(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// see: https://github.com/klauspost/compress/blob/4a97174a615ed745c450077edf0e1f7e97aabd58/gzhttp/compress.go#L383-L385
 		// However `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 
-		wrappedHandler(grw, r)
+		wrappedHandler.ServeHTTP(grw, r)
 	}
 }
 
@@ -79,9 +79,9 @@ var (
 	_ http.ResponseWriter = &gzipRW{}
 	_ http.Flusher        = &gzipRW{}
 	_ http.Hijacker       = &gzipRW{}
-	_ http.Pusher         = &logRW{}
+	_ http.Pusher         = &gzipRW{}
 	_ io.WriteCloser      = &gzipRW{}
-	_ io.ReaderFrom       = &logRW{}
+	_ io.ReaderFrom       = &gzipRW{}
 	// _ http.CloseNotifier  = &gzipRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 

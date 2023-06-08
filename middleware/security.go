@@ -35,7 +35,7 @@ const (
 // securityHeaders is a middleware that adds some important HTTP security headers and assigns them sensible default values.
 //
 // Some of the headers set are Permissions-Policy, Content-securityHeaders-Policy, X-Content-Type-Options, X-Frame-Options, Cross-Origin-Resource-Policy, Cross-Origin-Opener-Policy, Referrer-Policy & Strict-Transport-securityHeaders
-func securityHeaders(wrappedHandler http.HandlerFunc, domain string) http.HandlerFunc {
+func securityHeaders(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -107,7 +107,7 @@ func securityHeaders(wrappedHandler http.HandlerFunc, domain string) http.Handle
 			)
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 

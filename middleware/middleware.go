@@ -1,5 +1,5 @@
 // Package middleware provides helpful functions that implement some common functionalities in http servers.
-// A middleware is a function that returns a [http.HandlerFunc]
+// A middleware is a function that takes in a [http.Handler] as one of its arguments and returns a [http.Handler]
 //
 // The middlewares [All], [Get], [Post], [Head], [Put] & [Delete] wrap other internal middleware.
 // The effect of this is that the aforementioned middleware, in addition to their specialised functionality, will:
@@ -105,7 +105,7 @@ func WithOpts(
 //
 //	allDefaultMiddlewares(wh, WithOpts("example.com", 443, "secretKey", RightIpStrategy, log.New(os.Stdout, 10)))
 func allDefaultMiddlewares(
-	wrappedHandler http.HandlerFunc,
+	wrappedHandler http.Handler,
 	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
@@ -200,30 +200,30 @@ func allDefaultMiddlewares(
 // All is a middleware that allows all http methods.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func All(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func All(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		all(wrappedHandler),
 		o,
 	)
 }
 
-func all(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func all(wrappedHandler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 
 // Get is a middleware that only allows http GET requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Get(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Get(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		get(wrappedHandler),
 		o,
 	)
 }
 
-func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func get(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http GET"
 	return func(w http.ResponseWriter, r *http.Request) {
 		// We do not need to allow `http.MethodOptions` here.
@@ -239,21 +239,21 @@ func get(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 
 // Post is a middleware that only allows http POST requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Post(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Post(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		post(wrappedHandler),
 		o,
 	)
 }
 
-func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func post(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http POST"
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -267,21 +267,21 @@ func post(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 
 // Head is a middleware that only allows http HEAD requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Head(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Head(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		head(wrappedHandler),
 		o,
 	)
 }
 
-func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func head(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http HEAD"
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodHead {
@@ -295,21 +295,21 @@ func head(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 
 // Put is a middleware that only allows http PUT requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Put(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Put(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		put(wrappedHandler),
 		o,
 	)
 }
 
-func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func put(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http PUT"
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
@@ -323,14 +323,14 @@ func put(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 
 // Delete is a middleware that only allows http DELETE requests and http OPTIONS requests.
 //
 // See the package documentation for the additional functionality provided by this middleware.
-func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
+func Delete(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
 	return allDefaultMiddlewares(
 		deleteH(wrappedHandler),
 		o,
@@ -338,7 +338,7 @@ func Delete(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc {
 }
 
 // this is not called `delete` since that is a Go builtin func for deleting from maps.
-func deleteH(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 	msg := "http method: %s not allowed. only allows http DELETE"
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -352,6 +352,6 @@ func deleteH(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }

@@ -26,6 +26,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"three.example.net", false},
 			{"dummy", false},
 		}
+
 		for i, test := range tt {
 			err := policy(nil, test.host)
 			if err != nil && test.allow {

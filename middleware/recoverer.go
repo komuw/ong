@@ -15,7 +15,7 @@ import (
 
 // recoverer is a middleware that recovers from panics in wrappedHandler.
 // When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
-func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc {
+func recoverer(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			errR := recover()
@@ -58,6 +58,6 @@ func recoverer(wrappedHandler http.HandlerFunc, l *slog.Logger) http.HandlerFunc
 			}
 		}()
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }

@@ -12,7 +12,7 @@ import (
 //
 // domain is the domain name of your website.
 // httpsPort is the tls port where http requests will be redirected to.
-func httpsRedirector(wrappedHandler http.HandlerFunc, httpsPort uint16, domain string) http.HandlerFunc {
+func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
 		if !isTls {
@@ -53,7 +53,7 @@ func httpsRedirector(wrappedHandler http.HandlerFunc, httpsPort uint16, domain s
 			return
 		}
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 

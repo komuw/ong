@@ -25,7 +25,7 @@ import (
 var rateLimiterSendRate = 100.00 //nolint:gochecknoglobals
 
 // rateLimiter is a middleware that limits requests by IP address.
-func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
+func rateLimiter(wrappedHandler http.Handler) http.HandlerFunc {
 	rl := newRl()
 	const retryAfter = 15 * time.Minute
 
@@ -51,7 +51,7 @@ func rateLimiter(wrappedHandler http.HandlerFunc) http.HandlerFunc {
 		// todo: also maybe add another limiter for IP subnet.
 		//      see limitation: https://github.com/komuw/ong/issues/17#issuecomment-1114551281
 
-		wrappedHandler(w, r)
+		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 

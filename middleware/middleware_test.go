@@ -1,5 +1,3 @@
-// Package middleware provides helpful functions that implement some common functionalities in http servers.
-// A middleware is a func that returns a http.HandlerFunc
 package middleware
 
 import (
@@ -57,7 +55,7 @@ func TestAllMiddleware(t *testing.T) {
 	errMsg := "not allowed. only allows http"
 	tests := []struct {
 		name               string
-		middleware         func(wrappedHandler http.HandlerFunc, o Opts) http.HandlerFunc
+		middleware         func(wrappedHandler http.Handler, o Opts) http.HandlerFunc
 		httpMethod         string
 		expectedStatusCode int
 		expectedMsg        string

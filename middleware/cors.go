@@ -60,7 +60,7 @@ const (
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 func cors(
-	wrappedHandler http.HandlerFunc,
+	wrappedHandler http.Handler,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
@@ -80,7 +80,7 @@ func cors(
 		} else {
 			// handle actual request
 			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods)
-			wrappedHandler(w, r)
+			wrappedHandler.ServeHTTP(w, r)
 		}
 	}
 }

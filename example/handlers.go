@@ -283,6 +283,7 @@ func (a app) handleFileServer() http.HandlerFunc {
 
 	fs := http.FileServer(http.Dir(dir))
 	realHandler := http.StripPrefix("/staticAssets/", fs).ServeHTTP
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqL := log.WithID(r.Context(), a.l)
 		reqL.Info("handleFileServer", "clientIP", middleware.ClientIP(r), "clientFingerPrint", middleware.ClientFingerPrint(r))

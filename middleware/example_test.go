@@ -66,14 +66,16 @@ func ExampleAll() {
 	l := log.New(os.Stdout, 100)(context.Background())
 	opts := middleware.WithOpts("example.com", 443, "secretKey", middleware.DirectIpStrategy, l)
 
-	myHandler := func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.WriteString(w, "Hello from a HandleFunc \n")
-	}
+	myHandler := http.HandlerFunc(
+		func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = io.WriteString(w, "Hello from a HandleFunc \n")
+		},
+	)
 
 	handler := middleware.All(myHandler, opts)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler)
+	mux.Handle("/", handler)
 
 	// Output:
 }
