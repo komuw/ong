@@ -64,7 +64,7 @@ type tlsOpts struct {
 
 // Opts are the various parameters(optionals) that can be used to configure a HTTP server.
 //
-// Use either [NewOpts], [DevOpts], [CertOpts] or [AcmeOpts] to get a valid Opts.
+// Use either [NewOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts.
 type Opts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
 	maxBodyBytes      uint64 // max size of request body allowed.
