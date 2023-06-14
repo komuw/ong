@@ -5,8 +5,10 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/net/idna"
 
@@ -39,7 +41,12 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 			url = letsEncryptStagingUrl
 		}
 		m := &autocert.Manager{
-			Client:     &acme.Client{DirectoryURL: url},
+			Client: &acme.Client{
+				DirectoryURL: url,
+				HTTPClient: &http.Client{
+					Timeout: 13 * time.Second,
+				},
+			},
 			Cache:      autocert.DirCache("ong-certifiate-dir"),
 			Prompt:     autocert.AcceptTOS,
 			Email:      o.tls.email,
