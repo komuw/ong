@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -24,25 +23,22 @@ import (
 //
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
-// The tls config may either procure certifiates from LetsEncrypt, from disk or be nil(for non-tls traffic)
+// The tls config may either procure certifiates from ACME, from disk or be nil(for non-tls traffic)
 func getTlsConfig(o Opts) (*tls.Config, error) {
 	if err := validateDomain(o.tls.domain); err != nil {
 		return nil, err
 	}
 
 	if o.tls.email != "" {
-		// 1. use letsencrypt.
+		// 1. use ACME.
 		//
-		const letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
-		const letsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
-
-		url := letsEncryptProductionUrl
-		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			url = letsEncryptStagingUrl
+		if o.tls.url == "" {
+			return nil, errors.New("ong/server: acmeURL cannot be empty if email is also specified")
 		}
+
 		m := &autocert.Manager{
 			Client: &acme.Client{
-				DirectoryURL: url,
+				DirectoryURL: o.tls.url,
 				HTTPClient: &http.Client{
 					Timeout: 13 * time.Second,
 				},
