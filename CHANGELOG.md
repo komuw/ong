@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.50
 - Add a http timeout when calling ACME for certificates: https://github.com/komuw/ong/pull/272
+- Make certificate management from ACME to be agnostic of the CA: https://github.com/komuw/ong/pull/273
 
 # v0.0.49
 - Add mux Resolve function: https://github.com/komuw/ong/pull/268
