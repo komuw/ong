@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.50
+- Add a http timeout when calling ACME for certificates: https://github.com/komuw/ong/pull/272
+
 # v0.0.49
 - Add mux Resolve function: https://github.com/komuw/ong/pull/268
 - Use http.Handler as the http middleware instead of http.HandlerFunc: https://github.com/komuw/ong/pull/269
