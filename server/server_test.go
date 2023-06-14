@@ -71,6 +71,7 @@ func TestOpts(t *testing.T) {
 				certFile: "/tmp/ong_dev_certificate.pem",
 				keyFile:  "/tmp/ong_dev_key.pem",
 				domain:   "localhost",
+				url:      "",
 			},
 		}
 		attest.Equal(t, got, want)
@@ -80,7 +81,7 @@ func TestOpts(t *testing.T) {
 		t.Parallel()
 
 		certFile, keyFile := certKeyPaths()
-		got := withOpts(80, certFile, keyFile, "", "*.example.com")
+		got := withOpts(80, certFile, keyFile, "", "*.example.com", "")
 
 		want := Opts{
 			port:              80,
@@ -100,6 +101,7 @@ func TestOpts(t *testing.T) {
 				certFile: "/tmp/ong_dev_certificate.pem",
 				keyFile:  "/tmp/ong_dev_key.pem",
 				domain:   "*.example.com",
+				url:      "",
 			},
 		}
 		attest.Equal(t, got, want)
@@ -125,6 +127,7 @@ func TestOpts(t *testing.T) {
 				certFile: "/tmp/ong_dev_certificate.pem",
 				keyFile:  "/tmp/ong_dev_key.pem",
 				domain:   "localhost",
+				url:      "",
 			},
 			serverPort:    ":65081",
 			serverAddress: "127.0.0.1:65081",
@@ -186,7 +189,7 @@ func TestServer(t *testing.T) {
 
 		go func() {
 			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
 			attest.Ok(t, err)
 		}()
 
@@ -289,7 +292,7 @@ func TestServer(t *testing.T) {
 
 		go func() {
 			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
 			attest.Ok(t, err)
 		}()
 
@@ -356,7 +359,7 @@ func TestServer(t *testing.T) {
 
 		go func() {
 			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost"), l)
+			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
 			attest.Ok(t, err)
 		}()
 
@@ -408,7 +411,7 @@ func BenchmarkServer(b *testing.B) {
 	go func() {
 		certFile, keyFile := createDevCertKey(l)
 		time.Sleep(1 * time.Second)
-		err := Run(handler, withOpts(port, certFile, keyFile, "", "localhost"), l)
+		err := Run(handler, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
 		attest.Ok(b, err)
 	}()
 
