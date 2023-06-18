@@ -269,6 +269,12 @@ func TestHttpsRedirector(t *testing.T) {
 				expectedCode: http.StatusOK,
 				expectedMsg:  msg,
 			},
+			{
+				name:         "bad host",
+				host:         "example.com",
+				expectedCode: http.StatusBadRequest,
+				expectedMsg:  "has an unexpected value",
+			},
 		}
 		for _, tt := range tests {
 			tt := tt
