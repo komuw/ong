@@ -121,7 +121,7 @@ func (a app) check(msg string) http.HandlerFunc {
 			l := log.WithID(ctx, a.l)
 			code, err := makeReq("https://example.com")
 			if err != nil {
-				l.Error("handler error", err)
+				l.Error("handler error", "error", err)
 			}
 			l.Info("req succeded", "code", code)
 		}(

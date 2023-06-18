@@ -52,7 +52,7 @@ func startPprofServer(logger *slog.Logger) {
 		cfg := listenerConfig()
 		l, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
 		if err != nil {
-			logger.Error("pprof server, unable to create listener", err)
+			logger.Error("pprof server, unable to create listener", "error", err)
 			return
 		}
 
@@ -61,7 +61,7 @@ func startPprofServer(logger *slog.Logger) {
 
 		errPprofSrv := pprofSrv.Serve(l)
 		if errPprofSrv != nil {
-			logger.Error("unable to start pprof server", errPprofSrv)
+			logger.Error("unable to start pprof server", "error", errPprofSrv)
 		}
 	}()
 }
