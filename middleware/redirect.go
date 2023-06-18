@@ -61,8 +61,10 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 		}
 
 		{ // 3. DNS rebinding attack protection.
-			if !strings.Contains(host, domain) {
-				// drop request
+			// todo: before calling `isDomainOrSubdomain` we need to make sure that both args are already be in canonical form.
+			// see; https://github.com/golang/go/blob/master/src/net/http/client.go#L1001-L1003
+			// We know that domain is kinda already canonical since [New] validates that. But host is not.
+			if !isDomainOrSubdomain(host, domain) {
 				err := fmt.Errorf("ong/middleware: the HOST http header has an unexpected value")
 				w.Header().Set(ongMiddlewareErrorHeader, err.Error())
 				http.Error(
@@ -125,4 +127,23 @@ func getHostPort(h string) (host, port string) {
 	}
 
 	return hst, prt
+}
+
+// isDomainOrSubdomain reports whether sub is a subdomain (or exact
+// match) of the parent domain.
+// Both domains must already be in canonical form.
+// // It is based on `http.isDomainOrSubdomain` from https://github.com/golang/go/blob/master/src/net/http/client.go#L1009-L1013
+func isDomainOrSubdomain(sub, parent string) bool {
+	if sub == parent {
+		return true
+	}
+
+	// If sub is "foo.example.com" and parent is "example.com",
+	// that means sub must end in "."+parent.
+	// Do it without allocating.
+	if !strings.HasSuffix(sub, parent) {
+		return false
+	}
+
+	return sub[len(sub)-len(parent)-1] == '.'
 }
