@@ -259,6 +259,10 @@ func TestHttpsRedirector(t *testing.T) {
 				name: "good host",
 				host: domain,
 			},
+			{
+				name: "good subdomain",
+				host: "subdomain." + domain,
+			},
 		}
 		for _, tt := range tests {
 			tt := tt
