@@ -17,7 +17,7 @@ import (
 // [DNS rebinding]: https://en.wikipedia.org/wiki/DNS_rebinding
 func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		{ // http -> https redirect.
+		{ // 1. http -> https redirect.
 			isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
 			if !isTls {
 				url := r.URL
@@ -30,7 +30,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			}
 		}
 
-		{ // bareIP -> https redirect.
+		{ // 2. bareIP -> https redirect.
 			// A Host header field must be sent in all HTTP/1.1 request messages.
 			// Thus we expect `r.Host[0]` to always have a value.
 			// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host
@@ -58,6 +58,9 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 				http.Redirect(w, r, path, http.StatusPermanentRedirect)
 				return
 			}
+		}
+
+		{ // 3. DNS rebinding attack protection.
 		}
 
 		wrappedHandler.ServeHTTP(w, r)
