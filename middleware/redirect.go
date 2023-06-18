@@ -63,7 +63,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 		{ // 3. DNS rebinding attack protection.
 			if !strings.Contains(host, domain) {
 				// drop request
-				err := fmt.Errorf("ong/middleware: the HOST http header is unexpected")
+				err := fmt.Errorf("ong/middleware: the HOST http header has an unexpected value")
 				w.Header().Set(ongMiddlewareErrorHeader, err.Error())
 				http.Error(
 					w,
