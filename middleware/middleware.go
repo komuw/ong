@@ -77,7 +77,7 @@ func New(
 	l *slog.Logger,
 ) Opts {
 	if _, err := idna.Registration.ToASCII(domain); err != nil {
-		panic(err)
+		panic(fmt.Errorf("ong/middleware: domain is invalid: %w", err))
 	}
 
 	return Opts{
