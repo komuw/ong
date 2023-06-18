@@ -28,7 +28,10 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 		// A Host header field must be sent in all HTTP/1.1 request messages.
 		// Thus we expect `r.Host[0]` to always have a value.
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host
-		host := r.Host
+		host, port := getHostPort(r.Host)
+		if port == "" {
+			port = fmt.Sprint(httpsPort)
+		}
 		isHostBareIP := unicode.IsDigit(rune(host[0]))
 		if isHostBareIP {
 			/*
@@ -43,10 +46,6 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			*/
 			url := r.URL
 			url.Scheme = "https"
-			_, port, err := net.SplitHostPort(host)
-			if err != nil {
-				port = fmt.Sprint(httpsPort)
-			}
 			url.Host = joinHostPort(domain, port)
 			path := url.String()
 
@@ -89,4 +88,20 @@ func indexByteString(s string, c byte) int {
 		}
 	}
 	return -1
+}
+
+// getHostPort returns host and port.
+// It is based on `http.stripHostPort` from https://github.com/golang/go/blob/go1.20.5/src/net/http/server.go#L2348-L2349
+func getHostPort(h string) (host, port string) {
+	// If no port on host, return unchanged
+	if !strings.Contains(h, ":") {
+		return h, ""
+	}
+
+	hst, prt, err := net.SplitHostPort(h)
+	if err != nil {
+		return h, prt // on error, return unchanged
+	}
+
+	return hst, prt
 }
