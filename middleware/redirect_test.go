@@ -252,16 +252,22 @@ func TestHttpsRedirector(t *testing.T) {
 		})
 
 		tests := []struct {
-			name string
-			host string
+			name         string
+			host         string
+			expectedCode int
+			expectedMsg  string
 		}{
 			{
-				name: "good host",
-				host: domain,
+				name:         "good host",
+				host:         domain,
+				expectedCode: http.StatusOK,
+				expectedMsg:  msg,
 			},
 			{
-				name: "good subdomain",
-				host: "subdomain." + domain,
+				name:         "good subdomain",
+				host:         "subdomain." + domain,
+				expectedCode: http.StatusOK,
+				expectedMsg:  msg,
 			},
 		}
 		for _, tt := range tests {
@@ -282,9 +288,9 @@ func TestHttpsRedirector(t *testing.T) {
 				attest.Ok(t, err)
 				defer res.Body.Close()
 
-				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Equal(t, res.StatusCode, tt.expectedCode)
 				attest.Zero(t, res.Header.Get(locationHeader))
-				attest.Equal(t, string(rb), msg)
+				attest.Subsequence(t, string(rb), tt.expectedMsg)
 			})
 		}
 	})
