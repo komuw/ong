@@ -24,6 +24,7 @@ import (
 	"net/http"
 
 	"golang.org/x/exp/slog"
+	"golang.org/x/net/idna"
 )
 
 // ongMiddlewareErrorHeader is a http header that is set by Ong
@@ -50,7 +51,7 @@ type Opts struct {
 
 // New returns a new Opts.
 //
-// domain is the domain name of your website.
+// domain is the domain name of your website. New panics if domain is invalid.
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
@@ -75,6 +76,10 @@ func New(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
+	if _, err := idna.Registration.ToASCII(domain); err != nil {
+		panic(fmt.Errorf("ong/middleware: domain is invalid: %w", err))
+	}
+
 	return Opts{
 		domain:         domain,
 		httpsPort:      httpsPort,

@@ -237,6 +237,70 @@ func TestHttpsRedirector(t *testing.T) {
 		}
 	})
 
+	t.Run("dns rebinding protection", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		port := uint16(443)
+		domain := "localhost"
+		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, domain)
+		ts := httptest.NewTLSServer(
+			wrappedHandler,
+		)
+		t.Cleanup(func() {
+			ts.Close()
+		})
+
+		tests := []struct {
+			name         string
+			host         string
+			expectedCode int
+			expectedMsg  string
+		}{
+			{
+				name:         "good host",
+				host:         domain,
+				expectedCode: http.StatusOK,
+				expectedMsg:  msg,
+			},
+			{
+				name:         "good subdomain",
+				host:         "subdomain." + domain,
+				expectedCode: http.StatusOK,
+				expectedMsg:  msg,
+			},
+			{
+				name:         "bad host",
+				host:         "example.com",
+				expectedCode: http.StatusBadRequest,
+				expectedMsg:  "has an unexpected value",
+			},
+		}
+		for _, tt := range tests {
+			tt := tt
+			_ = tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+				attest.Ok(t, err)
+				req.Header.Set("Host", tt.host)
+				req.Host = tt.host
+
+				res, err := client.Do(req)
+				attest.Ok(t, err)
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+				defer res.Body.Close()
+
+				attest.Equal(t, res.StatusCode, tt.expectedCode)
+				attest.Zero(t, res.Header.Get(locationHeader))
+				attest.Subsequence(t, string(rb), tt.expectedMsg)
+			})
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 

@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.52
 - Bugfix; match number of log arguments: https://github.com/komuw/ong/pull/275
+- Add protection against DNS rebinding attacks: https://github.com/komuw/ong/pull/276
 
 # v0.0.51
 - Add a http timeout when calling ACME for certificates: https://github.com/komuw/ong/pull/272
