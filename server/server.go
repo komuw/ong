@@ -352,7 +352,7 @@ func sigHandler(
 
 		err := srv.Shutdown(ctx)
 		if err != nil {
-			logger.Error("server shutdown error", err)
+			logger.Error("server shutdown error", "error", err)
 		}
 	}()
 }
@@ -374,7 +374,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 			redirectSrvCfg := listenerConfig()
 			redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
 			if errL != nil {
-				logger.Error("redirect server, unable to create listener", errL)
+				logger.Error("redirect server, unable to create listener", "error", errL)
 				return
 			}
 
@@ -382,7 +382,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 				Printf("redirect server listening at %s", redirectSrv.Addr)
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
-				logger.Error("unable to start redirect server", errRedirectSrv)
+				logger.Error("unable to start redirect server", "error", errRedirectSrv)
 			}
 		}()
 	}

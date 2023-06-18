@@ -49,7 +49,7 @@ func createDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 	defer l.Info("done creating dev tls cert and key")
 
 	if _, _, err := loadCA(); err != nil {
-		l.Error("createDevCertKey", err)
+		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
 
@@ -58,19 +58,19 @@ func createDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 		// We should not panic for this error.
 		// This is because this just represents a failure to add certs to CA store.
 		e := errors.Wrap(err)
-		l.Error("createDevCertKey", e)
+		l.Error("createDevCertKey", "error", e)
 	}
 
 	privKey, err := generatePrivKey()
 	if err != nil {
-		l.Error("createDevCertKey", err)
+		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
 	pubKey := privKey.(crypto.Signer).Public()
 
 	serNum, err := randomSerialNumber()
 	if err != nil {
-		l.Error("createDevCertKey", err)
+		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
 
@@ -91,24 +91,24 @@ func createDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 
 	cert, err := x509.CreateCertificate(rand.Reader, certTemplate, caCert, pubKey, caKey)
 	if err != nil {
-		l.Error("createDevCertKey", err)
+		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
 
 	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
 	if err = os.WriteFile(certPath, pemCert, 0o644); err != nil {
-		l.Error("createDevCertKey", err)
+		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
 
 	key, err := x509.MarshalPKCS8PrivateKey(privKey)
 	if err != nil {
-		l.Error("createDevCertKey", err)
+		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
 	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key})
 	if err = os.WriteFile(keyPath, pemKey, 0o600); err != nil {
-		l.Error("createDevCertKey", err)
+		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
 
