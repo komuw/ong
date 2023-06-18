@@ -14,6 +14,8 @@ import (
 // httpsPort is the tls port where http requests will be redirected to.
 func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		host := r.Host
+
 		isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
 		if !isTls {
 			url := r.URL
@@ -28,7 +30,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 		// A Host header field must be sent in all HTTP/1.1 request messages.
 		// Thus we expect `r.Host[0]` to always have a value.
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host
-		isHostBareIP := unicode.IsDigit(rune(r.Host[0]))
+		isHostBareIP := unicode.IsDigit(rune(host[0]))
 		if isHostBareIP {
 			/*
 				the request has tried to access us via an IP address, redirect them to our domain.
@@ -42,7 +44,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			*/
 			url := r.URL
 			url.Scheme = "https"
-			_, port, err := net.SplitHostPort(r.Host)
+			_, port, err := net.SplitHostPort(host)
 			if err != nil {
 				port = fmt.Sprint(httpsPort)
 			}
