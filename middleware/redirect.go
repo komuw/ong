@@ -30,11 +30,11 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			}
 		}
 
+		host, port := getHostPort(r.Host)
 		{ // 2. bareIP -> https redirect.
 			// A Host header field must be sent in all HTTP/1.1 request messages.
 			// Thus we expect `r.Host[0]` to always have a value.
 			// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host
-			host, port := getHostPort(r.Host)
 			if port == "" {
 				port = fmt.Sprint(httpsPort)
 			}
@@ -61,6 +61,17 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 		}
 
 		{ // 3. DNS rebinding attack protection.
+			if !strings.Contains(host, domain) {
+				// drop request
+				err := fmt.Errorf("ong/middleware: the HOST http header is unexpected")
+				w.Header().Set(ongMiddlewareErrorHeader, err.Error())
+				http.Error(
+					w,
+					err.Error(),
+					http.StatusBadRequest,
+				)
+				return
+			}
 		}
 
 		wrappedHandler.ServeHTTP(w, r)
