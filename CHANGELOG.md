@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.53
+- Add a middleware that accepts multiple http methods: https://github.com/komuw/ong/pull/279
+
 # v0.0.52
 - Bugfix; match number of log arguments: https://github.com/komuw/ong/pull/275
 - Add protection against DNS rebinding attacks: https://github.com/komuw/ong/pull/276
