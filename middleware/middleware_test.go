@@ -155,6 +155,53 @@ func TestAllMiddleware(t *testing.T) {
 			expectedStatusCode: http.StatusMethodNotAllowed,
 			expectedMsg:        errMsg,
 		},
+
+		// AnyOf
+		{
+			name: "AnyOf(nil) middleware http DELETE",
+			middleware: func(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
+				return anyOf(wrappedHandler, nil)
+			},
+			httpMethod:         http.MethodDelete,
+			expectedStatusCode: http.StatusMethodNotAllowed,
+			expectedMsg:        errMsg,
+		},
+		{
+			name: "AnyOf(nil) middleware http HEAD",
+			middleware: func(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
+				return anyOf(wrappedHandler, nil)
+			},
+			httpMethod:         http.MethodHead,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        "", // the golang http-client does not return the body for HEAD requests.
+		},
+		{
+			name: "AnyOf(GET,POST) middleware http HEAD",
+			middleware: func(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
+				return anyOf(wrappedHandler, []string{http.MethodGet, http.MethodPost})
+			},
+			httpMethod:         http.MethodHead,
+			expectedStatusCode: http.StatusMethodNotAllowed,
+			expectedMsg:        "", // the golang http-client does not return the body for HEAD requests.
+		},
+		{
+			name: "AnyOf(GET,POST) middleware http GET",
+			middleware: func(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
+				return anyOf(wrappedHandler, []string{http.MethodGet, http.MethodPost})
+			},
+			httpMethod:         http.MethodGet,
+			expectedStatusCode: http.StatusOK,
+			expectedMsg:        msg,
+		},
+		{
+			name: "AnyOf(GET,POST) middleware http TRACE",
+			middleware: func(wrappedHandler http.Handler, o Opts) http.HandlerFunc {
+				return anyOf(wrappedHandler, []string{http.MethodGet, http.MethodPost})
+			},
+			httpMethod:         http.MethodTrace,
+			expectedStatusCode: http.StatusMethodNotAllowed,
+			expectedMsg:        errMsg,
+		},
 	}
 
 	csrfToken := ""

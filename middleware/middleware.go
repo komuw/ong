@@ -22,7 +22,9 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
+	"golang.org/x/exp/slices"
 	"golang.org/x/exp/slog"
 	"golang.org/x/net/idna"
 )
@@ -349,6 +351,45 @@ func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 		if r.Method != http.MethodDelete {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			http.Error(
+				w,
+				errMsg,
+				http.StatusMethodNotAllowed,
+			)
+			return
+		}
+
+		wrappedHandler.ServeHTTP(w, r)
+	}
+}
+
+// AnyOf is a middleware that only allows any of the http methods listed in method and http OPTIONS requests.
+// If methods is nil, AnyOf will only accept http HEAD & http OPTIONS requests.
+//
+// See the package documentation for the additional functionality provided by this middleware.
+func AnyOf(wrappedHandler http.Handler, o Opts, methods []string) http.HandlerFunc {
+	return allDefaultMiddlewares(
+		anyOf(wrappedHandler, methods),
+		o,
+	)
+}
+
+func anyOf(wrappedHandler http.Handler, methods []string) http.HandlerFunc {
+	if len(methods) <= 0 {
+		methods = []string{http.MethodHead}
+	}
+	allowed := strings.Join(methods, ",")
+	fmt.Println("\t methods: ", methods)
+	fmt.Println("\t allowed: ", allowed)
+
+	msg := "http method: %s not allowed. only allows http %s"
+	return func(w http.ResponseWriter, r *http.Request) {
+		// We do not need to allow `http.MethodOptions` here.
+		// This is coz, the cors middleware has already handled that for us and it comes before the Get middleware.
+		if !slices.Contains(methods, r.Method) {
+			errMsg := fmt.Sprintf(msg, r.Method, allowed)
+			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			fmt.Println("\t errMsg: ", errMsg)
 			http.Error(
 				w,
 				errMsg,
