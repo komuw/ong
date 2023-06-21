@@ -61,7 +61,7 @@ type Mux struct {
 	router *router // some router
 }
 
-// New return a HTTP request multiplexer that has the paths in routes.
+// New returns a HTTP request multiplexer that has the paths in routes.
 //
 // notFoundHandler is the handler that will be used if a url is not found.
 // If it is nil, [http.NotFound] is used instead.
