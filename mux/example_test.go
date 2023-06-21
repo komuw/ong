@@ -32,12 +32,12 @@ func ExampleMux() {
 		nil,
 		mux.NewRoute(
 			"login/",
-			mux.MethodGet,
+			[]string{mux.MethodGet},
 			LoginHandler(),
 		),
 		mux.NewRoute(
 			"/books/:author",
-			mux.MethodAll,
+			[]string{mux.MethodAll},
 			BooksByAuthorHandler(),
 		),
 	)
@@ -60,12 +60,12 @@ func ExampleMux_Resolve() {
 		nil,
 		mux.NewRoute(
 			"login/",
-			mux.MethodGet,
+			[]string{mux.MethodGet},
 			LoginHandler(),
 		),
 		mux.NewRoute(
 			"/books/:author",
-			mux.MethodAll,
+			[]string{mux.MethodAll},
 			BooksByAuthorHandler(),
 		),
 	)

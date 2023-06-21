@@ -31,7 +31,7 @@ const (
 // It panics if handler has already been wrapped with ong/middleware
 func NewRoute(
 	pattern string,
-	method string,
+	methods []string,
 	handler http.Handler,
 ) Route {
 	h := getfunc(handler)
@@ -41,8 +41,12 @@ func NewRoute(
 		panic("the handler should not be wrapped with ong middleware")
 	}
 
+	if len(methods) <= 0 {
+		panic("please specify some HTTP method/s for this route.")
+	}
+
 	return Route{
-		method:          method,
+		methods:         methods,
 		pattern:         pattern,
 		segments:        pathSegments(pattern),
 		originalHandler: handler,
@@ -78,36 +82,46 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 
 	mid := middleware.All //nolint:ineffassign
 	for _, rt := range routes {
-		switch rt.method {
-		case MethodAll:
-			mid = middleware.All
-		case MethodGet:
-			mid = middleware.Get
-		case MethodPost:
-			mid = middleware.Post
-		case MethodHead:
-			mid = middleware.Head
-		case MethodPut:
-			mid = middleware.Put
-		case MethodDelete:
-			mid = middleware.Delete
-		default:
-			mid = middleware.All
-		}
+		if len(rt.methods) <= 1 {
+			meth := rt.methods[0]
+			switch meth {
+			case MethodAll:
+				mid = middleware.All
+			case MethodGet:
+				mid = middleware.Get
+			case MethodPost:
+				mid = middleware.Post
+			case MethodHead:
+				mid = middleware.Head
+			case MethodPut:
+				mid = middleware.Put
+			case MethodDelete:
+				mid = middleware.Delete
+			default:
+				mid = middleware.All
+			}
 
-		m.addPattern(
-			rt.method,
-			rt.pattern,
-			rt.originalHandler,
-			mid(rt.originalHandler, opt),
-		)
+			m.addPattern(
+				rt.methods,
+				rt.pattern,
+				rt.originalHandler,
+				mid(rt.originalHandler, opt),
+			)
+		} else {
+			m.addPattern(
+				rt.methods,
+				rt.pattern,
+				rt.originalHandler,
+				middleware.AnyOf(rt.originalHandler, opt, rt.methods),
+			)
+		}
 	}
 
 	return m
 }
 
-func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
-	m.router.handle(method, pattern, originalHandler, wrappingHandler)
+func (m Mux) addPattern(methods []string, pattern string, originalHandler, wrappingHandler http.Handler) {
+	m.router.handle(methods, pattern, originalHandler, wrappingHandler)
 }
 
 // ServeHTTP implements a http.Handler

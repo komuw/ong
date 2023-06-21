@@ -20,7 +20,7 @@ type muxContextKey string
 //
 // Use [NewRoute] to get a valid Route.
 type Route struct {
-	method          string
+	methods         []string
 	pattern         string
 	segments        []string
 	originalHandler http.Handler // This is only needed to enhance the debug/panic message when conflicting routes are detected.
@@ -44,7 +44,7 @@ Route{
   segments: %s,
   originalHandler: %s,
   wrappingHandler: %s,
-}`, r.method, r.pattern, r.segments, originHandler, wrappingHandler)
+}`, r.methods, r.pattern, r.segments, originHandler, wrappingHandler)
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
@@ -95,7 +95,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) {
+func (r *router) handle(methods []string, pattern string, originalHandler, wrappingHandler http.Handler) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -108,10 +108,10 @@ func (r *router) handle(method, pattern string, originalHandler, wrappingHandler
 	}
 
 	// Try and detect conflict before adding a new route.
-	r.detectConflict(method, pattern, originalHandler)
+	r.detectConflict(methods, pattern, originalHandler)
 
 	rt := Route{
-		method:          strings.ToUpper(method),
+		methods:         methods,
 		pattern:         pattern,
 		segments:        pathSegments(pattern),
 		originalHandler: originalHandler,
@@ -148,7 +148,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 //	already exists and would conflict.
 //
 // /
-func (r *router) detectConflict(method, pattern string, originalHandler http.Handler) {
+func (r *router) detectConflict(methods []string, pattern string, originalHandler http.Handler) {
 	// Conflicting routes are a bad thing.
 	// They can be a source of bugs and confusion.
 	// see: https://www.alexedwards.net/blog/which-go-router-should-i-use
@@ -174,10 +174,10 @@ However
   handler: %v
 already exists and would conflict.`,
 			pattern,
-			strings.ToUpper(method),
+			methods,
 			getfunc(originalHandler),
 			path.Join(rt.segments...),
-			strings.ToUpper(rt.method),
+			rt.methods,
 			getfunc(rt.originalHandler),
 		)
 

@@ -54,14 +54,14 @@ func TestNewRoute(t *testing.T) {
 	// succeds
 	_ = NewRoute(
 		"/api",
-		MethodGet,
+		[]string{MethodGet},
 		someMuxHandler("msg"),
 	)
 
 	// succeds
 	_ = NewRoute(
 		"/api",
-		MethodGet,
+		[]string{MethodGet},
 		middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-hard-passwd"),
 	)
 
@@ -69,7 +69,7 @@ func TestNewRoute(t *testing.T) {
 	attest.Panics(t, func() {
 		_ = NewRoute(
 			"/api",
-			MethodGet,
+			[]string{MethodGet},
 			middleware.Get(
 				someMuxHandler("msg"),
 				middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
@@ -98,7 +98,7 @@ func TestMux(t *testing.T) {
 			nil,
 			NewRoute(
 				"/api",
-				MethodGet,
+				[]string{MethodGet},
 				someMuxHandler(msg),
 			),
 		)
@@ -124,7 +124,7 @@ func TestMux(t *testing.T) {
 			nil,
 			NewRoute(
 				uri,
-				MethodGet,
+				[]string{MethodGet},
 				someMuxHandler(msg),
 			),
 		)
@@ -169,7 +169,7 @@ func TestMux(t *testing.T) {
 			nil,
 			NewRoute(
 				uri,
-				MethodGet,
+				[]string{MethodGet},
 				someMuxHandler(msg),
 			),
 		)
@@ -196,7 +196,7 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		uri1 := "/api/hi"
 		uri2 := "/api/:someId"
-		method := MethodGet
+		method := []string{MethodGet}
 
 		defer func() {
 			r := recover()
@@ -239,7 +239,7 @@ func TestMux(t *testing.T) {
 			nil,
 			NewRoute(
 				"/api",
-				MethodGet,
+				[]string{MethodGet},
 				expectedHandler,
 			),
 			NewRoute(
@@ -260,28 +260,28 @@ func TestMux(t *testing.T) {
 				"success with no slashes",
 				"api",
 				"/api/",
-				MethodGet,
+				[]string{MethodGet},
 				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with prefix slash",
 				"/api",
 				"/api/",
-				MethodGet,
+				[]string{MethodGet},
 				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with suffix slash",
 				"api/",
 				"/api/",
-				MethodGet,
+				[]string{MethodGet},
 				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with all slashes",
 				"/api/",
 				"/api/",
-				MethodGet,
+				[]string{MethodGet},
 				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
 			},
 			{
@@ -314,7 +314,7 @@ func TestMux(t *testing.T) {
 				t.Parallel()
 
 				rt := mux.Resolve(tt.path)
-				attest.Equal(t, rt.method, tt.method)
+				attest.Equal(t, rt.methods, tt.method)
 				attest.Equal(t, rt.pattern, tt.pattern)
 				attest.Subsequence(t, rt.String(), tt.stackPath)
 			})
