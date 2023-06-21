@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -86,12 +87,18 @@ func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (
 
 		go func() {
 			// This server will handle requests to the ACME `/.well-known/acme-challenge/` URI.
-			// serve HTTP, which will redirect automatically to HTTPS
+			// see: https://letsencrypt.org/docs/challenge-types/
 			autocertHandler := m.HTTPHandler(h)
 			autocertServer := &http.Server{
-				Addr:     ":80",
-				Handler:  autocertHandler,
-				ErrorLog: slog.NewLogLogger(l.Handler(), slog.LevelDebug),
+				// serve HTTP, which will redirect automatically to HTTPS
+				Addr:              ":80",
+				Handler:           autocertHandler,
+				ReadHeaderTimeout: 20 * time.Second,
+				ReadTimeout:       40 * time.Second,
+				WriteTimeout:      40 * time.Second,
+				IdleTimeout:       120 * time.Second,
+				ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
+				BaseContext:       func(net.Listener) context.Context { return ctx },
 			}
 
 			cfg := listenerConfig()
