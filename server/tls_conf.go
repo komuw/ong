@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -130,7 +131,8 @@ func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (
 		if len(o.tls.keyFile) < 1 {
 			return nil, errors.New("ong/server: keyFile cannot be empty if certFile is also specified")
 		}
-		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
+		io.ReadAll(o.tls.certFile)
+		c, err := tls.X509KeyPair(o.tls.certFile, o.tls.keyFile)
 		if err != nil {
 			return nil, err
 		}

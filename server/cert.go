@@ -11,6 +11,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"math/big"
 	"os"
 	"os/exec"
@@ -28,6 +29,89 @@ import (
 //   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here:                               https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
 //   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
+
+func createDevCertKeyTODO(l *slog.Logger) (certReader, keyReader io.Reader) {
+	certPath, keyPath := certKeyPaths()
+	rootCACertPath, _, err1 := rootCAcertKeyPaths()
+
+	err2 := checkCertValidity(certPath)
+	err3 := checkCertValidity(rootCACertPath)
+	if err1 == nil && err2 == nil && err3 == nil {
+		// certs exists and are valid.
+		// TODO:
+		// return certPath, keyPath
+		return nil, nil
+	}
+
+	l.Info("creating dev tls cert and key")
+	defer l.Info("done creating dev tls cert and key")
+
+	if _, _, err := loadCA(); err != nil {
+		l.Error("createDevCertKey", "error", err)
+		panic(err)
+	}
+
+	caCert, caKey, err := installCA(l)
+	if err != nil {
+		// We should not panic for this error.
+		// This is because this just represents a failure to add certs to CA store.
+		e := errors.Wrap(err)
+		l.Error("createDevCertKey", "error", e)
+	}
+
+	privKey, err := generatePrivKey()
+	if err != nil {
+		l.Error("createDevCertKey", "error", err)
+		panic(err)
+	}
+	pubKey := privKey.(crypto.Signer).Public()
+
+	serNum, err := randomSerialNumber()
+	if err != nil {
+		l.Error("createDevCertKey", "error", err)
+		panic(err)
+	}
+
+	certTemplate := &x509.Certificate{
+		SerialNumber: serNum,
+		Subject: pkix.Name{
+			Organization:       []string{"ong development certificate"},
+			OrganizationalUnit: []string{getOrg()},
+		},
+		DNSNames:  []string{"localhost"},
+		NotBefore: time.Now().UTC(),
+		// The maximum for `NotAfter` should be 825days
+		// See https://support.apple.com/en-us/HT210176
+		NotAfter:    time.Now().UTC().Add(26 * time.Hour),
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+	}
+
+	cert, err := x509.CreateCertificate(rand.Reader, certTemplate, caCert, pubKey, caKey)
+	if err != nil {
+		l.Error("createDevCertKey", "error", err)
+		panic(err)
+	}
+
+	pemCert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
+	if err = os.WriteFile(certPath, pemCert, 0o644); err != nil {
+		l.Error("createDevCertKey", "error", err)
+		panic(err)
+	}
+
+	key, err := x509.MarshalPKCS8PrivateKey(privKey)
+	if err != nil {
+		l.Error("createDevCertKey", "error", err)
+		panic(err)
+	}
+	pemKey := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key})
+	if err = os.WriteFile(keyPath, pemKey, 0o600); err != nil {
+		l.Error("createDevCertKey", "error", err)
+		panic(err)
+	}
+
+	return bytes.NewReader(pemCert), bytes.NewReader(pemKey)
+}
 
 // createDevCertKey generates and saves(to disk) a certifiate and key that can be used to configure a tls server.
 //

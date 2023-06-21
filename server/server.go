@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -48,9 +49,11 @@ const (
 )
 
 type tlsOpts struct {
+	// TODO: rename from certFile to cert
 	// if certFile is present, tls will be served from certificates on disk.
-	certFile string
-	keyFile  string
+	certFile io.Reader
+	// TODO: rename from keyFile to certKey
+	keyFile io.Reader
 	// if email is present, tls will be served from ACME certifiates.
 	email string
 	// domain can be a wildcard.
@@ -124,8 +127,10 @@ func NewOpts(
 	handlerTimeout time.Duration,
 	idleTimeout time.Duration,
 	drainTimeout time.Duration,
-	certFile string,
-	keyFile string,
+	// TODO: rename from certFile to cert
+	certFile io.Reader,
+	// TODO: rename from keyFile to certKey
+	keyFile io.Reader,
 	email string, // if present, tls will be served from acme certifiates.
 	domain string,
 	acmeURL string,
@@ -183,13 +188,13 @@ func NewOpts(
 // DevOpts returns a new Opts that has sensible defaults for tls, especially for dev environments.
 // It also automatically creates the dev certifiates/key.
 func DevOpts(l *slog.Logger) Opts {
-	certFile, keyFile := createDevCertKey(l)
+	certFile, keyFile := createDevCertKeyTODO(l)
 
 	return withOpts(65081, certFile, keyFile, "", "localhost", "")
 }
 
 // CertOpts returns a new Opts that has sensible defaults given certFile & keyFile.
-func CertOpts(certFile, keyFile, domain string) Opts {
+func CertOpts(certFile, keyFile io.Reader, domain string) Opts {
 	return withOpts(443, certFile, keyFile, "", domain, "")
 }
 
@@ -198,7 +203,7 @@ func CertOpts(certFile, keyFile, domain string) Opts {
 //
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
 func AcmeOpts(email, domain, acmeURL string) Opts {
-	return withOpts(443, "", "", email, domain, acmeURL)
+	return withOpts(443, nil, nil, email, domain, acmeURL)
 }
 
 // LetsEncryptOpts returns a new Opts that procures certificates from [letsencrypt].
@@ -206,11 +211,11 @@ func AcmeOpts(email, domain, acmeURL string) Opts {
 //
 // [letsencrypt]: https://letsencrypt.org/
 func LetsEncryptOpts(email, domain string) Opts {
-	return withOpts(443, "", "", email, domain, "")
+	return withOpts(443, nil, nil, email, domain, "")
 }
 
 // withOpts returns a new Opts that has sensible defaults given port.
-func withOpts(port uint16, certFile, keyFile, email, domain, acmeURL string) Opts {
+func withOpts(port uint16, certFile, keyFile io.Reader, email, domain, acmeURL string) Opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 
 	readHeaderTimeout := 1 * time.Second
