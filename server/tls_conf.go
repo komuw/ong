@@ -5,14 +5,17 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
 
-	"golang.org/x/net/idna"
+	"github.com/komuw/ong/log"
 
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/exp/slog"
+	"golang.org/x/net/idna"
 )
 
 // Most of the code here is inspired(or taken from) by:
@@ -24,7 +27,9 @@ import (
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from ACME, from disk or be nil(for non-tls traffic)
-func getTlsConfig(o Opts) (*tls.Config, error) {
+//
+// h is the fallback is the http handler that will be delegated to for non ACME requests.
+func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (*tls.Config, error) {
 	if err := validateDomain(o.tls.domain); err != nil {
 		return nil, err
 	}
@@ -56,10 +61,67 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 				"http/1.1",
 				acme.ALPNProto, // enable tls-alpn ACME challenges
 			},
-			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
-				return m.GetCertificate(info)
+			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
+				// it is called if `tls.Config.Certificates` is empty.
+				//
+				setFingerprint(info)
+
+				c, err := m.GetCertificate(info)
+				if err != nil {
+					// Ideally, we should not have to log here because the error bubbles up
+					// and should be logged up the stack.
+					// But for whatever reason, that doesn't happen.
+					// todo: we should investigate why.
+					l.Error("ong/server GetCertificate",
+						"acmeURL", o.tls.url,
+						"domain", o.tls.domain,
+						"tls.ClientHelloInfo.ServerName", info.ServerName,
+						"error", err,
+					)
+				}
+
+				return c, err
 			},
 		}
+
+		go func() {
+			// This server will handle requests to the ACME `/.well-known/acme-challenge/` URI.
+			// Note that this `http-01` challenge does not allow wildcard certificates.
+			// see: https://letsencrypt.org/docs/challenge-types/
+			//      https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
+			autocertHandler := m.HTTPHandler(h)
+			autocertServer := &http.Server{
+				// serve HTTP, which will redirect automatically to HTTPS
+				Addr:              ":80",
+				Handler:           autocertHandler,
+				ReadHeaderTimeout: 20 * time.Second,
+				ReadTimeout:       40 * time.Second,
+				WriteTimeout:      40 * time.Second,
+				IdleTimeout:       120 * time.Second,
+				ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
+				BaseContext:       func(net.Listener) context.Context { return ctx },
+			}
+
+			cfg := listenerConfig()
+			lstr, err := cfg.Listen(ctx, "tcp", autocertServer.Addr)
+			if err != nil {
+				l.Error("autocertServer, unable to create listener", "error", err)
+				return
+			}
+
+			slog.NewLogLogger(l.Handler(), log.LevelImmediate).
+				Printf("acme/autocert server listening at %s", autocertServer.Addr)
+
+			if errAutocertSrv := autocertServer.Serve(lstr); errAutocertSrv != nil {
+				l.Error("ong/server. acme/autocert unable to serve",
+					"func", "autocertServer.ListenAndServe",
+					"addr", autocertServer.Addr,
+					"error", errAutocertSrv,
+				)
+			}
+		}()
+
 		return tlsConf, nil
 	}
 	if o.tls.certFile != "" {
@@ -79,11 +141,10 @@ func getTlsConfig(o Opts) (*tls.Config, error) {
 				"http/1.1",
 				acme.ALPNProto, // enable tls-alpn ACME challenges
 			},
-			GetCertificate: func(info *tls.ClientHelloInfo) (certificate *tls.Certificate, e error) {
+			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
 				//
-
 				setFingerprint(info)
 
 				return &c, nil
