@@ -20,8 +20,10 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"golang.org/x/exp/slog"
 	"golang.org/x/net/idna"
@@ -51,7 +53,8 @@ type Opts struct {
 
 // New returns a new Opts.
 //
-// domain is the domain name of your website. New panics if domain is invalid.
+// domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
+// New panics if domain is invalid.
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
@@ -76,6 +79,21 @@ func New(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
+	// todo: This checks are same as in `server.validateDomain`. Maybe unify?
+	if strings.Count(domain, "*") > 1 {
+		panic(errors.New("ong/middleware: domain can only contain one wildcard character"))
+	}
+	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
+		panic(errors.New("ong/middleware: domain wildcard character should be a prefix"))
+	}
+	if strings.Contains(domain, "*") && domain[1] != '.' {
+		panic(errors.New("ong/middleware: domain wildcard character should be followed by a `.` character"))
+	}
+	if strings.Contains(domain, "*") {
+		// remove the `*` and `.`
+		domain = domain[2:]
+	}
+
 	if _, err := idna.Registration.ToASCII(domain); err != nil {
 		panic(fmt.Errorf("ong/middleware: domain is invalid: %w", err))
 	}
