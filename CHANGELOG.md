@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.54
+- Validate domain in middleware: https://github.com/komuw/ong/pull/283
+
 # v0.0.53
 - Add acme server that will handle requests from ACME CA: https://github.com/komuw/ong/pull/281
 
