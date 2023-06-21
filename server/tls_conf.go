@@ -87,7 +87,9 @@ func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (
 
 		go func() {
 			// This server will handle requests to the ACME `/.well-known/acme-challenge/` URI.
+			// Note that this `http-01` challenge does not allow wildcard certificates.
 			// see: https://letsencrypt.org/docs/challenge-types/
+			//      https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 			autocertHandler := m.HTTPHandler(h)
 			autocertServer := &http.Server{
 				// serve HTTP, which will redirect automatically to HTTPS
@@ -111,11 +113,11 @@ func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (
 			slog.NewLogLogger(l.Handler(), log.LevelImmediate).
 				Printf("acme/autocert server listening at %s", autocertServer.Addr)
 
-			if err := autocertServer.Serve(lstr); err != nil {
+			if errAutocertSrv := autocertServer.Serve(lstr); errAutocertSrv != nil {
 				l.Error("ong/server. acme/autocert unable to serve",
 					"func", "autocertServer.ListenAndServe",
 					"addr", autocertServer.Addr,
-					"error", err,
+					"error", errAutocertSrv,
 				)
 			}
 		}()
