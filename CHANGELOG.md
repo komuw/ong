@@ -4,6 +4,7 @@ Most recent version is listed first.
 
 
 # v0.0.53
+- Add acme server that will handle requests from ACME CA: https://github.com/komuw/ong/pull/281
 - Add a middleware that accepts multiple http methods: https://github.com/komuw/ong/pull/279
 
 # v0.0.52

@@ -253,7 +253,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tlsConf, errTc := getTlsConfig(o)
+	tlsConf, errTc := getTlsConfig(ctx, h, o, l)
 	if errTc != nil {
 		return errTc
 	}
