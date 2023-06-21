@@ -165,10 +165,10 @@ func validateDomain(domain string) error {
 		return errors.New("ong/server: domain can only contain one wildcard character")
 	}
 	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
-		return errors.New("ong/server: wildcard character should be a prefix")
+		return errors.New("ong/server: domain wildcard character should be a prefix")
 	}
 	if strings.Contains(domain, "*") && domain[1] != '.' {
-		return errors.New("ong/server: wildcard character should be followed by a `.` character")
+		return errors.New("ong/server: domain wildcard character should be followed by a `.` character")
 	}
 
 	if !strings.Contains(domain, "*") {
