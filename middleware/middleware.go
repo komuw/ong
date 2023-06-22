@@ -11,12 +11,13 @@
 //  5. Log http requests and responses.
 //  6. Rate limit requests by IP address.
 //  7. Shed load based on http response latencies.
-//  8. Redirect http requests to https.
-//  9. Add some important HTTP security headers and assign them sensible default values.
-//  10. Implement Cross-Origin Resource Sharing support(CORS).
-//  11. Provide protection against Cross Site Request Forgeries(CSRF).
-//  12. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
-//  13. Implement http sessions.
+//  8. Handle automatic procurement/renewal of ACME tls certifiates.
+//  9. Redirect http requests to https.
+//  10. Add some important HTTP security headers and assign them sensible default values.
+//  11. Implement Cross-Origin Resource Sharing support(CORS).
+//  12. Provide protection against Cross Site Request Forgeries(CSRF).
+//  13. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
+//  14. Implement http sessions.
 package middleware
 
 import (
@@ -131,13 +132,14 @@ func allDefaultMiddlewares(
 	// 5.  logger since we would like to get logs as early in the lifecycle as possible.
 	// 6.  rateLimiter since we want bad traffic to be filtered early.
 	// 7.  loadShedder for the same reason.
-	// 8.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
-	// 9.  securityHeaders since we want some minimum level of security.
-	// 10. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 11. csrf since this one is a bit more involved perf-wise.
-	// 12. Gzip since it is very involved perf-wise.
-	// 13. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
-	// 14. session since we want sessions to saved as soon as possible.
+	// 8.  acme needs to come before httpsRedirector because ACME challenge requests need to be handled under http(not https).
+	// 9.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
+	// 10. securityHeaders since we want some minimum level of security.
+	// 11. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 12. csrf since this one is a bit more involved perf-wise.
+	// 13. Gzip since it is very involved perf-wise.
+	// 14. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
+	// 15. session since we want sessions to saved as soon as possible.
 	//
 	// user ->
 	//  trace ->
@@ -147,14 +149,15 @@ func allDefaultMiddlewares(
 	//      logger ->
 	//       rateLimiter ->
 	//        loadShedder ->
-	//         httpsRedirector ->
-	//          securityHeaders ->
-	//           cors ->
-	//            csrf ->
-	//             Gzip ->
-	//              reloadProtector ->
-	//               session ->
-	//                actual-handler
+	//         acme ->
+	//          httpsRedirector ->
+	//           securityHeaders ->
+	//            cors ->
+	//             csrf ->
+	//              Gzip ->
+	//               reloadProtector ->
+	//                session ->
+	//                 actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
