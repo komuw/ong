@@ -50,7 +50,7 @@ func acmeHandler(
 func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http.Handler, e error) {
 	defer func() {
 		// see: https://go.dev/play/p/3orL3CyP9a8
-		if o.tls.email != "" { // This is ACME
+		if o.tls.acmeEmail != "" { // This is ACME
 			if acmeH == nil && e == nil {
 				e = errors.New("ong/server: acme could not be setup properly")
 			}
@@ -61,14 +61,14 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 		return nil, nil, err
 	}
 
-	if o.tls.email != "" {
+	if o.tls.acmeEmail != "" {
 		// 1. use ACME.
 		//
 		if o.tls.url == "" {
-			return nil, nil, errors.New("ong/server: acmeURL cannot be empty if email is also specified")
+			return nil, nil, errors.New("ong/server: acmeURL cannot be empty if acmeEmail is also specified")
 		}
 
-		cm := dmn.CertManager(o.tls.domain, o.tls.email, o.tls.url)
+		cm := dmn.CertManager(o.tls.domain, o.tls.acmeEmail, o.tls.url)
 		tlsConf := &tls.Config{
 			// taken from:
 			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
