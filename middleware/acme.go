@@ -24,8 +24,12 @@ func acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl strin
 	// `dmn.CertManager` should be called with valid domain.
 	// `middleware.New` validates the domain, so that by the time we get here, domain is valid.
 	cm := dmn.CertManager(domain, acmeEmail, acmeDirectoryUrl)
-	acmeHandler := cm.HTTPHandler
-	acmeEnabled := acmeHandler != nil
+	acmeEnabled := false
+	var acmeHandler func(http.Handler) http.Handler
+	if cm != nil {
+		acmeHandler = cm.HTTPHandler
+		acmeEnabled = true
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401

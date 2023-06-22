@@ -34,6 +34,9 @@ func getTlsConfig(o Opts) (c *tls.Config, e error) {
 		}
 
 		cm := dmn.CertManager(o.tls.domain, o.tls.acmeEmail, o.tls.acmeDirectoryUrl)
+		if cm == nil {
+			return nil, errors.New("ong/server: unable to setup acme manager")
+		}
 		tlsConf := &tls.Config{
 			// taken from:
 			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234

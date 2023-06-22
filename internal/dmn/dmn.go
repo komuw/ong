@@ -23,7 +23,12 @@ import (
 
 // CertManager returns an ACME certificate manager for the given domain.
 // This should be called with a valid domain. Call [Validate] before calling this.
+// Callers should check if return value is nil.
 func CertManager(domain, acmeEmail, acmeDirectoryUrl string) *autocert.Manager {
+	if domain == "" || acmeEmail == "" || acmeDirectoryUrl == "" {
+		return nil
+	}
+
 	m := &autocert.Manager{
 		Client: &acme.Client{
 			DirectoryURL: acmeDirectoryUrl,

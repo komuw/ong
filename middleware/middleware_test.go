@@ -315,6 +315,33 @@ func TestMiddlewareServer(t *testing.T) {
 		attest.Equal(t, string(rb), postMsg)
 	})
 
+	t.Run("acme succeds", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		domain := "localhost"
+		o := WithLetsEncryptOpts(domain, "hey@example.com", 443, getSecretKey(), DirectIpStrategy, l)
+		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
+
+		// Should not be a `NewTLSServer` since acme requires HTTP(not HTTPS)
+		ts := httptest.NewServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		acmeChallengeURL := ts.URL + acmeURI
+		acmeChallengeURL = strings.ReplaceAll(acmeChallengeURL, "127.0.0.1", domain)
+		res, err := client.Get(acmeChallengeURL)
+		attest.Ok(t, err)
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusForbidden)
+		attest.Subsequence(t, string(rb), "not configured in HostWhitelist")
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
