@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.55
+- Improve timeouts: https://github.com/komuw/ong/pull/286
+
 # v0.0.54
 - Validate domain in middleware: https://github.com/komuw/ong/pull/283
 
