@@ -21,12 +21,9 @@ import (
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 //
 
-// CertManager returns an ACME certificate manager for the given domain..
-func CertManager(domain, acmeEmail, acmeDirectoryUrl string) (*autocert.Manager, error) {
-	if err := Validate(domain); err != nil {
-		return nil, err
-	}
-
+// CertManager returns an ACME certificate manager for the given domain.
+// This should be called with a valid domain. Call [Validate] before calling this.
+func CertManager(domain, acmeEmail, acmeDirectoryUrl string) *autocert.Manager {
 	m := &autocert.Manager{
 		Client: &acme.Client{
 			DirectoryURL: acmeDirectoryUrl,
@@ -40,7 +37,7 @@ func CertManager(domain, acmeEmail, acmeDirectoryUrl string) (*autocert.Manager,
 		HostPolicy: customHostWhitelist(domain),
 	}
 
-	return m, nil
+	return m
 }
 
 // Validate checks domain for validity.

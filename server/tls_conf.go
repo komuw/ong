@@ -68,11 +68,7 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 			return nil, nil, errors.New("ong/server: acmeURL cannot be empty if email is also specified")
 		}
 
-		m, err := dmn.CertManager(o.tls.domain, o.tls.email, o.tls.url)
-		if err != nil {
-			return nil, nil, err
-		}
-
+		cm := dmn.CertManager(o.tls.domain, o.tls.email, o.tls.url)
 		tlsConf := &tls.Config{
 			// taken from:
 			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
@@ -87,7 +83,7 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 				//
 				setFingerprint(info)
 
-				c, err := m.GetCertificate(info)
+				c, err := cm.GetCertificate(info)
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					err = fmt.Errorf(
@@ -103,7 +99,7 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 			},
 		}
 
-		return tlsConf, m.HTTPHandler, nil
+		return tlsConf, cm.HTTPHandler, nil
 	}
 	if o.tls.certFile != "" {
 		// 2. get from disk.
