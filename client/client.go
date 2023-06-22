@@ -76,10 +76,12 @@ func new(ssrfSafe bool, timeout time.Duration, l *slog.Logger) *http.Client {
 			// Prefer Go's built-in DNS resolver.
 			PreferGo: true,
 		},
+		// Timeout is the maximum amount of time a dial will wait for a connect to complete.
 		// The timeout and keep-alive in the default http.DefaultTransport are 30seconds.
 		// see; http.DefaultTransport
-		Timeout:   timeout,
-		KeepAlive: timeout,
+		Timeout: timeout,
+		// KeepAlive is interval between keep-alive probes.
+		KeepAlive: 3 * timeout,
 	}
 
 	transport := &http.Transport{
@@ -88,7 +90,7 @@ func new(ssrfSafe bool, timeout time.Duration, l *slog.Logger) *http.Client {
 		DialContext:           dialer.DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
-		IdleConnTimeout:       3 * timeout,
+		IdleConnTimeout:       5 * timeout,
 		TLSHandshakeTimeout:   timeout,
 		ExpectContinueTimeout: (timeout / 5),
 	}
