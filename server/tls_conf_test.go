@@ -6,7 +6,7 @@ import (
 	"go.akshayshah.org/attest"
 )
 
-func TestCustomHostWhitelist(t *testing.T) {
+func TestGetTlsConfig(t *testing.T) {
 	t.Parallel()
 
 	o := Opts{
