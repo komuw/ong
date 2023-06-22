@@ -17,8 +17,7 @@ func TestGetTlsConfig(t *testing.T) {
 		},
 	}
 
-	c, acmeH, err := getTlsConfig(o)
+	c, err := getTlsConfig(o)
 	attest.Ok(t, err)
-	attest.NotZero(t, acmeH)
 	attest.NotZero(t, c)
 }

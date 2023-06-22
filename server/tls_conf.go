@@ -4,8 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net/http"
-	"strings"
 
 	"github.com/komuw/ong/internal/dmn"
 
@@ -19,53 +17,20 @@ import (
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 //
 
-// acmeHandler returns a Handler that will handle ACME [http-01] challenge requests using acmeH
-// and handles normal requests using appHandler.
-//
-// ACME CA sends challenge requests to `/.well-known/acme-challenge/` uri.
-// Note that this `http-01` challenge does not allow [wildcard] certificates.
-//
-// [http-01]: https://letsencrypt.org/docs/challenge-types/
-// [wildcard]: https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-func acmeHandler(
-	appHandler http.Handler,
-	acmeH func(fallback http.Handler) http.Handler,
-) http.HandlerFunc {
-	// todo: should we move this to `ong/middleware`?
-	return func(w http.ResponseWriter, r *http.Request) {
-		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
-		if strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") && acmeH != nil {
-			acmeH(appHandler).ServeHTTP(w, r)
-			return
-		}
-
-		appHandler.ServeHTTP(w, r)
-	}
-}
-
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from ACME, from disk or be nil(for non-tls traffic)
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
-func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http.Handler, e error) {
-	defer func() {
-		// see: https://go.dev/play/p/3orL3CyP9a8
-		if o.tls.acmeEmail != "" { // This is ACME
-			if acmeH == nil && e == nil {
-				e = errors.New("ong/server: acme could not be setup properly")
-			}
-		}
-	}()
-
+func getTlsConfig(o Opts) (c *tls.Config, e error) {
 	if err := dmn.Validate(o.tls.domain); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if o.tls.acmeEmail != "" {
 		// 1. use ACME.
 		//
 		if o.tls.url == "" {
-			return nil, nil, errors.New("ong/server: acmeURL cannot be empty if acmeEmail is also specified")
+			return nil, errors.New("ong/server: acmeURL cannot be empty if acmeEmail is also specified")
 		}
 
 		cm := dmn.CertManager(o.tls.domain, o.tls.acmeEmail, o.tls.url)
@@ -99,17 +64,17 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 			},
 		}
 
-		return tlsConf, cm.HTTPHandler, nil
+		return tlsConf, nil
 	}
 	if o.tls.certFile != "" {
 		// 2. get from disk.
 		//
 		if len(o.tls.keyFile) < 1 {
-			return nil, nil, errors.New("ong/server: keyFile cannot be empty if certFile is also specified")
+			return nil, errors.New("ong/server: keyFile cannot be empty if certFile is also specified")
 		}
 		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		tlsConf := &tls.Config{
@@ -127,9 +92,9 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 				return &c, nil
 			},
 		}
-		return tlsConf, nil, nil
+		return tlsConf, nil
 	}
 
 	// 3. non-tls traffic.
-	return nil, nil, errors.New("ong/server: ong only serves https")
+	return nil, errors.New("ong/server: ong only serves https")
 }
