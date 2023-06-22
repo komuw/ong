@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.56
+- Set appropriate log level for http.Server.ErrorLog: https://github.com/komuw/ong/pull/288
+
 # v0.0.55
 - Improve timeouts: https://github.com/komuw/ong/pull/286
 - Use one server for ACME and app: https://github.com/komuw/ong/pull/287
