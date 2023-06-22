@@ -43,6 +43,8 @@ func CertManager(domain, acmeEmail, acmeDirectoryUrl string) (*autocert.Manager,
 	return m, nil
 }
 
+// Validate checks domain for validity.
+// domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 func Validate(domain string) error {
 	if len(domain) < 1 {
 		return errors.New("ong: domain cannot be empty")
