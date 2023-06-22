@@ -44,7 +44,7 @@ func startPprofServer(logger *slog.Logger) {
 		ReadTimeout:       read,
 		WriteTimeout:      write,
 		IdleTimeout:       idle,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
+		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
