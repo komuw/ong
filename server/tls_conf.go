@@ -11,7 +11,6 @@ import (
 
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/exp/slog"
 	"golang.org/x/net/idna"
 )
 
@@ -50,7 +49,7 @@ func acmeHandler(
 // The tls config may either procure certifiates from ACME, from disk or be nil(for non-tls traffic)
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
-func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, acmeH func(fallback http.Handler) http.Handler, e error) {
+func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http.Handler, e error) {
 	defer func() {
 		// see: https://go.dev/play/p/3orL3CyP9a8
 		if o.tls.email != "" { // This is ACME
@@ -99,15 +98,13 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, acmeH func(fallback ht
 
 				c, err := m.GetCertificate(info)
 				if err != nil {
-					// Ideally, we should not have to log here because the error bubbles up
-					// and should be logged up the stack.
-					// But for whatever reason, that doesn't happen.
-					// todo: we should investigate why.
-					l.Error("ong/server GetCertificate",
-						"acmeURL", o.tls.url,
-						"domain", o.tls.domain,
-						"tls.ClientHelloInfo.ServerName", info.ServerName,
-						"error", err,
+					// This will be logged by `http.Server.ErrorLog`
+					err = fmt.Errorf(
+						"ong/server: failed to get certificate from ACME. acmeURL=%s. domain=%s. serverName=%s. : %w",
+						o.tls.url,
+						o.tls.domain,
+						info.ServerName,
+						err,
 					)
 				}
 
