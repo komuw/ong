@@ -49,7 +49,7 @@ func acmeHandler(
 // The tls config may either procure certifiates from ACME, from disk or be nil(for non-tls traffic)
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
-func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (c *tls.Config, acmeH func(fallback http.Handler) http.Handler, e error) {
+func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, acmeH func(fallback http.Handler) http.Handler, e error) {
 	defer func() {
 		// see: https://go.dev/play/p/3orL3CyP9a8
 		if o.tls.email != "" { // This is ACME
