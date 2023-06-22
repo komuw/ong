@@ -13,6 +13,8 @@ import (
 
 // TODO: add docs.
 func acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl string) http.HandlerFunc {
+	// `dmn.CertManager` should be called with valid domain.
+	// `middleware.New` validates the domain, so that by the time we get here, domain is valid.
 	cm := dmn.CertManager(domain, acmeEmail, acmeDirectoryUrl)
 	acmeH := cm.HTTPHandler
 
