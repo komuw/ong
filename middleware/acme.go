@@ -20,7 +20,7 @@ func acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl strin
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
-		if strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") && acmeHandler != nil {
+		if acmeHandler != nil && strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") {
 			acmeHandler(wrappedHandler).ServeHTTP(w, r)
 			return
 		}
