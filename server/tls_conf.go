@@ -5,12 +5,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/komuw/ong/log"
 
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -25,20 +22,53 @@ import (
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 //
 
+// acmeHandler returns a Handler that will handle ACME [http-01] challenge requests using acmeH
+// and handles normal requests using appHandler.
+//
+// ACME CA sends challenge requests to `/.well-known/acme-challenge/` uri.
+// Note that this `http-01` challenge does not allow [wildcard] certificates.
+//
+// [http-01]: https://letsencrypt.org/docs/challenge-types/
+// [wildcard]: https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
+func acmeHandler(
+	appHandler http.Handler,
+	acmeH func(fallback http.Handler) http.Handler,
+) http.HandlerFunc {
+	// todo: should we move this to `ong/middleware`?
+	return func(w http.ResponseWriter, r *http.Request) {
+		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
+		if strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") && acmeH != nil {
+			acmeH(appHandler).ServeHTTP(w, r)
+			return
+		}
+
+		appHandler.ServeHTTP(w, r)
+	}
+}
+
 // getTlsConfig returns a proper tls configuration given the options passed in.
 // The tls config may either procure certifiates from ACME, from disk or be nil(for non-tls traffic)
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
-func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (*tls.Config, error) {
+func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, acmeH func(fallback http.Handler) http.Handler, e error) {
+	defer func() {
+		// see: https://go.dev/play/p/3orL3CyP9a8
+		if o.tls.email != "" { // This is ACME
+			if acmeH == nil && e == nil {
+				e = errors.New("ong/server: acme could not be setup properly")
+			}
+		}
+	}()
+
 	if err := validateDomain(o.tls.domain); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if o.tls.email != "" {
 		// 1. use ACME.
 		//
 		if o.tls.url == "" {
-			return nil, errors.New("ong/server: acmeURL cannot be empty if email is also specified")
+			return nil, nil, errors.New("ong/server: acmeURL cannot be empty if email is also specified")
 		}
 
 		m := &autocert.Manager{
@@ -85,54 +115,17 @@ func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (
 			},
 		}
 
-		go func() {
-			// This server will handle requests to the ACME `/.well-known/acme-challenge/` URI.
-			// Note that this `http-01` challenge does not allow wildcard certificates.
-			// see: https://letsencrypt.org/docs/challenge-types/
-			//      https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-			autocertHandler := m.HTTPHandler(h)
-			autocertServer := &http.Server{
-				// serve HTTP, which will redirect automatically to HTTPS
-				Addr:              ":80",
-				Handler:           autocertHandler,
-				ReadHeaderTimeout: 20 * time.Second,
-				ReadTimeout:       40 * time.Second,
-				WriteTimeout:      40 * time.Second,
-				IdleTimeout:       120 * time.Second,
-				ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
-				BaseContext:       func(net.Listener) context.Context { return ctx },
-			}
-
-			cfg := listenerConfig()
-			lstr, err := cfg.Listen(ctx, "tcp", autocertServer.Addr)
-			if err != nil {
-				l.Error("autocertServer, unable to create listener", "error", err)
-				return
-			}
-
-			slog.NewLogLogger(l.Handler(), log.LevelImmediate).
-				Printf("acme/autocert server listening at %s", autocertServer.Addr)
-
-			if errAutocertSrv := autocertServer.Serve(lstr); errAutocertSrv != nil {
-				l.Error("ong/server. acme/autocert unable to serve",
-					"func", "autocertServer.ListenAndServe",
-					"addr", autocertServer.Addr,
-					"error", errAutocertSrv,
-				)
-			}
-		}()
-
-		return tlsConf, nil
+		return tlsConf, m.HTTPHandler, nil
 	}
 	if o.tls.certFile != "" {
 		// 2. get from disk.
 		//
 		if len(o.tls.keyFile) < 1 {
-			return nil, errors.New("ong/server: keyFile cannot be empty if certFile is also specified")
+			return nil, nil, errors.New("ong/server: keyFile cannot be empty if certFile is also specified")
 		}
 		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		tlsConf := &tls.Config{
@@ -150,11 +143,11 @@ func getTlsConfig(ctx context.Context, h http.Handler, o Opts, l *slog.Logger) (
 				return &c, nil
 			},
 		}
-		return tlsConf, nil
+		return tlsConf, nil, nil
 	}
 
 	// 3. non-tls traffic.
-	return nil, errors.New("ong/server: ong only serves https")
+	return nil, nil, errors.New("ong/server: ong only serves https")
 }
 
 func validateDomain(domain string) error {

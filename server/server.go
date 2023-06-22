@@ -253,7 +253,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tlsConf, errTc := getTlsConfig(ctx, h, o, l)
+	tlsConf, acmeH, errTc := getTlsConfig(o, l)
 	if errTc != nil {
 		return errTc
 	}
@@ -267,7 +267,10 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		// 4. https://github.com/golang/go/issues/27375
 		Handler: http.TimeoutHandler(
 			http.MaxBytesHandler(
-				h,
+				acmeHandler(
+					h,
+					acmeH,
+				),
 				int64(o.maxBodyBytes), // limit in bytes.
 			),
 			o.handlerTimeout,
