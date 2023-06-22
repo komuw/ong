@@ -57,12 +57,14 @@ func ValidateDomain(domain string) error {
 		return errors.New("ong: domain wildcard character should be followed by a `.` character")
 	}
 
+	toCheck := domain
 	if strings.Contains(domain, "*") {
 		// remove the `*` and `.`
-		notWildDomain := domain[2:]
-		if _, err := idna.Registration.ToASCII(notWildDomain); err != nil {
-			return fmt.Errorf("ong: domain is invalid: %w", err)
-		}
+		toCheck = domain[2:]
+	}
+
+	if _, err := idna.Registration.ToASCII(toCheck); err != nil {
+		return fmt.Errorf("ong: domain is invalid: %w", err)
 	}
 
 	return nil
