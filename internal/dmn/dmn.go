@@ -23,7 +23,7 @@ import (
 
 // CertManager returns an ACME certificate manager for the given domain..
 func CertManager(domain, acmeEmail, acmeDirectoryUrl string) (*autocert.Manager, error) {
-	if err := ValidateDomain(domain); err != nil {
+	if err := Validate(domain); err != nil {
 		return nil, err
 	}
 
@@ -43,7 +43,7 @@ func CertManager(domain, acmeEmail, acmeDirectoryUrl string) (*autocert.Manager,
 	return m, nil
 }
 
-func ValidateDomain(domain string) error {
+func Validate(domain string) error {
 	if len(domain) < 1 {
 		return errors.New("ong: domain cannot be empty")
 	}

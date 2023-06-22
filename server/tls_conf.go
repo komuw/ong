@@ -60,7 +60,7 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 		}
 	}()
 
-	if err := dmn.ValidateDomain(o.tls.domain); err != nil {
+	if err := dmn.Validate(o.tls.domain); err != nil {
 		return nil, nil, err
 	}
 

@@ -77,7 +77,7 @@ func New(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	if err := dmn.ValidateDomain(domain); err != nil {
+	if err := dmn.Validate(domain); err != nil {
 		panic(err)
 	}
 
