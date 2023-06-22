@@ -20,13 +20,11 @@
 package middleware
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
+	"github.com/komuw/ong/internal/dmn"
 	"golang.org/x/exp/slog"
-	"golang.org/x/net/idna"
 )
 
 // ongMiddlewareErrorHeader is a http header that is set by Ong
@@ -79,23 +77,8 @@ func New(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	// todo: This checks are same as in `server.validateDomain`. Maybe unify?
-	if strings.Count(domain, "*") > 1 {
-		panic(errors.New("ong/middleware: domain can only contain one wildcard character"))
-	}
-	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
-		panic(errors.New("ong/middleware: domain wildcard character should be a prefix"))
-	}
-	if strings.Contains(domain, "*") && domain[1] != '.' {
-		panic(errors.New("ong/middleware: domain wildcard character should be followed by a `.` character"))
-	}
-	if strings.Contains(domain, "*") {
-		// remove the `*` and `.`
-		domain = domain[2:]
-	}
-
-	if _, err := idna.Registration.ToASCII(domain); err != nil {
-		panic(fmt.Errorf("ong/middleware: domain is invalid: %w", err))
+	if err := dmn.ValidateDomain(domain); err != nil {
+		panic(err)
 	}
 
 	return Opts{

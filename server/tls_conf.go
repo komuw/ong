@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
+
+	"github.com/komuw/ong/internal/dmn"
 
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
@@ -70,18 +71,11 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 			return nil, nil, errors.New("ong/server: acmeURL cannot be empty if email is also specified")
 		}
 
-		m := &autocert.Manager{
-			Client: &acme.Client{
-				DirectoryURL: o.tls.url,
-				HTTPClient: &http.Client{
-					Timeout: 13 * time.Second,
-				},
-			},
-			Cache:      autocert.DirCache("ong-certifiate-dir"),
-			Prompt:     autocert.AcceptTOS,
-			Email:      o.tls.email,
-			HostPolicy: customHostWhitelist(o.tls.domain),
+		m, err := dmn.CertManager(o.tls.domain, o.tls.email, o.tls.url)
+		if err != nil {
+			return nil, nil, err
 		}
+
 		tlsConf := &tls.Config{
 			// taken from:
 			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
