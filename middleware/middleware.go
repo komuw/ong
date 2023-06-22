@@ -23,37 +23,48 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/komuw/ong/internal/dmn"
 	"golang.org/x/exp/slog"
 )
 
-// ongMiddlewareErrorHeader is a http header that is set by Ong
-// whenever any of it's middlewares return an error.
-// The logger & recoverer middleware will log the value of this header if it is set.
-//
-// An example, is when the Get middleware fails because it has been called with the wrong http method.
-// Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
-const ongMiddlewareErrorHeader = "Ong-Middleware-Error"
+const (
+	// ongMiddlewareErrorHeader is a http header that is set by Ong
+	// whenever any of it's middlewares return an error.
+	// The logger & recoverer middleware will log the value of this header if it is set.
+	//
+	// An example, is when the Get middleware fails because it has been called with the wrong http method.
+	// Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
+	ongMiddlewareErrorHeader = "Ong-Middleware-Error"
+
+	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+)
 
 // Opts are the various parameters(optionals) that can be used to configure middlewares.
 //
 // Use either [New] or [WithOpts] to get a valid Opts.
 type Opts struct {
-	domain         string
-	httpsPort      uint16
-	allowedOrigins []string
-	allowedMethods []string
-	allowedHeaders []string
-	secretKey      string
-	strategy       ClientIPstrategy
-	l              *slog.Logger
+	domain           string
+	acmeEmail        string
+	acmeDirectoryUrl string
+	httpsPort        uint16
+	allowedOrigins   []string
+	allowedMethods   []string
+	allowedHeaders   []string
+	secretKey        string
+	strategy         ClientIPstrategy
+	l                *slog.Logger
 }
 
 // New returns a new Opts.
 //
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 // New panics if domain is invalid.
+// acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
+// acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
+// acmeEmail & acmeDirectoryUrl can be empty if you do not need the services of ACME.
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
@@ -68,8 +79,13 @@ type Opts struct {
 //
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
 // It is important to choose your strategy carefully, see the warning in [ClientIP].
+//
+// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
+// [letsencrypt]: https://letsencrypt.org/
 func New(
 	domain string,
+	acmeEmail string,
+	acmeDirectoryUrl string,
 	httpsPort uint16,
 	allowedOrigins []string,
 	allowedMethods []string,
@@ -83,14 +99,16 @@ func New(
 	}
 
 	return Opts{
-		domain:         domain,
-		httpsPort:      httpsPort,
-		allowedOrigins: allowedOrigins,
-		allowedMethods: allowedMethods,
-		allowedHeaders: allowedHeaders,
-		secretKey:      secretKey,
-		strategy:       strategy,
-		l:              l,
+		domain:           domain,
+		acmeEmail:        acmeEmail,
+		acmeDirectoryUrl: acmeDirectoryUrl,
+		httpsPort:        httpsPort,
+		allowedOrigins:   allowedOrigins,
+		allowedMethods:   allowedMethods,
+		allowedHeaders:   allowedHeaders,
+		secretKey:        secretKey,
+		strategy:         strategy,
+		l:                l,
 	}
 }
 
@@ -103,7 +121,42 @@ func WithOpts(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	return New(domain, httpsPort, nil, nil, nil, secretKey, strategy, l)
+	return New(domain, "", "", httpsPort, nil, nil, nil, secretKey, strategy, l)
+}
+
+// WithAcmeOpts returns a new opts suitable for use in applications that require TLS certificates from ACME.
+// Also see [WithLetsEncryptOpts]
+// See [New] for extra documentation.
+func WithAcmeOpts(
+	domain string,
+	acmeEmail string,
+	acmeDirectoryUrl string,
+	httpsPort uint16,
+	secretKey string,
+	strategy ClientIPstrategy,
+	l *slog.Logger,
+) Opts {
+	return New(domain, acmeEmail, acmeDirectoryUrl, httpsPort, nil, nil, nil, secretKey, strategy, l)
+}
+
+// WithLetsEncryptOpts returns a new opts suitable for use in applications that require TLS certificates from [letsencrypt].
+// Also see [WithAcmeOpts]
+//
+// [letsencrypt]: https://letsencrypt.org/
+func WithLetsEncryptOpts(
+	domain string,
+	acmeEmail string,
+	httpsPort uint16,
+	secretKey string,
+	strategy ClientIPstrategy,
+	l *slog.Logger,
+) Opts {
+	acmeDirectoryUrl := letsEncryptProductionUrl
+	if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
+		acmeDirectoryUrl = letsEncryptStagingUrl
+	}
+
+	return WithAcmeOpts(domain, acmeEmail, acmeDirectoryUrl, httpsPort, secretKey, strategy, l)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
