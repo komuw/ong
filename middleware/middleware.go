@@ -169,6 +169,8 @@ func allDefaultMiddlewares(
 	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
+	acmeEmail := o.acmeEmail
+	acmeDirectoryUrl := o.acmeDirectoryUrl
 	httpsPort := o.httpsPort
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
@@ -215,6 +217,9 @@ func allDefaultMiddlewares(
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
 
+	// acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl string)
+	// acmeEmail , acmeDirectoryUrl
+
 	return trace(
 		clientIP(
 			fingerprint(
@@ -222,29 +227,34 @@ func allDefaultMiddlewares(
 					logger(
 						rateLimiter(
 							loadShedder(
-								httpsRedirector(
-									securityHeaders(
-										cors(
-											csrf(
-												reloadProtector(
-													session(
-														wrappedHandler,
-														secretKey,
+								acme(
+									httpsRedirector(
+										securityHeaders(
+											cors(
+												csrf(
+													reloadProtector(
+														session(
+															wrappedHandler,
+															secretKey,
+															domain,
+														),
 														domain,
 													),
+													secretKey,
 													domain,
 												),
-												secretKey,
-												domain,
+												allowedOrigins,
+												allowedMethods,
+												allowedHeaders,
 											),
-											allowedOrigins,
-											allowedMethods,
-											allowedHeaders,
+											domain,
 										),
+										httpsPort,
 										domain,
 									),
-									httpsPort,
 									domain,
+									acmeEmail,
+									acmeDirectoryUrl,
 								),
 							),
 						),
