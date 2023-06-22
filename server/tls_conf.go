@@ -34,9 +34,10 @@ func acmeHandler(
 	appHandler http.Handler,
 	acmeH func(fallback http.Handler) http.Handler,
 ) http.HandlerFunc {
+	// todo: should we move this to `ong/middleware`?
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
-		if strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") {
+		if strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") && acmeH != nil {
 			acmeH(appHandler).ServeHTTP(w, r)
 			return
 		}
