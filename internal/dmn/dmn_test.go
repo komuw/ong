@@ -228,7 +228,7 @@ func TestValidateDomain(t *testing.T) {
 			{"dummy", true},
 		}
 		for _, test := range tt {
-			err := ValidateDomain(test.domain)
+			err := Validate(test.domain)
 			if test.shouldSucced {
 				attest.Ok(t, err, attest.Sprintf("failed: %s ", test.domain))
 			} else {

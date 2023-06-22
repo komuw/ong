@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -11,8 +10,6 @@ import (
 	"github.com/komuw/ong/internal/dmn"
 
 	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/net/idna"
 )
 
 // Most of the code here is inspired(or taken from) by:
@@ -139,90 +136,4 @@ func getTlsConfig(o Opts) (c *tls.Config, acmeH func(fallback http.Handler) http
 
 	// 3. non-tls traffic.
 	return nil, nil, errors.New("ong/server: ong only serves https")
-}
-
-func validateDomain(domain string) error {
-	if len(domain) < 1 {
-		return errors.New("ong/server: domain cannot be empty")
-	}
-	if strings.Count(domain, "*") > 1 {
-		return errors.New("ong/server: domain can only contain one wildcard character")
-	}
-	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
-		return errors.New("ong/server: domain wildcard character should be a prefix")
-	}
-	if strings.Contains(domain, "*") && domain[1] != '.' {
-		return errors.New("ong/server: domain wildcard character should be followed by a `.` character")
-	}
-
-	if !strings.Contains(domain, "*") {
-		// not wildcard
-		if _, err := idna.Lookup.ToASCII(domain); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// customHostWhitelist is modeled after `autocert.HostWhitelist` except that it allows wildcards.
-// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
-// Instead, we'll get a certifiate per subdomain.
-// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-//
-// HostWhitelist returns a policy where only the specified domain names are allowed.
-//
-// Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
-// Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
-// Invalid domain will be silently ignored.
-func customHostWhitelist(domain string) autocert.HostPolicy {
-	// wildcard validation has already happened in `validateDomain`
-	exactMatch := ""
-	wildcard := ""
-	if !strings.Contains(domain, "*") {
-		// not wildcard
-		if h, err := idna.Lookup.ToASCII(domain); err == nil {
-			exactMatch = h
-		}
-	} else {
-		// wildcard
-		wildcard = domain
-		wildcard = strings.ToLower(strings.TrimSpace(wildcard))
-		{
-			// if wildcard is `*.example.com` we should also match `example.com`
-			exactMatch = cleanDomain(domain)
-			if h, err := idna.Lookup.ToASCII(exactMatch); err == nil {
-				exactMatch = h
-			}
-		}
-	}
-
-	return func(_ context.Context, host string) error {
-		host = strings.ToLower(strings.TrimSpace(host))
-
-		if exactMatch != "" && exactMatch == host {
-			// good match
-			return nil
-		}
-
-		// try replacing labels in the name with
-		// wildcards until we get a match
-		labels := strings.Split(host, ".")
-		for i := range labels {
-			labels[i] = "*"
-			candidate := strings.Join(labels, ".")
-			if wildcard == candidate {
-				// good match
-				return nil
-			}
-		}
-
-		return fmt.Errorf("ong/server: host %q not configured in HostWhitelist", host)
-	}
-}
-
-func cleanDomain(domain string) string {
-	d := strings.ReplaceAll(domain, "*", "")
-	d = strings.TrimLeft(d, ".")
-	return d
 }
