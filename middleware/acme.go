@@ -11,6 +11,8 @@ import (
 //   (a) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
 //
 
+const acmeURI = "/.well-known/acme-challenge/"
+
 // acme is a middleware that handles ACME [http-01] challenge requests while delegating other requests to wrappedHandler.
 //
 // ACME CA sends challenge requests to `/.well-known/acme-challenge/` uri.
@@ -27,7 +29,7 @@ func acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl strin
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
-		if acmeEnabled && strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") {
+		if acmeEnabled && strings.HasPrefix(r.URL.Path, acmeURI) {
 			acmeHandler(wrappedHandler).ServeHTTP(w, r)
 			return
 		}
