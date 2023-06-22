@@ -17,10 +17,11 @@ func acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl strin
 	// `middleware.New` validates the domain, so that by the time we get here, domain is valid.
 	cm := dmn.CertManager(domain, acmeEmail, acmeDirectoryUrl)
 	acmeHandler := cm.HTTPHandler
+	itsAcme := acmeHandler != nil
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
-		if acmeHandler != nil && strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") {
+		if itsAcme && strings.HasPrefix(r.URL.Path, "/.well-known/acme-challenge/") {
 			acmeHandler(wrappedHandler).ServeHTTP(w, r)
 			return
 		}
