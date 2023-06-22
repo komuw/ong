@@ -281,7 +281,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ReadTimeout:       o.readTimeout,
 		WriteTimeout:      o.writeTimeout,
 		IdleTimeout:       o.idleTimeout,
-		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelDebug),
+		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelError),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 			tConn, ok := c.(*tls.Conn)
@@ -370,7 +370,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 			ReadTimeout:       o.readTimeout,
 			WriteTimeout:      o.writeTimeout,
 			IdleTimeout:       o.idleTimeout,
-			ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelDebug),
+			ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 			BaseContext:       func(net.Listener) context.Context { return ctx },
 		}
 		go func() {
