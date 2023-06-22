@@ -11,9 +11,9 @@ func TestGetTlsConfig(t *testing.T) {
 
 	o := Opts{
 		tls: tlsOpts{
-			domain:    "example.com",
-			acmeEmail: "xx@example.com",
-			url:       letsEncryptStagingUrl,
+			domain:           "example.com",
+			acmeEmail:        "xx@example.com",
+			acmeDirectoryUrl: letsEncryptStagingUrl,
 		},
 	}
 

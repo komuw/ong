@@ -29,11 +29,11 @@ func getTlsConfig(o Opts) (c *tls.Config, e error) {
 	if o.tls.acmeEmail != "" {
 		// 1. use ACME.
 		//
-		if o.tls.url == "" {
-			return nil, errors.New("ong/server: acmeURL cannot be empty if acmeEmail is also specified")
+		if o.tls.acmeDirectoryUrl == "" {
+			return nil, errors.New("ong/server: acmeDirectoryUrl cannot be empty if acmeEmail is also specified")
 		}
 
-		cm := dmn.CertManager(o.tls.domain, o.tls.acmeEmail, o.tls.url)
+		cm := dmn.CertManager(o.tls.domain, o.tls.acmeEmail, o.tls.acmeDirectoryUrl)
 		tlsConf := &tls.Config{
 			// taken from:
 			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
@@ -52,8 +52,8 @@ func getTlsConfig(o Opts) (c *tls.Config, e error) {
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					err = fmt.Errorf(
-						"ong/server: failed to get certificate from ACME. acmeURL=%s. domain=%s. serverName=%s. : %w",
-						o.tls.url,
+						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s. domain=%s. serverName=%s. : %w",
+						o.tls.acmeDirectoryUrl,
 						o.tls.domain,
 						info.ServerName,
 						err,
