@@ -6,6 +6,7 @@ Most recent version is listed first.
 # v0.0.56
 - Set appropriate log level for http.Server.ErrorLog: https://github.com/komuw/ong/pull/288
 - Move acme handler to ong/middleware: https://github.com/komuw/ong/pull/290
+- Add uuid support: https://github.com/komuw/ong/pull/292
 
 # v0.0.55
 - Improve timeouts: https://github.com/komuw/ong/pull/286
