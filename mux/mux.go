@@ -111,7 +111,7 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 
 			m.addPattern(
 				MethodAll,
-				"/.well-known/acme-challenge/", // TODO: make it a constant
+				"/.well-known/acme-challenge/"+":token", // TODO: make it a constant
 				acmeHandler,
 				middleware.All(acmeHandler, opt),
 			)
