@@ -18,6 +18,10 @@ const (
 	version4 byte = 4
 )
 
+// RFC's:
+//   uuidv4: https://datatracker.ietf.org/doc/html/rfc4122
+//   uuidv7: https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis
+
 // UUID represents a universally unique identifier.
 // See [UUID4] and [UUID7]
 //
