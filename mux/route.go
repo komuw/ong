@@ -130,6 +130,8 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	fmt.Println("\n\t router.serveHTTP", "req.URL.Path", req.URL.Path, "routes", r.routes, "\n.")
+
 	r.notFoundHandler.ServeHTTP(w, req)
 }
 
