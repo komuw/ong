@@ -107,11 +107,12 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 	{
 		cm := dmn.CertManager(opt.Acme())
 		if cm != nil {
-			acmeHandler := cm.HTTPHandler(nil) // TODO: should we pass in a fallback handler here??
+			const acmeURI = "/.well-known/acme-challenge/:token"
+			acmeHandler := cm.HTTPHandler(m)
 
 			m.addPattern(
 				MethodAll,
-				"/.well-known/acme-challenge/"+":token", // TODO: make it a constant
+				acmeURI,
 				acmeHandler,
 				middleware.All(acmeHandler, opt),
 			)

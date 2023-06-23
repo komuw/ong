@@ -22,26 +22,13 @@ import (
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 //
 
-var cm = &cManager{cm: map[string]*autocert.Manager{}}
-
-type cManager struct {
-	mu sync.Mutex // protects cm
-	cm map[string]*autocert.Manager
-}
-
-func (c *cManager) get(domain string) (*autocert.Manager, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	r, ok := c.cm[domain]
-
-	return r, ok
-}
-
-func (c *cManager) set(domain string, m *autocert.Manager) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.cm[domain] = m
-}
+var (
+	cmOnce sync.Once
+	// Every time [CertManager] is called, we must return the same `cm`
+	// because `x/crypto/acme/autocert` mutates the certManager and hence we should
+	// get the same state across different invocations.
+	cm *autocert.Manager
+)
 
 // CertManager returns an ACME certificate manager for the given domain.
 // This should be called with a valid domain. Call [Validate] before calling this.
@@ -51,25 +38,24 @@ func CertManager(domain, acmeEmail, acmeDirectoryUrl string) *autocert.Manager {
 		return nil
 	}
 
-	if m, ok := cm.get(domain); ok {
-		return m
-	}
-
-	m := &autocert.Manager{
-		Client: &acme.Client{
-			DirectoryURL: acmeDirectoryUrl,
-			HTTPClient: &http.Client{
-				Timeout: 13 * time.Second,
+	// Ideally, we should have a certManager per unique domain.
+	// Currently, `ong` only handles one domain so this should be fine.
+	cmOnce.Do(func() {
+		cm = &autocert.Manager{
+			Client: &acme.Client{
+				DirectoryURL: acmeDirectoryUrl,
+				HTTPClient: &http.Client{
+					Timeout: 13 * time.Second,
+				},
 			},
-		},
-		Cache:      autocert.DirCache("ong-certifiate-dir"),
-		Prompt:     autocert.AcceptTOS,
-		Email:      acmeEmail,
-		HostPolicy: customHostWhitelist(domain),
-	}
-	cm.set(domain, m)
+			Cache:      autocert.DirCache("ong-certifiate-dir"),
+			Prompt:     autocert.AcceptTOS,
+			Email:      acmeEmail,
+			HostPolicy: customHostWhitelist(domain),
+		}
+	})
 
-	return m
+	return cm
 }
 
 // Validate checks domain for validity.
