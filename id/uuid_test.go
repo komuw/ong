@@ -15,7 +15,7 @@ func TestUuid(t *testing.T) {
 		v4 := UUID4()
 		attest.NotZero(t, v4)
 
-		v7 := UUID7()
-		attest.NotZero(t, v7)
+		v8 := UUID8()
+		attest.NotZero(t, v8)
 	})
 }

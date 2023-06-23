@@ -81,7 +81,7 @@ func UUID4() UUID {
 
 // UUID7 generates a version 7 [UUID].
 // It is correlated with timestamp, thus, when used as the identifief of an object, it has good database locality.
-// On the other hand, this that it can leak the object's creation time unlike [UUID4].
+// On the other hand, this means that it can leak the object's creation time unlike [UUID4].
 //
 // It panics on error.
 func UUID7() UUID {
@@ -109,6 +109,56 @@ func UUID7() UUID {
 	//
 	// It should be, big-endian unsigned number of Unix epoch timestamp in milliseconds.
 	unix_ts_ms := uint64(time.Now().UTC().UnixMilli())
+	uuid[0] = byte(unix_ts_ms >> 40)
+	uuid[1] = byte(unix_ts_ms >> 32)
+	uuid[2] = byte(unix_ts_ms >> 24)
+	uuid[3] = byte(unix_ts_ms >> 16)
+	uuid[4] = byte(unix_ts_ms >> 8)
+	uuid[5] = byte(unix_ts_ms)
+
+	// 3. Override first 4bits of uuid[6]
+	uuid.setVersion(version7)
+	// 4. Override first 2bits of uuid[8]
+	uuid.setVariant()
+
+	return uuid
+}
+
+// UUID8 generates a version 8 [UUID].
+// Version 8 [provides] an RFC-compatible format for experimental/specific use cases.
+//
+// This one is mostly like version 7 except it uses nanosecond precision instead of millisecond.
+// It is correlated with timestamp, thus, when used as the identifief of an object, it has good database locality.
+// On the other hand, this means that it can leak the object's creation time unlike [UUID4].
+//
+// It panics on error.
+//
+// [provides]: https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-5.8
+func UUID8() UUID {
+	var uuid UUID
+
+	// Layout:
+	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-5.7
+	//
+	// A UUID is 128 bits long & is intended to guarantee uniqueness across space and time.
+	// | unix_ts_ms     | version | rand_a   | variant | rand_b   |
+	// | 48bits(6bytes) | 4bits   | 12bits   | 2bits   | 62bits   |
+	// | 0 - 47         | 48 - 51 | 52 - 63  | 64 - 65 | 66 - 127 |
+	//
+
+	// 1. Fill everything with randomness.
+	//
+	// Implementations SHOULD utilize a cryptographically secure pseudo-random number generator (CSPRNG) to provide values that are
+	// both difficult to predict (unguessable) and have a low likelihood of collision (unique).
+	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-6.8
+	if _, err := rand.Read(uuid[:]); err != nil {
+		panic(err)
+	}
+
+	// 2. Set the first 6bytes with time.
+	//
+	// It should be, big-endian unsigned number of Unix epoch timestamp in milliseconds.
+	unix_ts_ms := uint64(time.Now().UTC().UnixNano())
 	uuid[0] = byte(unix_ts_ms >> 40)
 	uuid[1] = byte(unix_ts_ms >> 32)
 	uuid[2] = byte(unix_ts_ms >> 24)
