@@ -2,6 +2,7 @@ package id
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"time"
 )
@@ -18,6 +19,7 @@ const (
 	reservedFuture    byte = 0x00 // Reserved for future definition.
 
 	version4 byte = 4
+	version7 byte = 7
 )
 
 // RFC's:
@@ -97,7 +99,11 @@ func UUID7() UUID {
 	// | 0 - 47         | 48 - 51 | 52 - 63  | 64 - 65 | 66 - 127 |
 	//
 
-	unix_ts_ms := time.Now().UTC().UnixMilli()
+	// It should be;
+	// big-endian unsigned number of Unix epoch timestamp in milliseconds.
+	unix_ts_ms := uint64(time.Now().UTC().UnixMilli())
+	binary.BigEndian.PutUint64(uuid[:6], unix_ts_ms)
+	uuid.setVersion(version7)
 
 	return uuid
 }
