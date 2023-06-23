@@ -338,7 +338,10 @@ func TestMiddlewareServer(t *testing.T) {
 		attest.Ok(t, err)
 		defer res.Body.Close()
 
-		attest.Equal(t, res.StatusCode, http.StatusForbidden)
+		attest.Equal(t, res.StatusCode,
+			// Fails because the acmeHandler will get called with a host like `localhost:38355`
+			// which is not configured in `HostWhitelist`
+			http.StatusForbidden)
 		attest.Subsequence(t, string(rb), "not configured in HostWhitelist")
 	})
 
