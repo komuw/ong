@@ -2,7 +2,6 @@ package id
 
 import (
 	"crypto/rand"
-	"encoding/binary"
 	"fmt"
 	"time"
 )
@@ -31,8 +30,6 @@ const (
 //
 // [unique]: https://en.wikipedia.org/wiki/Universally_unique_identifier
 type UUID [16]byte
-
-// TODO: look into endianess.
 
 func (u UUID) String() string {
 	return fmt.Sprintf(
@@ -99,11 +96,30 @@ func UUID7() UUID {
 	// | 0 - 47         | 48 - 51 | 52 - 63  | 64 - 65 | 66 - 127 |
 	//
 
-	// It should be;
-	// big-endian unsigned number of Unix epoch timestamp in milliseconds.
+	// 1. Fill everything with randomness.
+	//
+	// Implementations SHOULD utilize a cryptographically secure pseudo-random number generator (CSPRNG) to provide values that are
+	// both difficult to predict (unguessable) and have a low likelihood of collision (unique).
+	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-6.8
+	if _, err := rand.Read(uuid[:]); err != nil {
+		panic(err)
+	}
+
+	// 2. Set the first 6bytes with time.
+	//
+	// It should be, big-endian unsigned number of Unix epoch timestamp in milliseconds.
 	unix_ts_ms := uint64(time.Now().UTC().UnixMilli())
-	binary.BigEndian.PutUint64(uuid[:6], unix_ts_ms)
+	uuid[0] = byte(unix_ts_ms >> 40)
+	uuid[1] = byte(unix_ts_ms >> 32)
+	uuid[2] = byte(unix_ts_ms >> 24)
+	uuid[3] = byte(unix_ts_ms >> 16)
+	uuid[4] = byte(unix_ts_ms >> 8)
+	uuid[5] = byte(unix_ts_ms)
+
+	// 3. Override first 4bits of uuid[6]
 	uuid.setVersion(version7)
+	// 4. Override first 2bits of uuid[8]
+	uuid.setVariant()
 
 	return uuid
 }
