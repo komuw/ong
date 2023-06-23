@@ -46,6 +46,8 @@ func (u *UUID) setVersion(version byte) {
 // It is not correlated with timestamp, thus, when used as the identifief of an object, it does not leak its creation time.
 // On the other hand, this means that it has poor database index locality unlike [UUID8].
 //
+// See [UUID8] and [New]
+//
 // It panics on error.
 func UUID4() UUID {
 	var uuid UUID
@@ -80,6 +82,8 @@ func UUID4() UUID {
 // This one is mostly like version 7 except it uses nanosecond precision instead of millisecond.
 // It is correlated with timestamp, thus, when used as the identifief of an object, it has good database locality.
 // On the other hand, this means that it can leak the object's creation time unlike [UUID4].
+//
+// See [UUID4] and [New]
 //
 // It panics on error.
 //
