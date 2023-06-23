@@ -12,11 +12,6 @@ import (
 //
 
 const (
-	reservedNcs       byte = 0x80 // Reserved for NCS compatibility
-	rfc4122           byte = 0x40 // Specified in RFC 4122
-	reservedMicrosoft byte = 0x20 // Reserved for Microsoft compatibility
-	reservedFuture    byte = 0x00 // Reserved for future definition.
-
 	version4 byte = 4
 	version7 byte = 7
 )
