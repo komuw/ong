@@ -19,6 +19,7 @@ const (
 )
 
 // UUID represents a universally unique identifier.
+// See [UUID4] and [UUID7]
 //
 // [unique]: https://en.wikipedia.org/wiki/Universally_unique_identifier
 type UUID [16]byte
@@ -52,7 +53,7 @@ func (u *UUID) setVersion(version byte) {
 	u[6] = (u[6] & 0x0F) | (version << 4)
 }
 
-// UUID4 generates a version 4 UUID.
+// UUID4 generates a version 4 [UUID].
 // It panics on error.
 func UUID4() UUID {
 	var uuid UUID
