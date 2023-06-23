@@ -33,6 +33,11 @@ func (u UUID) String() string {
 	)
 }
 
+// Bytes returns the bytes that undely the UUID.
+func (u UUID) Bytes() []byte {
+	return u[:]
+}
+
 func (u *UUID) setVariant() {
 	// In this package, we only use rfc4122 variant.
 	u[8] = (u[8]&(0xff>>2) | (0x02 << 6))

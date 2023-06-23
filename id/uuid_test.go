@@ -17,5 +17,7 @@ func TestUuid(t *testing.T) {
 
 		v8 := UUID8()
 		attest.NotZero(t, v8)
+
+		attest.NotZero(t, v8.Bytes())
 	})
 }
