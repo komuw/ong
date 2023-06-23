@@ -51,15 +51,15 @@ type tlsOpts struct {
 	// if certFile is present, tls will be served from certificates on disk.
 	certFile string
 	keyFile  string
-	// if email is present, tls will be served from ACME certifiates.
-	email string
+	// if acmeEmail is present, tls will be served from ACME certifiates.
+	acmeEmail string
 	// domain can be a wildcard.
 	// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
 	// Instead, we'll get a certifiate per subdomain.
 	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 	domain string
 	// URL of the ACME certificate authority's directory endpoint.
-	url string
+	acmeDirectoryUrl string
 }
 
 // Opts are the various parameters(optionals) that can be used to configure a HTTP server.
@@ -106,12 +106,12 @@ func (o Opts) Equal(other Opts) bool {
 // certFile is a path to a tls certificate.
 // keyFile is a path to a tls key.
 //
-// email is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
+// acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
 // domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
-// acmeURL is the URL of the [ACME] certificate authority's directory endpoint.
+// acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
 //
 // If certFile is a non-empty string, this will enable tls using certificates found on disk.
-// If email is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
+// If acmeEmail is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
 //
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
 // [letsencrypt]: https://letsencrypt.org/
@@ -126,9 +126,9 @@ func NewOpts(
 	drainTimeout time.Duration,
 	certFile string,
 	keyFile string,
-	email string, // if present, tls will be served from acme certifiates.
+	acmeEmail string, // if present, tls will be served from acme certifiates.
 	domain string,
-	acmeURL string,
+	acmeDirectoryUrl string,
 ) Opts {
 	serverPort := fmt.Sprintf(":%d", port)
 	host := "127.0.0.1"
@@ -148,10 +148,10 @@ func NewOpts(
 		maxBodyBytes = defaultMaxBodyBytes
 	}
 
-	if email != "" && acmeURL == "" {
-		acmeURL = letsEncryptProductionUrl
+	if acmeEmail != "" && acmeDirectoryUrl == "" {
+		acmeDirectoryUrl = letsEncryptProductionUrl
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			acmeURL = letsEncryptStagingUrl
+			acmeDirectoryUrl = letsEncryptStagingUrl
 		}
 	}
 
@@ -165,11 +165,11 @@ func NewOpts(
 		idleTimeout:       idleTimeout,
 		drainTimeout:      drainTimeout,
 		tls: tlsOpts{
-			certFile: certFile,
-			keyFile:  keyFile,
-			email:    email,
-			domain:   domain,
-			url:      acmeURL,
+			certFile:         certFile,
+			keyFile:          keyFile,
+			acmeEmail:        acmeEmail,
+			domain:           domain,
+			acmeDirectoryUrl: acmeDirectoryUrl,
 		},
 		// this ones are created automatically
 		host:          host,
@@ -197,20 +197,20 @@ func CertOpts(certFile, keyFile, domain string) Opts {
 // Also see [LetsEncryptOpts]
 //
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
-func AcmeOpts(email, domain, acmeURL string) Opts {
-	return withOpts(443, "", "", email, domain, acmeURL)
+func AcmeOpts(acmeEmail, domain, acmeDirectoryUrl string) Opts {
+	return withOpts(443, "", "", acmeEmail, domain, acmeDirectoryUrl)
 }
 
 // LetsEncryptOpts returns a new Opts that procures certificates from [letsencrypt].
 // Also see [AcmeOpts]
 //
 // [letsencrypt]: https://letsencrypt.org/
-func LetsEncryptOpts(email, domain string) Opts {
-	return withOpts(443, "", "", email, domain, "")
+func LetsEncryptOpts(acmeEmail, domain string) Opts {
+	return withOpts(443, "", "", acmeEmail, domain, "")
 }
 
 // withOpts returns a new Opts that has sensible defaults given port.
-func withOpts(port uint16, certFile, keyFile, email, domain, acmeURL string) Opts {
+func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUrl string) Opts {
 	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
 
 	readHeaderTimeout := 1 * time.Second
@@ -233,9 +233,9 @@ func withOpts(port uint16, certFile, keyFile, email, domain, acmeURL string) Opt
 		drainTimeout,
 		certFile,
 		keyFile,
-		email,
+		acmeEmail,
 		domain,
-		acmeURL,
+		acmeDirectoryUrl,
 	)
 }
 
@@ -243,7 +243,7 @@ func withOpts(port uint16, certFile, keyFile, email, domain, acmeURL string) Opt
 //
 // It sets up a server with the parameters provided by o.
 // If the Opts supplied include a certificate and key, the server will accept https traffic and also automatically handle http->https redirect.
-// Likewise, if the Opts include an email address, the server will accept https traffic and automatically handle http->https redirect.
+// Likewise, if the Opts include an acmeEmail address, the server will accept https traffic and automatically handle http->https redirect.
 //
 // The server shuts down cleanly after receiving any termination signal.
 func Run(h http.Handler, o Opts, l *slog.Logger) error {
@@ -253,7 +253,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tlsConf, acmeH, errTc := getTlsConfig(o)
+	tlsConf, errTc := getTlsConfig(o)
 	if errTc != nil {
 		return errTc
 	}
@@ -267,10 +267,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		// 4. https://github.com/golang/go/issues/27375
 		Handler: http.TimeoutHandler(
 			http.MaxBytesHandler(
-				acmeHandler(
-					h,
-					acmeH,
-				),
+				h,
 				int64(o.maxBodyBytes), // limit in bytes.
 			),
 			o.handlerTimeout,

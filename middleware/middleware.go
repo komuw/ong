@@ -11,50 +11,60 @@
 //  5. Log http requests and responses.
 //  6. Rate limit requests by IP address.
 //  7. Shed load based on http response latencies.
-//  8. Redirect http requests to https.
-//  9. Add some important HTTP security headers and assign them sensible default values.
-//  10. Implement Cross-Origin Resource Sharing support(CORS).
-//  11. Provide protection against Cross Site Request Forgeries(CSRF).
-//  12. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
-//  13. Implement http sessions.
+//  8. Handle automatic procurement/renewal of ACME tls certifiates.
+//  9. Redirect http requests to https.
+//  10. Add some important HTTP security headers and assign them sensible default values.
+//  11. Implement Cross-Origin Resource Sharing support(CORS).
+//  12. Provide protection against Cross Site Request Forgeries(CSRF).
+//  13. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
+//  14. Implement http sessions.
 package middleware
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
-	"strings"
+	"os"
 
+	"github.com/komuw/ong/internal/dmn"
 	"golang.org/x/exp/slog"
-	"golang.org/x/net/idna"
 )
 
-// ongMiddlewareErrorHeader is a http header that is set by Ong
-// whenever any of it's middlewares return an error.
-// The logger & recoverer middleware will log the value of this header if it is set.
-//
-// An example, is when the Get middleware fails because it has been called with the wrong http method.
-// Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
-const ongMiddlewareErrorHeader = "Ong-Middleware-Error"
+const (
+	// ongMiddlewareErrorHeader is a http header that is set by Ong
+	// whenever any of it's middlewares return an error.
+	// The logger & recoverer middleware will log the value of this header if it is set.
+	//
+	// An example, is when the Get middleware fails because it has been called with the wrong http method.
+	// Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
+	ongMiddlewareErrorHeader = "Ong-Middleware-Error"
+
+	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+)
 
 // Opts are the various parameters(optionals) that can be used to configure middlewares.
 //
 // Use either [New] or [WithOpts] to get a valid Opts.
 type Opts struct {
-	domain         string
-	httpsPort      uint16
-	allowedOrigins []string
-	allowedMethods []string
-	allowedHeaders []string
-	secretKey      string
-	strategy       ClientIPstrategy
-	l              *slog.Logger
+	domain           string
+	acmeEmail        string
+	acmeDirectoryUrl string
+	httpsPort        uint16
+	allowedOrigins   []string
+	allowedMethods   []string
+	allowedHeaders   []string
+	secretKey        string
+	strategy         ClientIPstrategy
+	l                *slog.Logger
 }
 
 // New returns a new Opts.
 //
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 // New panics if domain is invalid.
+// acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
+// acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
+// acmeEmail & acmeDirectoryUrl can be empty if you do not need the services of ACME.
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
@@ -69,8 +79,13 @@ type Opts struct {
 //
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
 // It is important to choose your strategy carefully, see the warning in [ClientIP].
+//
+// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
+// [letsencrypt]: https://letsencrypt.org/
 func New(
 	domain string,
+	acmeEmail string,
+	acmeDirectoryUrl string,
 	httpsPort uint16,
 	allowedOrigins []string,
 	allowedMethods []string,
@@ -79,34 +94,21 @@ func New(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	// todo: This checks are same as in `server.validateDomain`. Maybe unify?
-	if strings.Count(domain, "*") > 1 {
-		panic(errors.New("ong/middleware: domain can only contain one wildcard character"))
-	}
-	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
-		panic(errors.New("ong/middleware: domain wildcard character should be a prefix"))
-	}
-	if strings.Contains(domain, "*") && domain[1] != '.' {
-		panic(errors.New("ong/middleware: domain wildcard character should be followed by a `.` character"))
-	}
-	if strings.Contains(domain, "*") {
-		// remove the `*` and `.`
-		domain = domain[2:]
-	}
-
-	if _, err := idna.Registration.ToASCII(domain); err != nil {
-		panic(fmt.Errorf("ong/middleware: domain is invalid: %w", err))
+	if err := dmn.Validate(domain); err != nil {
+		panic(err)
 	}
 
 	return Opts{
-		domain:         domain,
-		httpsPort:      httpsPort,
-		allowedOrigins: allowedOrigins,
-		allowedMethods: allowedMethods,
-		allowedHeaders: allowedHeaders,
-		secretKey:      secretKey,
-		strategy:       strategy,
-		l:              l,
+		domain:           domain,
+		acmeEmail:        acmeEmail,
+		acmeDirectoryUrl: acmeDirectoryUrl,
+		httpsPort:        httpsPort,
+		allowedOrigins:   allowedOrigins,
+		allowedMethods:   allowedMethods,
+		allowedHeaders:   allowedHeaders,
+		secretKey:        secretKey,
+		strategy:         strategy,
+		l:                l,
 	}
 }
 
@@ -119,7 +121,42 @@ func WithOpts(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	return New(domain, httpsPort, nil, nil, nil, secretKey, strategy, l)
+	return New(domain, "", "", httpsPort, nil, nil, nil, secretKey, strategy, l)
+}
+
+// WithAcmeOpts returns a new opts suitable for use in applications that require TLS certificates from ACME.
+// Also see [WithLetsEncryptOpts]
+// See [New] for extra documentation.
+func WithAcmeOpts(
+	domain string,
+	acmeEmail string,
+	acmeDirectoryUrl string,
+	httpsPort uint16,
+	secretKey string,
+	strategy ClientIPstrategy,
+	l *slog.Logger,
+) Opts {
+	return New(domain, acmeEmail, acmeDirectoryUrl, httpsPort, nil, nil, nil, secretKey, strategy, l)
+}
+
+// WithLetsEncryptOpts returns a new opts suitable for use in applications that require TLS certificates from [letsencrypt].
+// Also see [WithAcmeOpts]
+//
+// [letsencrypt]: https://letsencrypt.org/
+func WithLetsEncryptOpts(
+	domain string,
+	acmeEmail string,
+	httpsPort uint16,
+	secretKey string,
+	strategy ClientIPstrategy,
+	l *slog.Logger,
+) Opts {
+	acmeDirectoryUrl := letsEncryptProductionUrl
+	if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
+		acmeDirectoryUrl = letsEncryptStagingUrl
+	}
+
+	return WithAcmeOpts(domain, acmeEmail, acmeDirectoryUrl, httpsPort, secretKey, strategy, l)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -132,6 +169,8 @@ func allDefaultMiddlewares(
 	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
+	acmeEmail := o.acmeEmail
+	acmeDirectoryUrl := o.acmeDirectoryUrl
 	httpsPort := o.httpsPort
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
@@ -148,13 +187,14 @@ func allDefaultMiddlewares(
 	// 5.  logger since we would like to get logs as early in the lifecycle as possible.
 	// 6.  rateLimiter since we want bad traffic to be filtered early.
 	// 7.  loadShedder for the same reason.
-	// 8.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
-	// 9.  securityHeaders since we want some minimum level of security.
-	// 10. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 11. csrf since this one is a bit more involved perf-wise.
-	// 12. Gzip since it is very involved perf-wise.
-	// 13. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
-	// 14. session since we want sessions to saved as soon as possible.
+	// 8.  acme needs to come before httpsRedirector because ACME challenge requests need to be handled under http(not https).
+	// 9.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
+	// 10. securityHeaders since we want some minimum level of security.
+	// 11. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 12. csrf since this one is a bit more involved perf-wise.
+	// 13. Gzip since it is very involved perf-wise.
+	// 14. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
+	// 15. session since we want sessions to saved as soon as possible.
 	//
 	// user ->
 	//  trace ->
@@ -164,17 +204,21 @@ func allDefaultMiddlewares(
 	//      logger ->
 	//       rateLimiter ->
 	//        loadShedder ->
-	//         httpsRedirector ->
-	//          securityHeaders ->
-	//           cors ->
-	//            csrf ->
-	//             Gzip ->
-	//              reloadProtector ->
-	//               session ->
-	//                actual-handler
+	//         acme ->
+	//          httpsRedirector ->
+	//           securityHeaders ->
+	//            cors ->
+	//             csrf ->
+	//              Gzip ->
+	//               reloadProtector ->
+	//                session ->
+	//                 actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
+
+	// acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl string)
+	// acmeEmail , acmeDirectoryUrl
 
 	return trace(
 		clientIP(
@@ -183,29 +227,34 @@ func allDefaultMiddlewares(
 					logger(
 						rateLimiter(
 							loadShedder(
-								httpsRedirector(
-									securityHeaders(
-										cors(
-											csrf(
-												reloadProtector(
-													session(
-														wrappedHandler,
-														secretKey,
+								acme(
+									httpsRedirector(
+										securityHeaders(
+											cors(
+												csrf(
+													reloadProtector(
+														session(
+															wrappedHandler,
+															secretKey,
+															domain,
+														),
 														domain,
 													),
+													secretKey,
 													domain,
 												),
-												secretKey,
-												domain,
+												allowedOrigins,
+												allowedMethods,
+												allowedHeaders,
 											),
-											allowedOrigins,
-											allowedMethods,
-											allowedHeaders,
+											domain,
 										),
+										httpsPort,
 										domain,
 									),
-									httpsPort,
 									domain,
+									acmeEmail,
+									acmeDirectoryUrl,
 								),
 							),
 						),

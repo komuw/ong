@@ -68,10 +68,10 @@ func TestOpts(t *testing.T) {
 			serverAddress:     "127.0.0.1:65081",
 			httpPort:          ":65080",
 			tls: tlsOpts{
-				certFile: "/tmp/ong_dev_certificate.pem",
-				keyFile:  "/tmp/ong_dev_key.pem",
-				domain:   "localhost",
-				url:      "",
+				certFile:         "/tmp/ong_dev_certificate.pem",
+				keyFile:          "/tmp/ong_dev_key.pem",
+				domain:           "localhost",
+				acmeDirectoryUrl: "",
 			},
 		}
 		attest.Equal(t, got, want)
@@ -98,10 +98,10 @@ func TestOpts(t *testing.T) {
 			serverAddress:     "0.0.0.0:80",
 			httpPort:          ":79",
 			tls: tlsOpts{
-				certFile: "/tmp/ong_dev_certificate.pem",
-				keyFile:  "/tmp/ong_dev_key.pem",
-				domain:   "*.example.com",
-				url:      "",
+				certFile:         "/tmp/ong_dev_certificate.pem",
+				keyFile:          "/tmp/ong_dev_key.pem",
+				domain:           "*.example.com",
+				acmeDirectoryUrl: "",
 			},
 		}
 		attest.Equal(t, got, want)
@@ -124,10 +124,10 @@ func TestOpts(t *testing.T) {
 			idleTimeout:       113 * time.Second,
 			drainTimeout:      defaultDrainDuration,
 			tls: tlsOpts{
-				certFile: "/tmp/ong_dev_certificate.pem",
-				keyFile:  "/tmp/ong_dev_key.pem",
-				domain:   "localhost",
-				url:      "",
+				certFile:         "/tmp/ong_dev_certificate.pem",
+				keyFile:          "/tmp/ong_dev_key.pem",
+				domain:           "localhost",
+				acmeDirectoryUrl: "",
 			},
 			serverPort:    ":65081",
 			serverAddress: "127.0.0.1:65081",
