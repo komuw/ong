@@ -48,7 +48,7 @@ const (
 // Use either [New] or [WithOpts] to get a valid Opts.
 type Opts struct {
 	domain           string
-	unCleanDomain    string // used by acme handler
+	acmeDomain       string // used by acme handler
 	acmeEmail        string
 	acmeDirectoryUrl string
 	httpsPort        uint16
@@ -58,6 +58,11 @@ type Opts struct {
 	secretKey        string
 	strategy         ClientIPstrategy
 	l                *slog.Logger
+}
+
+// Acme returns options used for procuring certificates from ACME certificate authorities.
+func (o Opts) Acme() (acmeDomain, acmeEmail, acmeDirectoryUrl string) {
+	return o.acmeDomain, o.acmeEmail, o.acmeDirectoryUrl
 }
 
 // New returns a new Opts.
@@ -100,7 +105,7 @@ func New(
 		panic(err)
 	}
 
-	unCleanDomain := domain
+	acmeDomain := domain
 	if strings.Contains(domain, "*") {
 		// remove the `*` and `.`
 		domain = domain[2:]
@@ -108,7 +113,7 @@ func New(
 
 	return Opts{
 		domain:           domain,
-		unCleanDomain:    unCleanDomain,
+		acmeDomain:       acmeDomain,
 		acmeEmail:        acmeEmail,
 		acmeDirectoryUrl: acmeDirectoryUrl,
 		httpsPort:        httpsPort,
@@ -178,7 +183,7 @@ func allDefaultMiddlewares(
 	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
-	unCleanDomain := o.unCleanDomain
+	acmeDomain := o.acmeDomain
 	acmeEmail := o.acmeEmail
 	acmeDirectoryUrl := o.acmeDirectoryUrl
 	httpsPort := o.httpsPort
@@ -262,7 +267,7 @@ func allDefaultMiddlewares(
 										httpsPort,
 										domain,
 									),
-									unCleanDomain,
+									acmeDomain,
 									acmeEmail,
 									acmeDirectoryUrl,
 								),

@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/komuw/ong/internal/dmn"
 	"github.com/komuw/ong/middleware"
 
 	"golang.org/x/exp/slog"
@@ -101,6 +102,20 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 			rt.originalHandler,
 			mid(rt.originalHandler, opt),
 		)
+	}
+
+	{
+		cm := dmn.CertManager(opt.Acme())
+		if cm != nil {
+			acmeHandler := cm.HTTPHandler(nil) // TODO: should we pass in a fallback handler here??
+
+			m.addPattern(
+				MethodAll,
+				"/.well-known/acme-challenge/", // TODO: make it a constant
+				acmeHandler,
+				middleware.All(acmeHandler, opt),
+			)
+		}
 	}
 
 	return m
