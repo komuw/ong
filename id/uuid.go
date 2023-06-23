@@ -3,10 +3,12 @@ package id
 import (
 	"crypto/rand"
 	"fmt"
+	"time"
 )
 
 // Most of the code here is inspired(or taken from) by:
 // (a) https://github.com/komuw/yuyuid whose license(MIT) can be found here: https://github.com/komuw/yuyuid/blob/v0.1.1/LICENSE.txt
+// (b) https://github.com/gofrs/uuid whose license(MIT) can be found here:   https://github.com/gofrs/uuid/blob/v5.0.0/LICENSE
 //
 
 const (
@@ -28,6 +30,8 @@ const (
 // [unique]: https://en.wikipedia.org/wiki/Universally_unique_identifier
 type UUID [16]byte
 
+// TODO: look into endianess.
+
 func (u UUID) String() string {
 	return fmt.Sprintf(
 		"%x-%x-%x-%x-%x",
@@ -35,26 +39,13 @@ func (u UUID) String() string {
 	)
 }
 
-func (u *UUID) setVariant(variant byte) {
-	switch variant {
-	case reservedNcs:
-		u[8] &= 0x7F
-	case rfc4122:
-		u[8] &= 0x3F
-		u[8] |= 0x80
-	case reservedMicrosoft:
-		u[8] &= 0x1F
-		u[8] |= 0xC0
-	case reservedFuture:
-		u[8] &= 0x1F
-		u[8] |= 0xE0
-	default:
-		panic(fmt.Sprintf("variant: %v is unknown", variant))
-	}
+func (u *UUID) setVariant() {
+	// In this package, we only use rfc4122 variant.
+	u[8] = (u[8]&(0xff>>2) | (0x02 << 6))
 }
 
 func (u *UUID) setVersion(version byte) {
-	u[6] = (u[6] & 0x0F) | (version << 4)
+	u[6] = (u[6] & 0x0f) | (version << 4)
 }
 
 // UUID4 generates a version 4 [UUID].
@@ -65,13 +56,27 @@ func (u *UUID) setVersion(version byte) {
 func UUID4() UUID {
 	var uuid UUID
 
+	// Layout:
+	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-5.4
+	//
+	// A UUID is 128 bits long & is intended to guarantee uniqueness across space and time.
+	// | random_a       | version | random_b | variant | random_c |
+	// | 48bits(6bytes) | 4bits   | 12bits   | 2bits   | 62bits   |
+	// | 0 - 47         | 48 - 51 | 52 - 63  | 64 - 65 | 66 - 127 |
+	//
+
 	// Read is a helper function that calls io.ReadFull.
+	//
+	// Implementations SHOULD utilize a cryptographically secure pseudo-random number generator (CSPRNG) to provide values that are
+	// both difficult to predict (unguessable) and have a low likelihood of collision (unique).
+	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-6.8
 	if _, err := rand.Read(uuid[:]); err != nil {
 		panic(err)
 	}
 
-	uuid.setVariant(rfc4122)
 	uuid.setVersion(version4)
+	uuid.setVariant()
+
 	return uuid
 }
 
@@ -82,5 +87,17 @@ func UUID4() UUID {
 // It panics on error.
 func UUID7() UUID {
 	var uuid UUID
+
+	// Layout:
+	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-5.7
+	//
+	// A UUID is 128 bits long & is intended to guarantee uniqueness across space and time.
+	// | unix_ts_ms     | version | rand_a   | variant | rand_b   |
+	// | 48bits(6bytes) | 4bits   | 12bits   | 2bits   | 62bits   |
+	// | 0 - 47         | 48 - 51 | 52 - 63  | 64 - 65 | 66 - 127 |
+	//
+
+	unix_ts_ms := time.Now().UTC().UnixMilli()
+
 	return uuid
 }
