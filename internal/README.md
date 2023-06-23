@@ -5,4 +5,4 @@ The packages in this directory:
    So, we cannot create `clientip` inside `ong/middleware` since `ong/cookie` cannot import `ong/middleware`(middleware already imports cookie.)
 2. The `github.com/komuw/ong/internal/octx` package is need by both `github.com/komuw/ong/log`, `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
 3. The `github.com/komuw/ong/internal/finger` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
-3. The `github.com/komuw/ong/internal/dmn` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
+3. The `github.com/komuw/ong/internal/acme` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`

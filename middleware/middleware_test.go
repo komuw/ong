@@ -320,7 +320,7 @@ func TestMiddlewareServer(t *testing.T) {
 
 		msg := "hello world"
 		domain := "localhost"
-		o := WithLetsEncryptOpts(domain, "hey@example.com", 443, getSecretKey(), DirectIpStrategy, l)
+		o := WithOpts(domain, 443, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		// Should not be a `NewTLSServer` since acme requires HTTP(not HTTPS)
@@ -329,7 +329,8 @@ func TestMiddlewareServer(t *testing.T) {
 		)
 		defer ts.Close()
 
-		acmeChallengeURL := ts.URL + acmeURI
+		const acmeChallengeURI = "/.well-known/acme-challenge/"
+		acmeChallengeURL := ts.URL + acmeChallengeURI
 		acmeChallengeURL = strings.ReplaceAll(acmeChallengeURL, "127.0.0.1", domain)
 		res, err := client.Get(acmeChallengeURL)
 		attest.Ok(t, err)
@@ -339,10 +340,10 @@ func TestMiddlewareServer(t *testing.T) {
 		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode,
-			// Fails because the acmeHandler will get called with a host like `localhost:38355`
-			// which is not configured in `HostWhitelist`
-			http.StatusForbidden)
-		attest.Subsequence(t, string(rb), "not configured in HostWhitelist")
+			// Fails because the `acme.Handler()` will get called with a host like `localhost:38355`
+			// and that host has no token configured for it.
+			http.StatusInternalServerError)
+		attest.Subsequence(t, string(rb), "no such file or directory")
 	})
 
 	t.Run("wildcard domain", func(t *testing.T) {
@@ -495,10 +496,10 @@ func TestNew(t *testing.T) {
 			t.Parallel()
 			if tt.expectPanic {
 				attest.Panics(t, func() {
-					New(tt.domain, "hey@example.com", letsEncryptStagingUrl, 443, nil, nil, nil, "secretKey", DirectIpStrategy, slog.Default())
+					New(tt.domain, 443, nil, nil, nil, "secretKey", DirectIpStrategy, slog.Default())
 				})
 			} else {
-				New(tt.domain, "hey@example.com", letsEncryptStagingUrl, 443, nil, nil, nil, "secretKey", DirectIpStrategy, slog.Default())
+				New(tt.domain, 443, nil, nil, nil, "secretKey", DirectIpStrategy, slog.Default())
 			}
 		})
 	}

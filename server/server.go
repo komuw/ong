@@ -51,11 +51,11 @@ type tlsOpts struct {
 	// if certFile is present, tls will be served from certificates on disk.
 	certFile string
 	keyFile  string
-	// if acmeEmail is present, tls will be served from ACME certifiates.
+	// if acmeEmail is present, tls will be served from ACME certificates.
 	acmeEmail string
 	// domain can be a wildcard.
 	// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
-	// Instead, we'll get a certifiate per subdomain.
+	// Instead, we'll get a certificate per subdomain.
 	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 	domain string
 	// URL of the ACME certificate authority's directory endpoint.
@@ -126,7 +126,7 @@ func NewOpts(
 	drainTimeout time.Duration,
 	certFile string,
 	keyFile string,
-	acmeEmail string, // if present, tls will be served from acme certifiates.
+	acmeEmail string, // if present, tls will be served from acme certificates.
 	domain string,
 	acmeDirectoryUrl string,
 ) Opts {
@@ -181,7 +181,7 @@ func NewOpts(
 }
 
 // DevOpts returns a new Opts that has sensible defaults for tls, especially for dev environments.
-// It also automatically creates the dev certifiates/key.
+// It also automatically creates the dev certificates/key.
 func DevOpts(l *slog.Logger) Opts {
 	certFile, keyFile := createDevCertKey(l)
 
@@ -253,7 +253,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tlsConf, errTc := getTlsConfig(o)
+	tlsConf, errTc := getTlsConfig(o, l)
 	if errTc != nil {
 		return errTc
 	}
