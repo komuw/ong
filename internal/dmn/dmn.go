@@ -1,4 +1,4 @@
-// Package dmn houses web domain utilities used by multiple ong packages.
+// Package dmn contains domain utilities used by multiple ong packages.
 package dmn
 
 import (
