@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/komuw/ong/internal/dmn"
 	"golang.org/x/exp/slog"
@@ -47,6 +48,7 @@ const (
 // Use either [New] or [WithOpts] to get a valid Opts.
 type Opts struct {
 	domain           string
+	unCleanDomain    string // used by acme handler
 	acmeEmail        string
 	acmeDirectoryUrl string
 	httpsPort        uint16
@@ -98,8 +100,15 @@ func New(
 		panic(err)
 	}
 
+	unCleanDomain := domain
+	if strings.Contains(domain, "*") {
+		// remove the `*` and `.`
+		domain = domain[2:]
+	}
+
 	return Opts{
 		domain:           domain,
+		unCleanDomain:    unCleanDomain,
 		acmeEmail:        acmeEmail,
 		acmeDirectoryUrl: acmeDirectoryUrl,
 		httpsPort:        httpsPort,
@@ -169,6 +178,7 @@ func allDefaultMiddlewares(
 	o Opts,
 ) http.HandlerFunc {
 	domain := o.domain
+	unCleanDomain := o.unCleanDomain
 	acmeEmail := o.acmeEmail
 	acmeDirectoryUrl := o.acmeDirectoryUrl
 	httpsPort := o.httpsPort
@@ -252,7 +262,7 @@ func allDefaultMiddlewares(
 										httpsPort,
 										domain,
 									),
-									domain,
+									unCleanDomain,
 									acmeEmail,
 									acmeDirectoryUrl,
 								),

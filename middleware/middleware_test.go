@@ -345,6 +345,29 @@ func TestMiddlewareServer(t *testing.T) {
 		attest.Subsequence(t, string(rb), "not configured in HostWhitelist")
 	})
 
+	t.Run("wildcard domain", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		o := WithOpts("*.localhost", 443, getSecretKey(), DirectIpStrategy, l)
+		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
+
+		ts := httptest.NewTLSServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		res, err := client.Get(ts.URL)
+		attest.Ok(t, err)
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
