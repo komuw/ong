@@ -79,7 +79,7 @@ func UUID4() UUID {
 	return uuid
 }
 
-// UUID4 generates a version 7 [UUID].
+// UUID7 generates a version 7 [UUID].
 // It is correlated with timestamp, thus, when used as the identifief of an object, it has good database locality.
 // On the other hand, this that it can leak the object's creation time unlike [UUID4].
 //
