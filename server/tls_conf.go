@@ -33,6 +33,10 @@ func getTlsConfig(o Opts) (c *tls.Config, e error) {
 			return nil, errors.New("ong/server: acmeDirectoryUrl cannot be empty if acmeEmail is also specified")
 		}
 
+		// Support for acme certifiate manager needs to be added in three places:
+		// (a) In http middlewares.
+		// (b) In http server.
+		// (c) In http multiplexer.
 		cm := dmn.CertManager(o.tls.domain, o.tls.acmeEmail, o.tls.acmeDirectoryUrl)
 		if cm == nil {
 			return nil, errors.New("ong/server: unable to setup acme manager")

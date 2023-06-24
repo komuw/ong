@@ -105,6 +105,10 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 	}
 
 	{
+		// Support for acme certifiate manager needs to be added in three places:
+		// (a) In http middlewares.
+		// (b) In http server.
+		// (c) In http multiplexer.
 		cm := dmn.CertManager(opt.Acme())
 		if cm != nil {
 			const acmeURI = "/.well-known/acme-challenge/:token"

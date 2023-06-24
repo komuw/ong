@@ -241,12 +241,12 @@ func TestValidateDomain(t *testing.T) {
 func TestCertManager(t *testing.T) {
 	t.Parallel()
 
-	cm := CertManager("domain", "acmeEmail", "acmeDirectoryUrl")
-	attest.NotZero(t, cm)
+	acm := CertManager("domain", "acmeEmail", "acmeDirectoryUrl")
+	attest.NotZero(t, acm)
 
-	cm = CertManager("", "acmeEmail", "acmeDirectoryUrl")
-	attest.Zero(t, cm)
+	acm = CertManager("", "acmeEmail", "acmeDirectoryUrl")
+	attest.Zero(t, acm)
 
-	cm = CertManager("domain", "acmeEmail", "")
-	attest.Zero(t, cm)
+	acm = CertManager("domain", "acmeEmail", "")
+	attest.Zero(t, acm)
 }

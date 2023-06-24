@@ -31,6 +31,10 @@ func acme(wrappedHandler http.Handler, domain, acmeEmail, acmeDirectoryUrl strin
 		acmeEnabled = true
 	}
 
+	// Support for acme certifiate manager needs to be added in three places:
+	// (a) In http middlewares.
+	// (b) In http server.
+	// (c) In http multiplexer.
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
 		if acmeEnabled && strings.HasPrefix(r.URL.Path, acmeURI) {
