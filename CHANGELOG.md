@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.57
+- Make acme certificate manager a singleton: https://github.com/komuw/ong/pull/293
+
 # v0.0.56
 - Set appropriate log level for http.Server.ErrorLog: https://github.com/komuw/ong/pull/288
 - Move acme handler to ong/middleware: https://github.com/komuw/ong/pull/290
