@@ -33,6 +33,11 @@ var (
 // CertManager returns an ACME certificate manager for the given domain.
 // This should be called with a valid domain. Call [Validate] before calling this.
 // Callers should check if return value is nil.
+//
+// Support for acme certifiate manager needs to be added in three places:
+// (a) In http middlewares.
+// (b) In http server.
+// (c) In http multiplexer.
 func CertManager(domain, acmeEmail, acmeDirectoryUrl string) *autocert.Manager {
 	if domain == "" || acmeEmail == "" || acmeDirectoryUrl == "" {
 		return nil
