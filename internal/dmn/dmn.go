@@ -23,11 +23,15 @@ import (
 //
 
 var (
-	cmOnce sync.Once
+	// todo: I don't like that we have this globals here.
+	//       We should research on how to do better.
+	//
 	// Every time [CertManager] is called, we must return the same `cm`
 	// because `x/crypto/acme/autocert` mutates the certManager and hence we should
 	// get the same state across different invocations.
-	cm *autocert.Manager
+	//
+	cmOnce sync.Once         //nolint:gochecknoglobals
+	cm     *autocert.Manager //nolint:gochecknoglobals
 )
 
 // CertManager returns an ACME certificate manager for the given domain.
