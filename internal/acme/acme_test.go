@@ -1,475 +1,328 @@
 package acme
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/json"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io"
+	"math/big"
+	mathRand "math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+	"time"
 
 	"go.akshayshah.org/attest"
 	"golang.org/x/exp/slog"
 )
 
-// someAcmeServerHandler mimics an ACME server.
-func someAcmeServerHandler(t *testing.T, domain string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
-
-		if strings.HasPrefix(path, "/directory") {
-			d := &directory{
-				NewNonceURL:   fmt.Sprintf("http://%s/acme/new-nonce", r.Host),
-				NewAccountURL: fmt.Sprintf("http://%s/acme/new-acct", r.Host),
-				NewOrderURL:   fmt.Sprintf("http://%s/acme/new-order", r.Host),
-			}
-
-			w.WriteHeader(http.StatusOK)
-			err := json.NewEncoder(w).Encode(d)
-			attest.Ok(t, err)
-			return
-		}
-
-		// getNonce
-		if strings.HasPrefix(path, "/acme/new-nonce") {
-			// Changing the header map after a call to WriteHeader (or Write) has no effect.
-			// So, `WriteHeader` should be called last.
-			// Otherwise, for the others; `WriteHeader` should be called first.
-			w.Header().Set("Replay-Nonce", "some-random-unique-nonce")
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// getAccount
-		if strings.HasPrefix(path, "/acme/new-acct") {
-			a := &account{
-				Status:               "valid",
-				Contact:              []string{"mailto:hey+sample@gmail.com"},
-				TermsOfServiceAgreed: true,
-			}
-			kid := fmt.Sprintf("http://%s/acme/acct/108401064", r.Host)
-			w.Header().Set("Location", kid)
-
-			w.WriteHeader(http.StatusCreated)
-			err := json.NewEncoder(w).Encode(a)
-			attest.Ok(t, err)
-			return
-		}
-
-		// submitOrder
-		if strings.HasPrefix(path, "/acme/new-order") {
-			o := &order{
-				Identifiers:    []identifier{{Type: "dns", Value: "heya.com"}},
-				Authorizations: []string{fmt.Sprintf("http://%s/acme/authz-v3/7051965644", r.Host)},
-				Status:         "pending",
-				FinalizeURL:    fmt.Sprintf("http://%s/acme/finalize/108495164/9441031984", r.Host),
-			}
-
-			w.Header().Set("Location", fmt.Sprintf("http://%s/acme/order/108707254/9463788554", r.Host))
-
-			w.WriteHeader(http.StatusCreated)
-			err := json.NewEncoder(w).Encode(o)
-			attest.Ok(t, err)
-			return
-		}
-
-		// fetchChallenges
-		if strings.HasPrefix(path, "/acme/authz-v3") {
-			a := &authorization{
-				Identifier: identifier{Type: "dns", Value: "heya.com"},
-				Status:     "pending",
-				Challenges: []challenge{
-					{
-						Type:   "http-01",
-						Url:    fmt.Sprintf("http://%s/acme/chall-v3/7052305704/iSRkIw", r.Host),
-						Status: "pending",
-						Token:  "random-unique-token-EuKDOWlre4",
-					},
-				},
-				EffectiveChallenge: challenge{
-					Type:   "http-01",
-					Url:    fmt.Sprintf("http://%s/acme/chall-v3/7052305704/iSRkIw", r.Host),
-					Status: "pending",
-					Token:  "random-unique-token-EuKDOWlre4",
-				},
-			}
-
-			w.WriteHeader(http.StatusOK)
-			err := json.NewEncoder(w).Encode(a)
-			attest.Ok(t, err)
-			return
-		}
-
-		// respondToChallenge
-		if strings.HasPrefix(path, "/acme/chall-v3") {
-			c := &challenge{
-				Type:   "http-01",
-				Url:    fmt.Sprintf("http://%s/acme/chall-v3/7052305704/iSRkIw", r.Host),
-				Status: "pending",
-				Token:  "random-unique-token-EuKDOWlre4",
-			}
-
-			w.WriteHeader(http.StatusOK)
-			err := json.NewEncoder(w).Encode(c)
-			attest.Ok(t, err)
-			return
-		}
-
-		// sendCSR
-		if strings.HasPrefix(path, "/acme/finalize") {
-			o := &order{
-				Identifiers:    []identifier{{Type: "dns", Value: "heya.com"}},
-				Authorizations: []string{fmt.Sprintf("http://%s/acme/authz-v3/7051965644", r.Host)},
-				Status:         "valid",
-				FinalizeURL:    fmt.Sprintf("http://%s/acme/finalize/108495164/9441031984", r.Host),
-				// Added certificate download url.
-				CertificateURL: fmt.Sprintf("http://%s/acme/cert/mAt3xBGaobw", r.Host),
-				OrderURL:       fmt.Sprintf("http://%s/acme/order/108707254/9463788554", r.Host),
-			}
-
-			w.WriteHeader(http.StatusOK)
-			err := json.NewEncoder(w).Encode(o)
-			attest.Ok(t, err)
-			return
-		}
-
-		// checkOrder
-		if strings.HasPrefix(path, "/acme/order") {
-			requestType := r.Header.Get("ONG-TEST-REQ-TYPE")
-			status := "valid"
-			if strings.Contains(requestType, "ready") {
-				// Before calling sendCSR we check order status and we expect it to be ready.
-				// Before calling downloadCertificate  we check order status and we expect it to be valid.
-				status = "ready"
-			}
-
-			o := &order{
-				Identifiers:    []identifier{{Type: "dns", Value: "heya.com"}},
-				Authorizations: []string{fmt.Sprintf("http://%s/acme/authz-v3/7051965644", r.Host)},
-				Status:         status,
-				FinalizeURL:    fmt.Sprintf("http://%s/acme/finalize/108495164/9441031984", r.Host),
-				// Added certificate download url.
-				CertificateURL: fmt.Sprintf("http://%s/acme/cert/mAt3xBGaobw", r.Host),
-				OrderURL:       fmt.Sprintf("http://%s/acme/order/108707254/9463788554", r.Host),
-			}
-
-			w.WriteHeader(http.StatusOK)
-			err := json.NewEncoder(w).Encode(o)
-			attest.Ok(t, err)
-			return
-		}
-
-		// downloadCertificate
-		if strings.HasPrefix(path, "/acme/cert") {
-			w.WriteHeader(http.StatusOK)
-
-			privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-			attest.Ok(t, err)
-			certDer := createX509Cert(t, domain, privKey)
-			buf := &bytes.Buffer{}
-			err = pem.Encode(buf, &pem.Block{Type: "CERTIFICATE", Bytes: certDer})
-			attest.Ok(t, err)
-
-			_, err = w.Write(buf.Bytes())
-			attest.Ok(t, err)
-			return
-		}
-
-		buf := &bytes.Buffer{}
-		dumpDebugW(buf, r, &http.Response{})
-		panic(fmt.Sprintf("unexpected request to: %s", buf))
-	}
+// getDomain returns a valid unique domain.
+func getDomain() string {
+	r := mathRand.Intn(100_000) + 1
+	return fmt.Sprintf("some-sample-%d-domain.com", r)
 }
 
-func TestAcmeFunctions(t *testing.T) {
-	t.Parallel()
+// createX509Cert is used in tests.
+func createX509Cert(t *testing.T, domain string, privKey *ecdsa.PrivateKey) []byte {
+	t.Helper()
 
-	l := slog.Default()
+	pubKey := privKey.Public()
 
-	setup := func(t *testing.T, acmeServerURL, domain string) (directory, account, order, authorization, order, *ecdsa.PrivateKey, *ecdsa.PrivateKey) {
-		cacheDir, err := diskCachedir()
+	randomSerialNumber := func() *big.Int {
+		serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+		serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 		attest.Ok(t, err)
-
-		directoryUrl, err := url.JoinPath(acmeServerURL, "/directory")
-		attest.Ok(t, err)
-		dir, err := getDirectory(directoryUrl, l)
-		attest.Ok(t, err)
-
-		accountKey := filepath.Join(cacheDir, accountKeyFileName)
-		accountPrivKey, err := getEcdsaPrivKey(accountKey)
-		attest.Ok(t, err)
-
-		certKeyPath := filepath.Join(cacheDir, domain, certKeyFileName)
-		certPrivKey, err := getEcdsaPrivKey(certKeyPath)
-		attest.Ok(t, err)
-
-		actResponse, err := getAccount(dir.NewAccountURL, dir.NewNonceURL, "hey+sample@gmail.com", accountPrivKey, l)
-		attest.Ok(t, err)
-
-		domains := []string{"heya.com"}
-		orderResponse, err := submitOrder(dir.NewOrderURL, dir.NewNonceURL, actResponse.kid, domains, accountPrivKey, l)
-		attest.Ok(t, err)
-
-		authorizationResponse, err := fetchChallenges(orderResponse.Authorizations, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
-		attest.Ok(t, err)
-
-		updatedOrder, err := sendCSR(
-			domain,
-			orderResponse,
-			dir.NewNonceURL,
-			actResponse.kid,
-			accountPrivKey,
-			certPrivKey,
-			l,
-		)
-		attest.Ok(t, err)
-
-		return dir, actResponse, orderResponse, authorizationResponse, updatedOrder, accountPrivKey, certPrivKey
+		return serialNumber
 	}
 
-	domain := getDomain()
-	ts := httptest.NewServer(someAcmeServerHandler(t, domain))
-	t.Cleanup(func() {
-		ts.Close()
-	})
+	certTemplate := x509.Certificate{
+		SerialNumber: randomSerialNumber(),
+		Subject: pkix.Name{
+			Organization: []string{"Ong ACME tests."},
+		},
+		DNSNames:  []string{domain},
+		NotBefore: time.Now().UTC(),
+		NotAfter:  time.Now().UTC().Add(26 * time.Hour),
+		KeyUsage:  x509.KeyUsageDigitalSignature,
+	}
 
-	t.Run("getAccountKey", func(t *testing.T) {
+	certDer, err := x509.CreateCertificate(rand.Reader, &certTemplate, &certTemplate, pubKey, privKey)
+	attest.Ok(t, err)
+
+	return certDer
+}
+
+// createTlsCert is used in tests.
+func createTlsCert(t *testing.T, domain string) *tls.Certificate {
+	t.Helper()
+
+	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	attest.Ok(t, err)
+
+	certDer := createX509Cert(t, domain, privKey)
+
+	tmp := t.TempDir()
+	certPath := filepath.Join(tmp, "cert.crt")
+	keyPath := filepath.Join(tmp, "key.key")
+
+	w, err := os.Create(certPath)
+	attest.Ok(t, err)
+
+	err = pem.Encode(w, &pem.Block{Type: "CERTIFICATE", Bytes: certDer})
+	attest.Ok(t, err)
+
+	privBytes, err := x509.MarshalPKCS8PrivateKey(privKey)
+	attest.Ok(t, err)
+	w, err = os.Create(keyPath)
+	attest.Ok(t, err)
+	err = pem.Encode(w, &pem.Block{Type: "PRIVATE KEY", Bytes: privBytes})
+	attest.Ok(t, err)
+
+	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	attest.Ok(t, err)
+
+	return &cert
+}
+
+func TestValidateDomain(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		accountKeyPath := t.TempDir()
-		accountKey := filepath.Join(accountKeyPath, accountKeyFileName)
-
-		got1, err := getEcdsaPrivKey(accountKey)
-		attest.Ok(t, err)
-
-		got2, err := getEcdsaPrivKey(accountKey)
-		attest.Ok(t, err)
-
-		attest.True(t, got1.Equal(got2))
-	})
-
-	t.Run("getDirectory", func(t *testing.T) {
-		t.Parallel()
-
-		directoryUrl, err := url.JoinPath(ts.URL, "/directory")
-		attest.Ok(t, err)
-
-		dir, err := getDirectory(directoryUrl, l)
-		attest.Ok(t, err)
-		attest.NotZero(t, dir.NewAccountURL)
-		attest.NotZero(t, dir.NewNonceURL)
-		attest.NotZero(t, dir.NewOrderURL)
-	})
-
-	t.Run("getNonce", func(t *testing.T) {
-		t.Parallel()
-
-		dir, _, _, _, _, _, _ := setup(t, ts.URL, domain)
-		nonce, err := getNonce(dir.NewNonceURL, l)
-		attest.Ok(t, err)
-
-		attest.NotZero(t, nonce)
-	})
-
-	t.Run("getAccount", func(t *testing.T) {
-		t.Parallel()
-
-		dir, _, _, _, _, accountPrivKey, _ := setup(t, ts.URL, domain)
-		actResponse, err := getAccount(
-			dir.NewAccountURL,
-			dir.NewNonceURL,
-			"hey+sample@gmail.com",
-			accountPrivKey,
-			l)
-		attest.Ok(t, err)
-
-		attest.NotZero(t, actResponse.Status)
-		attest.NotZero(t, actResponse.Contact)
-		attest.NotZero(t, actResponse.TermsOfServiceAgreed)
-		attest.NotZero(t, actResponse.kid)
-		attest.Zero(t, actResponse.Orders)
-	})
-
-	t.Run("submitOrder", func(t *testing.T) {
-		t.Parallel()
-
-		domains := []string{"heya.com"}
-		dir, acct, _, _, _, accountPrivKey, _ := setup(t, ts.URL, domain)
-		orderResponse, err := submitOrder(
-			dir.NewOrderURL,
-			dir.NewNonceURL,
-			acct.kid,
-			domains,
-			accountPrivKey,
-			l)
-		attest.Ok(t, err)
-
-		attest.NotZero(t, orderResponse.Identifiers)
-		attest.NotZero(t, orderResponse.Authorizations)
-		attest.NotZero(t, orderResponse.Status)
-		attest.NotZero(t, orderResponse.FinalizeURL)
-		attest.Zero(t, orderResponse.CertificateURL)
-		attest.Zero(t, orderResponse.Error)
-	})
-
-	t.Run("fetchChallenges", func(t *testing.T) {
-		t.Parallel()
-
-		dir, acct, ord, _, _, accountPrivKey, _ := setup(t, ts.URL, domain)
-		authorizationResponse, err := fetchChallenges(
-			ord.Authorizations,
-			dir.NewNonceURL,
-			acct.kid,
-			accountPrivKey,
-			l)
-		attest.Ok(t, err)
-
-		attest.NotZero(t, authorizationResponse.Identifier)
-		attest.NotZero(t, authorizationResponse.Status)
-		attest.NotZero(t, authorizationResponse.Status)
-		attest.NotZero(t, authorizationResponse.Challenges)
-		attest.NotZero(t, authorizationResponse.EffectiveChallenge)
-		attest.NotZero(t, authorizationResponse.EffectiveChallenge.Type)
-		attest.NotZero(t, authorizationResponse.EffectiveChallenge.Url)
-		attest.NotZero(t, authorizationResponse.EffectiveChallenge.Status)
-		attest.NotZero(t, authorizationResponse.EffectiveChallenge.Token)
-	})
-
-	t.Run("respondToChallenge", func(t *testing.T) {
-		t.Parallel()
-
-		dir, acct, _, authz, _, accountPrivKey, _ := setup(t, ts.URL, domain)
-		challengeResponse, err := respondToChallenge(
-			authz.EffectiveChallenge,
-			dir.NewNonceURL,
-			acct.kid,
-			accountPrivKey,
-			l)
-		attest.Ok(t, err)
-
-		attest.NotZero(t, challengeResponse.Type)
-		attest.NotZero(t, challengeResponse.Url)
-		attest.NotZero(t, challengeResponse.Status)
-		attest.NotZero(t, challengeResponse.Token)
-	})
-
-	t.Run("sendCSR", func(t *testing.T) {
-		t.Parallel()
-
-		dir, acct, ord, _, _, accountPrivKey, certPrivKey := setup(t, ts.URL, domain)
-		updatedOrder, err := sendCSR(
-			domain,
-			ord,
-			dir.NewNonceURL,
-			acct.kid,
-			accountPrivKey,
-			certPrivKey,
-			l,
-		)
-		attest.Ok(t, err)
-		attest.NotZero(t, updatedOrder.Identifiers)
-		attest.NotZero(t, updatedOrder.Authorizations)
-		attest.NotZero(t, updatedOrder.Status)
-		attest.NotZero(t, updatedOrder.CertificateURL)
-		attest.Equal(t, updatedOrder.Status, "valid")
-		attest.Zero(t, updatedOrder.Error)
-	})
-
-	t.Run("downloadCertificate", func(t *testing.T) {
-		t.Parallel()
-
-		dir, acct, _, _, updatedOrder, accountPrivKey, _ := setup(t, ts.URL, domain)
-		certBytes, err := downloadCertificate(
-			updatedOrder,
-			dir.NewNonceURL,
-			acct.kid,
-			accountPrivKey,
-			l,
-		)
-		attest.Ok(t, err)
-		attest.NotZero(t, certBytes)
-		// attest.NotZero(t, updatedOrder.Authorizations)
-		// attest.NotZero(t, updatedOrder.Status)
-		// attest.NotZero(t, updatedOrder.Certificate)
-		// attest.Equal(t, updatedOrder.Status, "valid")
-		// attest.Zero(t, updatedOrder.Error)
+		tt := []struct {
+			domain       string
+			shouldSucced bool
+		}{
+			{"example.com", true},
+			{"example.org", true},
+			{"xn--9caa.com", true}, // éé.com
+			{"one.example.com", true},
+			//
+			{"*.example.org", true},
+			{"*example.org", false}, // wildcard character should be followed by a `.` character
+			{"*.example.*", false},
+			{"example.*org", false},
+			//
+			{"", false},
+			{"exampl_e.com", false}, // underscore(rune U+005F) is disallowed in domain names.
+			//
+			{"dummy", true},
+			{getDomain(), true},
+		}
+		for _, test := range tt {
+			err := Validate(test.domain)
+			if test.shouldSucced {
+				attest.Ok(t, err, attest.Sprintf("failed: %s ", test.domain))
+			} else {
+				attest.NotZero(t, err, attest.Sprintf("failed: %s ", test.domain))
+			}
+		}
 	})
 }
 
-func TestRealAcme(t *testing.T) {
+func TestManager(t *testing.T) {
 	t.Parallel()
 
-	// Comment out this line when you need to run this test.
-	t.Skip("This test calls a real acme staging server and so should only be used on demand.")
+	email := "hey+sample@gmail.com"
+	acmeDirectoryUrl := "https://some-domain.com/directory"
 
 	l := slog.Default()
 
-	t.Run("acme", func(t *testing.T) {
+	t.Run("GetCertificate", func(t *testing.T) {
 		t.Parallel()
 
-		email := "hey+sample@gmail.com"
 		domain := getDomain()
-		acmeDirectoryUrl := "https://acme-staging-v02.api.letsencrypt.org/directory"
-		accountKey := filepath.Join(t.TempDir(), accountKeyFileName)
-		certKeyPath := filepath.Join(t.TempDir(), domain, certKeyFileName)
+		diskCacheDir, errA := diskCachedir()
+		attest.Ok(t, errA)
+		{ // prep by saving a certificate for the domain to disk.
+			certPath := filepath.Join(diskCacheDir, domain, certFileName)
+			cert := createTlsCert(t, domain)
+			errB := certToDisk(cert, certPath)
+			attest.Ok(t, errB)
+		}
 
-		accountPrivKey, err := getEcdsaPrivKey(accountKey)
-		t.Log("accountPrivKey: ", accountPrivKey, err)
-		attest.Ok(t, err)
+		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+		cert, errC := getCrt(&tls.ClientHelloInfo{
+			ServerName: domain,
+		})
+		attest.Ok(t, errC)
+		attest.NotZero(t, cert)
+		attest.True(t, certIsValid(cert))
+	})
 
-		certPrivKey, err := getEcdsaPrivKey(certKeyPath)
-		t.Log("certPrivKey: ", certPrivKey, err)
-		attest.Ok(t, err)
+	t.Run("initManager", func(t *testing.T) {
+		t.Parallel()
 
-		dir, err := getDirectory(acmeDirectoryUrl, l)
-		t.Log("getDirectory: ", dir, err)
-		attest.Ok(t, err)
+		domain := getDomain()
+		testDiskCache := t.TempDir()
+		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.NotZero(t, m)
+		attest.NotZero(t, m.cache)
+		attest.NotZero(t, m.email)
+		attest.NotZero(t, m.diskCacheDir)
+		attest.Equal(t, m.diskCacheDir, testDiskCache)
 
-		actResponse, err := getAccount(dir.NewAccountURL, dir.NewNonceURL, email, accountPrivKey, l)
-		t.Log("getAccount: ", actResponse, err)
-		attest.Ok(t, err)
+		attest.Equal(t, len(m.cache.certs), 0)
+	})
 
-		domains := []string{domain}
-		orderResponse, err := submitOrder(dir.NewOrderURL, dir.NewNonceURL, actResponse.kid, domains, accountPrivKey, l)
-		t.Log("submitOrder: ", orderResponse, err)
-		attest.Ok(t, err)
+	t.Run("manager fills from disk", func(t *testing.T) {
+		t.Parallel()
 
-		authorizationResponse, err := fetchChallenges(orderResponse.Authorizations, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
-		t.Log("fetchChallenges: ", authorizationResponse, err)
-		attest.Ok(t, err)
+		testDiskCache := t.TempDir()
+		domain := getDomain()
+		{ // prep by saving a certificate for the domain to disk.
+			certPath := filepath.Join(testDiskCache, domain, certFileName)
+			cert := createTlsCert(t, domain)
+			err := certToDisk(cert, certPath)
+			attest.Ok(t, err)
+		}
 
-		// - run a http server in the same node where the dns records of the domain resolve to.
-		// - make the url `http://myDomain.com/.well-known/acme-challenge/<token>` accesible
+		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.NotZero(t, m)
+		attest.Equal(t, len(m.cache.certs), 1)
+	})
 
-		challengeResponse, err := respondToChallenge(authorizationResponse.EffectiveChallenge, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
-		t.Log("respondToChallenge: ", challengeResponse, err)
-		attest.Ok(t, err)
+	t.Run("get cert", func(t *testing.T) {
+		t.Parallel()
 
-		ord, err := sendCSR(domain, orderResponse, dir.NewNonceURL, actResponse.kid, accountPrivKey, certPrivKey, l)
-		attest.Ok(t, err)
+		testDiskCache := t.TempDir()
+		domain := getDomain()
+		{ // prep by saving a certificate for the domain to disk.
+			certPath := filepath.Join(testDiskCache, domain, certFileName)
+			cert := createTlsCert(t, domain)
+			err := certToDisk(cert, certPath)
+			attest.Ok(t, err)
+		}
 
-		certBytes, err := downloadCertificate(ord, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
-		attest.Ok(t, err)
-		attest.NotZero(t, certBytes)
+		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.NotZero(t, m)
 
-		buf := &bytes.Buffer{}
-		err = encodeECDSAKey(buf, certPrivKey)
-		attest.Ok(t, err)
-
-		_, err = buf.Write(certBytes)
-		attest.Ok(t, err)
-
-		t.Log("certificate: ", buf.String())
-		cert, err := certFromReader(buf)
+		cert, err := m.getCert(domain)
 		attest.Ok(t, err)
 		attest.NotZero(t, cert)
-		t.Log("cert: ", cert)
+	})
+}
+
+func someAcmeAppHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, msg)
+	}
+}
+
+func TestAcmeHandler(t *testing.T) {
+	t.Parallel()
+
+	l := slog.Default()
+	email := "hey+sample@gmail.com"
+
+	t.Run("normal request succeeds", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := Handler(someAcmeAppHandler(msg))
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Subsequence(t, string(rb), msg)
+	})
+
+	t.Run("cert request from acme succeeds", func(t *testing.T) {
+		t.Parallel()
+
+		domain := getDomain()
+		ts := httptest.NewServer(someAcmeServerHandler(t, domain))
+		t.Cleanup(func() {
+			ts.Close()
+		})
+
+		acmeDirectoryUrl, errA := url.JoinPath(ts.URL, "/directory")
+		attest.Ok(t, errA)
+
+		{ // initialize manager.
+			getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+			attest.NotZero(t, getCrt)
+			cert, errB := getCrt(&tls.ClientHelloInfo{
+				ServerName: domain,
+			})
+			attest.Ok(t, errB)
+			attest.NotZero(t, cert)
+			attest.True(t, certIsValid(cert))
+		}
+
+		msg := "hello"
+		wrappedHandler := Handler(someAcmeAppHandler(msg))
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+		req.Host = domain
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, errC := io.ReadAll(res.Body)
+		attest.Ok(t, errC)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Subsequence(
+			t,
+			string(rb),
+			// This message is from `someAcmeServerHandler`
+			"token",
+		)
+	})
+
+	t.Run("cert request from memory succeeds", func(t *testing.T) {
+		t.Parallel()
+
+		domain := getDomain()
+		ts := httptest.NewServer(someAcmeServerHandler(t, domain))
+		t.Cleanup(func() {
+			ts.Close()
+		})
+
+		acmeDirectoryUrl, errA := url.JoinPath(ts.URL, "/directory")
+		attest.Ok(t, errA)
+		testDiskCache := t.TempDir()
+
+		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.NotZero(t, m)
+
+		{ // Flush the cache.
+			m.cache = newCache()
+		}
+
+		{ // Get cert will fetch from ACME and fill memory/cache.
+			cert, errB := m.getCert(domain)
+			attest.Ok(t, errB)
+			attest.NotZero(t, cert)
+		}
+
+		{ // Get cert should now fetch from memory.
+			errC := os.RemoveAll(testDiskCache)
+			attest.Ok(t, errC)
+			m.acmeDirectoryUrl = ""
+			attest.Zero(t, m.acmeDirectoryUrl)
+
+			cert, errD := m.getCert(domain)
+			attest.Ok(t, errD)
+			attest.NotZero(t, cert)
+		}
 	})
 }

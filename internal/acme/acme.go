@@ -1,825 +1,469 @@
+// Package acme provides automatic access to certificates from ACME-based certificate authorities(like Let's Encrypt).
 package acme
 
 import (
+	"bytes"
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/base64"
-	"encoding/json"
-	"encoding/pem"
+	"crypto/tls"
 	"errors"
 	"fmt"
-	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
+	"sync"
+	"unicode"
 
 	"golang.org/x/exp/slog"
+	"golang.org/x/net/idna"
 )
 
 // Most of the code here is inspired(or taken from) by:
 //   (a) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/v0.10.0/LICENSE
 //
 
-// RFC 8555: https://datatracker.ietf.org/doc/html/rfc8555
-
-// ACME flow:
-// 0. Get directory        GET, 200
-// 1. Get nonce.           HEAD, 200
-// 2. Create account.      POST, 201, account
-// 3. Submit order.        POST, 201, order
-// 4. Fetch challenges     POST-GET, 200
-// 5. Respond to challenges POST, 200
-// 6. Poll status           POST-GET, 200
-// 7. Finalize order        POST, 200
-// 8. Poll status           POST-GET, 200
-// 9. Download cert         POST-GET, 200
-
 const (
-	// ACME clients MUST send a User-Agent header field.
-	// https://datatracker.ietf.org/doc/html/rfc8555#section-6.1
-	userAgent = "name=ong/acme. version=v1. url=https://github.com/komuw/ong"
-	//  ACME clients must have the Content-Type header field set to "application/jose+json"
-	// https://datatracker.ietf.org/doc/html/rfc8555#section-6.2
-	contentType = "application/jose+json"
+	accountKeyFileName = "ong_acme_account_private.key"
+	certFileName       = "ong_acme_certificate.crt"
+	certKeyFileName    = "ong_acme_certificate.key"
+	tokenFileName      = "ong_acme_certificate.token"
+
+	// With HTTP validation, the client in an ACME transaction proves its
+	// control over a domain name by proving that it can provision HTTP
+	// resources on a server accessible under that domain name.
+	// The path at which the resource is provisioned is comprised of the
+	// fixed prefix "/.well-known/acme-challenge/", followed by the "token" value in the challenge.
+	// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
+	challengeURI = "/.well-known/acme-challenge/"
 )
 
-// getEcdsaPrivKey reads a private key from disk(or generates) one.
-// It is used primarily to get;
-// - An ACME account key.
-// - A key to sign certificate signing requests.
-func getEcdsaPrivKey(path string) (*ecdsa.PrivateKey, error) {
-	// https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L936-L978
+// hostPolicy specifies which host names the Manager is allowed to respond to.
+// It returns a non-nil error if the host should be rejected.
+// The returned error is accessible via tls.Conn.Handshake and its callers.
+// See Manager's hostPolicy field and GetCertificate method docs for more details.
+type hostPolicy func(ctx context.Context, host string) error
 
-	{
-		keyBytes, errA := os.ReadFile(path)
-		if errA != nil {
-			goto generate
-		}
-
-		priv, _ := pem.Decode(keyBytes)
-		if priv == nil || !strings.Contains(priv.Type, "PRIVATE") {
-			goto generate
-		}
-
-		pKey, errB := parsePrivateKey(priv.Bytes)
-		if errB != nil {
-			goto generate
-		}
-		return pKey, nil
+// Validate checks domain for validity.
+// domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
+func Validate(domain string) error {
+	if len(domain) < 1 {
+		return errors.New("ong: domain cannot be empty")
+	}
+	if strings.Count(domain, "*") > 1 {
+		return errors.New("ong: domain can only contain one wildcard character")
+	}
+	if strings.Contains(domain, "*") && !strings.HasPrefix(domain, "*") {
+		return errors.New("ong: domain wildcard character should be a prefix")
+	}
+	if strings.Contains(domain, "*") && domain[1] != '.' {
+		return errors.New("ong: domain wildcard character should be followed by a `.` character")
 	}
 
-generate:
-	{
-		{
-			pKey, errC := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-			if errC != nil {
-				return nil, errC
-			}
-
-			if errD := os.MkdirAll(filepath.Dir(path), 0o755); errD != nil {
-				// If directory already exists, MkdirAll does nothing.
-				return nil, errD
-			}
-
-			w, errE := os.OpenFile(
-				path,
-				// creates or truncates the named file.
-				os.O_RDWR|os.O_CREATE|os.O_TRUNC,
-				// rw - -
-				0o600,
-			)
-			if errE != nil {
-				return nil, errE
-			}
-			if errF := encodeECDSAKey(w, pKey); errF != nil {
-				return nil, errF
-			}
-
-			return pKey, nil
-		}
-	}
-}
-
-// getDirectory is used to discover all the other relevant urls in an ACME server.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.1
-func getDirectory(directoryURL string, l *slog.Logger) (directory, error) {
-	d := directory{}
-
-	ctx := context.WithValue(context.Background(), clientContextKey, "getDirectory")
-	res, errA := getResponse(ctx, directoryURL, "GET", nil, l)
-	if errA != nil {
-		return d, errA
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		ae := &acmeError{}
-		if errB := json.NewDecoder(res.Body).Decode(ae); errB != nil {
-			return d, fmt.Errorf("ong/acme: unable to unmarshall directoryURL response : %w", errB)
-		}
-
-		return d, fmt.Errorf("ong/acme: get acme directoryURL failed: %w", ae)
-	}
-
-	if errC := json.NewDecoder(res.Body).Decode(&d); errC != nil {
-		return d, fmt.Errorf("ong/acme: unable to unmarshall directoryURL response : %w", errC)
-	}
-
-	return d, nil
-}
-
-// getNonce returns an anti-replay token.
-//
-// In order to protect ACME resources from any possible replay attacks, ACME POST requests have a mandatory anti-replay mechanism.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-6.5
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.2
-func getNonce(newNonceURL string, l *slog.Logger) (string, error) {
-	ctx := context.WithValue(context.Background(), clientContextKey, "getNonce")
-	res, errA := getResponse(ctx, newNonceURL, "HEAD", nil, l)
-	if errA != nil {
-		return "", errA
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		ae := &acmeError{}
-		if errB := json.NewDecoder(res.Body).Decode(ae); errB != nil {
-			return "", fmt.Errorf("ong/acme: unable to unmarshall newNonceURL response : %w", errB)
-		}
-
-		return "", fmt.Errorf("ong/acme: get acme newNonceURL failed: %w", ae)
-	}
-
-	nonce := res.Header.Get("Replay-Nonce")
-	if nonce == "" {
-		return "", errors.New("ong/acme: nonce is invalid")
-	}
-
-	// The RFC says; "Clients MUST ignore invalid Replay-Nonce values."
-	// https://datatracker.ietf.org/doc/html/rfc8555#section-6.5.1
-	// todo: We wont do that now, but we should in future.
-
-	return nonce, nil
-}
-
-// getAccount registers an account with ACME server.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
-func getAccount(newAccountURL, newNonceURL, email string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (account, error) {
-	/*
-	   POST /acme/new-account HTTP/1.1
-	   Content-Type: application/jose+json
-	   {
-	     "protected": base64url({
-	       "alg": "ES256",
-	       "jwk": {...},
-	       "nonce": "6S8IqOGY7eL2lsGoTZYifg",
-	       "url": "https://example.com/acme/new-account"
-	     }),
-	     "payload": base64url({
-	       "termsOfServiceAgreed": true,
-	       "contact": [
-	         "mailto:cert-admin@example.org",
-	         "mailto:admin@example.org"
-	       ]
-	     }),
-	     "signature": "RZPOnYoPs1PhjszF...-nh6X1qtOFPB519I"
-	   }
-	*/
-
-	actResponse := account{}
-	actRequest := &account{Contact: []string{fmt.Sprintf("mailto:%s", email)}, TermsOfServiceAgreed: true}
-	dataPayload, errA := json.Marshal(actRequest)
-	if errA != nil {
-		return actResponse, errA
-	}
-
-	bodyBytes, errB := prepBody(newAccountURL, newNonceURL, "", dataPayload, accountPrivKey, l)
-	if errB != nil {
-		return actResponse, errB
-	}
-
-	ctx := context.WithValue(context.Background(), clientContextKey, "getAccount")
-	res, errC := getResponse(ctx, newAccountURL, "POST", bodyBytes, l)
-	if errC != nil {
-		return actResponse, errC
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusCreated || res.StatusCode == http.StatusOK {
-		if errD := json.NewDecoder(res.Body).Decode(&actResponse); errD != nil {
-			return actResponse, fmt.Errorf("ong/acme: unable to unmarshall newAccountURL response : %w", errD)
-		}
-
-		if !actResponse.TermsOfServiceAgreed {
-			actResponse.TermsOfServiceAgreed = actRequest.TermsOfServiceAgreed
-		}
-
-		actResponse.kid = res.Header.Get("Location")
-		return actResponse, nil
-	}
-
-	ae := &acmeError{}
-	if errE := json.NewDecoder(res.Body).Decode(ae); errE != nil {
-		return actResponse, fmt.Errorf("ong/acme: unable to unmarshall newAccountURL response : %w", errE)
-	}
-
-	return actResponse, fmt.Errorf("ong/acme: account creation failed: %w", ae)
-}
-
-// submitOrder starts certificate issuance process by requesting for an [order] from ACME.
-// It returns the said order.
-//
-// The client begins the certificate issuance process by sending a POST request to the server's newOrder resource.
-// In the order object, any authorization referenced in the "authorizations" array whose
-// status is "pending" represents an authorization transaction that the client must complete before the server will issue the certificate
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-func submitOrder(newOrderURL, newNonceURL, kid string, domains []string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (order, error) {
-	/*
-		POST /acme/new-order HTTP/1.1
-		Content-Type: application/jose+json
-		{
-			"protected": base64url({
-			  "alg": "ES256",
-			  "kid": "https://example.com/acme/acct/evOfKhNU60wg",
-			  "nonce": "5XJ1L3lEkMG7tR6pA00clA",
-			  "url": "https://example.com/acme/new-order"
-			}),
-			"payload": base64url({
-			"identifiers": [
-				{ "type": "dns", "value": "www.example.org" },
-				{ "type": "dns", "value": "example.org" }
-			],
-			"notBefore": "2016-01-01T00:04:00+04:00",
-			"notAfter": "2016-01-08T00:04:00+04:00"
-			}),
-			"signature": "H6ZXtGjTZyUnPeKn...wEA4TklBdh3e454g"
-		}
-	*/
-
-	orderResponse := order{}
-	if len(domains) != 1 {
-		// The `http-01` ACME challenge does not support wildcard,
-		// So when we send submitOrder request, we expect to only send one domain.
-		return orderResponse, fmt.Errorf("ong/acme: this client can only fetch a certificate for one domain at a time, found: %d", len(domains))
-	}
-	domain := domains[0]
+	toCheck := domain
 	if strings.Contains(domain, "*") {
-		// The `http-01` ACME challenge does not support wildcard,
-		// So we also don't.
-		return orderResponse, errors.New("ong/acme: this client does not currently support wildcard domain names")
-	}
-	identifiers := []identifier{{Type: "dns", Value: domain}}
-
-	orderRequest := &order{Identifiers: identifiers}
-	dataPayload, errA := json.Marshal(orderRequest)
-	if errA != nil {
-		return orderResponse, errA
+		// remove the `*` and `.`
+		toCheck = domain[2:]
 	}
 
-	bodyBytes, errB := prepBody(newOrderURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
-	if errB != nil {
-		return orderResponse, errB
+	if _, err := idna.Registration.ToASCII(toCheck); err != nil {
+		return fmt.Errorf("ong: domain is invalid: %w", err)
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "submitOrder")
-	res, errC := getResponse(ctx, newOrderURL, "POST", bodyBytes, l)
-	if errC != nil {
-		return orderResponse, errC
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusCreated {
-		if errD := json.NewDecoder(res.Body).Decode(&orderResponse); errD != nil {
-			return orderResponse, fmt.Errorf("ong/acme: unable to unmarshall newOrderURL response : %w", errD)
-		}
-		orderResponse.OrderURL = res.Header.Get("Location")
-
-		return orderResponse, nil
-	}
-
-	ae := &acmeError{}
-	if errE := json.NewDecoder(res.Body).Decode(ae); errE != nil {
-		return orderResponse, fmt.Errorf("ong/acme: unable to unmarshall newOrderURL response : %w", errE)
-	}
-
-	return orderResponse, fmt.Errorf("ong/acme: order creation failed: %w", ae)
+	return nil
 }
 
-// fetchChallenges requests ACME server for a list of challenges that need to be fulfilled in order to get a certificate.
+// GetCertificate returns a function that implements [tls.Config.GetCertificate].
+// It provides a TLS certificate for hello.ServerName host.
 //
-// In the order object, any authorization referenced in the "authorizations" array whose
-// status is "pending" represents an authorization transaction that the client must complete before the server will issue the certificate
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
+// GetCertificate panics on error, however the returned function handles errors normally.
+func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	if err := Validate(domain); err != nil {
+		panic(err)
+	}
+	man := initManager(domain, email, acmeDirectoryUrl, l)
+
+	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		name := hello.ServerName
+
+		if name == "" {
+			return nil, errors.New("ong/acme: missing server name")
+		}
+		if !strings.Contains(strings.Trim(name, "."), ".") {
+			return nil, errors.New("ong/acme: server name component count invalid")
+		}
+
+		// Some server names in the handshakes started by some clients (such as cURL) are not converted to Punycode, which will
+		// prevent us from obtaining certificates for them.
+		// https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L249-L273
+		name, err := idna.Lookup.ToASCII(name)
+		if err != nil {
+			return nil, errors.New("ong/acme: server name contains invalid character")
+		}
+
+		// see: golang.org/issue/18114
+		dmn := strings.TrimSuffix(name, ".")
+
+		return man.getCert(dmn)
+	}
+}
+
+// Handler returns a [http.Handler] that can be used to respond to ACME "http-01" challenge responses.
+// Ong configures this for you automatically, so users of Ong do not have to worry about this handler.
 //
-// When a client receives an order from the server in reply to a newOrder request,
-// it downloads the authorization resources by sending POST-as-GET requests to the indicated URLs.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.5
-func fetchChallenges(authorizationURLS []string, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (authorization, error) {
-	/*
-	   POST /acme/authz/PAniVnsZcis HTTP/1.1
-	   Content-Type: application/jose+json
-	   {
-	     "protected": base64url({
-	       "alg": "ES256",
-	       "kid": "https://example.com/acme/acct/evOfKhNU60wg",
-	       "nonce": "uQpSjlRb4vQVCjVYAyyUWg",
-	       "url": "https://example.com/acme/authz/PAniVnsZcis"
-	     }),
-	     "payload": "",
-	     "signature": "nuSDISbWG8mMgE7H...QyVUL68yzf3Zawps"
-	   }
+// Handler panics on error, however the returned [http.Handler] handles errors normally.
+func Handler(wrappedHandler http.Handler) http.HandlerFunc {
+	// Support for acme certificate manager needs to be added in three places:
+	// (a) In http middlewares.
+	// (b) In http server.
+	// (c) In http multiplexer.
 
-	*/
+	// With HTTP validation, the client in an ACME transaction proves its
+	// control over a domain name by proving that it can provision HTTP
+	// resources on a server accessible under that domain name.
+	// The path at which the resource is provisioned is comprised of the
+	// fixed prefix "/.well-known/acme-challenge/", followed by the "token" value in the challenge.
+	// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
 
-	authorizationResponse := authorization{}
-
-	if len(authorizationURLS) != 1 {
-		// The `http-01` ACME challenge does not support wildcard,
-		// So when we send submitOrder request, we expect to only send one domain and get back one authorization.
-		return authorizationResponse, fmt.Errorf("ong/acme: expected only one authorization, found: %d", len(authorizationURLS))
+	diskCacheDir, err := diskCachedir()
+	if err != nil {
+		panic(err)
 	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
+		if strings.HasPrefix(r.URL.Path, challengeURI) {
+			domain := r.Host
 
-	authorizationURL := authorizationURLS[0]
-	dataPayload := []byte("")
+			{ // error cases
+				isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
+				if isTls {
+					// Acme requests should be HTTP(not https), though I don't know if it is mandated.
+					// Spec says:
+					//   "The server verifies the client's control of the domain by verifying ..."
+					//   "Construct a URL by populating the URL `http://{domain}/.well-known/acme-challenge/{token}`"
+					// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
+					// So the doc uses `http` not `https` though I don't know if it is a mandate.
+					wrappedHandler.ServeHTTP(w, r)
+					return
+				}
 
-	bodyBytes, errA := prepBody(authorizationURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
-	if errA != nil {
-		return authorizationResponse, errA
-	}
+				if len(domain) < 2 || unicode.IsDigit(rune(domain[0])) { // It is a bare IP.
+					wrappedHandler.ServeHTTP(w, r)
+					return
+				}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "fetchChallenges")
-	res, errB := getResponse(ctx, authorizationURL, "POST", bodyBytes, l)
-	if errB != nil {
-		return authorizationResponse, errB
-	}
-	defer res.Body.Close()
+				if strings.Contains(domain, ":") {
+					d, _, errA := net.SplitHostPort(domain)
+					if errA != nil {
+						wrappedHandler.ServeHTTP(w, r)
+						return
+					}
 
-	if res.StatusCode == http.StatusOK {
-		if errC := json.NewDecoder(res.Body).Decode(&authorizationResponse); errC != nil {
-			return authorizationResponse, fmt.Errorf("ong/acme: unable to unmarshall authorizationURL response : %w", errC)
-		}
-
-		http01Found := false
-		for _, ch := range authorizationResponse.Challenges {
-			if ch.Type == "http-01" {
-				http01Found = true
-				authorizationResponse.EffectiveChallenge = ch
+					domain = d
+				}
 			}
+
+			certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+			tok, errC := os.ReadFile(certPath)
+			if errC != nil {
+				http.Error(
+					w,
+					errC.Error(),
+					http.StatusInternalServerError,
+				)
+				return
+			}
+
+			_, _ = fmt.Fprint(w, string(tok))
+			w.WriteHeader(http.StatusOK)
+
+			return
 		}
-		if !http01Found {
-			return authorizationResponse, fmt.Errorf("ong/acme: authorizationResponse does not contain challenge type http-01. got: %v", authorizationResponse)
-		}
 
-		return authorizationResponse, nil
+		wrappedHandler.ServeHTTP(w, r)
 	}
-
-	ae := &acmeError{}
-	if errD := json.NewDecoder(res.Body).Decode(ae); errD != nil {
-		return authorizationResponse, fmt.Errorf("ong/acme: unable to unmarshall authorizationURL response : %w", errD)
-	}
-
-	return authorizationResponse, fmt.Errorf("ong/acme: fetch challenges failed: %w", ae)
 }
 
-// checkChallengeStatus reports on the status of the ACME object found at url.
-// It is called at;
-// - start of respondToChallenge.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
-func checkChallengeStatus(
-	url string,
-	newNonceURL string,
-	kid string,
-	accountPrivKey *ecdsa.PrivateKey,
-	l *slog.Logger,
-) (checkError error) {
-	expectedStatus := "pending"
-	chRes := checkStatusResp{}
-	// This will sleep for a cumulative total time of 1m45secs.
-	// https://go.dev/play/p/K2xsEgJ7eqW
-	count := 0
-	maxCount := 10
-	dur := 10 * time.Nanosecond
-	defer func() {
-		if checkError != nil {
-			l.Info("checkChallengeStatus",
-				"url", url,
-				"checkStatusResponse", chRes,
-				"expectedStatus", expectedStatus,
-				"count", count,
-				"duration", dur,
-				"error", checkError,
-			)
-		}
-	}()
+// manager manages the TLS certificate request process.
+// Its main method is [manager.getCert]
+type manager struct {
+	// Note that we do not need to build automated certificate renewal.
+	// Certificates get renewed on the fly.
+	// Whenever we fetch certs from memory/disk, we check if they are expired.
+	// See: [certIsValid]
+	// +checklocks:mu
+	cache            *certCache
+	websiteDomain    string
+	email            string
+	acmeDirectoryUrl string
+	diskCacheDir     string
+	// +checklocks:mu
+	hp hostPolicy
+	l  *slog.Logger
 
-	dataPayload := []byte("")
-	bodyBytes, errA := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
-	if errA != nil {
-		return errA
-	}
-
-	ctx := context.WithValue(context.Background(), clientContextKey, "checkChallengeStatus")
-	for {
-		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			l.InfoCtx(ctx, "checkStatusSleep",
-				"count", count,
-				"duration", dur,
-				"checkError", checkError,
-				"checkStatusResp", chRes,
-				"expectedStatus", expectedStatus,
-			)
-			if count > 2 {
-				panic("checkStatus is taking too long in tests")
-			}
-		}
-
-		time.Sleep(dur)
-		dur = dur + (2 * time.Second)
-		count = count + 1
-		if count >= maxCount {
-			break
-		}
-
-		res, errB := getResponse(ctx, url, "GET", bodyBytes, l)
-		if errB != nil {
-			checkError = errB
-			continue
-		}
-		defer res.Body.Close()
-		dur = retryAfter(res.Header.Get("Retry-After"), dur) + (2 * time.Second)
-
-		if res.StatusCode != http.StatusOK {
-			ae := &acmeError{}
-			if errC := json.NewDecoder(res.Body).Decode(ae); errC != nil {
-				checkError = fmt.Errorf("ong/acme: unable to unmarshall checkAuthorizationStatus response : %w", errC)
-				continue
-			}
-
-			checkError = ae
-			continue
-		}
-
-		if errD := json.NewDecoder(res.Body).Decode(&chRes); errD != nil {
-			checkError = errD
-			continue
-		}
-
-		if strings.EqualFold(chRes.Status, expectedStatus) {
-			checkError = nil
-			break
-		}
-	}
-
-	return checkError
-}
-
-// respondToChallenge informs ACME server that the challenges have been responded to.
-// After this call, the ACME server will try to verify whether this is true.
-// This should only be called if the challenges have been responded to,
-// eg; by setting up a token on the `.well-known/acme-challenge` URI in case of http-01 challenge.
-//
-// To prove control of the identifier and receive authorization, the client needs to provision the required challenge response based on
-// the challenge type and indicate to the server that it is ready for the challenge validation to be attempted.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
-func respondToChallenge(ch challenge, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (challenge, error) {
-	/*
-		POST /acme/chall/prV_B7yEyA4 HTTP/1.1
-		Content-Type: application/jose+json
-		{
-			"protected": base64url({
-			  "alg": "ES256",
-			  "kid": "https://example.com/acme/acct/evOfKhNU60wg",
-			  "nonce": "Q_s3MWoqT05TrdkM2MTDcw",
-			  "url": "https://example.com/acme/chall/prV_B7yEyA4"
-			}),
-			"payload": base64url({}),
-			"signature": "9cbg5JO1Gf5YLjjz...SpkUfcdPai9uVYYQ"
-		}
-	*/
-
-	challengeResponse := challenge{}
-	if errA := checkChallengeStatus(ch.Url, newNonceURL, kid, accountPrivKey, l); errA != nil {
-		return challengeResponse, errA
-	}
-
-	data := struct{}{}
-	dataPayload, errB := json.Marshal(data)
-	if errB != nil {
-		return challengeResponse, errB
-	}
-
-	bodyBytes, errC := prepBody(ch.Url, newNonceURL, kid, dataPayload, accountPrivKey, l)
-	if errC != nil {
-		return challengeResponse, errC
-	}
-
-	ctx := context.WithValue(context.Background(), clientContextKey, "respondToChallenge")
-	res, errD := getResponse(ctx, ch.Url, "POST", bodyBytes, l)
-	if errD != nil {
-		return challengeResponse, errD
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusOK {
-		if errE := json.NewDecoder(res.Body).Decode(&challengeResponse); errE != nil {
-			return challengeResponse, fmt.Errorf("ong/acme: unable to unmarshall challengeURL response : %w", errE)
-		}
-
-		return challengeResponse, nil
-	}
-
-	ae := &acmeError{}
-	if errF := json.NewDecoder(res.Body).Decode(ae); errF != nil {
-		return challengeResponse, fmt.Errorf("ong/acme: unable to unmarshall challengeURL response : %w", errF)
-	}
-
-	return challengeResponse, fmt.Errorf("ong/acme: respond to challenge failed: %w", ae)
-}
-
-// checkOrderStatus reports on the status of the ACME object found at url.
-// It is called at;
-// - start of sendCSR.
-// - start of downloadCertificate.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
-func checkOrderStatus(
-	url string,
-	expectedStatus string,
-	newNonceURL string,
-	kid string,
-	accountPrivKey *ecdsa.PrivateKey,
-	l *slog.Logger,
-) (_ order, checkError error) {
-	/*
-		The status of the order will indicate what action the client should take:
-		- "invalid": The certificate will not be issued. Consider this order process abandoned.
-		- "pending": The server does not believe that the client has fulfilled the requirements.
-					 Check the "authorizations" array for entries that are still pending.
-		- "ready": The server agrees that the requirements have been fulfilled, and is awaiting finalization.
-				   Submit a finalization request.
-		- "processing": The certificate is being issued. Send a POST-as-GET request after the time given in the Retry-After header field of the response, if any.
-		- "valid": The server has issued the certificate and provisioned its URL to the "certificate" field of the order. Download the certificate.
-
-		https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-	*/
-	orderResponse := order{}
-	// This will sleep for a cumulative total time of 3m00secs.
-	// https://go.dev/play/p/K2xsEgJ7eqW
-	count := 0
-	maxCount := 10
-	dur := 10 * time.Nanosecond
-	start := time.Now().UTC()
-	defer func() {
-		if checkError != nil {
-			l.Info("checkOrderStatus",
-				"url", url,
-				"orderResponse", orderResponse,
-				"expectedStatus", expectedStatus,
-				"count", count,
-				"duration", dur,
-				"totalDuration", time.Now().UTC().Sub(start),
-				"error", checkError,
-			)
-		}
-	}()
-
-	dataPayload := []byte("")
-	bodyBytes, errA := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
-	if errA != nil {
-		return orderResponse, errA
-	}
-
-	ctx := context.WithValue(context.Background(), clientContextKey, fmt.Sprintf("checkOrderStatus-%s", expectedStatus))
-	for {
-		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			l.InfoCtx(ctx, "checkStatusSleep",
-				"count", count,
-				"duration", dur,
-				"checkError", checkError,
-				"orderResponse", orderResponse,
-				"expectedStatus", expectedStatus,
-			)
-			if count > 2 {
-				panic("checkStatus is taking too long in tests")
-			}
-		}
-
-		time.Sleep(dur)
-		dur = dur + (4 * time.Second)
-		count = count + 1
-		if count >= maxCount {
-			break
-		}
-
-		res, errB := getResponse(ctx, url, "GET", bodyBytes, l)
-		if errB != nil {
-			checkError = errB
-			continue
-		}
-		defer res.Body.Close()
-		dur = retryAfter(res.Header.Get("Retry-After"), dur) + (2 * time.Second)
-
-		if res.StatusCode != http.StatusOK {
-			ae := &acmeError{}
-			if errC := json.NewDecoder(res.Body).Decode(ae); errC != nil {
-				checkError = fmt.Errorf("ong/acme: unable to unmarshall checkAuthorizationStatus response : %w", errC)
-				continue
-			}
-
-			checkError = ae
-			continue
-		}
-
-		if errD := json.NewDecoder(res.Body).Decode(&orderResponse); errD != nil {
-			checkError = errD
-			continue
-		}
-
-		if strings.EqualFold(orderResponse.Status, expectedStatus) {
-			checkError = nil
-			break
-		}
-	}
-
-	return orderResponse, checkError
-}
-
-// sendCSR sends a certificate signing request to acme.
-//
-// Once the client believes it has fulfilled the server's requirements,
-// it should send a POST request to the order resource's finalize URL.
-// The POST body MUST include a CSR.
-// The CSR MUST indicate the exact same set of requested identifiers as the initial newOrder request.
-// If a request to finalize an order is successful, the server will return a 200 (OK) with an updated order object.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-func sendCSR(domain string, o order, newNonceURL, kid string, accountPrivKey, certPrivKey *ecdsa.PrivateKey, l *slog.Logger) (orderRes order, _ error) {
-	/*
-		POST /acme/order/TOlocE8rfgo/finalize HTTP/1.1
-		Content-Type: application/jose+json
-		{
-			"protected": base64url({
-			  "alg": "ES256",
-			  "kid": "https://example.com/acme/acct/evOfKhNU60wg",
-			  "nonce": "MSF2j2nawWHPxxkE3ZJtKQ",
-			  "url": "https://example.com/acme/order/TOlocE8rfgo/finalize"
-			}),
-			"payload": base64url({
-			  "csr": "MIIBPTCBxAIBADBFMQ...FS6aKdZeGsysoCo4H9P",
-			}),
-			"signature": "uOrUfIIk5RyQ...nw62Ay1cl6AB"
-		}
-
-		csr is A CSR encoding the parameters for the certificate being requested [RFC2986].
-		The CSR is sent in the base64url-encoded version of the DER format.
-		(Note: Because this field uses base64url, and does not include headers, it is different from PEM.)
-	*/
-
-	// We won't check the challenge state(ch.Url) at this point. Although it should also be in valid state.
+	// mu protects access to;
+	// - In memory cache.
+	// - Disk access.
+	// - ACME server.
 	//
-	// A request to finalize an order will result in error if the order is not in the "ready" state.
-	// - https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-	orderURL := o.OrderURL
-	defer func() {
-		// `order.OrderURL` is not an ACME property.
-		// This means that when json.Decode(&order) happens in this function,
-		// the resulting order has no `OrderURL`; wo we have to add it back.
-		orderRes.OrderURL = orderURL
-	}()
-
-	updatedO, errA := checkOrderStatus(orderURL, "ready", newNonceURL, kid, accountPrivKey, l)
-	if errA != nil {
-		return o, errA
-	}
-	o = updatedO
-	o.OrderURL = orderURL
-
-	req := &x509.CertificateRequest{
-		Subject:  pkix.Name{CommonName: domain},
-		DNSNames: []string{domain},
-	}
-
-	csrBytes, errB := x509.CreateCertificateRequest(rand.Reader, req, certPrivKey)
-	if errB != nil {
-		return o, errB
-	}
-
-	c := &csr{CSR: base64.RawURLEncoding.EncodeToString(csrBytes)}
-	dataPayload, errC := json.Marshal(c)
-	if errC != nil {
-		return o, errC
-	}
-
-	url := o.FinalizeURL
-	bodyBytes, errD := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
-	if errD != nil {
-		return o, errD
-	}
-
-	ctx := context.WithValue(context.Background(), clientContextKey, "sendCSR")
-	res, errE := getResponse(ctx, url, "POST", bodyBytes, l)
-	if errE != nil {
-		return o, errE
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusOK {
-		/*
-			The status of the order will indicate what action the client should take:
-			- "invalid": The certificate will not be issued. Consider this order process abandoned.
-			- "pending": The server does not believe that the client has fulfilled the requirements.
-						 Check the "authorizations" array for entries that are still pending.
-			- "ready": The server agrees that the requirements have been fulfilled, and is awaiting finalization.
-					   Submit a finalization request.
-			- "processing": The certificate is being issued. Send a POST-as-GET request after the time given in the Retry-After header field of the response, if any.
-			- "valid": The server has issued the certificate and provisioned its URL to the "certificate" field of the order. Download the certificate.
-
-			https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-		*/
-		if errF := json.NewDecoder(res.Body).Decode(&o); errF != nil {
-			return o, fmt.Errorf("ong/acme: unable to unmarshall finalizeURL response : %w", errF)
-		}
-		return o, nil
-	}
-
-	ae := &acmeError{}
-	if errG := json.NewDecoder(res.Body).Decode(ae); errG != nil {
-		return o, fmt.Errorf("ong/acme: unable to unmarshall finalizeURL response : %w", errG)
-	}
-
-	return o, fmt.Errorf("ong/acme: finalize failed: %w", ae)
+	// If we get 1_000 requests for a domain whose cert we do not have in memory,
+	// we would send 1_000 requests to ACME without this mutex.
+	// NB: This mutex is for all domains even unrelated ones.
+	//     Ideally, it should be a mutex per domain.
+	mu sync.Mutex
 }
 
-// To download the issued certificate, the client simply sends a POST-as-GET request to the certificate URL.
-// The default format of the certificate is application/pem-certificate-chain.
-// A certificate resource represents a single, immutable certificate.
-// If the client wishes to obtain a renewed certificate, the client initiates a new order process to request one.
-// https://datatracker.ietf.org/doc/html/rfc8555#section-7.4.2
-func downloadCertificate(o order, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (cert []byte, _ error) {
+// initManager is only used in tests. Use [GetCertificate] instead.
+//
+// The optional argument testDiskCache is only used for internal test purposes.
+// It panics on error.
+func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) *manager {
+	diskCacheDir := ""
+
+	if len(testDiskCache) > 0 {
+		// allow for tests.
+		// todo: check if `testing.Testing()` and panic if `testDiskCache` is there and it is not testing.
+		diskCacheDir = testDiskCache[0]
+	} else {
+		d, errA := diskCachedir()
+		if errA != nil {
+			panic(errA)
+		}
+		diskCacheDir = d
+	}
+
+	c := newCache()
+
+	{ // populate cache.
+		if files, errB := os.ReadDir(diskCacheDir); errB == nil {
+			for _, f := range files {
+				// layout is like:
+				// diskCacheDir/
+				//   domainName/
+				//     ong_acme_certificate.crt
+				if f.IsDir() {
+					dmn := f.Name()
+					certPath := filepath.Join(diskCacheDir, dmn, certFileName)
+					cert, errC := certFromDisk(certPath)
+					if errC != nil {
+						continue
+					}
+					c.setCert(dmn, cert)
+				}
+			}
+		}
+	}
+
+	return &manager{
+		cache:            c,
+		websiteDomain:    domain,
+		email:            email,
+		acmeDirectoryUrl: acmeDirectoryUrl,
+		diskCacheDir:     diskCacheDir,
+		hp:               customHostWhitelist(domain),
+		l:                l,
+	}
+}
+
+// getCert fetches a tls certificate for domain.
+func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 	/*
-		POST /acme/cert/mAt3xBGaobw HTTP/1.1
-		Content-Type: application/jose+json
-		Accept: application/pem-certificate-chain
-		{
-			"protected": base64url({
-			  "alg": "ES256",
-			  "kid": "https://example.com/acme/acct/evOfKhNU60wg",
-			  "nonce": "uQpSjlRb4vQVCjVYAyyUWg",
-			  "url": "https://example.com/acme/cert/mAt3xBGaobw"
-			}),
-			"payload": "",
-			"signature": "nuSDISbWG8mMgE7H...QyVUL68yzf3Zawps"
+		1. Get cert from memory/cache.
+		2. Else get from disk(also save to memory).
+		3. Else get from ACME(also save to disk and memory).
+	*/
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// The defer for mutex unlock will happen after the defer for adding certs to cache/disk.
+	// https://go.dev/play/p/tQ7JOiFcCLf
+
+	// todo: add context cancellation.
+	// see; crypto/acme/autocert
+
+	certFromAcme := false
+	defer func() {
+		// 4. Add to cache and disk.
+		if cert != nil && certFromAcme {
+			m.cache.setCert(domain, cert)
+			if errA := m.toDisk(domain, cert); errA != nil {
+				m.l.Error("m.toDisk", "error", errA)
+			}
+		}
+		// We do not need to log the `getCert()` return error.
+		// This is because the http.Server will do that.
+	}()
+
+	{ // 1. Get from cache.
+		c, _ := m.cache.getCert(domain)
+		if c != nil {
+			return c, nil
+		}
+	}
+
+	{ // 2. Get from disk.
+		c, _ := m.fromDisk(domain)
+		if c != nil {
+			return c, nil
+		}
+	}
+
+	{ // 3. Get from ACME.
+		c, errB := m.fromAcme(domain)
+		if errB != nil {
+			return nil, errB
 		}
 
-		The status of the order will indicate what action the client should take:
-		- "invalid": The certificate will not be issued. Consider this order process abandoned.
-		- "pending": The server does not believe that the client has fulfilled the requirements.
-						Check the "authorizations" array for entries that are still pending.
-		- "ready": The server agrees that the requirements have been fulfilled, and is awaiting finalization.
-					Submit a finalization request.
-		- "processing": The certificate is being issued. Send a POST-as-GET request after the time given in the Retry-After header field of the response, if any.
-		- "valid": The server has issued the certificate and provisioned its URL to the "certificate" field of the order. Download the certificate.
+		if errC := m.hp(context.Background(), domain); errC != nil {
+			return nil, errC
+		}
 
-		https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-	*/
+		certFromAcme = true
 
-	updatedO, errA := checkOrderStatus(o.OrderURL, "valid", newNonceURL, kid, accountPrivKey, l)
+		return c, nil
+	}
+}
+
+func (m *manager) fromDisk(domain string) (*tls.Certificate, error) {
+	// see: https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L470-L472
+
+	certPath := filepath.Join(m.diskCacheDir, domain, certFileName)
+	cert, err := certFromDisk(certPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return cert, nil
+}
+
+func (m *manager) toDisk(domain string, cert *tls.Certificate) error {
+	// see: https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L519
+
+	certPath := filepath.Join(m.diskCacheDir, domain, certFileName)
+
+	return certToDisk(cert, certPath)
+}
+
+// fromAcme gets a certificate for domain from an ACME server.
+func (m *manager) fromAcme(domain string) (_ *tls.Certificate, acmeError error) {
+	var (
+		directoryResponse     directory
+		actResponse           account
+		orderResponse         order
+		authorizationResponse authorization
+		token                 string
+		updatedOrder          order
+	)
+
+	defer func() {
+		if acmeError != nil {
+			m.l.Error("m.fromAcme",
+				"directoryResponse", directoryResponse,
+				"actResponse", actResponse,
+				"orderResponse", orderResponse,
+				"authorizationResponse", authorizationResponse,
+				"token", token,
+				"updatedOrder", updatedOrder,
+				"error", acmeError,
+			)
+		}
+	}()
+
+	email := m.email
+	accountKeyPath := filepath.Join(m.diskCacheDir, accountKeyFileName)
+
+	accountPrivKey, errA := getEcdsaPrivKey(accountKeyPath)
 	if errA != nil {
 		return nil, errA
 	}
-	updatedO.OrderURL = o.OrderURL
-	certificateURL := updatedO.CertificateURL
 
-	dataPayload := []byte("")
-
-	bodyBytes, errB := prepBody(certificateURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	certKeyPath := filepath.Join(m.diskCacheDir, domain, certKeyFileName)
+	certPrivKey, errB := getEcdsaPrivKey(certKeyPath)
 	if errB != nil {
 		return nil, errB
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "downloadCertificate")
-	res, errC := getResponse(ctx, certificateURL, "POST", bodyBytes, l)
+	directoryResponse, errC := getDirectory(m.acmeDirectoryUrl, m.l)
 	if errC != nil {
 		return nil, errC
 	}
-	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusOK {
-		c, errD := io.ReadAll(res.Body)
-		if errD != nil {
-			return nil, errD
-		}
-		return c, nil
+	actResponse, errD := getAccount(directoryResponse.NewAccountURL, directoryResponse.NewNonceURL, email, accountPrivKey, m.l)
+	if errD != nil {
+		return nil, errD
 	}
 
-	ae := &acmeError{}
-	if errE := json.NewDecoder(res.Body).Decode(ae); errE != nil {
-		return nil, fmt.Errorf("ong/acme: unable to unmarshall certificateDownload response : %w", errE)
+	domains := []string{domain}
+	orderResponse, errE := submitOrder(directoryResponse.NewOrderURL, directoryResponse.NewNonceURL, actResponse.kid, domains, accountPrivKey, m.l)
+	if errE != nil {
+		return nil, errE
 	}
 
-	return nil, fmt.Errorf("ong/acme: download certificate failed: %w", ae)
+	authorizationURLS := orderResponse.Authorizations
+	authorizationResponse, errF := fetchChallenges(authorizationURLS, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l)
+	if errF != nil {
+		return nil, errF
+	}
+
+	token, errG := jWKThumbprint(accountPrivKey.PublicKey, authorizationResponse.EffectiveChallenge.Token)
+	if errG != nil {
+		return nil, errG
+	}
+	m.setToken(domain, token)
+
+	if _, errH := respondToChallenge(authorizationResponse.EffectiveChallenge, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l); errH != nil {
+		return nil, errH
+	}
+
+	updatedOrder, errI := sendCSR(domain, orderResponse, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, certPrivKey, m.l)
+	if errI != nil {
+		return nil, errI
+	}
+
+	certBytes, errJ := downloadCertificate(updatedOrder, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l)
+	if errJ != nil {
+		return nil, errJ
+	}
+
+	buf := &bytes.Buffer{}
+	if errK := encodeECDSAKey(buf, certPrivKey); errK != nil {
+		return nil, errK
+	}
+	if _, errL := buf.Write(certBytes); errL != nil {
+		return nil, errL
+	}
+
+	cert, errM := certFromReader(buf)
+	return cert, errM
+}
+
+func (m *manager) setToken(domain, token string) {
+	certPath := filepath.Join(m.diskCacheDir, domain, tokenFileName)
+	if err := os.WriteFile(certPath, []byte(token), 0o600); err != nil {
+		m.l.Error("m.setToken", "error", err)
+	}
+}
+
+// certCache is an in memory cache for certificates and also ACME http-01 challenge tokens
+type certCache struct {
+	// The certs map should be accesed via a mutex.
+	// See the mutex inside [manager].
+	certs map[string]*tls.Certificate
+}
+
+func newCache() *certCache {
+	return &certCache{
+		certs: map[string]*tls.Certificate{},
+	}
+}
+
+func (c *certCache) getCert(domain string) (*tls.Certificate, error) {
+	if cert, ok := c.certs[domain]; ok && certIsValid(cert) {
+		return cert, nil
+	}
+
+	return nil, errors.New("ong/acme: cache does not have certificate")
+}
+
+func (c *certCache) setCert(domain string, cert *tls.Certificate) {
+	c.certs[domain] = cert
 }
