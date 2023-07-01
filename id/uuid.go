@@ -49,7 +49,7 @@ func (u *UUID) setVersion(version byte) {
 
 // UUID4 generates a version 4 [UUID].
 // It is not correlated with timestamp, thus, when used as the identifief of an object, it does not leak its creation time.
-// On the other hand, this means that it has poor database index locality unlike [UUID8].
+// On the other hand, this means that it has poor database index locality unlike [UUID8]. It might also be a good use as a shard key.
 //
 // See [UUID8] and [New]
 //

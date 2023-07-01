@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/middleware"
 
 	"golang.org/x/exp/slog"
@@ -100,6 +101,21 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 			rt.pattern,
 			rt.originalHandler,
 			mid(rt.originalHandler, opt),
+		)
+	}
+
+	{
+		// Support for acme certificate manager needs to be added in three places:
+		// (a) In http middlewares.
+		// (b) In http server.
+		// (c) In http multiplexer.
+		const acmeChallengeURI = "/.well-known/acme-challenge/:token"
+		acmeHandler := acme.Handler(m)
+		m.addPattern(
+			MethodAll,
+			acmeChallengeURI,
+			acmeHandler,
+			middleware.All(acmeHandler, opt),
 		)
 	}
 

@@ -1,9 +1,7 @@
-package dmn
+package acme
 
 import (
 	"testing"
-
-	"go.akshayshah.org/attest"
 )
 
 // taken from  https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert_test.go#L672
@@ -200,53 +198,4 @@ func TestCustomHostWhitelist(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestValidateDomain(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-
-		tt := []struct {
-			domain       string
-			shouldSucced bool
-		}{
-			{"example.com", true},
-			{"example.org", true},
-			{"xn--9caa.com", true}, // éé.com
-			{"one.example.com", true},
-			//
-			{"*.example.org", true},
-			{"*example.org", false}, // wildcard character should be followed by a `.` character
-			{"*.example.*", false},
-			{"example.*org", false},
-			//
-			{"", false},
-			{"exampl_e.com", false}, // underscore(rune U+005F) is disallowed in domain names.
-			//
-			{"dummy", true},
-		}
-		for _, test := range tt {
-			err := Validate(test.domain)
-			if test.shouldSucced {
-				attest.Ok(t, err, attest.Sprintf("failed: %s ", test.domain))
-			} else {
-				attest.NotZero(t, err, attest.Sprintf("failed: %s ", test.domain))
-			}
-		}
-	})
-}
-
-func TestCertManager(t *testing.T) {
-	t.Parallel()
-
-	cm := CertManager("domain", "acmeEmail", "acmeDirectoryUrl")
-	attest.NotZero(t, cm)
-
-	cm = CertManager("", "acmeEmail", "acmeDirectoryUrl")
-	attest.Zero(t, cm)
-
-	cm = CertManager("domain", "acmeEmail", "")
-	attest.Zero(t, cm)
 }

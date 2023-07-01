@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/komuw/ong/internal/dmn"
-
-	"golang.org/x/crypto/acme"
+	"github.com/komuw/ong/internal/acme"
+	"golang.org/x/exp/slog"
 )
 
 // Most of the code here is inspired(or taken from) by:
@@ -18,11 +17,11 @@ import (
 //
 
 // getTlsConfig returns a proper tls configuration given the options passed in.
-// The tls config may either procure certifiates from ACME, from disk or be nil(for non-tls traffic)
+// The tls config may either procure certificates from ACME, from disk or be nil(for non-tls traffic)
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
-func getTlsConfig(o Opts) (c *tls.Config, e error) {
-	if err := dmn.Validate(o.tls.domain); err != nil {
+func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
+	if err := acme.Validate(o.tls.domain); err != nil {
 		return nil, err
 	}
 
@@ -33,17 +32,17 @@ func getTlsConfig(o Opts) (c *tls.Config, e error) {
 			return nil, errors.New("ong/server: acmeDirectoryUrl cannot be empty if acmeEmail is also specified")
 		}
 
-		cm := dmn.CertManager(o.tls.domain, o.tls.acmeEmail, o.tls.acmeDirectoryUrl)
-		if cm == nil {
-			return nil, errors.New("ong/server: unable to setup acme manager")
-		}
+		// Support for acme certificate manager needs to be added in three places:
+		// (a) In http middlewares.
+		// (b) In http server.
+		// (c) In http multiplexer.
 		tlsConf := &tls.Config{
 			// taken from:
 			// https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert.go#L228-L234
 			NextProtos: []string{
 				"h2", // enable HTTP/2
 				"http/1.1",
-				acme.ALPNProto, // enable tls-alpn ACME challenges
+				"acme-tls/1", // enable tls-alpn ACME challenges
 			},
 			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
@@ -51,11 +50,16 @@ func getTlsConfig(o Opts) (c *tls.Config, e error) {
 				//
 				setFingerprint(info)
 
-				c, err := cm.GetCertificate(info)
+				c, err := acme.GetCertificate(
+					o.tls.domain,
+					o.tls.acmeEmail,
+					o.tls.acmeDirectoryUrl,
+					l,
+				)(info)
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					err = fmt.Errorf(
-						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s. domain=%s. serverName=%s. : %w",
+						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, : %w",
 						o.tls.acmeDirectoryUrl,
 						o.tls.domain,
 						info.ServerName,
@@ -84,7 +88,7 @@ func getTlsConfig(o Opts) (c *tls.Config, e error) {
 			NextProtos: []string{
 				"h2", // enable HTTP/2
 				"http/1.1",
-				acme.ALPNProto, // enable tls-alpn ACME challenges
+				"acme-tls/1", // enable tls-alpn ACME challenges
 			},
 			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
