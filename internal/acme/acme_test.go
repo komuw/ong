@@ -177,7 +177,8 @@ func someAcmeServerHandler(t *testing.T, domain string) http.HandlerFunc {
 			err = pem.Encode(buf, &pem.Block{Type: "CERTIFICATE", Bytes: certDer})
 			attest.Ok(t, err)
 
-			w.Write(buf.Bytes())
+			_, err = w.Write(buf.Bytes())
+			attest.Ok(t, err)
 			return
 		}
 
