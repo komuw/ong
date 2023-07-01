@@ -21,6 +21,7 @@ import (
 
 // Most of the code here is inspired(or taken from) by:
 //   (a) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/v0.10.0/LICENSE
+//   (b) https://github.com/komuw/sewer whose license(MIT) can be found here:                                                  https://github.com/komuw/sewer/blob/0.8.0/LICENSE.txt
 //
 
 const (
