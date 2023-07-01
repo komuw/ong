@@ -267,7 +267,31 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 }
 
 // getCert fetches a tls certificate for domain.
-func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
+func (m *manager) getCert(domain string) (*tls.Certificate, error) {
+	cert, certFromAcme, err := m._getCert(domain)
+
+	defer func() {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+
+		// 4. Add to cache and disk.
+		if cert != nil && certFromAcme {
+			m.cache.setCert(domain, cert)
+			if errA := m.toDisk(domain, cert); errA != nil {
+				m.l.Error("m.toDisk", "error", errA)
+			}
+		}
+		// We do not need to log the `getCert()` return error.
+		// This is because the http.Server will do that.
+	}()
+
+	return cert, err
+}
+
+// _getCert is a helper func for getCert. It should ONLY be called by getCert.
+// The two funcs should ideally be folded into one, however; the `checklocks` static analyzer complains.
+// See: https://github.com/komuw/ong/issues/297
+func (m *manager) _getCert(domain string) (_ *tls.Certificate, certFromAcme bool, _ error) {
 	/*
 		1. Get cert from memory/cache.
 		2. Else get from disk(also save to memory).
@@ -281,46 +305,31 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 	// todo: add context cancellation.
 	// see; crypto/acme/autocert
 
-	certFromAcme := false
-	defer func() {
-		// 4. Add to cache and disk.
-		if cert != nil && certFromAcme {
-			m.cache.setCert(domain, cert)
-			if errA := m.toDisk(domain, cert); errA != nil {
-				m.l.Error("m.toDisk", "error", errA)
-			}
-		}
-		// We do not need to log the `getCert()` return error.
-		// This is because the http.Server will do that.
-	}()
-
 	{ // 1. Get from cache.
 		c, _ := m.cache.getCert(domain)
 		if c != nil {
-			return c, nil
+			return c, false, nil
 		}
 	}
 
 	{ // 2. Get from disk.
 		c, _ := m.fromDisk(domain)
 		if c != nil {
-			return c, nil
+			return c, false, nil
 		}
 	}
 
 	{ // 3. Get from ACME.
 		c, errB := m.fromAcme(domain)
 		if errB != nil {
-			return nil, errB
+			return nil, false, errB
 		}
 
 		if errC := m.hp(context.Background(), domain); errC != nil {
-			return nil, errC
+			return nil, false, errC
 		}
 
-		certFromAcme = true
-
-		return c, nil
+		return c, true, nil
 	}
 }
 
