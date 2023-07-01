@@ -268,7 +268,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 
 // getCert fetches a tls certificate for domain.
 func (m *manager) getCert(domain string) (*tls.Certificate, error) {
-	cert, certFromAcme, err := m._getCert(domain)
+	cert, certFromAcme, err := m.innerGetCert(domain)
 
 	defer func() {
 		m.mu.Lock()
@@ -288,10 +288,10 @@ func (m *manager) getCert(domain string) (*tls.Certificate, error) {
 	return cert, err
 }
 
-// _getCert is a helper func for getCert. It should ONLY be called by getCert.
+// innerGetCert is a helper func for getCert. It should ONLY be called by getCert.
 // The two funcs should ideally be folded into one, however; the `checklocks` static analyzer complains.
 // See: https://github.com/komuw/ong/issues/297
-func (m *manager) _getCert(domain string) (_ *tls.Certificate, certFromAcme bool, _ error) {
+func (m *manager) innerGetCert(domain string) (_ *tls.Certificate, certFromAcme bool, _ error) {
 	/*
 		1. Get cert from memory/cache.
 		2. Else get from disk(also save to memory).
