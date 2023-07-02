@@ -8,7 +8,7 @@ import (
 	"go.akshayshah.org/attest"
 )
 
-func TestSetCpu(t *testing.T) {
+func TestSetCpu(t *testing.T) { //nolint:tparallel
 	t.Parallel()
 	// This tests can run in parallel with others but not with themselves.
 

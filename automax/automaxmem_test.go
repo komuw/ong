@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func TestSetMem(t *testing.T) {
+func TestSetMem(t *testing.T) { //nolint:tparallel
 	t.Parallel()
 	// This tests can run in parallel with others but not with themselves.
 
