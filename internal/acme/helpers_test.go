@@ -248,6 +248,16 @@ func TestCertIsValid(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "certificate is almost expired",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC(),                         // Today
+					NotAfter:  time.Now().UTC().Add(2 * 24 * time.Hour), // 2days later.
+				},
+			},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
