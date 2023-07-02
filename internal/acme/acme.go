@@ -267,15 +267,51 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 }
 
 // getCert fetches a tls certificate for domain.
-func (m *manager) getCert(domain string) (*tls.Certificate, error) {
-	cert, certFromAcme, err := m.innerGetCert(domain)
+func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
+	/*
+		1. Get cert from memory/cache.
+		2. Else get from disk(also save to memory).
+		3. Else get from ACME(also save to disk and memory).
 
-	defer func() {
-		m.mu.Lock()
-		defer m.mu.Unlock()
+		todo: add context cancellation.
+		see; crypto/acme/autocert
+	*/
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-		// 4. Add to cache and disk.
-		if cert != nil && certFromAcme {
+	{ // 1. Get from cache.
+		c, _ := m.cache.getCert(domain)
+		if c != nil {
+			return c, nil
+		}
+	}
+
+	{ // 2. Get from disk.
+		c, _ := m.fromDisk(domain)
+		if c != nil {
+			return c, nil
+		}
+	}
+
+	{ // 3. Get from ACME.
+		c, errB := m.fromAcme(domain)
+		if errB != nil {
+			return nil, errB
+		}
+
+		if errC := m.hp(context.Background(), domain); errC != nil {
+			return nil, errC
+		}
+
+		cert = c
+	}
+
+	{ // 4. Add to cache and disk.
+		// This block should ideally have been in a defer;
+		// However; the `checklocks` static analyzer complains.
+		// see: https://github.com/komuw/ong/blob/3153948e1a6ac10c7744ed46356cd1491f1dda50/internal/acme/acme.go#L284-L295
+		//      https://github.com/komuw/ong/issues/297
+		if cert != nil {
 			m.cache.setCert(domain, cert)
 			if errA := m.toDisk(domain, cert); errA != nil {
 				m.l.Error("m.toDisk", "error", errA)
@@ -283,54 +319,9 @@ func (m *manager) getCert(domain string) (*tls.Certificate, error) {
 		}
 		// We do not need to log the `getCert()` return error.
 		// This is because the http.Server will do that.
-	}()
-
-	return cert, err
-}
-
-// innerGetCert is a helper func for getCert. It should ONLY be called by getCert.
-// The two funcs should ideally be folded into one, however; the `checklocks` static analyzer complains.
-// See: https://github.com/komuw/ong/issues/297
-func (m *manager) innerGetCert(domain string) (_ *tls.Certificate, certFromAcme bool, _ error) {
-	/*
-		1. Get cert from memory/cache.
-		2. Else get from disk(also save to memory).
-		3. Else get from ACME(also save to disk and memory).
-	*/
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	// The defer for mutex unlock will happen after the defer for adding certs to cache/disk.
-	// https://go.dev/play/p/tQ7JOiFcCLf
-
-	// todo: add context cancellation.
-	// see; crypto/acme/autocert
-
-	{ // 1. Get from cache.
-		c, _ := m.cache.getCert(domain)
-		if c != nil {
-			return c, false, nil
-		}
 	}
 
-	{ // 2. Get from disk.
-		c, _ := m.fromDisk(domain)
-		if c != nil {
-			return c, false, nil
-		}
-	}
-
-	{ // 3. Get from ACME.
-		c, errB := m.fromAcme(domain)
-		if errB != nil {
-			return nil, false, errB
-		}
-
-		if errC := m.hp(context.Background(), domain); errC != nil {
-			return nil, false, errC
-		}
-
-		return c, true, nil
-	}
+	return cert, nil
 }
 
 func (m *manager) fromDisk(domain string) (*tls.Certificate, error) {
