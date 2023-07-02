@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -33,6 +34,32 @@ func getPort() uint16 {
 	r := rand.Intn(10_000) + 1
 	p := math.MaxUint16 - uint16(r)
 	return p
+}
+
+// ping waits for port to be open.
+func ping(t attest.TB, port uint16) {
+	t.Helper()
+
+	var err error
+	count := 0
+	maxCount := 10
+	defer func() {
+		attest.Ok(t, err)
+	}()
+
+	for {
+		count = count + 1
+		time.Sleep(1 * time.Second)
+		_, err = net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), 1*time.Second)
+		if err == nil {
+			break
+		}
+
+		if count > maxCount {
+			err = fmt.Errorf("ping max count(%d) reached: %w", maxCount, err)
+			break
+		}
+	}
 }
 
 // todo: enable this.
@@ -194,7 +221,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		time.Sleep(11 * time.Second)
+		ping(t, port)
 
 		{
 			// https server.
@@ -297,7 +324,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		time.Sleep(11 * time.Second)
+		ping(t, port)
 
 		t.Run("smallSize", func(t *testing.T) {
 			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
@@ -364,7 +391,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		time.Sleep(11 * time.Second)
+		ping(t, port)
 
 		runhandler := func() {
 			res, err := client.Get(fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)) // note: the https scheme.
@@ -416,7 +443,7 @@ func BenchmarkServer(b *testing.B) {
 	}()
 
 	// await for the server to start.
-	time.Sleep(11 * time.Second)
+	ping(b, port)
 
 	b.ResetTimer()
 	b.ReportAllocs()
