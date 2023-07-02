@@ -238,6 +238,16 @@ func TestCertIsValid(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "certificate is expired",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC(),                          // Today
+					NotAfter:  time.Now().UTC().Add(-1 * 24 * time.Hour), // Yesterday
+				},
+			},
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -245,6 +255,7 @@ func TestCertIsValid(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			got := certIsValid(tt.cert)
 			attest.Equal(t, got, tt.want)
 		})
