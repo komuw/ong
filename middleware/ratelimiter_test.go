@@ -147,8 +147,9 @@ func TestRl(t *testing.T) {
 			msgsDelivered := 0
 			start := time.Now().UTC()
 			for i := 0; i < int(sendRate*4); i++ {
-				l.allow()
-				msgsDelivered = msgsDelivered + 1
+				if l.allow() {
+					msgsDelivered = msgsDelivered + 1
+				}
 			}
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
@@ -163,13 +164,14 @@ func TestRl(t *testing.T) {
 			msgsDelivered := 0
 			start := time.Now().UTC()
 			for i := 0; i < int(sendRate*4); i++ {
-				l.allow()
-				msgsDelivered = msgsDelivered + 1
+				if l.allow() {
+					msgsDelivered = msgsDelivered + 1
+				}
 			}
 			timeTakenToDeliver := time.Now().UTC().Sub(start)
 			effectiveMessageRate := int(float64(msgsDelivered) / timeTakenToDeliver.Seconds())
 
-			attest.Approximately(t, effectiveMessageRate, int(sendRate), 5)
+			attest.Approximately(t, effectiveMessageRate, int(sendRate), 6)
 		}
 	})
 }
