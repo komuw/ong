@@ -306,7 +306,7 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 		cert = c
 	}
 
-	{ // 4. Add to cache and disk.
+	{ // 4. Add to cache and disk. This should be done ONLY if cert came from ACME.
 		// This block should ideally have been in a defer;
 		// However; the `checklocks` static analyzer complains.
 		// see: https://github.com/komuw/ong/blob/3153948e1a6ac10c7744ed46356cd1491f1dda50/internal/acme/acme.go#L284-L295
