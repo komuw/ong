@@ -299,6 +299,12 @@ func certIsValid(cert *tls.Certificate) bool {
 	// check validity
 	// todo: add more validation checks,
 	// see: https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L1105-L1110
+	if cert == nil {
+		return false
+	}
+
+	// Let's encrypt backdates certificates by one hour to allow for clock skew.
+	// See: https://community.letsencrypt.org/t/time-zone-considerations-needed-for-certificates/23130/2
 	now := time.Now().UTC()
 	threeDaysAgo := now.Add(-3 * 24 * time.Hour)
 
