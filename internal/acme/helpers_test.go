@@ -258,6 +258,18 @@ func TestCertIsValid(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			// Let's encrypt backdates certificates by one hour to allow for clock skew.
+			// See: https://community.letsencrypt.org/t/time-zone-considerations-needed-for-certificates/23130/2
+			name: "certificate backdated by few hours",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC().Add(-3 * time.Hour),          // 3hrs ago
+					NotAfter:  time.Now().UTC().Add(3 * 30 * 24 * time.Hour), // 3months
+				},
+			},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {

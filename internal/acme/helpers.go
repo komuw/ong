@@ -307,16 +307,22 @@ func certIsValid(cert *tls.Certificate) bool {
 	// Let's encrypt backdates certificates by one hour to allow for clock skew.
 	// See: https://community.letsencrypt.org/t/time-zone-considerations-needed-for-certificates/23130/2
 	now := time.Now().UTC()
-	threeDaysAgo := now.Add(3 * 24 * time.Hour)
+	threeDaysAfter := now.Add(3 * 24 * time.Hour)
 
 	if now.Before(cert.Leaf.NotBefore) {
 		// certificate is too early.
 		return false
 	}
-	if threeDaysAgo.After(cert.Leaf.NotAfter) {
-		// certificate is almost expired or expired.
+	if now.After(cert.Leaf.NotAfter) {
+		// certificate is expired.
 		return false
 	}
+
+	if threeDaysAfter.After(cert.Leaf.NotAfter) {
+		// certificate is almost expired.
+		return false
+	}
+
 	return true
 }
 
