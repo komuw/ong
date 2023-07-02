@@ -175,7 +175,7 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 				return
 			}
 
-			_, _ = fmt.Fprint(w, string(tok))
+			_, _ = w.Write(tok)
 			w.WriteHeader(http.StatusOK)
 
 			return
