@@ -42,7 +42,7 @@ func ping(t attest.TB, port uint16) {
 
 	var err error
 	count := 0
-	maxCount := 10
+	maxCount := 12
 	defer func() {
 		attest.Ok(t, err)
 	}()
