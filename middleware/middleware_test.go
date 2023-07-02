@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/log"
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
@@ -367,6 +368,55 @@ func TestMiddlewareServer(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+	})
+
+	t.Run("double WriteHeader call", func(t *testing.T) {
+		t.Parallel()
+		// Note: Running this test will always produce the error message:
+		//   `http: superfluous response.WriteHeader call from github.com/komuw/ong/middleware.(*logRW).WriteHeader (log.go:121)`
+		// And the stack trace always points to the ong log middleware.
+		// But that does not mean that ong has any issues. That error is always produced when
+		// `http.ResponseWriter.WriteHeader()` is called more than once.
+		// See: https://github.com/komuw/ong/issues/48#issuecomment-1260654535
+
+		getLogger := func(w io.Writer) *slog.Logger {
+			return log.New(w, 500)(context.Background())
+		}
+		logOutput := &bytes.Buffer{}
+		msg := "hello"
+		code := http.StatusAccepted
+		o := WithOpts("*.localhost", 443, getSecretKey(), DirectIpStrategy, getLogger(logOutput))
+		doubleWrite := func(msg string, code int) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(code)
+				w.WriteHeader(code) // causes the issue: https://github.com/komuw/ong/issues/48
+				fmt.Fprint(w, msg)
+			}
+		}
+		wrappedHandler := All(doubleWrite(msg, code), o)
+		ts := httptest.NewTLSServer(
+			wrappedHandler,
+		)
+		defer ts.Close()
+
+		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		attest.Ok(t, err)
+		req.AddCookie(&http.Cookie{
+			Name:  logIDKey,
+			Value: "hey-some-log-id:" + id.New(),
+		})
+
+		res, err := client.Do(req)
+		attest.Ok(t, err)
+
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, code)
+		attest.Equal(t, string(rb), msg)
+		attest.Zero(t, logOutput.String())
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
