@@ -2,7 +2,9 @@ package acme
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"testing"
+	"time"
 
 	"go.akshayshah.org/attest"
 )
@@ -215,6 +217,26 @@ func TestCertIsValid(t *testing.T) {
 			name: "nil cert",
 			cert: nil,
 			want: false,
+		},
+		{
+			name: "certificate is too early",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC().Add(5 * 24 * time.Hour),      // In 5days time
+					NotAfter:  time.Now().UTC().Add(3 * 30 * 24 * time.Hour), // 3months
+				},
+			},
+			want: false,
+		},
+		{
+			name: "certificate is okay",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC(),                              // Today
+					NotAfter:  time.Now().UTC().Add(3 * 30 * 24 * time.Hour), // 3months
+				},
+			},
+			want: true,
 		},
 	}
 
