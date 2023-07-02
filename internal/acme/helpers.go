@@ -295,6 +295,7 @@ func certToDisk(cert *tls.Certificate, certPath string) error {
 	return os.WriteFile(certPath, buf.Bytes(), 0o600)
 }
 
+// certIsValid reports whether a certificate is valid.
 func certIsValid(cert *tls.Certificate) bool {
 	// check validity
 	// todo: add more validation checks,
