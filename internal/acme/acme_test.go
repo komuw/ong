@@ -50,7 +50,7 @@ func createX509Cert(t *testing.T, domain string, privKey *ecdsa.PrivateKey) []by
 		},
 		DNSNames:  []string{domain},
 		NotBefore: time.Now().UTC(),
-		NotAfter:  time.Now().UTC().Add(26 * time.Hour),
+		NotAfter:  time.Now().UTC().Add(5 * 24 * time.Hour), // 5days
 		KeyUsage:  x509.KeyUsageDigitalSignature,
 	}
 
