@@ -3,7 +3,6 @@ package automax
 import (
 	"io"
 	"os"
-	"sync"
 	"testing"
 
 	"go.akshayshah.org/attest"
@@ -11,8 +10,6 @@ import (
 
 func TestSetCpu(t *testing.T) {
 	t.Parallel()
-
-	var mu sync.Mutex
 
 	write := func(cgroupV2Value string) string {
 		dir := t.TempDir()
@@ -30,10 +27,6 @@ func TestSetCpu(t *testing.T) {
 	}
 
 	t.Run("cgroupV2", func(t *testing.T) {
-		t.Parallel()
-		mu.Lock()
-		defer mu.Unlock()
-
 		/*
 			use 3 cpus.
 			docker run -it --entrypoint /bin/bash --cpus="3" redis
@@ -53,10 +46,6 @@ func TestSetCpu(t *testing.T) {
 	})
 
 	t.Run("cgroup max", func(t *testing.T) {
-		t.Parallel()
-		mu.Lock()
-		defer mu.Unlock()
-
 		fName := write("max 100000")
 
 		expected := currentMaxProcs()
@@ -71,10 +60,6 @@ func TestSetCpu(t *testing.T) {
 	})
 
 	t.Run("cpu less than 1", func(t *testing.T) {
-		t.Parallel()
-		mu.Lock()
-		defer mu.Unlock()
-
 		/*
 			use 50% of cpu.
 			docker run -it --entrypoint /bin/bash --cpus=".5" redis
@@ -94,10 +79,6 @@ func TestSetCpu(t *testing.T) {
 	})
 
 	t.Run("one field", func(t *testing.T) {
-		t.Parallel()
-		mu.Lock()
-		defer mu.Unlock()
-
 		fName := write("500000")
 
 		expected := int(5)
@@ -113,10 +94,6 @@ func TestSetCpu(t *testing.T) {
 	})
 
 	t.Run("corrupt file", func(t *testing.T) {
-		t.Parallel()
-		mu.Lock()
-		defer mu.Unlock()
-
 		fName := write("its corrupt")
 
 		expected := currentMaxProcs()
