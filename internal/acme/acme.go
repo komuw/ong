@@ -175,7 +175,7 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 				return
 			}
 
-			_, _ = fmt.Fprint(w, string(tok))
+			_, _ = w.Write(tok)
 			w.WriteHeader(http.StatusOK)
 
 			return
@@ -272,27 +272,12 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 		1. Get cert from memory/cache.
 		2. Else get from disk(also save to memory).
 		3. Else get from ACME(also save to disk and memory).
+
+		todo: add context cancellation.
+		see; crypto/acme/autocert
 	*/
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	// The defer for mutex unlock will happen after the defer for adding certs to cache/disk.
-	// https://go.dev/play/p/tQ7JOiFcCLf
-
-	// todo: add context cancellation.
-	// see; crypto/acme/autocert
-
-	certFromAcme := false
-	defer func() {
-		// 4. Add to cache and disk.
-		if cert != nil && certFromAcme {
-			m.cache.setCert(domain, cert)
-			if errA := m.toDisk(domain, cert); errA != nil {
-				m.l.Error("m.toDisk", "error", errA)
-			}
-		}
-		// We do not need to log the `getCert()` return error.
-		// This is because the http.Server will do that.
-	}()
 
 	{ // 1. Get from cache.
 		c, _ := m.cache.getCert(domain)
@@ -318,10 +303,25 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 			return nil, errC
 		}
 
-		certFromAcme = true
-
-		return c, nil
+		cert = c
 	}
+
+	{ // 4. Add to cache and disk. This should be done ONLY if cert came from ACME.
+		// This block should ideally have been in a defer;
+		// However; the `checklocks` static analyzer complains.
+		// see: https://github.com/komuw/ong/blob/3153948e1a6ac10c7744ed46356cd1491f1dda50/internal/acme/acme.go#L284-L295
+		//      https://github.com/komuw/ong/issues/297
+		if cert != nil {
+			m.cache.setCert(domain, cert)
+			if errA := m.toDisk(domain, cert); errA != nil {
+				m.l.Error("m.toDisk", "error", errA)
+			}
+		}
+		// We do not need to log the `getCert()` return error.
+		// This is because the http.Server will do that.
+	}
+
+	return cert, nil
 }
 
 func (m *manager) fromDisk(domain string) (*tls.Certificate, error) {

@@ -112,7 +112,7 @@ func getDirectory(directoryURL string, l *slog.Logger) (directory, error) {
 	if errA != nil {
 		return d, errA
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusOK {
 		ae := &acmeError{}
@@ -141,7 +141,7 @@ func getNonce(newNonceURL string, l *slog.Logger) (string, error) {
 	if errA != nil {
 		return "", errA
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusOK {
 		ae := &acmeError{}
@@ -205,7 +205,7 @@ func getAccount(newAccountURL, newNonceURL, email string, accountPrivKey *ecdsa.
 	if errC != nil {
 		return actResponse, errC
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusCreated || res.StatusCode == http.StatusOK {
 		if errD := json.NewDecoder(res.Body).Decode(&actResponse); errD != nil {
@@ -288,7 +288,7 @@ func submitOrder(newOrderURL, newNonceURL, kid string, domains []string, account
 	if errC != nil {
 		return orderResponse, errC
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusCreated {
 		if errD := json.NewDecoder(res.Body).Decode(&orderResponse); errD != nil {
@@ -354,7 +354,7 @@ func fetchChallenges(authorizationURLS []string, newNonceURL, kid string, accoun
 	if errB != nil {
 		return authorizationResponse, errB
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusOK {
 		if errC := json.NewDecoder(res.Body).Decode(&authorizationResponse); errC != nil {
@@ -447,7 +447,7 @@ func checkChallengeStatus(
 			checkError = errB
 			continue
 		}
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		dur = retryAfter(res.Header.Get("Retry-After"), dur) + (2 * time.Second)
 
 		if res.StatusCode != http.StatusOK {
@@ -520,7 +520,7 @@ func respondToChallenge(ch challenge, newNonceURL, kid string, accountPrivKey *e
 	if errD != nil {
 		return challengeResponse, errD
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusOK {
 		if errE := json.NewDecoder(res.Body).Decode(&challengeResponse); errE != nil {
@@ -617,7 +617,7 @@ func checkOrderStatus(
 			checkError = errB
 			continue
 		}
-		defer res.Body.Close()
+		defer func() { _ = res.Body.Close() }()
 		dur = retryAfter(res.Header.Get("Retry-After"), dur) + (2 * time.Second)
 
 		if res.StatusCode != http.StatusOK {
@@ -721,7 +721,7 @@ func sendCSR(domain string, o order, newNonceURL, kid string, accountPrivKey, ce
 	if errE != nil {
 		return o, errE
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusOK {
 		/*
@@ -802,7 +802,7 @@ func downloadCertificate(o order, newNonceURL, kid string, accountPrivKey *ecdsa
 	if errC != nil {
 		return nil, errC
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusOK {
 		c, errD := io.ReadAll(res.Body)

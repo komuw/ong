@@ -30,7 +30,7 @@ func getSecretKey() string {
 // getPort returns a random port.
 // The idea is that different tests should run on different independent ports to avoid collisions.
 func getPort() uint16 {
-	r := rand.Intn(100) + 1
+	r := rand.Intn(10_000) + 1
 	p := math.MaxUint16 - uint16(r)
 	return p
 }

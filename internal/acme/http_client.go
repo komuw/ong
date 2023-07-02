@@ -171,7 +171,7 @@ func prepBody(url, newNonceURL, kid string, dataPayload []byte, accountPrivKey *
 	}
 
 	hash := sha.New()
-	hash.Write([]byte(protPayloadStr + "." + dataPayloadStr))
+	_, _ = io.WriteString(hash, protPayloadStr+"."+dataPayloadStr)
 	sig, err := jwsSign(accountPrivKey, sha, hash.Sum(nil))
 	if err != nil {
 		return nil, err
@@ -214,5 +214,5 @@ func dumpDebugW(w io.Writer, req *http.Request, res *http.Response) {
 	}
 	s = s + "\n===========================DUMPING RESPONSE===========================\n\n"
 
-	_, _ = w.Write([]byte(s))
+	_, _ = io.WriteString(w, s)
 }
