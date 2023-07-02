@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"testing"
 
 	"go.akshayshah.org/attest"
@@ -17,6 +18,8 @@ func TestMain(m *testing.M) {
 
 func TestSetMem(t *testing.T) {
 	t.Parallel()
+
+	var mu sync.Mutex
 
 	dir := t.TempDir()
 
@@ -42,6 +45,8 @@ func TestSetMem(t *testing.T) {
 
 	t.Run("cgroupV1", func(t *testing.T) {
 		t.Parallel()
+		mu.Lock()
+		defer mu.Unlock()
 
 		expected := int64(117964800)
 		attest.NotEqual(t, currentMaxMem(), expected)
@@ -57,6 +62,8 @@ func TestSetMem(t *testing.T) {
 
 	t.Run("cgroupV2", func(t *testing.T) {
 		t.Parallel()
+		mu.Lock()
+		defer mu.Unlock()
 
 		expected := int64(430335590)
 		attest.NotEqual(t, currentMaxMem(), expected)
@@ -72,6 +79,8 @@ func TestSetMem(t *testing.T) {
 
 	t.Run("cgroupV1 and cgroupV2", func(t *testing.T) {
 		t.Parallel()
+		mu.Lock()
+		defer mu.Unlock()
 
 		// cgroupV2 takes precedence.
 		expected := int64(430335590)
@@ -91,6 +100,8 @@ func TestSetMem(t *testing.T) {
 
 	t.Run("undo", func(t *testing.T) {
 		t.Parallel()
+		mu.Lock()
+		defer mu.Unlock()
 
 		expected := int64(430335590)
 		attest.NotEqual(t, currentMaxMem(), expected)
