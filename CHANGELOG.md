@@ -9,6 +9,7 @@ Most recent version is listed first.
 - Make tests fast by pinging port: https://github.com/komuw/ong/pull/299
 - Synchronize automax tests: https://github.com/komuw/ong/pull/300
 - Improve rate limit tests: https://github.com/komuw/ong/pull/301
+- Fix superfluous response.WriteHeader call: https://github.com/komuw/ong/pull/302
 
 # v0.0.56
 - Set appropriate log level for http.Server.ErrorLog: https://github.com/komuw/ong/pull/288
