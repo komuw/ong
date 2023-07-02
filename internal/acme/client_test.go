@@ -42,6 +42,9 @@ func someAcmeServerHandler(t *testing.T, domain string) http.HandlerFunc {
 			// Changing the header map after a call to WriteHeader (or Write) has no effect.
 			// So, `WriteHeader` should be called last.
 			// Otherwise, for the others; `WriteHeader` should be called first.
+			//
+			// If WriteHeader is not called explicitly, the first call to Write
+			// will trigger an implicit WriteHeader(http.StatusOK).
 			w.Header().Set("Replay-Nonce", "some-random-unique-nonce")
 			w.WriteHeader(http.StatusOK)
 			return

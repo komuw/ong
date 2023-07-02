@@ -85,7 +85,8 @@ type logRW struct {
 	// this might end up being 0, rather than the implicit
 	// http.StatusOK. To get the implicit value, use the Result
 	// method.
-	code int
+	code          int
+	writtenHeader bool
 }
 
 var (
@@ -100,18 +101,29 @@ var (
 	// _ http.CloseNotifier  = &logRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
-// Write recodes the size of bytes sent for logging purposes.
+// Write sets the default status code if not already set.
+// todo: In future, it could also recode the size of bytes sent for logging purposes.
 func (lrw *logRW) Write(b []byte) (int, error) {
 	if lrw.code == 0 {
+		// If WriteHeader is not called explicitly, the first call to Write
+		// will trigger an implicit WriteHeader(http.StatusOK).
+		// See: https://github.com/golang/go/blob/go1.20.5/src/net/http/server.go#L141-L159
+		//
+		// Thus here we need to obey that convention
 		lrw.code = http.StatusOK
 	}
+	lrw.writtenHeader = true
 	return lrw.ResponseWriter.Write(b)
 }
 
 // WriteHeader recodes the status code for logging purposes.
 func (lrw *logRW) WriteHeader(statusCode int) {
-	lrw.code = statusCode
 	lrw.ResponseWriter.WriteHeader(statusCode)
+
+	if !lrw.writtenHeader {
+		lrw.code = statusCode
+		lrw.writtenHeader = true
+	}
 }
 
 // Flush implements http.Flusher
