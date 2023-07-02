@@ -17,6 +17,7 @@ func TestMain(m *testing.M) {
 
 func TestSetMem(t *testing.T) {
 	t.Parallel()
+	// This tests can run in parallel with others but not with themselves.
 
 	dir := t.TempDir()
 

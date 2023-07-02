@@ -10,6 +10,7 @@ import (
 
 func TestSetCpu(t *testing.T) {
 	t.Parallel()
+	// This tests can run in parallel with others but not with themselves.
 
 	write := func(cgroupV2Value string) string {
 		dir := t.TempDir()
