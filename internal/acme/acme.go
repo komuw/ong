@@ -76,6 +76,7 @@ func Validate(domain string) error {
 
 // GetCertificate returns a function that implements [tls.Config.GetCertificate].
 // It provides a TLS certificate for hello.ServerName host.
+// It should be called once and then the returned function can be called per request.
 //
 // GetCertificate panics on error, however the returned function handles errors normally.
 func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {

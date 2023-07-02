@@ -32,6 +32,14 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 			return nil, errors.New("ong/server: acmeDirectoryUrl cannot be empty if acmeEmail is also specified")
 		}
 
+		// You need to call it once instead of per request.
+		// See: https://github.com/komuw/ong/issues/296
+		getCert := acme.GetCertificate(
+			o.tls.domain,
+			o.tls.acmeEmail,
+			o.tls.acmeDirectoryUrl,
+			l,
+		)
 		// Support for acme certificate manager needs to be added in three places:
 		// (a) In http middlewares.
 		// (b) In http server.
@@ -50,12 +58,7 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 				//
 				setFingerprint(info)
 
-				c, err := acme.GetCertificate(
-					o.tls.domain,
-					o.tls.acmeEmail,
-					o.tls.acmeDirectoryUrl,
-					l,
-				)(info)
+				c, err := getCert(info)
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					err = fmt.Errorf(

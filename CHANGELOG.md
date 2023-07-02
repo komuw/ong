@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.59
+- Fix bug where acme certificates were not cached in memory: https://github.com/komuw/ong/pull/304
+
 # v0.0.58
 - Tighten check cert validity script: https://github.com/komuw/ong/pull/303
 
