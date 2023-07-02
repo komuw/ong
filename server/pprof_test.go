@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/komuw/ong/log"
 
@@ -25,10 +24,10 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l)
 
 		// await for the server to start.
-		time.Sleep(1 * time.Second)
+		port := 65060
+		ping(t, uint16(port))
 
 		uri := "/debug/pprof/heap"
-		port := 65060
 		res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
 		attest.Ok(t, err)
 		defer res.Body.Close()
@@ -42,11 +41,11 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l)
 
 		// await for the server to start.
-		time.Sleep(1 * time.Second)
+		port := 65060
+		ping(t, uint16(port))
 
 		runhandler := func() {
 			uri := "/debug/pprof/heap"
-			port := 65060
 			res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
 			attest.Ok(t, err)
 			defer res.Body.Close()
