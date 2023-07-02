@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.58
+- Tighten check cert validity script: https://github.com/komuw/ong/pull/303
+
 # v0.0.57
 - Add own ACME client implementation: https://github.com/komuw/ong/pull/294
 - Work around bug in checklocks static analyzer: https://github.com/komuw/ong/pull/298
