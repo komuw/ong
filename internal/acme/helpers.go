@@ -295,21 +295,34 @@ func certToDisk(cert *tls.Certificate, certPath string) error {
 	return os.WriteFile(certPath, buf.Bytes(), 0o600)
 }
 
+// certIsValid reports whether a certificate is valid.
 func certIsValid(cert *tls.Certificate) bool {
 	// check validity
 	// todo: add more validation checks,
 	// see: https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L1105-L1110
+	if cert == nil {
+		return false
+	}
+
+	// Let's encrypt backdates certificates by one hour to allow for clock skew.
+	// See: https://community.letsencrypt.org/t/time-zone-considerations-needed-for-certificates/23130/2
 	now := time.Now().UTC()
-	threeDaysAgo := now.Add(-3 * 24 * time.Hour)
+	threeDaysAfter := now.Add(3 * 24 * time.Hour)
 
 	if now.Before(cert.Leaf.NotBefore) {
 		// certificate is too early.
 		return false
 	}
-	if threeDaysAgo.After(cert.Leaf.NotAfter) {
-		// certificate is almost expired or expired.
+	if now.After(cert.Leaf.NotAfter) {
+		// certificate is expired.
 		return false
 	}
+
+	if threeDaysAfter.After(cert.Leaf.NotAfter) {
+		// certificate is almost expired.
+		return false
+	}
+
 	return true
 }
 

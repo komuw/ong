@@ -26,7 +26,7 @@ import (
 
 const (
 	accountKeyFileName = "ong_acme_account_private.key"
-	certFileName       = "ong_acme_certificate.crt"
+	certAndKeyFileName = "ong_acme_certificate_and_key.crt" // has key and cert concatenated.
 	certKeyFileName    = "ong_acme_certificate.key"
 	tokenFileName      = "ong_acme_certificate.token"
 
@@ -241,10 +241,10 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 				// layout is like:
 				// diskCacheDir/
 				//   domainName/
-				//     ong_acme_certificate.crt
+				//     ong_acme_certificate_and_key.crt
 				if f.IsDir() {
 					dmn := f.Name()
-					certPath := filepath.Join(diskCacheDir, dmn, certFileName)
+					certPath := filepath.Join(diskCacheDir, dmn, certAndKeyFileName)
 					cert, errC := certFromDisk(certPath)
 					if errC != nil {
 						continue
@@ -327,7 +327,7 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 func (m *manager) fromDisk(domain string) (*tls.Certificate, error) {
 	// see: https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L470-L472
 
-	certPath := filepath.Join(m.diskCacheDir, domain, certFileName)
+	certPath := filepath.Join(m.diskCacheDir, domain, certAndKeyFileName)
 	cert, err := certFromDisk(certPath)
 	if err != nil {
 		return nil, err
@@ -339,7 +339,7 @@ func (m *manager) fromDisk(domain string) (*tls.Certificate, error) {
 func (m *manager) toDisk(domain string, cert *tls.Certificate) error {
 	// see: https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L519
 
-	certPath := filepath.Join(m.diskCacheDir, domain, certFileName)
+	certPath := filepath.Join(m.diskCacheDir, domain, certAndKeyFileName)
 
 	return certToDisk(cert, certPath)
 }

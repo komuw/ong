@@ -1,7 +1,12 @@
 package acme
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"testing"
+	"time"
+
+	"go.akshayshah.org/attest"
 )
 
 // taken from  https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert_test.go#L672
@@ -198,4 +203,93 @@ func TestCustomHostWhitelist(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestCertIsValid(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		cert *tls.Certificate
+		want bool
+	}{
+		{
+			name: "nil cert",
+			cert: nil,
+			want: false,
+		},
+		{
+			name: "certificate is too early",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC().Add(5 * 24 * time.Hour),      // In 5days time
+					NotAfter:  time.Now().UTC().Add(3 * 30 * 24 * time.Hour), // 3months
+				},
+			},
+			want: false,
+		},
+		{
+			name: "certificate is okay",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC(),                              // Today
+					NotAfter:  time.Now().UTC().Add(3 * 30 * 24 * time.Hour), // 3months
+				},
+			},
+			want: true,
+		},
+		{
+			name: "certificate is expired",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC(),                          // Today
+					NotAfter:  time.Now().UTC().Add(-1 * 24 * time.Hour), // Yesterday
+				},
+			},
+			want: false,
+		},
+		{
+			name: "certificate is almost expired",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC(),                         // Today
+					NotAfter:  time.Now().UTC().Add(2 * 24 * time.Hour), // 2days later.
+				},
+			},
+			want: false,
+		},
+		{
+			name: "expires in 7days",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC(),                         // Today
+					NotAfter:  time.Now().UTC().Add(7 * 24 * time.Hour), // 7days later.
+				},
+			},
+			want: true,
+		},
+		{
+			// Let's encrypt backdates certificates by one hour to allow for clock skew.
+			// See: https://community.letsencrypt.org/t/time-zone-considerations-needed-for-certificates/23130/2
+			name: "certificate backdated by few hours",
+			cert: &tls.Certificate{
+				Leaf: &x509.Certificate{
+					NotBefore: time.Now().UTC().Add(-3 * time.Hour),          // 3hrs ago
+					NotAfter:  time.Now().UTC().Add(3 * 30 * 24 * time.Hour), // 3months
+				},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := certIsValid(tt.cert)
+			attest.Equal(t, got, tt.want)
+		})
+	}
 }

@@ -50,7 +50,7 @@ func createX509Cert(t *testing.T, domain string, privKey *ecdsa.PrivateKey) []by
 		},
 		DNSNames:  []string{domain},
 		NotBefore: time.Now().UTC(),
-		NotAfter:  time.Now().UTC().Add(26 * time.Hour),
+		NotAfter:  time.Now().UTC().Add(5 * 24 * time.Hour), // 5days
 		KeyUsage:  x509.KeyUsageDigitalSignature,
 	}
 
@@ -144,7 +144,7 @@ func TestManager(t *testing.T) {
 		diskCacheDir, errA := diskCachedir()
 		attest.Ok(t, errA)
 		{ // prep by saving a certificate for the domain to disk.
-			certPath := filepath.Join(diskCacheDir, domain, certFileName)
+			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
 			cert := createTlsCert(t, domain)
 			errB := certToDisk(cert, certPath)
 			attest.Ok(t, errB)
@@ -180,7 +180,7 @@ func TestManager(t *testing.T) {
 		testDiskCache := t.TempDir()
 		domain := getDomain()
 		{ // prep by saving a certificate for the domain to disk.
-			certPath := filepath.Join(testDiskCache, domain, certFileName)
+			certPath := filepath.Join(testDiskCache, domain, certAndKeyFileName)
 			cert := createTlsCert(t, domain)
 			err := certToDisk(cert, certPath)
 			attest.Ok(t, err)
@@ -197,7 +197,7 @@ func TestManager(t *testing.T) {
 		testDiskCache := t.TempDir()
 		domain := getDomain()
 		{ // prep by saving a certificate for the domain to disk.
-			certPath := filepath.Join(testDiskCache, domain, certFileName)
+			certPath := filepath.Join(testDiskCache, domain, certAndKeyFileName)
 			cert := createTlsCert(t, domain)
 			err := certToDisk(cert, certPath)
 			attest.Ok(t, err)
