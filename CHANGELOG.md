@@ -7,6 +7,7 @@ Most recent version is listed first.
 - Add own ACME client implementation: https://github.com/komuw/ong/pull/294
 - Work around bug in checklocks static analyzer: https://github.com/komuw/ong/pull/298
 - Make tests fast by pinging port: https://github.com/komuw/ong/pull/299
+- Synchronize automax tests: https://github.com/komuw/ong/pull/300
 
 # v0.0.56
 - Set appropriate log level for http.Server.ErrorLog: https://github.com/komuw/ong/pull/288

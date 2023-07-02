@@ -15,8 +15,9 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func TestSetMem(t *testing.T) {
+func TestSetMem(t *testing.T) { //nolint:tparallel
 	t.Parallel()
+	// This tests can run in parallel with others but not with themselves.
 
 	dir := t.TempDir()
 
@@ -41,8 +42,6 @@ func TestSetMem(t *testing.T) {
 	attest.Ok(t, err)
 
 	t.Run("cgroupV1", func(t *testing.T) {
-		t.Parallel()
-
 		expected := int64(117964800)
 		attest.NotEqual(t, currentMaxMem(), expected)
 
@@ -56,8 +55,6 @@ func TestSetMem(t *testing.T) {
 	})
 
 	t.Run("cgroupV2", func(t *testing.T) {
-		t.Parallel()
-
 		expected := int64(430335590)
 		attest.NotEqual(t, currentMaxMem(), expected)
 
@@ -71,8 +68,6 @@ func TestSetMem(t *testing.T) {
 	})
 
 	t.Run("cgroupV1 and cgroupV2", func(t *testing.T) {
-		t.Parallel()
-
 		// cgroupV2 takes precedence.
 		expected := int64(430335590)
 		attest.NotEqual(t, currentMaxMem(), expected)
@@ -90,8 +85,6 @@ func TestSetMem(t *testing.T) {
 	})
 
 	t.Run("undo", func(t *testing.T) {
-		t.Parallel()
-
 		expected := int64(430335590)
 		attest.NotEqual(t, currentMaxMem(), expected)
 
