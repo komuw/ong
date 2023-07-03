@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strings"
@@ -98,13 +99,19 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 		// Some server names in the handshakes started by some clients (such as cURL) are not converted to Punycode, which will
 		// prevent us from obtaining certificates for them.
 		// https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L249-L273
-		name, err := idna.Lookup.ToASCII(name)
-		if err != nil {
+		name, errA := idna.Lookup.ToASCII(name)
+		if errA != nil {
 			return nil, errors.New("ong/acme: server name contains invalid character")
 		}
 
 		// see: golang.org/issue/18114
 		dmn := strings.TrimSuffix(name, ".")
+
+		if _, errB := netip.ParseAddr(dmn); errB == nil {
+			// It is an IP address.
+			// See: https://github.com/komuw/ong/issues/305
+			return nil, errors.New("ong/acme: cannot issue a certificate for an IP  address")
+		}
 
 		return man.getCert(dmn)
 	}

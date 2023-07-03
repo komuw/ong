@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.60
+- Refuse to fetch certificates for IP addresses: https://github.com/komuw/ong/pull/306
+
 # v0.0.59
 - Fix bug where acme certificates were not cached in memory: https://github.com/komuw/ong/pull/304
 

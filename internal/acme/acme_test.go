@@ -212,6 +212,59 @@ func TestManager(t *testing.T) {
 	})
 }
 
+func TestGetCertificate(t *testing.T) {
+	t.Parallel()
+
+	email := "hey+sample@gmail.com"
+	acmeDirectoryUrl := "https://some-domain.com/directory"
+
+	l := slog.Default()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		domain := getDomain()
+		diskCacheDir, errA := diskCachedir()
+		attest.Ok(t, errA)
+		{ // prep by saving a certificate for the domain to disk.
+			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
+			cert := createTlsCert(t, domain)
+			errB := certToDisk(cert, certPath)
+			attest.Ok(t, errB)
+		}
+
+		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+		cert, errC := getCrt(&tls.ClientHelloInfo{
+			ServerName: domain,
+		})
+		attest.Ok(t, errC)
+		attest.NotZero(t, cert)
+		attest.True(t, certIsValid(cert))
+	})
+
+	t.Run("domain is IP address", func(t *testing.T) {
+		t.Parallel()
+
+		domain := "127.0.0.1"
+		diskCacheDir, errA := diskCachedir()
+		attest.Ok(t, errA)
+		{ // prep by saving a certificate for the domain to disk.
+			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
+			cert := createTlsCert(t, domain)
+			errB := certToDisk(cert, certPath)
+			attest.Ok(t, errB)
+		}
+
+		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+		cert, errC := getCrt(&tls.ClientHelloInfo{
+			ServerName: domain,
+		})
+		attest.Zero(t, cert)
+		attest.False(t, certIsValid(cert))
+		attest.Error(t, errC)
+	})
+}
+
 func someAcmeAppHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, msg)
