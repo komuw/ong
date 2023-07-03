@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,6 +106,12 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 
 		// see: golang.org/issue/18114
 		dmn := strings.TrimSuffix(name, ".")
+
+		if _, err := netip.ParseAddr(dmn); err == nil {
+			// It is an IP address.
+			// See: https://github.com/komuw/ong/issues/305
+			return nil, errors.New("ong/acme: cannot issue a certificate for an IP  address")
+		}
 
 		return man.getCert(dmn)
 	}
