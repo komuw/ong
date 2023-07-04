@@ -110,6 +110,11 @@ func setFingerprint(info *tls.ClientHelloInfo) string {
 		return ""
 	}
 
+	load := conn.fingerprint.Load()
+	if load == nil {
+		return ""
+	}
+
 	// The algorithm used here is based mainly on ja3 hash.
 	// Basically;
 	//   md5(SSLVersion, Cipher, SSLExtension, EllipticCurve, EllipticCurvePointFormat)
@@ -187,7 +192,7 @@ func setFingerprint(info *tls.ClientHelloInfo) string {
 	_, _ = io.WriteString(hasher, s)
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
-	conn.fingerprint.Load().Hash.Store(&hash)
+	load.Hash.Store(&hash)
 
 	return hash
 }
