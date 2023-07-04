@@ -89,6 +89,10 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		name := hello.ServerName
 
+		if c := man.getCertFastPath(name); c != nil {
+			return c, nil
+		}
+
 		if name == "" {
 			return nil, errors.New("ong/acme: missing server name")
 		}
@@ -223,8 +227,8 @@ type manager struct {
 }
 
 // initManager is only used in tests. Use [GetCertificate] instead.
-//
 // The optional argument testDiskCache is only used for internal test purposes.
+//
 // It panics on error.
 func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) *manager {
 	diskCacheDir := ""
@@ -274,7 +278,19 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 	}
 }
 
-// getCert fetches a tls certificate for domain.
+// getCertFastPath fetches a tls certificate for domain from memory only.
+// It returns nil if certificate was not found. Callers should check if certificate is nil.
+//
+// Note that this cannot be called inside getCert since both of them take the same lock.
+func (m *manager) getCertFastPath(domain string) *tls.Certificate {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	c, _ := m.cache.getCert(domain)
+	return c
+}
+
+// getCert fetches a tls certificate for domain from memory/disk/acme.
 func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 	/*
 		1. Get cert from memory/cache.

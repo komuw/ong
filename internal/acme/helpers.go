@@ -40,6 +40,9 @@ func diskCachedir() (string, error) {
 	4. https://github.com/gopasspw/gopass/blob/v1.15.3-rc1/pkg/tempfile/mount_linux.go#L13-L27
 	*/
 
+	// todo: Check testing.Testing() and set dir==/tmp/ for tests.
+	//       This is so that we do not fill the disk.
+
 	dir, _ := os.UserConfigDir()
 	if dir == "" {
 		dir = "/dev/shm"
@@ -53,7 +56,6 @@ func diskCachedir() (string, error) {
 		// If path is already a directory, MkdirAll does nothing
 		return "", fmt.Errorf("ong/acme: unable to create directory %s: %w", dir, err)
 	}
-
 	return dir, nil
 }
 
