@@ -210,6 +210,26 @@ func TestManager(t *testing.T) {
 		attest.Ok(t, err)
 		attest.NotZero(t, cert)
 	})
+
+	t.Run("getCertFastPath", func(t *testing.T) {
+		t.Parallel()
+
+		testDiskCache := t.TempDir()
+		domain := getDomain()
+		{ // prep by saving a certificate for the domain to disk.
+			certPath := filepath.Join(testDiskCache, domain, certAndKeyFileName)
+			cert := createTlsCert(t, domain)
+			err := certToDisk(cert, certPath)
+			attest.Ok(t, err)
+		}
+
+		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.NotZero(t, m)
+
+		cert := m.getCertFastPath(domain)
+		attest.NotZero(t, cert)
+		attest.True(t, certIsValid(cert))
+	})
 }
 
 func TestGetCertificate(t *testing.T) {
@@ -381,7 +401,7 @@ func TestAcmeHandler(t *testing.T) {
 }
 
 func BenchmarkGetCertificate(b *testing.B) {
-	b.Run("new", func(b *testing.B) {
+	b.Run("success", func(b *testing.B) {
 		email := "hey+sample@gmail.com"
 		acmeDirectoryUrl := "https://some-domain.com/directory"
 		l := slog.Default()
@@ -408,32 +428,4 @@ func BenchmarkGetCertificate(b *testing.B) {
 			attest.True(b, certIsValid(cert))
 		}
 	})
-
-	// b.Run("new", func(b *testing.B) {
-	// 	email := "hey+sample@gmail.com"
-	// 	acmeDirectoryUrl := "https://some-domain.com/directory"
-	// 	l := slog.Default()
-
-	// 	domain := getDomain()
-	// 	diskCacheDir, errA := diskCachedir()
-	// 	attest.Ok(b, errA)
-	// 	{ // prep by saving a certificate for the domain to disk.
-	// 		certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
-	// 		cert := createTlsCert(b, domain)
-	// 		errB := certToDisk(cert, certPath)
-	// 		attest.Ok(b, errB)
-	// 	}
-	// 	getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
-
-	// 	b.ReportAllocs()
-	// 	b.ResetTimer()
-	// 	for n := 0; n < b.N; n++ {
-	// 		cert, errC := getCrt(&tls.ClientHelloInfo{
-	// 			ServerName: domain,
-	// 		})
-	// 		attest.Ok(b, errC)
-	// 		attest.NotZero(b, cert)
-	// 		attest.True(b, certIsValid(cert))
-	// 	}
-	// })
 }
