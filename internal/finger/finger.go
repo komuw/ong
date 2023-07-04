@@ -10,6 +10,7 @@ import (
 
 const (
 	// notFound is the fingerprint returned if none was found.
+	// This can occur if the request is http(not https); https://github.com/komuw/ong/blob/v0.0.59/server/server.go#L284-L287
 	notFound = "FingerPrintNotFound"
 )
 
