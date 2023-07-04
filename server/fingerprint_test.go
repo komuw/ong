@@ -38,7 +38,7 @@ func TestSetFingerprint(t *testing.T) {
 		},
 
 		{
-			name: "fingerConn with blank hash",
+			name: "ClientHelloInfo with no state",
 			hello: func() *tls.ClientHelloInfo {
 				fingerprint := atomic.Pointer[finger.Print]{}
 
@@ -57,6 +57,35 @@ func TestSetFingerprint(t *testing.T) {
 			want: func() string {
 				hasher.Reset()
 				s := "0,,,,"
+				_, _ = io.WriteString(hasher, s)
+				return hex.EncodeToString(hasher.Sum(nil))
+			},
+		},
+
+		{
+			name: "ClientHelloInfo with state",
+			hello: func() *tls.ClientHelloInfo {
+				fingerprint := atomic.Pointer[finger.Print]{}
+
+				fPrint := fingerprint.Load()
+				if fPrint == nil {
+					fPrint = &finger.Print{}
+					fingerprint.CompareAndSwap(nil, fPrint)
+				}
+
+				return &tls.ClientHelloInfo{
+					Conn: &fingerConn{
+						fingerprint: fingerprint,
+					},
+					SupportedVersions: []uint16{1, 2, 3, 0x0B},
+					CipherSuites:      []uint16{45, 9999, 8},
+					SupportedCurves:   []tls.CurveID{tls.CurveP256, tls.CurveP384},
+					SupportedPoints:   []uint8{9},
+				}
+			},
+			want: func() string {
+				hasher.Reset()
+				s := "3,45-9999-8,,23-24,9"
 				_, _ = io.WriteString(hasher, s)
 				return hex.EncodeToString(hasher.Sum(nil))
 			},
