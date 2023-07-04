@@ -62,10 +62,11 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					err = fmt.Errorf(
-						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, clientFingerPrint=%s, : %w",
+						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, clientIP=%s, clientFingerPrint=%s, : %w",
 						o.tls.acmeDirectoryUrl,
 						o.tls.domain,
 						info.ServerName,
+						info.Conn.RemoteAddr(),
 						p,
 						err,
 					)
