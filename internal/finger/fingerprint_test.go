@@ -65,6 +65,22 @@ func TestGet(t *testing.T) {
 			},
 			want: notFound,
 		},
+
+		{
+			name: "empty string",
+			req: func() *http.Request {
+				ctx := context.WithValue(context.Background(), octx.FingerPrintCtxKey, "")
+				req, err := http.NewRequestWithContext(
+					ctx,
+					http.MethodGet,
+					"/hey",
+					nil,
+				)
+				attest.Ok(t, err)
+				return req
+			},
+			want: notFound,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

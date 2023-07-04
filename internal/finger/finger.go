@@ -25,7 +25,7 @@ func Get(r *http.Request) string {
 	ctx := r.Context()
 
 	if vCtx := ctx.Value(octx.FingerPrintCtxKey); vCtx != nil {
-		if s, ok := vCtx.(string); ok {
+		if s, ok := vCtx.(string); ok && s != "" {
 			return s
 		}
 	}
