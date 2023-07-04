@@ -15,8 +15,6 @@ import (
 func TestSetFingerprint(t *testing.T) {
 	t.Parallel()
 
-	hasher := md5.New()
-
 	tests := []struct {
 		name  string
 		hello func() *tls.ClientHelloInfo
@@ -55,7 +53,7 @@ func TestSetFingerprint(t *testing.T) {
 				}
 			},
 			want: func() string {
-				hasher.Reset()
+				hasher := md5.New()
 				s := "0,,,,"
 				_, _ = io.WriteString(hasher, s)
 				return hex.EncodeToString(hasher.Sum(nil))
@@ -84,7 +82,7 @@ func TestSetFingerprint(t *testing.T) {
 				}
 			},
 			want: func() string {
-				hasher.Reset()
+				hasher := md5.New()
 				s := "3,45-9999-8,,23-24,9"
 				_, _ = io.WriteString(hasher, s)
 				return hex.EncodeToString(hasher.Sum(nil))
