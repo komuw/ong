@@ -270,7 +270,6 @@ func TestGetCertificate(t *testing.T) {
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
-		fmt.Println(cert)
 		attest.Zero(t, cert)
 		attest.False(t, certIsValid(cert))
 		attest.Error(t, errC)
