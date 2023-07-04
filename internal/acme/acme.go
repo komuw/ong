@@ -280,6 +280,8 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 
 // getCertFastPath fetches a tls certificate for domain from memory only.
 // It returns nil if certificate was not found. Callers should check if certificate is nil.
+//
+// Note that this cannot be called inside getCert since both of them take the same lock.
 func (m *manager) getCertFastPath(domain string) *tls.Certificate {
 	m.mu.Lock()
 	defer m.mu.Unlock()
