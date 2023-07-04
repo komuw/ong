@@ -56,16 +56,17 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
 				//
-				setFingerprint(info)
+				p := setFingerprint(info)
 
 				c, err := getCert(info)
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					err = fmt.Errorf(
-						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, : %w",
+						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, clientFingerPrint=%s, : %w",
 						o.tls.acmeDirectoryUrl,
 						o.tls.domain,
 						info.ServerName,
+						p,
 						err,
 					)
 				}
@@ -97,7 +98,7 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 				// GetCertificate returns a Certificate based on the given ClientHelloInfo.
 				// it is called if `tls.Config.Certificates` is empty.
 				//
-				setFingerprint(info)
+				_ = setFingerprint(info)
 
 				return &c, nil
 			},

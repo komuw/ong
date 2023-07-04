@@ -103,11 +103,11 @@ type fingerConn struct {
 	fingerprint atomic.Pointer[finger.Print]
 }
 
-// setFingerprint adds a TLS fingerprint to the connection[net.Conn]
-func setFingerprint(info *tls.ClientHelloInfo) {
+// setFingerprint adds a TLS fingerprint to the connection[net.Conn] and also returns the fingerprint.
+func setFingerprint(info *tls.ClientHelloInfo) string {
 	conn, okConn := info.Conn.(*fingerConn)
 	if !okConn {
-		return
+		return ""
 	}
 
 	// The algorithm used here is based mainly on ja3 hash.
@@ -188,4 +188,6 @@ func setFingerprint(info *tls.ClientHelloInfo) {
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
 	conn.fingerprint.Load().Hash.Store(&hash)
+
+	return hash
 }
