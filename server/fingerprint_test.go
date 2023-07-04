@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"io"
-	"sync/atomic"
 	"testing"
 
 	"github.com/komuw/ong/internal/finger"
@@ -38,19 +37,14 @@ func TestSetFingerprint(t *testing.T) {
 		{
 			name: "ClientHelloInfo with no state",
 			hello: func() *tls.ClientHelloInfo {
-				fingerprint := atomic.Pointer[finger.Print]{}
-
-				fPrint := fingerprint.Load()
+				fConn := &fingerConn{}
+				fPrint := fConn.fingerprint.Load()
 				if fPrint == nil {
 					fPrint = &finger.Print{}
-					fingerprint.CompareAndSwap(nil, fPrint)
+					fConn.fingerprint.CompareAndSwap(nil, fPrint)
 				}
 
-				return &tls.ClientHelloInfo{
-					Conn: &fingerConn{
-						fingerprint: fingerprint,
-					},
-				}
+				return &tls.ClientHelloInfo{Conn: fConn}
 			},
 			want: func() string {
 				hasher := md5.New()
@@ -63,18 +57,15 @@ func TestSetFingerprint(t *testing.T) {
 		{
 			name: "ClientHelloInfo with state",
 			hello: func() *tls.ClientHelloInfo {
-				fingerprint := atomic.Pointer[finger.Print]{}
-
-				fPrint := fingerprint.Load()
+				fConn := &fingerConn{}
+				fPrint := fConn.fingerprint.Load()
 				if fPrint == nil {
 					fPrint = &finger.Print{}
-					fingerprint.CompareAndSwap(nil, fPrint)
+					fConn.fingerprint.CompareAndSwap(nil, fPrint)
 				}
 
 				return &tls.ClientHelloInfo{
-					Conn: &fingerConn{
-						fingerprint: fingerprint,
-					},
+					Conn:              fConn,
 					SupportedVersions: []uint16{1, 2, 3, 0x0B},
 					CipherSuites:      []uint16{45, 9999, 8},
 					SupportedCurves:   []tls.CurveID{tls.CurveP256, tls.CurveP384},
