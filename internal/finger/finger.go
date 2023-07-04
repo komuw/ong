@@ -8,6 +8,11 @@ import (
 	"github.com/komuw/ong/internal/octx"
 )
 
+const (
+	// notFound is the fingerprint returned if none was found.
+	notFound = "FingerPrintNotFound"
+)
+
 // Print stores a TLS fingerprint.
 // See [github.com/komuw/ong/middleware.ClientFingerPrint]
 type Print struct {
@@ -25,5 +30,5 @@ func Get(r *http.Request) string {
 		}
 	}
 
-	return "FingerPrintNotFound"
+	return notFound
 }
