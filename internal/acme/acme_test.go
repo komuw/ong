@@ -31,7 +31,7 @@ func getDomain() string {
 }
 
 // createX509Cert is used in tests.
-func createX509Cert(t *testing.T, domain string, privKey *ecdsa.PrivateKey) []byte {
+func createX509Cert(t testing.TB, domain string, privKey *ecdsa.PrivateKey) []byte {
 	t.Helper()
 
 	pubKey := privKey.Public()
@@ -61,7 +61,7 @@ func createX509Cert(t *testing.T, domain string, privKey *ecdsa.PrivateKey) []by
 }
 
 // createTlsCert is used in tests.
-func createTlsCert(t *testing.T, domain string) *tls.Certificate {
+func createTlsCert(t testing.TB, domain string) *tls.Certificate {
 	t.Helper()
 
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -378,4 +378,62 @@ func TestAcmeHandler(t *testing.T) {
 			attest.NotZero(t, cert)
 		}
 	})
+}
+
+func BenchmarkGetCertificate(b *testing.B) {
+	b.Run("new", func(b *testing.B) {
+		email := "hey+sample@gmail.com"
+		acmeDirectoryUrl := "https://some-domain.com/directory"
+		l := slog.Default()
+
+		domain := getDomain()
+		diskCacheDir, errA := diskCachedir()
+		attest.Ok(b, errA)
+		{ // prep by saving a certificate for the domain to disk.
+			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
+			cert := createTlsCert(b, domain)
+			errB := certToDisk(cert, certPath)
+			attest.Ok(b, errB)
+		}
+		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			cert, errC := getCrt(&tls.ClientHelloInfo{
+				ServerName: domain,
+			})
+			attest.Ok(b, errC)
+			attest.NotZero(b, cert)
+			attest.True(b, certIsValid(cert))
+		}
+	})
+
+	// b.Run("new", func(b *testing.B) {
+	// 	email := "hey+sample@gmail.com"
+	// 	acmeDirectoryUrl := "https://some-domain.com/directory"
+	// 	l := slog.Default()
+
+	// 	domain := getDomain()
+	// 	diskCacheDir, errA := diskCachedir()
+	// 	attest.Ok(b, errA)
+	// 	{ // prep by saving a certificate for the domain to disk.
+	// 		certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
+	// 		cert := createTlsCert(b, domain)
+	// 		errB := certToDisk(cert, certPath)
+	// 		attest.Ok(b, errB)
+	// 	}
+	// 	getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+
+	// 	b.ReportAllocs()
+	// 	b.ResetTimer()
+	// 	for n := 0; n < b.N; n++ {
+	// 		cert, errC := getCrt(&tls.ClientHelloInfo{
+	// 			ServerName: domain,
+	// 		})
+	// 		attest.Ok(b, errC)
+	// 		attest.NotZero(b, cert)
+	// 		attest.True(b, certIsValid(cert))
+	// 	}
+	// })
 }
