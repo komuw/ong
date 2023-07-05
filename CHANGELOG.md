@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.61
+- Log http.Server.ErrorLog at Info by default: https://github.com/komuw/ong/pull/312
+
 # v0.0.60
 - Refuse to fetch certificates for IP addresses: https://github.com/komuw/ong/pull/306
 - If fetch certificates fails, log the clientIP and clientFingerPrint: https://github.com/komuw/ong/pull/310
