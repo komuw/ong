@@ -21,9 +21,15 @@ import (
 )
 
 // Most of the code here is inspired(or taken from) by:
-//   (a) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/v0.10.0/LICENSE
-//   (b) https://github.com/komuw/sewer whose license(MIT) can be found here:                                                  https://github.com/komuw/sewer/blob/0.8.0/LICENSE.txt
 //
+//	(a) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/v0.10.0/LICENSE
+//	(b) https://github.com/komuw/sewer whose license(MIT) can be found here:                                                  https://github.com/komuw/sewer/blob/0.8.0/LICENSE.txt
+
+type acmeErr string
+
+func (a acmeErr) Error() string {
+	return string(a)
+}
 
 const (
 	accountKeyFileName = "ong_acme_account_private.key"
@@ -38,6 +44,12 @@ const (
 	// fixed prefix "/.well-known/acme-challenge/", followed by the "token" value in the challenge.
 	// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
 	challengeURI = "/.well-known/acme-challenge/"
+
+	errMissingServerName     = acmeErr("ong/acme: missing server name")
+	errComponentCountInvalid = acmeErr("ong/acme: server name component count invalid")
+	errServerNameInvalidChar = acmeErr("ong/acme: server name contains invalid character")
+	errServerNameIsIp        = acmeErr("ong/acme: cannot issue a certificate for an IP  address")
+	errCacheNoCertificate    = acmeErr("ong/acme: cache does not have certificate")
 )
 
 // hostPolicy specifies which host names the Manager is allowed to respond to.
@@ -94,10 +106,10 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 		}
 
 		if name == "" {
-			return nil, errors.New("ong/acme: missing server name")
+			return nil, errMissingServerName
 		}
 		if !strings.Contains(strings.Trim(name, "."), ".") {
-			return nil, errors.New("ong/acme: server name component count invalid")
+			return nil, errComponentCountInvalid
 		}
 
 		// Some server names in the handshakes started by some clients (such as cURL) are not converted to Punycode, which will
@@ -105,7 +117,7 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 		// https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L249-L273
 		name, errA := idna.Lookup.ToASCII(name)
 		if errA != nil {
-			return nil, errors.New("ong/acme: server name contains invalid character")
+			return nil, errServerNameInvalidChar
 		}
 
 		// see: golang.org/issue/18114
@@ -114,7 +126,7 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 		if _, errB := netip.ParseAddr(dmn); errB == nil {
 			// It is an IP address.
 			// See: https://github.com/komuw/ong/issues/305
-			return nil, errors.New("ong/acme: cannot issue a certificate for an IP  address")
+			return nil, errServerNameIsIp
 		}
 
 		return man.getCert(dmn)
@@ -486,7 +498,7 @@ func (c *certCache) getCert(domain string) (*tls.Certificate, error) {
 		return cert, nil
 	}
 
-	return nil, errors.New("ong/acme: cache does not have certificate")
+	return nil, errCacheNoCertificate
 }
 
 func (c *certCache) setCert(domain string, cert *tls.Certificate) {
