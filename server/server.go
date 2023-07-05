@@ -98,6 +98,8 @@ func (o Opts) Equal(other Opts) bool {
 //
 // maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
 //
+// serverLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog]
+//
 // readHeaderTimeout is the amount of time a server will be allowed to read request headers.
 // readTimeout is the maximum duration a server will use for reading the entire request, including the body.
 // writeTimeout is the maximum duration before a server times out writes of the response.
@@ -105,8 +107,6 @@ func (o Opts) Equal(other Opts) bool {
 // idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
 // drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
 // This is important especially in applications running in places like kubernetes.
-//
-// serverLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog]
 //
 // certFile is a path to a tls certificate.
 // keyFile is a path to a tls key.
