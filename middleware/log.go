@@ -63,8 +63,16 @@ func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 					reqL.Error(msg, flds...)
 				}
 			} else if lrw.code >= http.StatusBadRequest {
-				// both client and server errors.
-				reqL.Error(msg, flds...)
+				if lrw.code == http.StatusNotFound ||
+					lrw.code == http.StatusMethodNotAllowed ||
+					lrw.code == http.StatusConflict ||
+					lrw.code == http.StatusTeapot {
+					// This are more annoying, than been actual errors
+					reqL.Info(msg, flds...)
+				} else {
+					// both client and server errors.
+					reqL.Error(msg, flds...)
+				}
 			} else {
 				reqL.Info(msg, flds...)
 			}
