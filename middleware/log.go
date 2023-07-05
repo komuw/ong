@@ -69,7 +69,7 @@ func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 					lrw.code == http.StatusMethodNotAllowed ||
 					lrw.code == http.StatusConflict ||
 					lrw.code == http.StatusTeapot {
-					// These ones are more annoying, than been actual errors.
+					// These ones are more of an annoyance, than been actual errors.
 					reqL.Info(msg, flds...)
 				} else {
 					reqL.Error(msg, flds...)
