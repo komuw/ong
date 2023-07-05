@@ -38,7 +38,8 @@ const (
 	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
-	defaultMaxBodyBytes = uint64(2 * 10 * 1024 * 1024) // 20MB
+	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB
+	defaultServerLogLevel = slog.LevelInfo
 
 	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
 	defaultDrainDuration = 13 * time.Second
@@ -68,6 +69,7 @@ type tlsOpts struct {
 type Opts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
 	maxBodyBytes      uint64 // max size of request body allowed.
+	serverLogLevel    slog.Level
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
@@ -75,6 +77,7 @@ type Opts struct {
 	idleTimeout       time.Duration
 	drainTimeout      time.Duration
 	tls               tlsOpts
+
 	// the following ones are created automatically
 	host          string
 	serverPort    string
@@ -103,6 +106,8 @@ func (o Opts) Equal(other Opts) bool {
 // drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
 // This is important especially in applications running in places like kubernetes.
 //
+// serverLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog]
+//
 // certFile is a path to a tls certificate.
 // keyFile is a path to a tls key.
 //
@@ -118,6 +123,7 @@ func (o Opts) Equal(other Opts) bool {
 func NewOpts(
 	port uint16,
 	maxBodyBytes uint64,
+	serverLogLevel slog.Level,
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
@@ -158,6 +164,7 @@ func NewOpts(
 	return Opts{
 		port:              port,
 		maxBodyBytes:      maxBodyBytes,
+		serverLogLevel:    serverLogLevel,
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
@@ -221,10 +228,12 @@ func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUr
 	drainTimeout := defaultDrainDuration
 
 	maxBodyBytes := defaultMaxBodyBytes
+	serverLogLevel := defaultServerLogLevel
 
 	return NewOpts(
 		port,
 		maxBodyBytes,
+		serverLogLevel,
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
@@ -278,7 +287,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		ReadTimeout:       o.readTimeout,
 		WriteTimeout:      o.writeTimeout,
 		IdleTimeout:       o.idleTimeout,
-		ErrorLog:          slog.NewLogLogger(l.Handler(), slog.LevelError),
+		ErrorLog:          slog.NewLogLogger(l.Handler(), o.serverLogLevel),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 			tConn, ok := c.(*tls.Conn)
@@ -303,7 +312,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	sigHandler(server, ctx, cancel, l, o.drainTimeout)
 
 	{
-		startPprofServer(l)
+		startPprofServer(l, o)
 	}
 
 	err := serve(ctx, server, o, l)
@@ -367,7 +376,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 			ReadTimeout:       o.readTimeout,
 			WriteTimeout:      o.writeTimeout,
 			IdleTimeout:       o.idleTimeout,
-			ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
+			ErrorLog:          slog.NewLogLogger(logger.Handler(), o.serverLogLevel),
 			BaseContext:       func(net.Listener) context.Context { return ctx },
 		}
 		go func() {
