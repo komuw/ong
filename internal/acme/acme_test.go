@@ -191,7 +191,7 @@ func TestManager(t *testing.T) {
 		attest.Equal(t, len(m.cache.certs), 1)
 	})
 
-	t.Run("get cert", func(t *testing.T) {
+	t.Run("getCert", func(t *testing.T) {
 		t.Parallel()
 
 		testDiskCache := t.TempDir()
@@ -209,6 +209,29 @@ func TestManager(t *testing.T) {
 		cert, err := m.getCert(domain)
 		attest.Ok(t, err)
 		attest.NotZero(t, cert)
+	})
+
+	t.Run("getCert bad domain", func(t *testing.T) {
+		t.Parallel()
+
+		testDiskCache := t.TempDir()
+		domain := getDomain()
+
+		ts := httptest.NewServer(someAcmeServerHandler(t, domain))
+		t.Cleanup(func() {
+			ts.Close()
+		})
+
+		acmeDirUrl, errA := url.JoinPath(ts.URL, "/directory")
+		attest.Ok(t, errA)
+
+		m := initManager(domain, email, acmeDirUrl, l, testDiskCache)
+		attest.NotZero(t, m)
+
+		cert, err := m.getCert("cloudflare.com")
+		attest.Zero(t, cert)
+		attest.NotZero(t, err)
+		attest.Subsequence(t, err.Error(), "not configured in HostWhitelist")
 	})
 
 	t.Run("getCertFastPath", func(t *testing.T) {
