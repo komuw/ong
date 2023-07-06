@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 	"unicode"
 
 	"golang.org/x/exp/slog"
@@ -117,7 +118,12 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 			return nil, errors.New("ong/acme: cannot issue a certificate for an IP  address")
 		}
 
-		return man.getCert(dmn)
+		// The timeout needs to be long enough to last the whole process of fetching
+		// certificates from ACME servers including all the challenge-request-wait-response flow.
+		ctx, cancel := context.WithTimeout(hello.Context(), 5*time.Minute)
+		defer cancel()
+
+		return man.getCert(ctx, dmn)
 	}
 }
 
@@ -291,7 +297,7 @@ func (m *manager) getCertFastPath(domain string) *tls.Certificate {
 }
 
 // getCert fetches a tls certificate for domain from memory/disk/acme.
-func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
+func (m *manager) getCert(ctx context.Context, domain string) (cert *tls.Certificate, _ error) {
 	/*
 		1. Get cert from memory/cache.
 		2. Else get from disk(also save to memory).

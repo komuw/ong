@@ -1,6 +1,7 @@
 package acme
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -206,7 +207,7 @@ func TestManager(t *testing.T) {
 		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
 		attest.NotZero(t, m)
 
-		cert, err := m.getCert(domain)
+		cert, err := m.getCert(context.Background(), domain)
 		attest.Ok(t, err)
 		attest.NotZero(t, cert)
 	})
@@ -228,7 +229,7 @@ func TestManager(t *testing.T) {
 		m := initManager(domain, email, acmeDirUrl, l, testDiskCache)
 		attest.NotZero(t, m)
 
-		cert, err := m.getCert("cloudflare.com")
+		cert, err := m.getCert(context.Background(), "cloudflare.com")
 		attest.Zero(t, cert)
 		attest.NotZero(t, err)
 		attest.Subsequence(t, err.Error(), "not configured in HostWhitelist")
@@ -396,7 +397,7 @@ func TestAcmeHandler(t *testing.T) {
 		}
 
 		{ // Get cert will fetch from ACME and fill memory/cache.
-			cert, errB := m.getCert(domain)
+			cert, errB := m.getCert(context.Background(), domain)
 			attest.Ok(t, errB)
 			attest.NotZero(t, cert)
 		}
@@ -407,7 +408,7 @@ func TestAcmeHandler(t *testing.T) {
 			m.acmeDirectoryUrl = ""
 			attest.Zero(t, m.acmeDirectoryUrl)
 
-			cert, errD := m.getCert(domain)
+			cert, errD := m.getCert(context.Background(), domain)
 			attest.Ok(t, errD)
 			attest.NotZero(t, cert)
 		}
