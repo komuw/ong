@@ -308,9 +308,6 @@ func (m *manager) getCert(ctx context.Context, domain string) (cert *tls.Certifi
 		1. Get cert from memory/cache.
 		2. Else get from disk(also save to memory).
 		3. Else get from ACME(also save to disk and memory).
-
-		todo: add context cancellation.
-		see; crypto/acme/autocert
 	*/
 	m.mu.Lock()
 	defer m.mu.Unlock()
