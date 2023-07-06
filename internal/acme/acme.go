@@ -41,12 +41,6 @@ const (
 	challengeURI = "/.well-known/acme-challenge/"
 )
 
-// hostPolicy specifies which host names the Manager is allowed to respond to.
-// It returns a non-nil error if the host should be rejected.
-// The returned error is accessible via tls.Conn.Handshake and its callers.
-// See Manager's hostPolicy field and GetCertificate method docs for more details.
-type hostPolicy func(host string) error
-
 // Validate checks domain for validity.
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 func Validate(domain string) error {
@@ -208,6 +202,12 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 		wrappedHandler.ServeHTTP(w, r)
 	}
 }
+
+// hostPolicy specifies which host names the Manager is allowed to respond to.
+// It returns a non-nil error if the host should be rejected.
+// The returned error is accessible via tls.Conn.Handshake and its callers.
+// See Manager's hostPolicy field and GetCertificate method docs for more details.
+type hostPolicy func(host string) error
 
 // manager manages the TLS certificate request process.
 // Its main method is [manager.getCert]
