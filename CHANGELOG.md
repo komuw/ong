@@ -4,77 +4,78 @@ Most recent version is listed first.
 
 
 # v0.0.62
-- Check acme.HostPolicy before making request to ACME servers: https://github.com/komuw/ong/pull/313
+- ong/acme: Check acme.HostPolicy before making request to ACME servers: https://github.com/komuw/ong/pull/313
+- ong/acme: add context cancellation: https://github.com/komuw/ong/pull/314
 
 # v0.0.61
-- Log http.Server.ErrorLog at Info by default: https://github.com/komuw/ong/pull/312
+- ong/server: Log http.Server.ErrorLog at Info by default: https://github.com/komuw/ong/pull/312
 
 # v0.0.60
-- Refuse to fetch certificates for IP addresses: https://github.com/komuw/ong/pull/306
-- If fetch certificates fails, log the clientIP and clientFingerPrint: https://github.com/komuw/ong/pull/310
-- Add a fastpath(for certs that are already in memory) while fetching certificates: https://github.com/komuw/ong/pull/311
+- ong/acme: Refuse to fetch certificates for IP addresses: https://github.com/komuw/ong/pull/306
+- ong/acme: If fetch certificates fails, log the clientIP and clientFingerPrint: https://github.com/komuw/ong/pull/310
+- ong/acme: Add a fastpath(for certs that are already in memory) while fetching certificates: https://github.com/komuw/ong/pull/311
 
 # v0.0.59
-- Fix bug where acme certificates were not cached in memory: https://github.com/komuw/ong/pull/304
+- ong/acme: Fix bug where acme certificates were not cached in memory: https://github.com/komuw/ong/pull/304
 
 # v0.0.58
-- Tighten check cert validity script: https://github.com/komuw/ong/pull/303
+- ong/acme: Tighten check cert validity script: https://github.com/komuw/ong/pull/303
 
 # v0.0.57
-- Add own ACME client implementation: https://github.com/komuw/ong/pull/294
+- ong/acme: Add own ACME client implementation: https://github.com/komuw/ong/pull/294
 - Work around bug in checklocks static analyzer: https://github.com/komuw/ong/pull/298
 - Make tests fast by pinging port: https://github.com/komuw/ong/pull/299
 - Synchronize automax tests: https://github.com/komuw/ong/pull/300
 - Improve rate limit tests: https://github.com/komuw/ong/pull/301
-- Fix superfluous response.WriteHeader call: https://github.com/komuw/ong/pull/302
+- ong/middleware: Fix superfluous response.WriteHeader call: https://github.com/komuw/ong/pull/302
 
 # v0.0.56
-- Set appropriate log level for http.Server.ErrorLog: https://github.com/komuw/ong/pull/288
-- Move acme handler to ong/middleware: https://github.com/komuw/ong/pull/290
-- Add uuid support: https://github.com/komuw/ong/pull/292
+- ong/server: Set appropriate log level for http.Server.ErrorLog: https://github.com/komuw/ong/pull/288
+- ong/acme: Move acme handler to ong/middleware: https://github.com/komuw/ong/pull/290
+- ong/id: Add uuid support: https://github.com/komuw/ong/pull/292
 
 # v0.0.55
-- Improve timeouts: https://github.com/komuw/ong/pull/286
-- Use one server for ACME and app: https://github.com/komuw/ong/pull/287
+- ong/client: Improve timeouts: https://github.com/komuw/ong/pull/286
+- ong/acme: Use one server for ACME and app: https://github.com/komuw/ong/pull/287
 
 # v0.0.54
-- Validate domain in middleware: https://github.com/komuw/ong/pull/283
+- ong/middleware: Validate domain in middleware: https://github.com/komuw/ong/pull/283
 
 # v0.0.53
-- Add acme server that will handle requests from ACME CA: https://github.com/komuw/ong/pull/281
+- ong/acme: Add acme server that will handle requests from ACME CA: https://github.com/komuw/ong/pull/281
 
 # v0.0.52
-- Bugfix; match number of log arguments: https://github.com/komuw/ong/pull/275
-- Add protection against DNS rebinding attacks: https://github.com/komuw/ong/pull/276
+- ong/server: Bugfix; match number of log arguments: https://github.com/komuw/ong/pull/275
+- ong/middleware: Add protection against DNS rebinding attacks: https://github.com/komuw/ong/pull/276
 
 # v0.0.51
-- Add a http timeout when calling ACME for certificates: https://github.com/komuw/ong/pull/272
-- Make certificate management from ACME to be agnostic of the CA: https://github.com/komuw/ong/pull/273
+- ong/acme: Add a http timeout when calling ACME for certificates: https://github.com/komuw/ong/pull/272
+- ong/acme: Make certificate management from ACME to be agnostic of the CA: https://github.com/komuw/ong/pull/273
 
 # v0.0.50
 - Fix documentation linking: https://github.com/komuw/ong/commit/4cd5d47a3a431d25e84ffb04242d5b57eb2a803e
 
 # v0.0.49
-- Add mux Resolve function: https://github.com/komuw/ong/pull/268
-- Use http.Handler as the http middleware instead of http.HandlerFunc: https://github.com/komuw/ong/pull/269
-- Add optional http timeout: https://github.com/komuw/ong/pull/270
+- ong/mux: Add mux Resolve function: https://github.com/komuw/ong/pull/268
+- ong/middleware: Use http.Handler as the http middleware instead of http.HandlerFunc: https://github.com/komuw/ong/pull/269
+- ong/client: Add optional http timeout: https://github.com/komuw/ong/pull/270
 - Use Go cache in CI: https://github.com/komuw/ong/pull/271
 
 ## v0.0.48
 - Change attest import path: https://github.com/komuw/ong/pull/265
 
 ## v0.0.47
-- Leave http.server.DisableGeneralOptionsHandler at its default value: https://github.com/komuw/ong/pull/255
-- Validate expiry of csrf tokens: https://github.com/komuw/ong/pull/257
-- Add support for PROXY protocol in clientIP: https://github.com/komuw/ong/pull/258
+- ong/server: Leave http.server.DisableGeneralOptionsHandler at its default value: https://github.com/komuw/ong/pull/255
+- ong/middleware: Validate expiry of csrf tokens: https://github.com/komuw/ong/pull/257
+- ong/middleware: Add support for PROXY protocol in clientIP: https://github.com/komuw/ong/pull/258
 - Add nilness vet check: https://github.com/komuw/ong/pull/259
-- Add option to restrict size of request bodies: https://github.com/komuw/ong/pull/261
-- Gracefully handle application termniation in kubernetes: https://github.com/komuw/ong/pull/263
-- Update to latest exp/slog: https://github.com/komuw/ong/pull/262
+- ong/server: Add option to restrict size of request bodies: https://github.com/komuw/ong/pull/261
+- ong/server: Gracefully handle application termniation in kubernetes: https://github.com/komuw/ong/pull/263
+- ong/log: Update to latest exp/slog: https://github.com/komuw/ong/pull/262
 
 ## v0.0.46
-- Include TLS fingerprint in encrypted cookies: https://github.com/komuw/ong/pull/250
-- Update to latest exp/slog: https://github.com/komuw/ong/pull/251
+- ong/cookie: Include TLS fingerprint in encrypted cookies: https://github.com/komuw/ong/pull/250
+- ong/log: Update to latest exp/slog: https://github.com/komuw/ong/pull/251
 
 ## v0.0.45
 - Run all tests in CI: https://github.com/komuw/ong/pull/248
@@ -82,17 +83,17 @@ Most recent version is listed first.
 ## v0.0.44
 - Organise imports: https://github.com/komuw/ong/pull/245
 - Create an internal/octx that houses context keys used by multiple ong packages: https://github.com/komuw/ong/pull/246
-- Add support for TLS fingerprinting: https://github.com/komuw/ong/pull/244
+- ong/middleware: Add support for TLS fingerprinting: https://github.com/komuw/ong/pull/244
 
 ## v0.0.43
-- Add precision to ratelimiting: https://github.com/komuw/ong/pull/239
+- ong/middleware: Add precision to ratelimiting: https://github.com/komuw/ong/pull/239
 
 ## v0.0.42
-ClientIP, use remoteAddress if IP is local adress: https://github.com/komuw/ong/pull/238
+- ong/middleware: ClientIP, use remoteAddress if IP is local adress: https://github.com/komuw/ong/pull/238
 
 ## v0.0.41
-- Better loadshed calculations: https://github.com/komuw/ong/pull/234
-                              : https://github.com/komuw/ong/pull/237
+- ong/middleware: Better loadshed calculations: https://github.com/komuw/ong/pull/234
+                                              : https://github.com/komuw/ong/pull/237
 
 ## v0.0.40
 - Detect leaks in tests: https://github.com/komuw/ong/pull/232
@@ -121,65 +122,65 @@ ClientIP, use remoteAddress if IP is local adress: https://github.com/komuw/ong/
 - Remove log.Handler.StdLogger(), upstream slog now has an analogous function: https://github.com/komuw/ong/pull/219
 
 ## v0.0.32
-- Loadshedder should not re-order latencies: https://github.com/komuw/ong/pull/218
+- ong/middleware: Loadshedder should not re-order latencies: https://github.com/komuw/ong/pull/218
 
 ## v0.0.31
 - Bugfix; immediately log when server gets os/interrupt signal: https://github.com/komuw/ong/commit/b9ed83a98e7bba0350a473b668ddc2ba8d4677cd
 
 ## v0.0.30
 - Update to Go v1.20: https://github.com/komuw/ong/pull/209
-- Use net.Dialer.ControlContext instead of use net.Dialer.Control: https://github.com/komuw/ong/pull/212
+- ong/client: Use net.Dialer.ControlContext instead of use net.Dialer.Control: https://github.com/komuw/ong/pull/212
 - Re-enable golangci-lint: https://github.com/komuw/ong/pull/214
-- Use the new stdlib structured logger: https://github.com/komuw/ong/pull/208
-- Replace custom logger with slog: https://github.com/komuw/ong/pull/215
-- Add a trace middleware: https://github.com/komuw/ong/pull/216
+- ong/log: Use the new stdlib structured logger: https://github.com/komuw/ong/pull/208
+- ong/log: Replace custom logger with slog: https://github.com/komuw/ong/pull/215
+- ong/middleware; Add a trace middleware: https://github.com/komuw/ong/pull/216
 
 ## v0.0.29
-- WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
-- ong/errors; wrap as deep as possible: https://github.com/komuw/ong/pull/199
-- ong/errors; add errors.Dwrap: https://github.com/komuw/ong/pull/200
-- ong/id, bug fix where ids generated were not always of the requested length; https://github.com/komuw/ong/pull/201
-- Do not use math/rand in encryption: https://github.com/komuw/ong/pull/203
+- ong/log: WithCtx should only use the id from context, if that ctx actually contains an Id: https://github.com/komuw/ong/pull/196
+- ong/errors: wrap as deep as possible: https://github.com/komuw/ong/pull/199
+- ong/errors: add errors.Dwrap: https://github.com/komuw/ong/pull/200
+- ong/id: bug fix where ids generated were not always of the requested length; https://github.com/komuw/ong/pull/201
+- ong/cry: Do not use math/rand in encryption: https://github.com/komuw/ong/pull/203
 - Improve examples: https://github.com/komuw/ong/pull/204
-- Do not duplicate session cookies: https://github.com/komuw/ong/pull/206
+- ong/middleware: Do not duplicate session cookies: https://github.com/komuw/ong/pull/206
 - Fix changelog versions: https://github.com/komuw/ong/pull/207
 
 ## v0.0.28
-- ong/id should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
-- Do not quote special characters: https://github.com/komuw/ong/pull/193
+- ong/id: Should generate strings of the exact requested length: https://github.com/komuw/ong/pull/192
+- ong/log: Do not quote special characters: https://github.com/komuw/ong/pull/193
 
 ## v0.0.27
-- Add Get cookie function: https://github.com/komuw/ong/pull/189
+- ong/cookie: Add Get cookie function: https://github.com/komuw/ong/pull/189
 
 ## v0.0.26
-- Create middleware that adds the "real" client IP address: https://github.com/komuw/ong/pull/187        
+- ong/middleware: Create middleware that adds the "real" client IP address: https://github.com/komuw/ong/pull/187        
   Note that this is on a best effort basis.       
   Finding the true client IP address is a precarious process [1](https://adam-p.ca/blog/2022/03/x-forwarded-for/)      
 
 ## v0.0.25
 - ong/client: Use roundTripper for logging: https://github.com/komuw/ong/pull/185
-- Make most middleware private: https://github.com/komuw/ong/pull/186
+- ong/middleware: Make most middleware private: https://github.com/komuw/ong/pull/186
 
 ## v0.0.24
-- Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
-- Add ReloadProtector middleware: https://github.com/komuw/ong/pull/171
-- Creating a new route should panic if handler is already wrapped in an ong middleware: https://github.com/komuw/ong/pull/172
+- ong/sess: Set session cookie only if non-empty: https://github.com/komuw/ong/pull/170
+- ong/middleware: Add ReloadProtector middleware: https://github.com/komuw/ong/pull/171
+- ong/mux: Creating a new route should panic if handler is already wrapped in an ong middleware: https://github.com/komuw/ong/pull/172
 
 ## v0.0.23
 - ong/client: Add log id http header: https://github.com/komuw/ong/pull/166
 
 ## v0.0.22
-- Panic/recoverer middleware should include correct stack trace: https://github.com/komuw/ong/pull/164
-- Log client address without port: https://github.com/komuw/ong/pull/165
+- ong/middleware: Panic/recoverer middleware should include correct stack trace: https://github.com/komuw/ong/pull/164
+- ong/middleware: Log client address without port: https://github.com/komuw/ong/pull/165
 
 ## v0.0.21
-- Improve performance of calling Csrf middleware multiple times: https://github.com/komuw/ong/pull/161
+- ong/cry: Improve performance of calling Csrf middleware multiple times: https://github.com/komuw/ong/pull/161
 
 ## v0.0.20
-- Bugfix: When a route conflict is detected, report the correct file & line number: https://github.com/komuw/ong/pull/160
+- ong/mux: Bugfix: When a route conflict is detected, report the correct file & line number: https://github.com/komuw/ong/pull/160
 
 ## v0.0.19
-- Fix false positive/negative/whatever route conflict: https://github.com/komuw/ong/pull/157
+- ong/mux: Fix false positive/negative/whatever route conflict: https://github.com/komuw/ong/pull/157
 
 ## v0.0.18
 - Update documentation
@@ -188,61 +189,61 @@ ClientIP, use remoteAddress if IP is local adress: https://github.com/komuw/ong/
 - Update documentation
 
 ## v0.0.16
-- Add support for http sessions: https://github.com/komuw/ong/pull/154
-- Add ability to specify a custom 404 handler: https://github.com/komuw/ong/pull/155
+- ong/cookie: Add support for http sessions: https://github.com/komuw/ong/pull/154
+- ong/mux: Add ability to specify a custom 404 handler: https://github.com/komuw/ong/pull/155
 
 ## v0.0.15
-- Make encrypted cookies more performant: https://github.com/komuw/ong/pull/152
+- ong/cookie: Make encrypted cookies more performant: https://github.com/komuw/ong/pull/152
 
 ## v0.0.14
 - Update documentation: https://github.com/komuw/ong/pull/151
 
 ## v0.0.13
-- Fix bug in parsing cgroup mem values from files: https://github.com/komuw/ong/pull/148
+- ong/automax: Fix bug in parsing cgroup mem values from files: https://github.com/komuw/ong/pull/148
 
 ## v0.0.12
-- Prefix errors produced by ong with a constant string: https://github.com/komuw/ong/pull/147
-- Try and mitigate cookie replay attacks: https://github.com/komuw/ong/pull/146
+- ong/errors: Prefix errors produced by ong with a constant string: https://github.com/komuw/ong/pull/147
+- ong/cookie: Try and mitigate cookie replay attacks: https://github.com/komuw/ong/pull/146
 
 ## v0.0.11
-- Add secure/encrypted cookies: https://github.com/komuw/ong/pull/143
+- ong/cookie; Add secure/encrypted cookies: https://github.com/komuw/ong/pull/143
 
 ## v0.0.10
-- Remove ctx from log.Logger struct: https://github.com/komuw/ong/pull/142
+- ong/log: Remove ctx from log.Logger struct: https://github.com/komuw/ong/pull/142
 
 ## v0.0.9
-- Add password hashing capabilities: https://github.com/komuw/ong/pull/137
-- Simplify loadshedding implementation: https://github.com/komuw/ong/pull/138
-- Make automax to be a stand-alone package: https://github.com/komuw/ong/pull/139
-- Add a router/muxer with a bit more functionality: https://github.com/komuw/ong/pull/140
+- ong/cry: Add password hashing capabilities: https://github.com/komuw/ong/pull/137
+- ong/middleware: Simplify loadshedding implementation: https://github.com/komuw/ong/pull/138
+- ong/automax: Make automax to be a stand-alone package: https://github.com/komuw/ong/pull/139
+- ong/mux: Add a router/muxer with a bit more functionality: https://github.com/komuw/ong/pull/140
 
 ## v0.0.8
 - Improve documentation.
 
 ## v0.0.7
-- Implement io.ReaderFrom & http.Pusher: https://github.com/komuw/ong/pull/131
-- Replace use of net.Ip with net/netip: https://github.com/komuw/ong/pull/132
+- ong/middleware: Implement io.ReaderFrom & http.Pusher: https://github.com/komuw/ong/pull/131
+- ong/client: Replace use of net.Ip with net/netip: https://github.com/komuw/ong/pull/132
 
 ## v0.0.6
 - Improve documentation.
 
 ## v0.0.5
-- use key derivation in the `enc` ecryption/decryption package: https://github.com/komuw/ong/pull/119
+- ong/cry: use key derivation in the `enc` ecryption/decryption package: https://github.com/komuw/ong/pull/119
 - fix vulnerabilities: https://github.com/komuw/ong/pull/123
-- add a http client: https://github.com/komuw/ong/pull/120
+- ong/client: add a http client: https://github.com/komuw/ong/pull/120
 
 ## v0.0.4
-- add new encryption/decryption package: https://github.com/komuw/ong/pull/118
+- ong/cry: add new encryption/decryption package: https://github.com/komuw/ong/pull/118
 
 ## v0.0.3
-- add an xcontext package: https://github.com/komuw/ong/pull/109
+- ong/xcontext: add an xcontext package: https://github.com/komuw/ong/pull/109
 - use latest semgrep-go linter: https://github.com/komuw/ong/pull/111
 - add semgrep linter: https://github.com/komuw/ong/pull/113
-- add ability to handle csrf tokens in a distributed setting: https://github.com/komuw/ong/pull/112
-- redirect csrf failures to same url: https://github.com/komuw/ong/pull/117
+- ong/middleware: add ability to handle csrf tokens in a distributed setting: https://github.com/komuw/ong/pull/112
+- ong/middleware: redirect csrf failures to same url: https://github.com/komuw/ong/pull/117
 
 ## v0.0.2
-- automatically set GOMAXPROCS in container environments, using internal package: https://github.com/komuw/ong/pull/106
+- ong/automax: automatically set GOMAXPROCS in container environments, using internal package: https://github.com/komuw/ong/pull/106
 
 ## v0.0.1
 - added some middlewares: https://github.com/komuw/ong/pull/22

@@ -104,10 +104,10 @@ generate:
 
 // getDirectory is used to discover all the other relevant urls in an ACME server.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.1
-func getDirectory(directoryURL string, l *slog.Logger) (directory, error) {
+func getDirectory(ctx context.Context, directoryURL string, l *slog.Logger) (directory, error) {
 	d := directory{}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "getDirectory")
+	ctx = context.WithValue(ctx, clientContextKey, "getDirectory")
 	res, errA := getResponse(ctx, directoryURL, "GET", nil, l)
 	if errA != nil {
 		return d, errA
@@ -135,8 +135,8 @@ func getDirectory(directoryURL string, l *slog.Logger) (directory, error) {
 // In order to protect ACME resources from any possible replay attacks, ACME POST requests have a mandatory anti-replay mechanism.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-6.5
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.2
-func getNonce(newNonceURL string, l *slog.Logger) (string, error) {
-	ctx := context.WithValue(context.Background(), clientContextKey, "getNonce")
+func getNonce(ctx context.Context, newNonceURL string, l *slog.Logger) (string, error) {
+	ctx = context.WithValue(ctx, clientContextKey, "getNonce")
 	res, errA := getResponse(ctx, newNonceURL, "HEAD", nil, l)
 	if errA != nil {
 		return "", errA
@@ -166,7 +166,7 @@ func getNonce(newNonceURL string, l *slog.Logger) (string, error) {
 
 // getAccount registers an account with ACME server.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
-func getAccount(newAccountURL, newNonceURL, email string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (account, error) {
+func getAccount(ctx context.Context, newAccountURL, newNonceURL, email string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (account, error) {
 	/*
 	   POST /acme/new-account HTTP/1.1
 	   Content-Type: application/jose+json
@@ -195,12 +195,12 @@ func getAccount(newAccountURL, newNonceURL, email string, accountPrivKey *ecdsa.
 		return actResponse, errA
 	}
 
-	bodyBytes, errB := prepBody(newAccountURL, newNonceURL, "", dataPayload, accountPrivKey, l)
+	bodyBytes, errB := prepBody(ctx, newAccountURL, newNonceURL, "", dataPayload, accountPrivKey, l)
 	if errB != nil {
 		return actResponse, errB
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "getAccount")
+	ctx = context.WithValue(ctx, clientContextKey, "getAccount")
 	res, errC := getResponse(ctx, newAccountURL, "POST", bodyBytes, l)
 	if errC != nil {
 		return actResponse, errC
@@ -235,7 +235,7 @@ func getAccount(newAccountURL, newNonceURL, email string, accountPrivKey *ecdsa.
 // In the order object, any authorization referenced in the "authorizations" array whose
 // status is "pending" represents an authorization transaction that the client must complete before the server will issue the certificate
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-func submitOrder(newOrderURL, newNonceURL, kid string, domains []string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (order, error) {
+func submitOrder(ctx context.Context, newOrderURL, newNonceURL, kid string, domains []string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (order, error) {
 	/*
 		POST /acme/new-order HTTP/1.1
 		Content-Type: application/jose+json
@@ -278,12 +278,12 @@ func submitOrder(newOrderURL, newNonceURL, kid string, domains []string, account
 		return orderResponse, errA
 	}
 
-	bodyBytes, errB := prepBody(newOrderURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errB := prepBody(ctx, newOrderURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errB != nil {
 		return orderResponse, errB
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "submitOrder")
+	ctx = context.WithValue(ctx, clientContextKey, "submitOrder")
 	res, errC := getResponse(ctx, newOrderURL, "POST", bodyBytes, l)
 	if errC != nil {
 		return orderResponse, errC
@@ -316,7 +316,7 @@ func submitOrder(newOrderURL, newNonceURL, kid string, domains []string, account
 // When a client receives an order from the server in reply to a newOrder request,
 // it downloads the authorization resources by sending POST-as-GET requests to the indicated URLs.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.5
-func fetchChallenges(authorizationURLS []string, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (authorization, error) {
+func fetchChallenges(ctx context.Context, authorizationURLS []string, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (authorization, error) {
 	/*
 	   POST /acme/authz/PAniVnsZcis HTTP/1.1
 	   Content-Type: application/jose+json
@@ -344,12 +344,12 @@ func fetchChallenges(authorizationURLS []string, newNonceURL, kid string, accoun
 	authorizationURL := authorizationURLS[0]
 	dataPayload := []byte("")
 
-	bodyBytes, errA := prepBody(authorizationURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errA := prepBody(ctx, authorizationURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errA != nil {
 		return authorizationResponse, errA
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "fetchChallenges")
+	ctx = context.WithValue(ctx, clientContextKey, "fetchChallenges")
 	res, errB := getResponse(ctx, authorizationURL, "POST", bodyBytes, l)
 	if errB != nil {
 		return authorizationResponse, errB
@@ -388,6 +388,7 @@ func fetchChallenges(authorizationURLS []string, newNonceURL, kid string, accoun
 // - start of respondToChallenge.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
 func checkChallengeStatus(
+	ctx context.Context,
 	url string,
 	newNonceURL string,
 	kid string,
@@ -415,12 +416,12 @@ func checkChallengeStatus(
 	}()
 
 	dataPayload := []byte("")
-	bodyBytes, errA := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errA := prepBody(ctx, url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errA != nil {
 		return errA
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "checkChallengeStatus")
+	ctx = context.WithValue(ctx, clientContextKey, "checkChallengeStatus")
 	for {
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 			l.InfoCtx(ctx, "checkStatusSleep",
@@ -483,7 +484,7 @@ func checkChallengeStatus(
 // To prove control of the identifier and receive authorization, the client needs to provision the required challenge response based on
 // the challenge type and indicate to the server that it is ready for the challenge validation to be attempted.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
-func respondToChallenge(ch challenge, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (challenge, error) {
+func respondToChallenge(ctx context.Context, ch challenge, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (challenge, error) {
 	/*
 		POST /acme/chall/prV_B7yEyA4 HTTP/1.1
 		Content-Type: application/jose+json
@@ -500,7 +501,7 @@ func respondToChallenge(ch challenge, newNonceURL, kid string, accountPrivKey *e
 	*/
 
 	challengeResponse := challenge{}
-	if errA := checkChallengeStatus(ch.Url, newNonceURL, kid, accountPrivKey, l); errA != nil {
+	if errA := checkChallengeStatus(ctx, ch.Url, newNonceURL, kid, accountPrivKey, l); errA != nil {
 		return challengeResponse, errA
 	}
 
@@ -510,12 +511,12 @@ func respondToChallenge(ch challenge, newNonceURL, kid string, accountPrivKey *e
 		return challengeResponse, errB
 	}
 
-	bodyBytes, errC := prepBody(ch.Url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errC := prepBody(ctx, ch.Url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errC != nil {
 		return challengeResponse, errC
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "respondToChallenge")
+	ctx = context.WithValue(ctx, clientContextKey, "respondToChallenge")
 	res, errD := getResponse(ctx, ch.Url, "POST", bodyBytes, l)
 	if errD != nil {
 		return challengeResponse, errD
@@ -544,6 +545,7 @@ func respondToChallenge(ch challenge, newNonceURL, kid string, accountPrivKey *e
 // - start of downloadCertificate.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
 func checkOrderStatus(
+	ctx context.Context,
 	url string,
 	expectedStatus string,
 	newNonceURL string,
@@ -585,12 +587,12 @@ func checkOrderStatus(
 	}()
 
 	dataPayload := []byte("")
-	bodyBytes, errA := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errA := prepBody(ctx, url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errA != nil {
 		return orderResponse, errA
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, fmt.Sprintf("checkOrderStatus-%s", expectedStatus))
+	ctx = context.WithValue(ctx, clientContextKey, fmt.Sprintf("checkOrderStatus-%s", expectedStatus))
 	for {
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 			l.InfoCtx(ctx, "checkStatusSleep",
@@ -653,7 +655,7 @@ func checkOrderStatus(
 // The CSR MUST indicate the exact same set of requested identifiers as the initial newOrder request.
 // If a request to finalize an order is successful, the server will return a 200 (OK) with an updated order object.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
-func sendCSR(domain string, o order, newNonceURL, kid string, accountPrivKey, certPrivKey *ecdsa.PrivateKey, l *slog.Logger) (orderRes order, _ error) {
+func sendCSR(ctx context.Context, domain string, o order, newNonceURL, kid string, accountPrivKey, certPrivKey *ecdsa.PrivateKey, l *slog.Logger) (orderRes order, _ error) {
 	/*
 		POST /acme/order/TOlocE8rfgo/finalize HTTP/1.1
 		Content-Type: application/jose+json
@@ -687,7 +689,7 @@ func sendCSR(domain string, o order, newNonceURL, kid string, accountPrivKey, ce
 		orderRes.OrderURL = orderURL
 	}()
 
-	updatedO, errA := checkOrderStatus(orderURL, "ready", newNonceURL, kid, accountPrivKey, l)
+	updatedO, errA := checkOrderStatus(ctx, orderURL, "ready", newNonceURL, kid, accountPrivKey, l)
 	if errA != nil {
 		return o, errA
 	}
@@ -711,12 +713,12 @@ func sendCSR(domain string, o order, newNonceURL, kid string, accountPrivKey, ce
 	}
 
 	url := o.FinalizeURL
-	bodyBytes, errD := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errD := prepBody(ctx, url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errD != nil {
 		return o, errD
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "sendCSR")
+	ctx = context.WithValue(ctx, clientContextKey, "sendCSR")
 	res, errE := getResponse(ctx, url, "POST", bodyBytes, l)
 	if errE != nil {
 		return o, errE
@@ -755,7 +757,7 @@ func sendCSR(domain string, o order, newNonceURL, kid string, accountPrivKey, ce
 // A certificate resource represents a single, immutable certificate.
 // If the client wishes to obtain a renewed certificate, the client initiates a new order process to request one.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.4.2
-func downloadCertificate(o order, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (cert []byte, _ error) {
+func downloadCertificate(ctx context.Context, o order, newNonceURL, kid string, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) (cert []byte, _ error) {
 	/*
 		POST /acme/cert/mAt3xBGaobw HTTP/1.1
 		Content-Type: application/jose+json
@@ -783,7 +785,7 @@ func downloadCertificate(o order, newNonceURL, kid string, accountPrivKey *ecdsa
 		https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
 	*/
 
-	updatedO, errA := checkOrderStatus(o.OrderURL, "valid", newNonceURL, kid, accountPrivKey, l)
+	updatedO, errA := checkOrderStatus(ctx, o.OrderURL, "valid", newNonceURL, kid, accountPrivKey, l)
 	if errA != nil {
 		return nil, errA
 	}
@@ -792,12 +794,12 @@ func downloadCertificate(o order, newNonceURL, kid string, accountPrivKey *ecdsa
 
 	dataPayload := []byte("")
 
-	bodyBytes, errB := prepBody(certificateURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errB := prepBody(ctx, certificateURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errB != nil {
 		return nil, errB
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "downloadCertificate")
+	ctx = context.WithValue(ctx, clientContextKey, "downloadCertificate")
 	res, errC := getResponse(ctx, certificateURL, "POST", bodyBytes, l)
 	if errC != nil {
 		return nil, errC

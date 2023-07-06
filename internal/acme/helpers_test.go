@@ -31,7 +31,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 		}
 
 		for i, test := range tt {
-			err := policy(nil, test.host)
+			err := policy(test.host)
 			if err != nil && test.allow {
 				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
 			}
@@ -64,7 +64,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"dummy", false},
 		}
 		for i, test := range tt {
-			err := policy(nil, test.host)
+			err := policy(test.host)
 			if err != nil && test.allow {
 				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
 			}
@@ -91,7 +91,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"dummy", false},
 		}
 		for i, test := range tt {
-			err := policy(nil, test.host)
+			err := policy(test.host)
 			if err != nil && test.allow {
 				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
 			}
@@ -118,7 +118,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"dummy", false},
 		}
 		for i, test := range tt {
-			err := policy(nil, test.host)
+			err := policy(test.host)
 			if err != nil && test.allow {
 				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
 			}
@@ -156,7 +156,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"dummy", false},
 		}
 		for i, test := range tt {
-			err := policy(nil, test.host)
+			err := policy(test.host)
 			if err != nil && test.allow {
 				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
 			}
@@ -194,7 +194,7 @@ func TestCustomHostWhitelist(t *testing.T) {
 			{"dummy", false},
 		}
 		for i, test := range tt {
-			err := policy(nil, test.host)
+			err := policy(test.host)
 			if err != nil && test.allow {
 				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
 			}

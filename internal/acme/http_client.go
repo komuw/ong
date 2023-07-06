@@ -41,7 +41,8 @@ func getRequestType(ctx context.Context) string {
 	return urtp
 }
 
-func newHttpClient(timeout time.Duration, l *slog.Logger) *http.Client {
+// getHttpClient returns a [http.Client]. It creates and reuses http.Clients as needed.
+func getHttpClient(timeout time.Duration, l *slog.Logger) *http.Client {
 	clientOnce.Do(func() {
 		dialer := &net.Dialer{
 			// see: net.DefaultResolver
@@ -122,13 +123,13 @@ func getResponse(ctx context.Context, url, method string, body []byte, l *slog.L
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", contentType)
 
-	httpClient := newHttpClient(3*time.Second, l)
+	httpClient := getHttpClient(3*time.Second, l)
 
 	return httpClient.Do(req)
 }
 
-func prepBody(url, newNonceURL, kid string, dataPayload []byte, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) ([]byte, error) {
-	nonce, err := getNonce(newNonceURL, l)
+func prepBody(ctx context.Context, url, newNonceURL, kid string, dataPayload []byte, accountPrivKey *ecdsa.PrivateKey, l *slog.Logger) ([]byte, error) {
+	nonce, err := getNonce(ctx, newNonceURL, l)
 	if err != nil {
 		return nil, err
 	}
