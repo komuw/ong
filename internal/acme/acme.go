@@ -328,6 +328,7 @@ func (m *manager) getCert(ctx context.Context, domain string) (cert *tls.Certifi
 
 	{ // 3. Get from ACME.
 		if errA := m.hp(ctx, domain); errA != nil {
+			// We should check hostPolicy before calling ACME to minimize wastage of compute.
 			return nil, errA
 		}
 
