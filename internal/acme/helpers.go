@@ -2,7 +2,6 @@ package acme
 
 import (
 	"bytes"
-	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/rand"
@@ -360,7 +359,7 @@ func customHostWhitelist(domain string) hostPolicy {
 		}
 	}
 
-	return func(_ context.Context, host string) error {
+	return func(host string) error {
 		host = strings.ToLower(strings.TrimSpace(host))
 
 		if exactMatch != "" && exactMatch == host {

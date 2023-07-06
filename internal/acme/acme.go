@@ -45,7 +45,7 @@ const (
 // It returns a non-nil error if the host should be rejected.
 // The returned error is accessible via tls.Conn.Handshake and its callers.
 // See Manager's hostPolicy field and GetCertificate method docs for more details.
-type hostPolicy func(ctx context.Context, host string) error
+type hostPolicy func(host string) error
 
 // Validate checks domain for validity.
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
@@ -327,7 +327,7 @@ func (m *manager) getCert(ctx context.Context, domain string) (cert *tls.Certifi
 	}
 
 	{ // 3. Get from ACME.
-		if errA := m.hp(ctx, domain); errA != nil {
+		if errA := m.hp(domain); errA != nil {
 			// We should check hostPolicy before calling ACME to minimize wastage of compute.
 			return nil, errA
 		}
