@@ -278,7 +278,7 @@ func TestAcmeFunctions(t *testing.T) {
 		t.Parallel()
 
 		dir, _, _, _, _, _, _ := setup(t, ts.URL, domain)
-		nonce, err := getNonce(dir.NewNonceURL, l)
+		nonce, err := getNonce(ctx, dir.NewNonceURL, l)
 		attest.Ok(t, err)
 
 		attest.NotZero(t, nonce)

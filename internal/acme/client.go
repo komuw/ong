@@ -135,8 +135,8 @@ func getDirectory(ctx context.Context, directoryURL string, l *slog.Logger) (dir
 // In order to protect ACME resources from any possible replay attacks, ACME POST requests have a mandatory anti-replay mechanism.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-6.5
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.2
-func getNonce(newNonceURL string, l *slog.Logger) (string, error) {
-	ctx := context.WithValue(context.Background(), clientContextKey, "getNonce")
+func getNonce(ctx context.Context, newNonceURL string, l *slog.Logger) (string, error) {
+	ctx = context.WithValue(ctx, clientContextKey, "getNonce")
 	res, errA := getResponse(ctx, newNonceURL, "HEAD", nil, l)
 	if errA != nil {
 		return "", errA
@@ -195,7 +195,7 @@ func getAccount(ctx context.Context, newAccountURL, newNonceURL, email string, a
 		return actResponse, errA
 	}
 
-	bodyBytes, errB := prepBody(newAccountURL, newNonceURL, "", dataPayload, accountPrivKey, l)
+	bodyBytes, errB := prepBody(ctx, newAccountURL, newNonceURL, "", dataPayload, accountPrivKey, l)
 	if errB != nil {
 		return actResponse, errB
 	}
@@ -278,7 +278,7 @@ func submitOrder(ctx context.Context, newOrderURL, newNonceURL, kid string, doma
 		return orderResponse, errA
 	}
 
-	bodyBytes, errB := prepBody(newOrderURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errB := prepBody(ctx, newOrderURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errB != nil {
 		return orderResponse, errB
 	}
@@ -344,7 +344,7 @@ func fetchChallenges(ctx context.Context, authorizationURLS []string, newNonceUR
 	authorizationURL := authorizationURLS[0]
 	dataPayload := []byte("")
 
-	bodyBytes, errA := prepBody(authorizationURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errA := prepBody(ctx, authorizationURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errA != nil {
 		return authorizationResponse, errA
 	}
@@ -388,6 +388,7 @@ func fetchChallenges(ctx context.Context, authorizationURLS []string, newNonceUR
 // - start of respondToChallenge.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
 func checkChallengeStatus(
+	ctx context.Context,
 	url string,
 	newNonceURL string,
 	kid string,
@@ -415,12 +416,12 @@ func checkChallengeStatus(
 	}()
 
 	dataPayload := []byte("")
-	bodyBytes, errA := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errA := prepBody(ctx, url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errA != nil {
 		return errA
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, "checkChallengeStatus")
+	ctx = context.WithValue(ctx, clientContextKey, "checkChallengeStatus")
 	for {
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 			l.InfoCtx(ctx, "checkStatusSleep",
@@ -500,7 +501,7 @@ func respondToChallenge(ctx context.Context, ch challenge, newNonceURL, kid stri
 	*/
 
 	challengeResponse := challenge{}
-	if errA := checkChallengeStatus(ch.Url, newNonceURL, kid, accountPrivKey, l); errA != nil {
+	if errA := checkChallengeStatus(ctx, ch.Url, newNonceURL, kid, accountPrivKey, l); errA != nil {
 		return challengeResponse, errA
 	}
 
@@ -510,7 +511,7 @@ func respondToChallenge(ctx context.Context, ch challenge, newNonceURL, kid stri
 		return challengeResponse, errB
 	}
 
-	bodyBytes, errC := prepBody(ch.Url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errC := prepBody(ctx, ch.Url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errC != nil {
 		return challengeResponse, errC
 	}
@@ -544,6 +545,7 @@ func respondToChallenge(ctx context.Context, ch challenge, newNonceURL, kid stri
 // - start of downloadCertificate.
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1
 func checkOrderStatus(
+	ctx context.Context,
 	url string,
 	expectedStatus string,
 	newNonceURL string,
@@ -585,12 +587,12 @@ func checkOrderStatus(
 	}()
 
 	dataPayload := []byte("")
-	bodyBytes, errA := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errA := prepBody(ctx, url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errA != nil {
 		return orderResponse, errA
 	}
 
-	ctx := context.WithValue(context.Background(), clientContextKey, fmt.Sprintf("checkOrderStatus-%s", expectedStatus))
+	ctx = context.WithValue(ctx, clientContextKey, fmt.Sprintf("checkOrderStatus-%s", expectedStatus))
 	for {
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
 			l.InfoCtx(ctx, "checkStatusSleep",
@@ -687,7 +689,7 @@ func sendCSR(ctx context.Context, domain string, o order, newNonceURL, kid strin
 		orderRes.OrderURL = orderURL
 	}()
 
-	updatedO, errA := checkOrderStatus(orderURL, "ready", newNonceURL, kid, accountPrivKey, l)
+	updatedO, errA := checkOrderStatus(ctx, orderURL, "ready", newNonceURL, kid, accountPrivKey, l)
 	if errA != nil {
 		return o, errA
 	}
@@ -711,7 +713,7 @@ func sendCSR(ctx context.Context, domain string, o order, newNonceURL, kid strin
 	}
 
 	url := o.FinalizeURL
-	bodyBytes, errD := prepBody(url, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errD := prepBody(ctx, url, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errD != nil {
 		return o, errD
 	}
@@ -783,7 +785,7 @@ func downloadCertificate(ctx context.Context, o order, newNonceURL, kid string, 
 		https://datatracker.ietf.org/doc/html/rfc8555#section-7.4
 	*/
 
-	updatedO, errA := checkOrderStatus(o.OrderURL, "valid", newNonceURL, kid, accountPrivKey, l)
+	updatedO, errA := checkOrderStatus(ctx, o.OrderURL, "valid", newNonceURL, kid, accountPrivKey, l)
 	if errA != nil {
 		return nil, errA
 	}
@@ -792,7 +794,7 @@ func downloadCertificate(ctx context.Context, o order, newNonceURL, kid string, 
 
 	dataPayload := []byte("")
 
-	bodyBytes, errB := prepBody(certificateURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
+	bodyBytes, errB := prepBody(ctx, certificateURL, newNonceURL, kid, dataPayload, accountPrivKey, l)
 	if errB != nil {
 		return nil, errB
 	}
