@@ -318,12 +318,12 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 	}
 
 	{ // 3. Get from ACME.
-		c, errB := m.fromAcme(domain)
-		if errB != nil {
+		if errB := m.hp(context.Background(), domain); errB != nil {
 			return nil, errB
 		}
 
-		if errC := m.hp(context.Background(), domain); errC != nil {
+		c, errC := m.fromAcme(domain)
+		if errC != nil {
 			return nil, errC
 		}
 
