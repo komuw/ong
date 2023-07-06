@@ -318,13 +318,13 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 	}
 
 	{ // 3. Get from ACME.
-		if errB := m.hp(context.Background(), domain); errB != nil {
-			return nil, errB
+		if errA := m.hp(context.Background(), domain); errA != nil {
+			return nil, errA
 		}
 
-		c, errC := m.fromAcme(domain)
-		if errC != nil {
-			return nil, errC
+		c, errB := m.fromAcme(domain)
+		if errB != nil {
+			return nil, errB
 		}
 
 		cert = c
@@ -337,8 +337,8 @@ func (m *manager) getCert(domain string) (cert *tls.Certificate, _ error) {
 		//      https://github.com/komuw/ong/issues/297
 		if cert != nil {
 			m.cache.setCert(domain, cert)
-			if errA := m.toDisk(domain, cert); errA != nil {
-				m.l.Error("m.toDisk", "error", errA)
+			if errC := m.toDisk(domain, cert); errC != nil {
+				m.l.Error("m.toDisk", "error", errC)
 			}
 		}
 		// We do not need to log the `getCert()` return error.
