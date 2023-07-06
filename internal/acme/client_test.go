@@ -2,6 +2,7 @@ package acme
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -195,6 +196,7 @@ func TestAcmeFunctions(t *testing.T) {
 	t.Parallel()
 
 	l := slog.Default()
+	ctx := context.Background()
 
 	setup := func(t *testing.T, acmeServerURL, domain string) (directory, account, order, authorization, order, *ecdsa.PrivateKey, *ecdsa.PrivateKey) {
 		cacheDir, err := diskCachedir()
@@ -202,7 +204,7 @@ func TestAcmeFunctions(t *testing.T) {
 
 		directoryUrl, err := url.JoinPath(acmeServerURL, "/directory")
 		attest.Ok(t, err)
-		dir, err := getDirectory(directoryUrl, l)
+		dir, err := getDirectory(ctx, directoryUrl, l)
 		attest.Ok(t, err)
 
 		accountKey := filepath.Join(cacheDir, accountKeyFileName)
@@ -213,17 +215,18 @@ func TestAcmeFunctions(t *testing.T) {
 		certPrivKey, err := getEcdsaPrivKey(certKeyPath)
 		attest.Ok(t, err)
 
-		actResponse, err := getAccount(dir.NewAccountURL, dir.NewNonceURL, "hey+sample@gmail.com", accountPrivKey, l)
+		actResponse, err := getAccount(ctx, dir.NewAccountURL, dir.NewNonceURL, "hey+sample@gmail.com", accountPrivKey, l)
 		attest.Ok(t, err)
 
 		domains := []string{"heya.com"}
-		orderResponse, err := submitOrder(dir.NewOrderURL, dir.NewNonceURL, actResponse.kid, domains, accountPrivKey, l)
+		orderResponse, err := submitOrder(ctx, dir.NewOrderURL, dir.NewNonceURL, actResponse.kid, domains, accountPrivKey, l)
 		attest.Ok(t, err)
 
-		authorizationResponse, err := fetchChallenges(orderResponse.Authorizations, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
+		authorizationResponse, err := fetchChallenges(ctx, orderResponse.Authorizations, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
 		attest.Ok(t, err)
 
 		updatedOrder, err := sendCSR(
+			ctx,
 			domain,
 			orderResponse,
 			dir.NewNonceURL,
@@ -264,7 +267,7 @@ func TestAcmeFunctions(t *testing.T) {
 		directoryUrl, err := url.JoinPath(ts.URL, "/directory")
 		attest.Ok(t, err)
 
-		dir, err := getDirectory(directoryUrl, l)
+		dir, err := getDirectory(ctx, directoryUrl, l)
 		attest.Ok(t, err)
 		attest.NotZero(t, dir.NewAccountURL)
 		attest.NotZero(t, dir.NewNonceURL)
@@ -286,6 +289,7 @@ func TestAcmeFunctions(t *testing.T) {
 
 		dir, _, _, _, _, accountPrivKey, _ := setup(t, ts.URL, domain)
 		actResponse, err := getAccount(
+			ctx,
 			dir.NewAccountURL,
 			dir.NewNonceURL,
 			"hey+sample@gmail.com",
@@ -306,6 +310,7 @@ func TestAcmeFunctions(t *testing.T) {
 		domains := []string{"heya.com"}
 		dir, acct, _, _, _, accountPrivKey, _ := setup(t, ts.URL, domain)
 		orderResponse, err := submitOrder(
+			ctx,
 			dir.NewOrderURL,
 			dir.NewNonceURL,
 			acct.kid,
@@ -327,6 +332,7 @@ func TestAcmeFunctions(t *testing.T) {
 
 		dir, acct, ord, _, _, accountPrivKey, _ := setup(t, ts.URL, domain)
 		authorizationResponse, err := fetchChallenges(
+			ctx,
 			ord.Authorizations,
 			dir.NewNonceURL,
 			acct.kid,
@@ -350,11 +356,13 @@ func TestAcmeFunctions(t *testing.T) {
 
 		dir, acct, _, authz, _, accountPrivKey, _ := setup(t, ts.URL, domain)
 		challengeResponse, err := respondToChallenge(
+			ctx,
 			authz.EffectiveChallenge,
 			dir.NewNonceURL,
 			acct.kid,
 			accountPrivKey,
-			l)
+			l,
+		)
 		attest.Ok(t, err)
 
 		attest.NotZero(t, challengeResponse.Type)
@@ -368,6 +376,7 @@ func TestAcmeFunctions(t *testing.T) {
 
 		dir, acct, ord, _, _, accountPrivKey, certPrivKey := setup(t, ts.URL, domain)
 		updatedOrder, err := sendCSR(
+			ctx,
 			domain,
 			ord,
 			dir.NewNonceURL,
@@ -390,6 +399,7 @@ func TestAcmeFunctions(t *testing.T) {
 
 		dir, acct, _, _, updatedOrder, accountPrivKey, _ := setup(t, ts.URL, domain)
 		certBytes, err := downloadCertificate(
+			ctx,
 			updatedOrder,
 			dir.NewNonceURL,
 			acct.kid,
@@ -413,6 +423,7 @@ func TestRealAcme(t *testing.T) {
 	t.Skip("This test calls a real acme staging server and so should only be used on demand.")
 
 	l := slog.Default()
+	ctx := context.Background()
 
 	t.Run("acme", func(t *testing.T) {
 		t.Parallel()
@@ -431,34 +442,34 @@ func TestRealAcme(t *testing.T) {
 		t.Log("certPrivKey: ", certPrivKey, err)
 		attest.Ok(t, err)
 
-		dir, err := getDirectory(acmeDirectoryUrl, l)
+		dir, err := getDirectory(ctx, acmeDirectoryUrl, l)
 		t.Log("getDirectory: ", dir, err)
 		attest.Ok(t, err)
 
-		actResponse, err := getAccount(dir.NewAccountURL, dir.NewNonceURL, email, accountPrivKey, l)
+		actResponse, err := getAccount(ctx, dir.NewAccountURL, dir.NewNonceURL, email, accountPrivKey, l)
 		t.Log("getAccount: ", actResponse, err)
 		attest.Ok(t, err)
 
 		domains := []string{domain}
-		orderResponse, err := submitOrder(dir.NewOrderURL, dir.NewNonceURL, actResponse.kid, domains, accountPrivKey, l)
+		orderResponse, err := submitOrder(ctx, dir.NewOrderURL, dir.NewNonceURL, actResponse.kid, domains, accountPrivKey, l)
 		t.Log("submitOrder: ", orderResponse, err)
 		attest.Ok(t, err)
 
-		authorizationResponse, err := fetchChallenges(orderResponse.Authorizations, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
+		authorizationResponse, err := fetchChallenges(ctx, orderResponse.Authorizations, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
 		t.Log("fetchChallenges: ", authorizationResponse, err)
 		attest.Ok(t, err)
 
 		// - run a http server in the same node where the dns records of the domain resolve to.
 		// - make the url `http://myDomain.com/.well-known/acme-challenge/<token>` accesible
 
-		challengeResponse, err := respondToChallenge(authorizationResponse.EffectiveChallenge, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
+		challengeResponse, err := respondToChallenge(ctx, authorizationResponse.EffectiveChallenge, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
 		t.Log("respondToChallenge: ", challengeResponse, err)
 		attest.Ok(t, err)
 
-		ord, err := sendCSR(domain, orderResponse, dir.NewNonceURL, actResponse.kid, accountPrivKey, certPrivKey, l)
+		ord, err := sendCSR(ctx, domain, orderResponse, dir.NewNonceURL, actResponse.kid, accountPrivKey, certPrivKey, l)
 		attest.Ok(t, err)
 
-		certBytes, err := downloadCertificate(ord, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
+		certBytes, err := downloadCertificate(ctx, ord, dir.NewNonceURL, actResponse.kid, accountPrivKey, l)
 		attest.Ok(t, err)
 		attest.NotZero(t, certBytes)
 

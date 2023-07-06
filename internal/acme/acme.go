@@ -118,9 +118,15 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 			return nil, errors.New("ong/acme: cannot issue a certificate for an IP  address")
 		}
 
-		// The timeout needs to be long enough to last the whole process of fetching
-		// certificates from ACME servers including all the challenge-request-wait-response flow.
-		ctx, cancel := context.WithTimeout(hello.Context(), 5*time.Minute)
+		ctx, cancel := context.WithTimeout(
+			// We do not use `hello.Context()` here because, even if the tls hello is canceled,
+			// we would like to continue with certificate procurement.
+			// Since cert will end up been cached in memory, it is not wasteful to continue after tls hello has ended.
+			context.Background(),
+			// The timeout needs to be long enough to last the whole process of fetching
+			// certificates from ACME servers including all the challenge-request-wait-response flow.
+			5*time.Minute,
+		)
 		defer cancel()
 
 		return man.getCert(ctx, dmn)
@@ -324,11 +330,11 @@ func (m *manager) getCert(ctx context.Context, domain string) (cert *tls.Certifi
 	}
 
 	{ // 3. Get from ACME.
-		if errA := m.hp(context.Background(), domain); errA != nil {
+		if errA := m.hp(ctx, domain); errA != nil {
 			return nil, errA
 		}
 
-		c, errB := m.fromAcme(domain)
+		c, errB := m.fromAcme(ctx, domain)
 		if errB != nil {
 			return nil, errB
 		}
@@ -375,7 +381,7 @@ func (m *manager) toDisk(domain string, cert *tls.Certificate) error {
 }
 
 // fromAcme gets a certificate for domain from an ACME server.
-func (m *manager) fromAcme(domain string) (_ *tls.Certificate, acmeError error) {
+func (m *manager) fromAcme(ctx context.Context, domain string) (_ *tls.Certificate, acmeError error) {
 	var (
 		directoryResponse     directory
 		actResponse           account
@@ -413,24 +419,24 @@ func (m *manager) fromAcme(domain string) (_ *tls.Certificate, acmeError error) 
 		return nil, errB
 	}
 
-	directoryResponse, errC := getDirectory(m.acmeDirectoryUrl, m.l)
+	directoryResponse, errC := getDirectory(ctx, m.acmeDirectoryUrl, m.l)
 	if errC != nil {
 		return nil, errC
 	}
 
-	actResponse, errD := getAccount(directoryResponse.NewAccountURL, directoryResponse.NewNonceURL, email, accountPrivKey, m.l)
+	actResponse, errD := getAccount(ctx, directoryResponse.NewAccountURL, directoryResponse.NewNonceURL, email, accountPrivKey, m.l)
 	if errD != nil {
 		return nil, errD
 	}
 
 	domains := []string{domain}
-	orderResponse, errE := submitOrder(directoryResponse.NewOrderURL, directoryResponse.NewNonceURL, actResponse.kid, domains, accountPrivKey, m.l)
+	orderResponse, errE := submitOrder(ctx, directoryResponse.NewOrderURL, directoryResponse.NewNonceURL, actResponse.kid, domains, accountPrivKey, m.l)
 	if errE != nil {
 		return nil, errE
 	}
 
 	authorizationURLS := orderResponse.Authorizations
-	authorizationResponse, errF := fetchChallenges(authorizationURLS, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l)
+	authorizationResponse, errF := fetchChallenges(ctx, authorizationURLS, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l)
 	if errF != nil {
 		return nil, errF
 	}
@@ -441,16 +447,16 @@ func (m *manager) fromAcme(domain string) (_ *tls.Certificate, acmeError error) 
 	}
 	m.setToken(domain, token)
 
-	if _, errH := respondToChallenge(authorizationResponse.EffectiveChallenge, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l); errH != nil {
+	if _, errH := respondToChallenge(ctx, authorizationResponse.EffectiveChallenge, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l); errH != nil {
 		return nil, errH
 	}
 
-	updatedOrder, errI := sendCSR(domain, orderResponse, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, certPrivKey, m.l)
+	updatedOrder, errI := sendCSR(ctx, domain, orderResponse, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, certPrivKey, m.l)
 	if errI != nil {
 		return nil, errI
 	}
 
-	certBytes, errJ := downloadCertificate(updatedOrder, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l)
+	certBytes, errJ := downloadCertificate(ctx, updatedOrder, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l)
 	if errJ != nil {
 		return nil, errJ
 	}
