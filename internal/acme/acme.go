@@ -119,6 +119,9 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 			context.Background(),
 			// The timeout needs to be long enough to last the whole process of fetching
 			// certificates from ACME servers including all the challenge-request-wait-response flow.
+			// There are about 10 http calls to ACME, each of which in turn calls [getNonce] at least once.
+			// Thus total of about 20.
+			// If each call has a worst case of 15seconds, we get total duration of 300secs(5minutes)
 			5*time.Minute,
 		)
 		defer cancel()
