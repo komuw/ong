@@ -17,11 +17,12 @@ func TestPprofServer(t *testing.T) {
 	t.Parallel()
 
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+	o := Opts{serverLogLevel: defaultServerLogLevel}
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		startPprofServer(l)
+		startPprofServer(l, o)
 
 		// await for the server to start.
 		port := 65060
@@ -38,7 +39,7 @@ func TestPprofServer(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		startPprofServer(l)
+		startPprofServer(l, o)
 
 		// await for the server to start.
 		port := 65060
