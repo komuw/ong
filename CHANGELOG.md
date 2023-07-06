@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.62
+- Check acme.HostPolicy before making request to ACME servers: https://github.com/komuw/ong/pull/313
+
 # v0.0.61
 - Log http.Server.ErrorLog at Info by default: https://github.com/komuw/ong/pull/312
 
