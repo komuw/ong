@@ -222,10 +222,10 @@ func TestManager(t *testing.T) {
 			ts.Close()
 		})
 
-		acmeDirectoryUrl, errA := url.JoinPath(ts.URL, "/directory")
+		acmeDirUrl, errA := url.JoinPath(ts.URL, "/directory")
 		attest.Ok(t, errA)
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m := initManager(domain, email, acmeDirUrl, l, testDiskCache)
 		attest.NotZero(t, m)
 
 		cert, err := m.getCert("cloudflare.com")
