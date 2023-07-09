@@ -252,7 +252,7 @@ func TestLogger(t *testing.T) {
 			l.Error(msg)
 
 			attest.Equal(t, strings.Count(w.String(), logIDFieldName), 1)
-			attest.Equal(t, strings.Count(w.String(), "msg"), 1)
+			attest.Equal(t, strings.Count(w.String(), slog.MessageKey), 1)
 			attest.Equal(t, strings.Count(w.String(), msg), 1)
 			attest.Equal(t, strings.Count(w.String(), "time"), 1)
 			attest.Equal(t, strings.Count(w.String(), "level"), 1)
