@@ -3,10 +3,10 @@ module github.com/komuw/ong
 go 1.20
 
 require (
-	golang.org/x/crypto v0.10.0
-	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
-	golang.org/x/net v0.11.0
-	golang.org/x/sys v0.9.0
+	golang.org/x/crypto v0.11.0
+	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
+	golang.org/x/net v0.12.0
+	golang.org/x/sys v0.10.0
 )
 
 require (
@@ -20,12 +20,12 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/text v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 )
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1 // test
-	github.com/klauspost/compress v1.16.6 // test
+	github.com/klauspost/compress v1.16.7 // test
 	github.com/rs/zerolog v1.29.1 // test
 	github.com/sirupsen/logrus v1.9.3 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
