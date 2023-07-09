@@ -295,38 +295,39 @@ func TestLogger(t *testing.T) {
 
 		ctx := context.Background()
 		w := &bytes.Buffer{}
-		msg := "hey what up?"
+		msg1 := "messageOne"
 		l := New(w, 3)(ctx)
 
-		l.InfoCtx(ctx, msg)
+		l.InfoCtx(ctx, msg1)
 		l.ErrorCtx(ctx, "hey1", "err1", errors.New("badTingOne"))
-		attest.Subsequence(t, w.String(), msg)
+		attest.Subsequence(t, w.String(), msg1)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),
-			// one for the info log the other for the error log
+			// One for the messageOne info log the other for the badTingOne error log
 			2,
 		)
 
 		newId := "NEW-id-adh4e92427dajd"
 		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
 		l.ErrorCtx(ctx, "hey2", "err2", errors.New("badTingTwo"))
-		fmt.Println("\n\t ", w.String(), "\n.")
 		attest.Subsequence(t, w.String(), newId)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),
-			// one for the info log the other for the badTingOne error log & one for badTingTwo error log.
-			3,
+			// One for the messageOne info log the other for the badTingOne error log
+			// For badTingTwo error log, it has two logIDs.
+			4,
 		)
 
 		newId3 := "NEW-id3-alas"
 		ctx = context.WithValue(ctx, octx.LogCtxKey, newId3)
 		l.ErrorCtx(ctx, "hey3", "err3", errors.New("badTingThree"))
-		fmt.Println("\n\t ", w.String(), "\n.")
 		attest.Subsequence(t, w.String(), newId)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),
-			// one for the info log the other for the badTingOne error log & one for badTingTwo error log.
-			3,
+			// One for the messageOne info log the other for the badTingOne error log
+			// For badTingTwo error log, it has two logIDs.
+			// For badTingThree error log, it has two logIDs.
+			6,
 		)
 	})
 
