@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.63
 - ong/middleware: Log unexpected http HOST header: https://github.com/komuw/ong/pull/315
+- Update dependencies: https://github.com/komuw/ong/pull/318
 
 # v0.0.62
 - ong/acme: Check acme.HostPolicy before making request to ACME servers: https://github.com/komuw/ong/pull/313
