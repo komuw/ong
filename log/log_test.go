@@ -238,6 +238,28 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), logid1)
 	})
 
+	t.Run(
+		// See: https://github.com/komuw/ong/issues/316
+		"logID not duplicated",
+		func(t *testing.T) {
+			t.Parallel()
+
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+
+			msg := "hey"
+			l := New(w, maxMsgs)(context.Background())
+			l.Error(msg)
+
+			fmt.Println("\n\t w.String(): ", w.String(), "\n.")
+			attest.Equal(t, strings.Count(w.String(), logIDFieldName), 1)
+			attest.Equal(t, strings.Count(w.String(), "msg"), 1)
+			attest.Equal(t, strings.Count(w.String(), msg), 1)
+			attest.Equal(t, strings.Count(w.String(), "time"), 1)
+			attest.Equal(t, strings.Count(w.String(), "level"), 1)
+		},
+	)
+
 	t.Run("New context does not invalidate buffer", func(t *testing.T) {
 		t.Parallel()
 

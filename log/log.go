@@ -149,7 +149,7 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	ctx = context.WithValue(ctx, octx.LogCtxKey, id)
 
 	newAttrs := []slog.Attr{
-		{Key: "logID", Value: slog.StringValue(id)},
+		{Key: logIDFieldName, Value: slog.StringValue(id)},
 	}
 	r.Attrs(func(a slog.Attr) bool {
 		if e, ok := a.Value.Any().(error); ok {
