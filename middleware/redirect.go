@@ -65,7 +65,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			// see; https://github.com/golang/go/blob/master/src/net/http/client.go#L1001-L1003
 			// We know that domain is kinda already canonical since [New] validates that. But host is not.
 			if !isDomainOrSubdomain(host, domain) {
-				err := fmt.Errorf("ong/middleware: the HOST http header has an unexpected value")
+				err := fmt.Errorf("ong/middleware: the HOST http header has an unexpected value: %s", host)
 				w.Header().Set(ongMiddlewareErrorHeader, err.Error())
 				http.Error(
 					w,
