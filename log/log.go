@@ -141,16 +141,18 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	}
 	r.Time = r.Time.UTC()
 
+	newAttrs := []slog.Attr{}
 	id := h.logID
-	if id2, ok := getId(ctx); ok {
+	id2, fromCtx := getId(ctx)
+	if fromCtx {
 		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
+		newAttrs = []slog.Attr{
+			{Key: logIDFieldName, Value: slog.StringValue(id)},
+		}
 	}
 	ctx = context.WithValue(ctx, octx.LogCtxKey, id)
 
-	newAttrs := []slog.Attr{
-		// {Key: logIDFieldName, Value: slog.StringValue(id)},
-	}
 	r.Attrs(func(a slog.Attr) bool {
 		if e, ok := a.Value.Any().(error); ok {
 			if stack := errors.StackTrace(e); stack != "" {
