@@ -251,7 +251,6 @@ func TestLogger(t *testing.T) {
 			l := New(w, maxMsgs)(context.Background())
 			l.Error(msg)
 
-			fmt.Println("\n\t w.String(): ", w.String(), "\n.")
 			attest.Equal(t, strings.Count(w.String(), logIDFieldName), 1)
 			attest.Equal(t, strings.Count(w.String(), "msg"), 1)
 			attest.Equal(t, strings.Count(w.String(), msg), 1)
