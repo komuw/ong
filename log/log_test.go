@@ -317,6 +317,17 @@ func TestLogger(t *testing.T) {
 			// one for the info log the other for the badTingOne error log & one for badTingTwo error log.
 			3,
 		)
+
+		newId3 := "NEW-id3-alas"
+		ctx = context.WithValue(ctx, octx.LogCtxKey, newId3)
+		l.ErrorCtx(ctx, "hey3", "err3", errors.New("badTingThree"))
+		fmt.Println("\n\t ", w.String(), "\n.")
+		attest.Subsequence(t, w.String(), newId)
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// one for the info log the other for the badTingOne error log & one for badTingTwo error log.
+			3,
+		)
 	})
 
 	t.Run("stdlibLog", func(t *testing.T) {
