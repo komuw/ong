@@ -124,9 +124,13 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	// Obey the following rules form the slog documentation:
 	// Handle methods that produce OUTPUT should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
-	//   - If an Attr's key is the empty string and the value is not a group, ignore the Attr.
+	//   - If r.PC is zero, ignore it.
+	//   - Attr's values should be resolved.
+	//   - If an Attr's key and value are both the zero value, ignore the Attr.
+	//     This can be tested with attr.Equal(Attr{}).
 	//   - If a group's key is empty, inline the group's Attrs.
 	//   - If a group has no Attrs (even if it has a non-empty key), ignore it.
+	// https://github.com/golang/go/blob/5c154986094bcc2fb28909cc5f01c9ba1dd9ddd4/src/log/slog/handler.go#L50-L59
 	// Note that this handler does not produce output and hence the above rules do not apply.
 
 	if ctx == nil {
