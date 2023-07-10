@@ -238,6 +238,27 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), logid1)
 	})
 
+	t.Run(
+		// See: https://github.com/komuw/ong/issues/316
+		"logID not duplicated",
+		func(t *testing.T) {
+			t.Parallel()
+
+			w := &bytes.Buffer{}
+			maxMsgs := 3
+
+			msg := "hey"
+			l := New(w, maxMsgs)(context.Background())
+			l.Error(msg)
+
+			attest.Equal(t, strings.Count(w.String(), logIDFieldName), 1)
+			attest.Equal(t, strings.Count(w.String(), slog.MessageKey), 1)
+			attest.Equal(t, strings.Count(w.String(), msg), 1)
+			attest.Equal(t, strings.Count(w.String(), "time"), 1)
+			attest.Equal(t, strings.Count(w.String(), "level"), 1)
+		},
+	)
+
 	t.Run("New context does not invalidate buffer", func(t *testing.T) {
 		t.Parallel()
 
@@ -274,17 +295,40 @@ func TestLogger(t *testing.T) {
 
 		ctx := context.Background()
 		w := &bytes.Buffer{}
-		msg := "hey what up?"
+		msg1 := "messageOne"
 		l := New(w, 3)(ctx)
 
-		l.InfoCtx(ctx, msg)
-		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
-		attest.Subsequence(t, w.String(), msg)
+		l.InfoCtx(ctx, msg1)
+		l.ErrorCtx(ctx, "hey1", "err1", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), msg1)
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One for the messageOne info log the other for the badTingOne error log
+			2,
+		)
 
 		newId := "NEW-id-adh4e92427dajd"
 		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
-		l.ErrorCtx(ctx, "hey2", errors.New("badTingOne"))
+		l.ErrorCtx(ctx, "hey2", "err2", errors.New("badTingTwo"))
 		attest.Subsequence(t, w.String(), newId)
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One for the messageOne info log the other for the badTingOne error log
+			// For badTingTwo error log, it has two logIDs.
+			4,
+		)
+
+		newId3 := "NEW-id3-alas"
+		ctx = context.WithValue(ctx, octx.LogCtxKey, newId3)
+		l.ErrorCtx(ctx, "hey3", "err3", errors.New("badTingThree"))
+		attest.Subsequence(t, w.String(), newId)
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One for the messageOne info log the other for the badTingOne error log
+			// For badTingTwo error log, it has two logIDs.
+			// For badTingThree error log, it has two logIDs.
+			6,
+		)
 	})
 
 	t.Run("stdlibLog", func(t *testing.T) {
@@ -309,7 +353,7 @@ func TestLogger(t *testing.T) {
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
 			attest.Subsequence(t, w.String(), `log/log_test.go`)
-			attest.Subsequence(t, w.String(), `line":309`)
+			attest.Subsequence(t, w.String(), `line":353`)
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})
