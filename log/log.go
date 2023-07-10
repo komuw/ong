@@ -54,7 +54,8 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 		v := a.Value
 		if a.Key == "source" {
 			if t, ok := v.Any().(*slog.Source); ok {
-				return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, +t.Line))
+				// log the source in one line.
+				return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
 			}
 		}
 
