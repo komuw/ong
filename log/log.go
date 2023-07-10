@@ -50,21 +50,19 @@ func getId(ctx context.Context) (string, bool) {
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
-	replacer := func(groups []string, a slog.Attr) slog.Attr {
-		v := a.Value
-		if a.Key == "source" {
-			if t, ok := v.Any().(*slog.Source); ok {
-				// log the source in one line.
-				return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
-			}
-		}
-		return a
-	}
-
 	opts := &slog.HandlerOptions{
-		AddSource:   true,
-		Level:       slog.LevelDebug,
-		ReplaceAttr: replacer,
+		AddSource: true,
+		Level:     slog.LevelDebug,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			v := a.Value
+			if a.Key == "source" {
+				if t, ok := v.Any().(*slog.Source); ok {
+					// log the source in one line.
+					return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
+				}
+			}
+			return a
+		},
 	}
 	jh := slog.NewJSONHandler(
 		// os.Stderr is not buffered. Thus it will make a sycall for every write.
