@@ -3,6 +3,7 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -52,6 +53,16 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 	opts := &slog.HandlerOptions{
 		AddSource: true,
 		Level:     slog.LevelDebug,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			v := a.Value
+			if a.Key == "source" {
+				if t, ok := v.Any().(*slog.Source); ok {
+					// log the source in one line.
+					return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
+				}
+			}
+			return a
+		},
 	}
 	jh := slog.NewJSONHandler(
 		// os.Stderr is not buffered. Thus it will make a sycall for every write.
@@ -165,7 +176,9 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 		}
 		return true
 	})
-	r.AddAttrs(newAttrs...)
+	if len(newAttrs) > 0 {
+		r.AddAttrs(newAttrs...)
+	}
 
 	h.cBuf.mu.Lock()
 	defer h.cBuf.mu.Unlock()

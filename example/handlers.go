@@ -67,9 +67,21 @@ func (a app) health(secretKey string) http.HandlerFunc {
 
 		encryptedSrvID := enc.EncryptEncode(serverID)
 
+		a.l.InfoCtx(r.Context(), "health called", "serverId", encryptedSrvID, "functionality", "healthCheck")
+		checkApiHealth(r.Context(), a.l)
+		go checkDatabaseHealth(xcontext.Detach(r.Context()), a.l)
+
 		res := fmt.Sprintf("serverBoot=%s, serverStart=%s, serverId=%s\n", serverBoot, serverStart, encryptedSrvID)
 		_, _ = io.WriteString(w, res)
 	}
+}
+
+func checkApiHealth(ctx context.Context, l *slog.Logger) {
+	l.InfoCtx(ctx, "api is healthy", "functionality", "healthCheck")
+}
+
+func checkDatabaseHealth(ctx context.Context, l *slog.Logger) {
+	l.ErrorCtx(ctx, "database is not healthy", "functionality", "healthCheck")
 }
 
 // check handler showcases the use of:

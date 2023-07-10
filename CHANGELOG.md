@@ -7,6 +7,7 @@ Most recent version is listed first.
 - ong/middleware: Log unexpected http HOST header: https://github.com/komuw/ong/pull/315
 - Update dependencies: https://github.com/komuw/ong/pull/318
 - ong/log: Do not duplicate logID: https://github.com/komuw/ong/pull/317
+- ong/log: Log source attribute in one line: https://github.com/komuw/ong/pull/319
 
 # v0.0.62
 - ong/acme: Check acme.HostPolicy before making request to ACME servers: https://github.com/komuw/ong/pull/313
