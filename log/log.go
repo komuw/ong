@@ -3,6 +3,7 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -49,9 +50,25 @@ func getId(ctx context.Context) (string, bool) {
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
 func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
+	replacer := func(groups []string, a slog.Attr) slog.Attr {
+		v := a.Value
+		if a.Key == "source" {
+			if t, ok := v.Any().(*slog.Source); ok {
+				return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, +t.Line))
+			}
+		}
+
+		fmt.Println("\n\t groups: ", groups)
+		fmt.Println("\t attr: ", a)
+		fmt.Println("\n.")
+
+		return a
+	}
+
 	opts := &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.LevelDebug,
+		AddSource:   true,
+		Level:       slog.LevelDebug,
+		ReplaceAttr: replacer,
 	}
 	jh := slog.NewJSONHandler(
 		// os.Stderr is not buffered. Thus it will make a sycall for every write.
