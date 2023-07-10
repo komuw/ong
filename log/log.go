@@ -183,7 +183,9 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 		}
 		return true
 	})
-	r.AddAttrs(newAttrs...)
+	if len(newAttrs) > 0 {
+		r.AddAttrs(newAttrs...)
+	}
 
 	h.cBuf.mu.Lock()
 	defer h.cBuf.mu.Unlock()
