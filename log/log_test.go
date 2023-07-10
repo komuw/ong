@@ -290,22 +290,6 @@ func TestLogger(t *testing.T) {
 		}
 	})
 
-	t.Run("alass", func(t *testing.T) {
-		t.Parallel()
-
-		ctx := context.Background()
-		w := &bytes.Buffer{}
-		l := New(w, 3)(ctx)
-
-		newId := "NEW-id-adh4e92427dajd"
-		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
-		l.ErrorCtx(ctx, "alass")
-
-		fmt.Println("\n.")
-		fmt.Println(w.String())
-		fmt.Println("\n.")
-	})
-
 	t.Run("ctx methods", func(t *testing.T) {
 		t.Parallel()
 
@@ -369,7 +353,7 @@ func TestLogger(t *testing.T) {
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
 			attest.Subsequence(t, w.String(), `log/log_test.go`)
-			attest.Subsequence(t, w.String(), `line":353`)
+			attest.Subsequence(t, w.String(), `log_test.go:353`)
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})

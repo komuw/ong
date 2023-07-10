@@ -58,11 +58,6 @@ func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
 				return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
 			}
 		}
-
-		fmt.Println("\n\t groups: ", groups)
-		fmt.Println("\t attr: ", a)
-		fmt.Println("\n.")
-
 		return a
 	}
 
