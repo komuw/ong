@@ -216,7 +216,7 @@ func certFromDisk(certPath string) (*tls.Certificate, error) {
 }
 
 func certFromReader(r io.Reader) (*tls.Certificate, error) {
-	data, err := io.ReadAll(r)
+	data, err := io.ReadAll(io.LimitReader(r, maxCertChainSize))
 	if err != nil {
 		return nil, err
 	}
