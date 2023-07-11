@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.64
+- ong/acme: Limit size of certificate allowed for download: https://github.com/komuw/ong/pull/321
+
 # v0.0.63
 - ong/middleware: Log unexpected http HOST header: https://github.com/komuw/ong/pull/315
 - Update dependencies: https://github.com/komuw/ong/pull/318
