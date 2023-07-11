@@ -43,6 +43,10 @@ const (
 	//  ACME clients must have the Content-Type header field set to "application/jose+json"
 	// https://datatracker.ietf.org/doc/html/rfc8555#section-6.2
 	contentType = "application/jose+json"
+
+	maxNumOfCertsInChain = 5
+	maxCertSize          = 3072 * 4 // around 2048 when base64 encoded, multiply by 4 as a buffer.
+	maxCertChainSize     = maxNumOfCertsInChain * maxCertSize
 )
 
 // getEcdsaPrivKey reads a private key from disk(or generates) one.
@@ -807,7 +811,7 @@ func downloadCertificate(ctx context.Context, o order, newNonceURL, kid string, 
 	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode == http.StatusOK {
-		c, errD := io.ReadAll(res.Body)
+		c, errD := io.ReadAll(io.LimitReader(res.Body, maxCertChainSize))
 		if errD != nil {
 			return nil, errD
 		}
