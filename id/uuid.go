@@ -26,6 +26,7 @@ const (
 // [unique]: https://en.wikipedia.org/wiki/Universally_unique_identifier
 type UUID [16]byte
 
+// String implements [fmt.Stringer] for uuid.
 func (u UUID) String() string {
 	return fmt.Sprintf(
 		"%x-%x-%x-%x-%x",
@@ -56,6 +57,9 @@ func (u *UUID) setVersion(version byte) {
 // It panics on error.
 func UUID4() UUID {
 	var uuid UUID
+
+	// Probability of uuid collision;
+	// https://towardsdatascience.com/are-uuids-really-unique-57eb80fc2a87
 
 	// Layout:
 	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-5.4
@@ -96,6 +100,9 @@ func UUID4() UUID {
 func UUID8() UUID {
 	var uuid UUID
 	// We are going to implement it mostly like a version7 uuid except we will use nanosecond precision.
+
+	// Probability of uuid collision;
+	// https://towardsdatascience.com/are-uuids-really-unique-57eb80fc2a87
 
 	// Layout:
 	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-5.7
