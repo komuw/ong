@@ -26,6 +26,7 @@ const (
 // [unique]: https://en.wikipedia.org/wiki/Universally_unique_identifier
 type UUID [16]byte
 
+// String implements [fmt.Stringer] for uuid.
 func (u UUID) String() string {
 	return fmt.Sprintf(
 		"%x-%x-%x-%x-%x",
