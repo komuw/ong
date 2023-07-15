@@ -55,7 +55,7 @@ func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 			// The logger should be in the defer block so that it uses the updated context containing the logID.
 			reqL := log.WithID(r.Context(), l)
 
-			if lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests && w.Header().Get(retryAfterHeader) != "" {
+			if (lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
 				// We are either in load shedding or rate-limiting.
 				// Only log 10% of the errors.
 				shouldLog := mathRand.Intn(100) > 90
