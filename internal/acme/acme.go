@@ -147,9 +147,9 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 	// fixed prefix "/.well-known/acme-challenge/", followed by the "token" value in the challenge.
 	// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
 
-	diskCacheDir, err := diskCachedir()
-	if err != nil {
-		panic(err)
+	diskCacheDir, errA := diskCachedir()
+	if errA != nil {
+		panic(errA)
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
@@ -165,19 +165,33 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 					//   "Construct a URL by populating the URL `http://{domain}/.well-known/acme-challenge/{token}`"
 					// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
 					// So the doc uses `http` not `https` though I don't know if it is a mandate.
-					wrappedHandler.ServeHTTP(w, r)
+					errB := errors.New("ong/acme: well-known/acme-challenge request should not be https")
+					http.Error(
+						w,
+						errB.Error(),
+						http.StatusBadRequest,
+					)
 					return
 				}
 
 				if len(domain) < 2 || unicode.IsDigit(rune(domain[0])) { // It is a bare IP.
-					wrappedHandler.ServeHTTP(w, r)
+					errC := errors.New("ong/acme: request.host for well-known/acme-challenge request should not be IP address")
+					http.Error(
+						w,
+						errC.Error(),
+						http.StatusBadRequest,
+					)
 					return
 				}
 
 				if strings.Contains(domain, ":") {
-					d, _, errA := net.SplitHostPort(domain)
-					if errA != nil {
-						wrappedHandler.ServeHTTP(w, r)
+					d, _, errD := net.SplitHostPort(domain)
+					if errD != nil {
+						http.Error(
+							w,
+							errD.Error(),
+							http.StatusBadRequest,
+						)
 						return
 					}
 
@@ -186,11 +200,11 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 			}
 
 			certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-			tok, errC := os.ReadFile(certPath)
-			if errC != nil {
+			tok, errE := os.ReadFile(certPath)
+			if errE != nil {
 				http.Error(
 					w,
-					errC.Error(),
+					errE.Error(),
 					http.StatusInternalServerError,
 				)
 				return
@@ -198,7 +212,6 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 
 			_, _ = w.Write(tok)
 			w.WriteHeader(http.StatusOK)
-
 			return
 		}
 

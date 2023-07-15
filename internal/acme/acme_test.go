@@ -444,3 +444,38 @@ func BenchmarkGetCertificate(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkHandler(b *testing.B) {
+	domain := getDomain()
+	msg := "hello"
+	wrappedHandler := Handler(someAcmeAppHandler(msg))
+
+	{
+		diskCacheDir, err := diskCachedir()
+		attest.Ok(b, err)
+
+		token := "myToken"
+		certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+		err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+		attest.Ok(b, err)
+
+		err = os.WriteFile(certPath, []byte(token), 0o600)
+		attest.Ok(b, err)
+	}
+
+	b.Run("success", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+			req.Host = domain
+			wrappedHandler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			attest.Equal(b, res.StatusCode, http.StatusOK)
+		}
+	})
+}
