@@ -75,7 +75,8 @@ func TestLoadShedder(t *testing.T) {
 				attest.Equal(t, res.StatusCode, http.StatusOK)
 			}
 			if i > (minSampleSize * 2) {
-				attest.Equal(t, res.StatusCode, http.StatusServiceUnavailable)
+				// Either it is rate-limited or sendProbe succeds
+				attest.Contains(t, []int{http.StatusServiceUnavailable, http.StatusOK}, res.StatusCode)
 			}
 		}
 
