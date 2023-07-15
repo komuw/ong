@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.65
 - ong/id: Do not use crypto/rand: https://github.com/komuw/ong/pull/322
+- ong/middleware: Fix logging of ratelimited/loadshedded requests: https://github.com/komuw/ong/pull/325
 
 # v0.0.64
 - ong/acme: Limit size of certificate allowed for download: https://github.com/komuw/ong/pull/321
