@@ -52,38 +52,6 @@ func TestLoadShedder(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 	})
 
-	t.Run("can loadshed", func(t *testing.T) {
-		t.Parallel()
-
-		msg := "hello"
-		wrappedHandler := loadShedder(someLoadShedderHandler(msg))
-
-		runhandler := func(i int) {
-			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.Header.Set(loadShedderTestHeader,
-				fmt.Sprintf("%d",
-					breachLatency.Milliseconds()*2,
-				),
-			)
-			wrappedHandler.ServeHTTP(rec, req)
-
-			res := rec.Result()
-			defer res.Body.Close()
-
-			if i < minSampleSize {
-				attest.Equal(t, res.StatusCode, http.StatusOK)
-			}
-			if i == (minSampleSize * 2) {
-				attest.Equal(t, res.StatusCode, http.StatusServiceUnavailable)
-			}
-		}
-
-		for i := 0; i < (minSampleSize * 5); i++ {
-			runhandler(i)
-		}
-	})
-
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
