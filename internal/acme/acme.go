@@ -212,7 +212,6 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 
 			_, _ = w.Write(tok)
 			w.WriteHeader(http.StatusOK)
-
 			return
 		}
 
