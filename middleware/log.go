@@ -64,7 +64,6 @@ func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 				}
 			} else if lrw.code >= http.StatusBadRequest {
 				// Both client and server errors.
-
 				if lrw.code == http.StatusNotFound ||
 					lrw.code == http.StatusMethodNotAllowed ||
 					lrw.code == http.StatusTeapot {
