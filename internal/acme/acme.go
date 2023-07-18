@@ -15,7 +15,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 
 	"golang.org/x/exp/slog"
 	"golang.org/x/net/idna"
@@ -179,11 +178,11 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 					return
 				}
 
-				if len(domain) < 2 || unicode.IsDigit(rune(domain[0])) { // It is a bare IP.
-					errC := errors.New("ong/acme: request.host for well-known/acme-challenge request should not be IP address")
+				if _, errC := netip.ParseAddr(domain); errC == nil {
+					e := errors.New("ong/acme: request.host for well-known/acme-challenge request should not be IP address")
 					http.Error(
 						w,
-						errC.Error(),
+						e.Error(),
 						http.StatusTeapot,
 					)
 					return
