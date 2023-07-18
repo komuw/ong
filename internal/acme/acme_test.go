@@ -315,7 +315,7 @@ func TestAcmeHandler(t *testing.T) {
 	t.Run("normal request succeeds", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
+		msg := "hello world"
 		wrappedHandler := Handler(someAcmeAppHandler(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
