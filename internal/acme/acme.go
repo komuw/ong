@@ -403,12 +403,13 @@ func (m *manager) toDisk(domain string, cert *tls.Certificate) error {
 // fromAcme gets a certificate for domain from an ACME server.
 func (m *manager) fromAcme(ctx context.Context, domain string) (_ *tls.Certificate, acmeError error) {
 	var (
-		directoryResponse     directory
-		actResponse           account
-		orderResponse         order
-		authorizationResponse authorization
-		token                 string
-		updatedOrder          order
+		directoryResponse         directory
+		actResponse               account
+		orderResponse             order
+		authorizationResponse     authorization
+		updatedEffectiveChallenge challenge
+		token                     string
+		updatedOrder              order
 	)
 
 	defer func() {
@@ -418,6 +419,7 @@ func (m *manager) fromAcme(ctx context.Context, domain string) (_ *tls.Certifica
 				"actResponse", actResponse,
 				"orderResponse", orderResponse,
 				"authorizationResponse", authorizationResponse,
+				"updatedEffectiveChallenge", updatedEffectiveChallenge,
 				"token", token,
 				"updatedOrder", updatedOrder,
 				"error", acmeError,
@@ -467,7 +469,8 @@ func (m *manager) fromAcme(ctx context.Context, domain string) (_ *tls.Certifica
 	}
 	m.setToken(domain, token)
 
-	if _, errH := respondToChallenge(ctx, authorizationResponse.EffectiveChallenge, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l); errH != nil {
+	updatedEffectiveChallenge, errH := respondToChallenge(ctx, authorizationResponse.EffectiveChallenge, directoryResponse.NewNonceURL, actResponse.kid, accountPrivKey, m.l)
+	if errH != nil {
 		return nil, errH
 	}
 
