@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.66
+- ong/acme: Bugfix, fetch certficate for subdomain beginning with number: https://github.com/komuw/ong/pull/328
+
 # v0.0.65
 - ong/id: Do not use crypto/rand: https://github.com/komuw/ong/pull/322
 - ong/middleware: Fix logging of ratelimited/loadshedded requests: https://github.com/komuw/ong/pull/325

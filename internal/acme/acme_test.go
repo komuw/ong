@@ -315,7 +315,7 @@ func TestAcmeHandler(t *testing.T) {
 	t.Run("normal request succeeds", func(t *testing.T) {
 		t.Parallel()
 
-		msg := "hello"
+		msg := "hello world"
 		wrappedHandler := Handler(someAcmeAppHandler(msg))
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -411,6 +411,145 @@ func TestAcmeHandler(t *testing.T) {
 			cert, errD := m.getCert(context.Background(), domain)
 			attest.Ok(t, errD)
 			attest.NotZero(t, cert)
+		}
+	})
+
+	t.Run("request error cases", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := Handler(someAcmeAppHandler(msg))
+		token := "myToken"
+
+		tests := []struct {
+			name string
+			req  func() *http.Request
+			code int
+			resp string
+		}{
+			{
+				name: "normal request",
+				req: func() *http.Request {
+					domain := getDomain()
+					{
+						diskCacheDir, err := diskCachedir()
+						attest.Ok(t, err)
+
+						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+						attest.Ok(t, err)
+
+						err = os.WriteFile(certPath, []byte(token), 0o600)
+						attest.Ok(t, err)
+					}
+
+					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r.Host = domain
+					return r
+				},
+				code: http.StatusOK,
+				resp: token,
+			},
+			{
+				name: "https request",
+				req: func() *http.Request {
+					domain := getDomain()
+					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r.Host = domain
+					r.TLS = &tls.ConnectionState{}
+					return r
+				},
+				code: http.StatusTeapot,
+				resp: "request should not be https",
+			},
+			{
+				name: "ip address",
+				req: func() *http.Request {
+					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r.Host = "127.0.0.1"
+					return r
+				},
+				code: http.StatusTeapot,
+				resp: "should not be IP address",
+			},
+			{
+				// see; https://github.com/komuw/ong/issues/327
+				name: "subdomain with number",
+				req: func() *http.Request {
+					domain := "2023.example.com"
+					{
+						diskCacheDir, err := diskCachedir()
+						attest.Ok(t, err)
+
+						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+						attest.Ok(t, err)
+
+						err = os.WriteFile(certPath, []byte(token), 0o600)
+						attest.Ok(t, err)
+					}
+
+					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r.Host = "2023.example.com"
+					return r
+				},
+				code: http.StatusOK,
+				resp: token,
+			},
+			{
+				name: "domain with port",
+				req: func() *http.Request {
+					domain := "example.com"
+					{
+						diskCacheDir, err := diskCachedir()
+						attest.Ok(t, err)
+
+						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+						attest.Ok(t, err)
+
+						err = os.WriteFile(certPath, []byte(token), 0o600)
+						attest.Ok(t, err)
+					}
+
+					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r.Host = fmt.Sprintf("%s:2023", domain)
+					return r
+				},
+				code: http.StatusOK,
+				resp: token,
+			},
+			{
+				name: "no token found",
+				req: func() *http.Request {
+					domain := getDomain()
+					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r.Host = domain
+					return r
+				},
+				code: http.StatusInternalServerError,
+				resp: "no such file or directory",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				rec := httptest.NewRecorder()
+				wrappedHandler.ServeHTTP(rec, tt.req())
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, tt.code)
+				attest.Subsequence(t, string(rb), tt.resp)
+			})
 		}
 	})
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/netip"
 	"strings"
-	"unicode"
 )
 
 // httpsRedirector is a middleware that redirects http requests to https.
@@ -38,8 +38,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			if port == "" {
 				port = fmt.Sprint(httpsPort)
 			}
-			isHostBareIP := unicode.IsDigit(rune(host[0]))
-			if isHostBareIP {
+			if _, err := netip.ParseAddr(host); err == nil {
 				/*
 					the request has tried to access us via an IP address, redirect them to our domain.
 
