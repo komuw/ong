@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleEnc_Encrypt() {
-	key := "hard-passwd"
+	key := "super-h@rd-Pa$1word"
 	e := cry.New(key)
 
 	plainTextMsg := "Muziki asili yake - Remmy Ongala." // English: `What is the origin of music by Remmy Ongala`
@@ -18,7 +18,7 @@ func ExampleEnc_Encrypt() {
 }
 
 func ExampleEnc_EncryptEncode() {
-	key := "hard-passwd"
+	key := "super-h@rd-Pa$1word"
 	e := cry.New(key)
 
 	originalPlainTextMsg := "three little birds."

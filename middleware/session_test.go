@@ -67,7 +67,7 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		secretKey := "secretKey"
+		secretKey := "super-h@rd-Pa$1word"
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
@@ -91,7 +91,7 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world wide."
-		secretKey := "secretKey"
+		secretKey := "super-h@rd-Pa$1word"
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
@@ -139,7 +139,7 @@ func TestSession(t *testing.T) {
 	t.Run("with template variables", func(t *testing.T) {
 		t.Parallel()
 
-		secretKey := "secretKey"
+		secretKey := "super-h@rd-Pa$1word"
 		domain := "localhost"
 		name := "John Doe"
 		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain)
@@ -166,7 +166,7 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		secretKey := "secretKey"
+		secretKey := "super-h@rd-Pa$1word"
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"

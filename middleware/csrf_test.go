@@ -18,7 +18,7 @@ import (
 )
 
 func getSecretKey() string {
-	key := "hard-password"
+	key := "super-h@rd-Pa$1word"
 	return key
 }
 

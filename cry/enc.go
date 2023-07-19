@@ -8,6 +8,8 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	"unicode"
 
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
@@ -62,8 +64,8 @@ func New(key string) Enc {
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
 
-	if len(key) < 4 {
-		panic(errors.New("ong/cry: short key"))
+	if err := checkSecretKey(key); err != nil {
+		panic(err)
 	}
 
 	// derive a key.
@@ -78,7 +80,7 @@ func New(key string) Enc {
 		Another option would be to use argon2.
 		  import "golang.org/x/crypto/argon2"
 		  salt := rand(16, 16) // 16bytes are recommended
-		  key := argon2.Key( []byte("secretKey"), salt, 3, 32 * 1024, 4, keyLen)
+		  key := argon2.Key( []byte("super-h@rd-Pa$1word"), salt, 3, 32 * 1024, 4, keyLen)
 	*/
 
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
@@ -178,4 +180,62 @@ func random(n1, n2 int) []byte {
 		panic(err)
 	}
 	return b
+}
+
+// checkSecretKey assures that the secretKey has a minimum of desirable security properties.
+func checkSecretKey(secretKey string) error {
+	// This func is duplicated in `ong/middleware`.
+	// Changes here should also be reflected there.
+
+	minLen := 6
+	maxLen := 256
+	if len(secretKey) < minLen {
+		return fmt.Errorf("ong/cry: secretKey size is less than minimum required of %d", minLen)
+	}
+	if len(secretKey) > maxLen {
+		return fmt.Errorf("ong/cry: secretKey size is more than maximum required of %d", maxLen)
+	}
+
+	hasDigit := 0
+	hasSymbol := 0
+	hasLowerCase := 0
+	hasUpperCase := 0
+	allZeros := true
+
+	for _, r := range secretKey {
+		if unicode.IsDigit(rune(r)) {
+			hasDigit = hasDigit + 1
+		}
+		if unicode.IsPunct(rune(r)) {
+			hasSymbol = hasSymbol + 1
+		}
+		if unicode.IsLower(rune(r)) {
+			hasLowerCase = hasLowerCase + 1
+		}
+		if unicode.IsUpper(rune(r)) {
+			hasUpperCase = hasUpperCase + 1
+		}
+		if r != rune(0) {
+			allZeros = false
+		}
+	}
+
+	expected := 1
+	if hasDigit < expected {
+		return fmt.Errorf("ong/cry: secretKey should have at least %d digits", expected)
+	}
+	if hasSymbol < expected {
+		return fmt.Errorf("ong/cry: secretKey should have at least %d symbols", expected)
+	}
+	if hasLowerCase < expected {
+		return fmt.Errorf("ong/cry: secretKey should have at least %d lowercase characters", expected)
+	}
+	if hasUpperCase < expected {
+		return fmt.Errorf("ong/cry: secretKey should have at least %d uppercase characters", expected)
+	}
+	if allZeros {
+		return fmt.Errorf("ong/cry: secretKey cannot be all zeros")
+	}
+
+	return nil
 }
