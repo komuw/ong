@@ -126,7 +126,7 @@ func WithOpts(
 //
 // example usage:
 //
-//	allDefaultMiddlewares(wh, WithOpts("example.com", 443, "secretKey", RightIpStrategy, log.New(os.Stdout, 10)))
+//	allDefaultMiddlewares(wh, WithOpts("example.com", 443, "super-h@rd-Pa$1word", RightIpStrategy, log.New(os.Stdout, 10)))
 func allDefaultMiddlewares(
 	wrappedHandler http.Handler,
 	o Opts,
