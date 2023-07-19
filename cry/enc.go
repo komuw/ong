@@ -203,16 +203,16 @@ func checkSecretKey(secretKey string) error {
 	allZeros := true
 
 	for _, r := range secretKey {
-		if unicode.IsDigit(rune(r)) {
+		if unicode.IsDigit(r) {
 			hasDigit = hasDigit + 1
 		}
-		if unicode.IsPunct(rune(r)) {
+		if unicode.IsPunct(r) {
 			hasSymbol = hasSymbol + 1
 		}
-		if unicode.IsLower(rune(r)) {
+		if unicode.IsLower(r) {
 			hasLowerCase = hasLowerCase + 1
 		}
-		if unicode.IsUpper(rune(r)) {
+		if unicode.IsUpper(r) {
 			hasUpperCase = hasUpperCase + 1
 		}
 		if r != rune(0) {
