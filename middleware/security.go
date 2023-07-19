@@ -103,7 +103,7 @@ func securityHeaders(wrappedHandler http.Handler, domain string) http.HandlerFun
 				stsHeader,
 				// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
 				// A max-age(in seconds) of 2yrs is recommended
-				getSts(15*24*time.Hour), // 15 days
+				getSts(60*24*time.Hour), // 60 days
 			)
 		}
 
