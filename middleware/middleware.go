@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"github.com/komuw/ong/internal/acme"
 	"golang.org/x/exp/slog"
@@ -54,9 +55,9 @@ type Opts struct {
 }
 
 // New returns a new Opts.
+// It panics on error.
 //
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
-// New panics if domain is invalid.
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
@@ -379,4 +380,59 @@ func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 
 		wrappedHandler.ServeHTTP(w, r)
 	}
+}
+
+// checkSecretKey assures that the secretKey has a minimum of desirable security properties.
+func checkSecretKey(secretKey string) error {
+	minLen := 6
+	maxLen := 256
+	if len(secretKey) < minLen {
+		return fmt.Errorf("secretKey is less than minimum required of %d", minLen)
+	}
+	if len(secretKey) > maxLen {
+		return fmt.Errorf("secretKey is more than maximum required of %d", maxLen)
+	}
+
+	hasDigit := 0
+	hasSymbol := 0
+	hasLowerCase := 0
+	hasUpperCase := 0
+	allZeros := true
+
+	for _, r := range secretKey {
+		if unicode.IsDigit(rune(r)) {
+			hasDigit = hasDigit + 1
+		}
+		if unicode.IsPunct(rune(r)) {
+			hasSymbol = hasSymbol + 1
+		}
+		if unicode.IsLower(rune(r)) {
+			hasLowerCase = hasLowerCase + 1
+		}
+		if unicode.IsUpper(rune(r)) {
+			hasUpperCase = hasUpperCase + 1
+		}
+		if r != rune(0) {
+			allZeros = false
+		}
+	}
+
+	expected := 1
+	if hasDigit < expected {
+		return fmt.Errorf("secretKey should have at least %d digits", expected)
+	}
+	if hasSymbol < expected {
+		return fmt.Errorf("secretKey should have at least %d symbols", expected)
+	}
+	if hasLowerCase < expected {
+		return fmt.Errorf("secretKey should have at least %d lowercase characters", expected)
+	}
+	if hasUpperCase < expected {
+		return fmt.Errorf("secretKey should have at least %d uppercase characters", expected)
+	}
+	if allZeros {
+		return fmt.Errorf("secretKey cannot be all zeros")
+	}
+
+	return nil
 }

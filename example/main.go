@@ -12,7 +12,7 @@ import (
 
 func main() {
 	l := log.New(os.Stdout, 100)(context.Background()).With("pid", os.Getpid())
-	const secretKey = "super-h@rd-pa$$word"
+	const secretKey = "super-h@rd-Pa$1word"
 
 	api := NewApp(myDB{map[string]string{}}, l)
 	mux := mux.New(
