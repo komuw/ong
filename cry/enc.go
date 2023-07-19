@@ -10,6 +10,7 @@ import (
 	"errors"
 
 	"github.com/komuw/ong/internal/key"
+
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
 	"golang.org/x/exp/slices"
