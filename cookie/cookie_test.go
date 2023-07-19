@@ -238,6 +238,6 @@ func BenchmarkSetEncrypted(b *testing.B) {
 }
 
 func testSetEncrypted(req *http.Request, res http.ResponseWriter) int {
-	SetEncrypted(req, res, "name", "value", "example.com", 2*time.Hour, "some-key")
+	SetEncrypted(req, res, "name", "value", "example.com", 2*time.Hour, "super-h@rd-Pa$1word")
 	return 3
 }
