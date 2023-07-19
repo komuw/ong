@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.67
+- ong/middleware: Update security headers: https://github.com/komuw/ong/pull/330
+
 # v0.0.66
 - ong/acme: Bugfix, fetch certficate for subdomain beginning with number: https://github.com/komuw/ong/pull/328
 
