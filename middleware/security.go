@@ -137,7 +137,11 @@ media-src %s *.%s;
 object-src 'none';
 base-uri 'none';
 require-trusted-types-for 'script';
-script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`, domain, domain, domain, domain, domain, domain, nonce)
+script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`,
+		domain, domain,
+		domain, domain,
+		domain, domain, nonce,
+	)
 }
 
 func getSts(age time.Duration) string {
