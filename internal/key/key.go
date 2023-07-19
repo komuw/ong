@@ -6,25 +6,25 @@ import (
 	"unicode"
 )
 
-// IsSecure checks that k has at least some minimum desirable security properties.
-func IsSecure(k string) error {
+// IsSecure checks that secretKey has at least some minimum desirable security properties.
+func IsSecure(secretKey string) error {
 	const (
 		minLen   = 6
 		maxLen   = 256
 		expected = 1
 	)
 
-	if len(k) < minLen {
+	if len(secretKey) < minLen {
 		return fmt.Errorf("ong: secretKey size is less than minimum required of %d", minLen)
 	}
-	if len(k) > maxLen {
+	if len(secretKey) > maxLen {
 		return fmt.Errorf("ong: secretKey size is more than maximum required of %d", maxLen)
 	}
 
 	hasDigit := 0
 	hasSymbol := 0
 	hasLetter := 0
-	for _, r := range k {
+	for _, r := range secretKey {
 		if unicode.IsDigit(r) {
 			hasDigit = hasDigit + 1
 		}
