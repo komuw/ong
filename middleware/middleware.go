@@ -94,6 +94,10 @@ func New(
 		domain = domain[2:]
 	}
 
+	if err := checkSecretKey(secretKey); err != nil {
+		panic(err)
+	}
+
 	return Opts{
 		domain:         domain,
 		httpsPort:      httpsPort,
@@ -387,10 +391,10 @@ func checkSecretKey(secretKey string) error {
 	minLen := 6
 	maxLen := 256
 	if len(secretKey) < minLen {
-		return fmt.Errorf("secretKey is less than minimum required of %d", minLen)
+		return fmt.Errorf("ong/middleware: secretKey size is less than minimum required of %d", minLen)
 	}
 	if len(secretKey) > maxLen {
-		return fmt.Errorf("secretKey is more than maximum required of %d", maxLen)
+		return fmt.Errorf("ong/middleware: secretKey size is more than maximum required of %d", maxLen)
 	}
 
 	hasDigit := 0
@@ -419,19 +423,19 @@ func checkSecretKey(secretKey string) error {
 
 	expected := 1
 	if hasDigit < expected {
-		return fmt.Errorf("secretKey should have at least %d digits", expected)
+		return fmt.Errorf("ong/middleware: secretKey should have at least %d digits", expected)
 	}
 	if hasSymbol < expected {
-		return fmt.Errorf("secretKey should have at least %d symbols", expected)
+		return fmt.Errorf("ong/middleware: secretKey should have at least %d symbols", expected)
 	}
 	if hasLowerCase < expected {
-		return fmt.Errorf("secretKey should have at least %d lowercase characters", expected)
+		return fmt.Errorf("ong/middleware: secretKey should have at least %d lowercase characters", expected)
 	}
 	if hasUpperCase < expected {
-		return fmt.Errorf("secretKey should have at least %d uppercase characters", expected)
+		return fmt.Errorf("ong/middleware: secretKey should have at least %d uppercase characters", expected)
 	}
 	if allZeros {
-		return fmt.Errorf("secretKey cannot be all zeros")
+		return fmt.Errorf("ong/middleware: secretKey cannot be all zeros")
 	}
 
 	return nil
