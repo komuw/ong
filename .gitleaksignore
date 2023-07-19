@@ -1,8 +1,8 @@
 [
  {
   "Description": "Generic API Key",
-  "StartLine": 34,
-  "EndLine": 35,
+  "StartLine": 36,
+  "EndLine": 37,
   "StartColumn": 3,
   "EndColumn": 1,
   "Match": "keyLen  = chacha20poly1305.KeySize",
@@ -17,6 +17,26 @@
   "Message": "",
   "Tags": [],
   "RuleID": "generic-api-key",
-  "Fingerprint": "cry/enc.go:generic-api-key:34"
+  "Fingerprint": "cry/enc.go:generic-api-key:36"
+ },
+ {
+  "Description": "Generic API Key",
+  "StartLine": 26,
+  "EndLine": 26,
+  "StartColumn": 5,
+  "EndColumn": 48,
+  "Match": "key:  \"663acecd-af38-4e02-9529-1498bd7bd96e\"",
+  "Secret": "663acecd-af38-4e02-9529-1498bd7bd96e",
+  "File": "internal/key/key_test.go",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 3.940351,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "RuleID": "generic-api-key",
+  "Fingerprint": "internal/key/key_test.go:generic-api-key:26"
  }
 ]

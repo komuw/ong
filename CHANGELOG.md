@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.67
 - ong/middleware: Update security headers: https://github.com/komuw/ong/pull/330
+- ong: Make sure that the secretKey has some minimum security properties: https://github.com/komuw/ong/pull/329
 
 # v0.0.66
 - ong/acme: Bugfix, fetch certficate for subdomain beginning with number: https://github.com/komuw/ong/pull/328

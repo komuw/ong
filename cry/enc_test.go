@@ -10,7 +10,7 @@ import (
 )
 
 func getSecretKey() string {
-	return "hello world"
+	return "super-h@rd-Pa$1word"
 }
 
 func TestMain(m *testing.M) {

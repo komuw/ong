@@ -26,6 +26,8 @@ import (
 	"strings"
 
 	"github.com/komuw/ong/internal/acme"
+	"github.com/komuw/ong/internal/key"
+
 	"golang.org/x/exp/slog"
 )
 
@@ -54,9 +56,9 @@ type Opts struct {
 }
 
 // New returns a new Opts.
+// It panics on error.
 //
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
-// New panics if domain is invalid.
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
@@ -93,6 +95,10 @@ func New(
 		domain = domain[2:]
 	}
 
+	if err := key.IsSecure(secretKey); err != nil {
+		panic(err)
+	}
+
 	return Opts{
 		domain:         domain,
 		httpsPort:      httpsPort,
@@ -121,7 +127,7 @@ func WithOpts(
 //
 // example usage:
 //
-//	allDefaultMiddlewares(wh, WithOpts("example.com", 443, "secretKey", RightIpStrategy, log.New(os.Stdout, 10)))
+//	allDefaultMiddlewares(wh, WithOpts("example.com", 443, "super-h@rd-Pa$1word", RightIpStrategy, log.New(os.Stdout, 10)))
 func allDefaultMiddlewares(
 	wrappedHandler http.Handler,
 	o Opts,

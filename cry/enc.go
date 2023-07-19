@@ -9,6 +9,8 @@ import (
 	"encoding/base64"
 	"errors"
 
+	"github.com/komuw/ong/internal/key"
+
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
 	"golang.org/x/exp/slices"
@@ -57,17 +59,17 @@ type Enc struct {
 // It panics on error.
 //
 // It uses [scrypt] to derive the final key that will be used for encryption.
-func New(key string) Enc {
+func New(secretKey string) Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
 
-	if len(key) < 4 {
-		panic(errors.New("ong/cry: short key"))
+	if err := key.IsSecure(secretKey); err != nil {
+		panic(err)
 	}
 
 	// derive a key.
-	password := []byte(key)
+	password := []byte(secretKey)
 	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	derivedKey, err := deriveKey(password, salt)
 	if err != nil {
@@ -78,7 +80,7 @@ func New(key string) Enc {
 		Another option would be to use argon2.
 		  import "golang.org/x/crypto/argon2"
 		  salt := rand(16, 16) // 16bytes are recommended
-		  key := argon2.Key( []byte("secretKey"), salt, 3, 32 * 1024, 4, keyLen)
+		  key := argon2.Key( []byte("super-h@rd-Pa$1word"), salt, 3, 32 * 1024, 4, keyLen)
 	*/
 
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.

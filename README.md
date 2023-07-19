@@ -37,7 +37,7 @@ import (
 
 func main() {
 	l := log.New(os.Stdout, 1000)(context.Background())
-	secretKey := "super-h@rd-pa$$word"
+	secretKey := "super-h@rd-Pa$1word"
 	mux := mux.New(
 		l,
 		middleware.WithOpts(

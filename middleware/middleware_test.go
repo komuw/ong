@@ -546,10 +546,10 @@ func TestNew(t *testing.T) {
 			t.Parallel()
 			if tt.expectPanic {
 				attest.Panics(t, func() {
-					New(tt.domain, 443, nil, nil, nil, "secretKey", DirectIpStrategy, slog.Default())
+					New(tt.domain, 443, nil, nil, nil, "super-h@rd-Pa$1word", DirectIpStrategy, slog.Default())
 				})
 			} else {
-				New(tt.domain, 443, nil, nil, nil, "secretKey", DirectIpStrategy, slog.Default())
+				New(tt.domain, 443, nil, nil, nil, "super-h@rd-Pa$1word", DirectIpStrategy, slog.Default())
 			}
 		})
 	}
