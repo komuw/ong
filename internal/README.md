@@ -6,4 +6,4 @@ The packages in this directory:
 2. The `github.com/komuw/ong/internal/octx` package is need by both `github.com/komuw/ong/log`, `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
 3. The `github.com/komuw/ong/internal/finger` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
 4. The `github.com/komuw/ong/internal/acme` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
-5. The `github.com/komuw/ong/internal/secret` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/cry`
+5. The `github.com/komuw/ong/internal/key` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/cry`
