@@ -123,7 +123,7 @@ func TestCookies(t *testing.T) {
 		value := "hello world are you okay"
 		domain := "localhost"
 		mAge := 23 * time.Hour
-		secretKey := "my secret key"
+		secretKey := "super-h@rd-Pa$1word"
 		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
@@ -159,7 +159,7 @@ func TestCookies(t *testing.T) {
 		value := "hello world are you okay"
 		domain := "localhost"
 		mAge := -23 * time.Hour
-		secretKey := "my secret key"
+		secretKey := "super-h@rd-Pa$1word"
 		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
