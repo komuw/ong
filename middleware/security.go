@@ -62,6 +62,7 @@ func securityHeaders(wrappedHandler http.Handler, domain string) http.HandlerFun
 			// - https://stackoverflow.com/a/66955464/2768067
 			// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src
 			// - https://web.dev/security-headers/#tt
+			// - https://securityheaders.com/
 			//
 			// content is only permitted from:
 			// - the document's origin(and subdomains)
@@ -130,14 +131,9 @@ func getCsp(domain, nonce string) string {
 	// - media is allowed from domain(and its subdomains)
 	// - executable scripts is only allowed from self(& subdomains).
 	// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
-	return fmt.Sprintf(`
-default-src 'self' %s *.%s;
-img-src *;
-media-src %s *.%s;
-object-src 'none';
-base-uri 'none';
-require-trusted-types-for 'script';
-script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';`,
+	return fmt.Sprintf(
+		// It does not work if they are not all in same line.
+		"default-src 'self' %s *.%s; img-src *; media-src %s *.%s; object-src 'none'; base-uri 'none'; require-trusted-types-for 'script'; script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';",
 		domain, domain,
 		domain, domain,
 		domain, domain, nonce,
