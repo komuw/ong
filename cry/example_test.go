@@ -18,7 +18,7 @@ func ExampleEnc_Encrypt() {
 }
 
 func ExampleEnc_EncryptEncode() {
-	key := "hard-passwd"
+	key := "super-h@rd-Pa$1word"
 	e := cry.New(key)
 
 	originalPlainTextMsg := "three little birds."
