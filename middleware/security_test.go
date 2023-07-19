@@ -70,7 +70,7 @@ func TestSecurity(t *testing.T) {
 			corpHeader:              "same-site",
 			coopHeader:              "same-origin",
 			referrerHeader:          "strict-origin-when-cross-origin",
-			stsHeader:               getSts(15 * 24 * time.Hour),
+			stsHeader:               getSts(60 * 24 * time.Hour),
 		}
 
 		for k, v := range expect {
