@@ -404,7 +404,6 @@ func checkSecretKey(secretKey string) error {
 	hasSymbol := 0
 	hasLowerCase := 0
 	hasUpperCase := 0
-	allZeros := true
 
 	for _, r := range secretKey {
 		if unicode.IsDigit(r) {
@@ -418,9 +417,6 @@ func checkSecretKey(secretKey string) error {
 		}
 		if unicode.IsUpper(r) {
 			hasUpperCase = hasUpperCase + 1
-		}
-		if r != rune(0) {
-			allZeros = false
 		}
 	}
 
@@ -436,9 +432,6 @@ func checkSecretKey(secretKey string) error {
 	}
 	if hasUpperCase < expected {
 		return fmt.Errorf("ong/middleware: secretKey should have at least %d uppercase characters", expected)
-	}
-	if allZeros {
-		return fmt.Errorf("ong/middleware: secretKey cannot be all zeros")
 	}
 
 	return nil
