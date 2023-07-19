@@ -184,6 +184,9 @@ func random(n1, n2 int) []byte {
 
 // checkSecretKey assures that the secretKey has a minimum of desirable security properties.
 func checkSecretKey(secretKey string) error {
+	// This func is duplicated in `ong/middleware`.
+	// Changes here should also be reflected there.
+
 	minLen := 6
 	maxLen := 256
 	if len(secretKey) < minLen {
