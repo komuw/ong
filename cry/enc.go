@@ -8,8 +8,8 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
-	"unicode"
+
+	"github.com/komuw/ong/internal/key"
 
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
@@ -59,17 +59,17 @@ type Enc struct {
 // It panics on error.
 //
 // It uses [scrypt] to derive the final key that will be used for encryption.
-func New(key string) Enc {
+func New(secretKey string) Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
 
-	if err := checkSecretKey(key); err != nil {
+	if err := key.IsSecure(secretKey); err != nil {
 		panic(err)
 	}
 
 	// derive a key.
-	password := []byte(key)
+	password := []byte(secretKey)
 	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
 	derivedKey, err := deriveKey(password, salt)
 	if err != nil {
@@ -180,62 +180,4 @@ func random(n1, n2 int) []byte {
 		panic(err)
 	}
 	return b
-}
-
-// checkSecretKey assures that the secretKey has a minimum of desirable security properties.
-func checkSecretKey(secretKey string) error {
-	// This func is duplicated in `ong/middleware`.
-	// Changes here should also be reflected there.
-
-	minLen := 6
-	maxLen := 256
-	if len(secretKey) < minLen {
-		return fmt.Errorf("ong/cry: secretKey size is less than minimum required of %d", minLen)
-	}
-	if len(secretKey) > maxLen {
-		return fmt.Errorf("ong/cry: secretKey size is more than maximum required of %d", maxLen)
-	}
-
-	hasDigit := 0
-	hasSymbol := 0
-	hasLowerCase := 0
-	hasUpperCase := 0
-	allZeros := true
-
-	for _, r := range secretKey {
-		if unicode.IsDigit(r) {
-			hasDigit = hasDigit + 1
-		}
-		if unicode.IsPunct(r) {
-			hasSymbol = hasSymbol + 1
-		}
-		if unicode.IsLower(r) {
-			hasLowerCase = hasLowerCase + 1
-		}
-		if unicode.IsUpper(r) {
-			hasUpperCase = hasUpperCase + 1
-		}
-		if r != rune(0) {
-			allZeros = false
-		}
-	}
-
-	expected := 1
-	if hasDigit < expected {
-		return fmt.Errorf("ong/cry: secretKey should have at least %d digits", expected)
-	}
-	if hasSymbol < expected {
-		return fmt.Errorf("ong/cry: secretKey should have at least %d symbols", expected)
-	}
-	if hasLowerCase < expected {
-		return fmt.Errorf("ong/cry: secretKey should have at least %d lowercase characters", expected)
-	}
-	if hasUpperCase < expected {
-		return fmt.Errorf("ong/cry: secretKey should have at least %d uppercase characters", expected)
-	}
-	if allZeros {
-		return fmt.Errorf("ong/cry: secretKey cannot be all zeros")
-	}
-
-	return nil
 }

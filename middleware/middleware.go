@@ -24,9 +24,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"unicode"
 
 	"github.com/komuw/ong/internal/acme"
+	"github.com/komuw/ong/internal/key"
+
 	"golang.org/x/exp/slog"
 )
 
@@ -94,7 +95,7 @@ func New(
 		domain = domain[2:]
 	}
 
-	if err := checkSecretKey(secretKey); err != nil {
+	if err := key.IsSecure(secretKey); err != nil {
 		panic(err)
 	}
 
@@ -384,62 +385,4 @@ func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 
 		wrappedHandler.ServeHTTP(w, r)
 	}
-}
-
-// checkSecretKey assures that the secretKey has a minimum of desirable security properties.
-func checkSecretKey(secretKey string) error {
-	// This func is duplicated in `ong/cry`.
-	// Changes here should also be reflected there.
-
-	minLen := 6
-	maxLen := 256
-	if len(secretKey) < minLen {
-		return fmt.Errorf("ong/middleware: secretKey size is less than minimum required of %d", minLen)
-	}
-	if len(secretKey) > maxLen {
-		return fmt.Errorf("ong/middleware: secretKey size is more than maximum required of %d", maxLen)
-	}
-
-	hasDigit := 0
-	hasSymbol := 0
-	hasLowerCase := 0
-	hasUpperCase := 0
-	allZeros := true
-
-	for _, r := range secretKey {
-		if unicode.IsDigit(r) {
-			hasDigit = hasDigit + 1
-		}
-		if unicode.IsPunct(r) {
-			hasSymbol = hasSymbol + 1
-		}
-		if unicode.IsLower(r) {
-			hasLowerCase = hasLowerCase + 1
-		}
-		if unicode.IsUpper(r) {
-			hasUpperCase = hasUpperCase + 1
-		}
-		if r != rune(0) {
-			allZeros = false
-		}
-	}
-
-	expected := 1
-	if hasDigit < expected {
-		return fmt.Errorf("ong/middleware: secretKey should have at least %d digits", expected)
-	}
-	if hasSymbol < expected {
-		return fmt.Errorf("ong/middleware: secretKey should have at least %d symbols", expected)
-	}
-	if hasLowerCase < expected {
-		return fmt.Errorf("ong/middleware: secretKey should have at least %d lowercase characters", expected)
-	}
-	if hasUpperCase < expected {
-		return fmt.Errorf("ong/middleware: secretKey should have at least %d uppercase characters", expected)
-	}
-	if allZeros {
-		return fmt.Errorf("ong/middleware: secretKey cannot be all zeros")
-	}
-
-	return nil
 }
