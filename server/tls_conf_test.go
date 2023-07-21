@@ -34,6 +34,20 @@ func TestGetTlsConfig(t *testing.T) {
 				attest.NotZero(t, c)
 			},
 		},
+		{
+			name: "bad domain",
+			opts: Opts{
+				tls: tlsOpts{
+					domain:           "example.*org",
+					acmeEmail:        "xx@example.com",
+					acmeDirectoryUrl: letsEncryptStagingUrl,
+				},
+			},
+			assert: func(c *tls.Config, err error) {
+				attest.Error(t, err)
+				attest.Zero(t, c)
+			},
+		},
 	}
 
 	for _, tt := range tests {
