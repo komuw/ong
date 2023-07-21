@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"testing"
 
 	"github.com/komuw/ong/log"
@@ -41,6 +42,21 @@ func TestGetTlsConfig(t *testing.T) {
 					domain:           "example.*org",
 					acmeEmail:        "xx@example.com",
 					acmeDirectoryUrl: letsEncryptStagingUrl,
+				},
+			},
+			assert: func(c *tls.Config, err error) {
+				attest.Error(t, err)
+				attest.Zero(t, c)
+			},
+		},
+		{
+			name: "non nil pool with no tls args",
+			opts: Opts{
+				tls: tlsOpts{
+					domain:                "example.com",
+					acmeEmail:             "",
+					acmeDirectoryUrl:      letsEncryptStagingUrl,
+					clientCertificatePool: &x509.CertPool{},
 				},
 			},
 			assert: func(c *tls.Config, err error) {
