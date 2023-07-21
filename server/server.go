@@ -5,6 +5,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
@@ -60,7 +61,8 @@ type tlsOpts struct {
 	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 	domain string
 	// URL of the ACME certificate authority's directory endpoint.
-	acmeDirectoryUrl string
+	acmeDirectoryUrl      string
+	clientCertificatePool *x509.CertPool
 }
 
 // Opts are the various parameters(optionals) that can be used to configure a HTTP server.
@@ -115,6 +117,10 @@ func (o Opts) Equal(other Opts) bool {
 // domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
 // acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
 //
+// clientCertificatePool is an [x509.CertPool], that will be used to verify client certificates.
+// Use this option if you would like to perform mutual TLS authentication.
+// ong uses the given pool as is.
+//
 // If certFile is a non-empty string, this will enable tls using certificates found on disk.
 // If acmeEmail is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
 //
@@ -135,6 +141,7 @@ func NewOpts(
 	acmeEmail string, // if present, tls will be served from acme certificates.
 	domain string,
 	acmeDirectoryUrl string,
+	clientCertificatePool *x509.CertPool,
 ) Opts {
 	serverPort := fmt.Sprintf(":%d", port)
 	host := "127.0.0.1"
@@ -245,6 +252,7 @@ func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUr
 		acmeEmail,
 		domain,
 		acmeDirectoryUrl,
+		nil,
 	)
 }
 
