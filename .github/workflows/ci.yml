@@ -124,7 +124,7 @@ jobs:
         run: |
           set -x
           go install honnef.co/go/tools/cmd/staticcheck@latest
-          go install github.com/securego/gosec/cmd/gosec@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
           go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
           go install github.com/orijtech/structslop/cmd/structslop@latest
           go install github.com/orijtech/httperroryzer/cmd/httperroryzer@latest
@@ -159,7 +159,7 @@ jobs:
           /home/runner/go/bin/checklocks -test=false ./...
           /home/runner/go/bin/staticcheck -tests -go 1.20 ./...
           govulncheck ./...
-          # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.20
+          /home/runner/go/bin/gosec ./...
           # /home/runner/go/bin/structslop ./... # does not seem to work with Go1.20
           /home/runner/go/bin/httperroryzer ./...
           # see: https://github.com/golang/go/commit/a98589711da5e9d935e8d690cfca92892e86d557
