@@ -64,6 +64,22 @@ func TestGetTlsConfig(t *testing.T) {
 				attest.Zero(t, c)
 			},
 		},
+		{
+			name: "cert pool success",
+			opts: Opts{
+				tls: tlsOpts{
+					domain:                "example.com",
+					acmeEmail:             "xx@example.com",
+					acmeDirectoryUrl:      letsEncryptStagingUrl,
+					clientCertificatePool: &x509.CertPool{},
+				},
+			},
+			assert: func(c *tls.Config, err error) {
+				attest.Ok(t, err)
+				attest.NotZero(t, c)
+				attest.Equal(t, c.ClientAuth, tls.RequireAndVerifyClientCert)
+			},
+		},
 	}
 
 	for _, tt := range tests {

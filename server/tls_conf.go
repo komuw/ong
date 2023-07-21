@@ -25,7 +25,7 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 		return nil, err
 	}
 
-	if (o.tls.acmeEmail == "" || o.tls.certFile == "") && o.tls.clientCertificatePool != nil {
+	if o.tls.acmeEmail == "" && o.tls.certFile == "" && o.tls.clientCertificatePool != nil {
 		return nil, errors.New("ong/server: clientCertificatePool cannot be specified if acmeEmail or certFile is unspecified")
 	}
 
