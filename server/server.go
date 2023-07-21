@@ -179,11 +179,12 @@ func NewOpts(
 		idleTimeout:       idleTimeout,
 		drainTimeout:      drainTimeout,
 		tls: tlsOpts{
-			certFile:         certFile,
-			keyFile:          keyFile,
-			acmeEmail:        acmeEmail,
-			domain:           domain,
-			acmeDirectoryUrl: acmeDirectoryUrl,
+			certFile:              certFile,
+			keyFile:               keyFile,
+			acmeEmail:             acmeEmail,
+			domain:                domain,
+			acmeDirectoryUrl:      acmeDirectoryUrl,
+			clientCertificatePool: clientCertificatePool,
 		},
 		// this ones are created automatically
 		host:          host,
