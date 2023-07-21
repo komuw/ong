@@ -3,8 +3,11 @@
 Most recent version is listed first.  
 
 
+# v0.0.69
+- ong/server: Bugfix; add ability to use mutual TLS authentication: https://github.com/komuw/ong/pull/335
+
 # v0.0.68
-- Add ability to use mutual TLS authentication: https://github.com/komuw/ong/pull/334
+- ong/server: Add ability to use mutual TLS authentication: https://github.com/komuw/ong/pull/334
 
 # v0.0.67
 - ong/middleware: Update security headers: https://github.com/komuw/ong/pull/330
