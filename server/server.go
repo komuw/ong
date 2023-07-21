@@ -119,7 +119,7 @@ func (o Opts) Equal(other Opts) bool {
 //
 // clientCertificatePool is an [x509.CertPool], that will be used to verify client certificates.
 // Use this option if you would like to perform mutual TLS authentication.
-// ong uses the given pool as is.
+// ong uses the given pool as is, without modification.
 //
 // If certFile is a non-empty string, this will enable tls using certificates found on disk.
 // If acmeEmail is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
