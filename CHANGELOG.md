@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.68
+- Add ability to use mutual TLS authentication: https://github.com/komuw/ong/pull/334
+
 # v0.0.67
 - ong/middleware: Update security headers: https://github.com/komuw/ong/pull/330
 - ong: Make sure that the secretKey has some minimum security properties: https://github.com/komuw/ong/pull/329
