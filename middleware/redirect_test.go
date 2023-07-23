@@ -39,7 +39,7 @@ func TestHttpsRedirector(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	t.Run("get is redirected", func(t *testing.T) {
+	t.Run("get is redirected to https", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
@@ -55,9 +55,10 @@ func TestHttpsRedirector(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
 		attest.NotZero(t, res.Header.Get(locationHeader))
+		attest.Equal(t, res.Header.Get(locationHeader), "https://localhost"+"/someUri")
 	})
 
-	t.Run("post is redirected", func(t *testing.T) {
+	t.Run("post is redirected to https", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello you"
@@ -73,6 +74,7 @@ func TestHttpsRedirector(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
 		attest.NotZero(t, res.Header.Get(locationHeader))
+		attest.Equal(t, res.Header.Get(locationHeader), "https://localhost"+"/someUri")
 	})
 
 	t.Run("uri combinations", func(t *testing.T) {
