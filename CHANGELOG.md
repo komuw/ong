@@ -2,6 +2,8 @@
 
 Most recent version is listed first.  
 
+# v0.0.70
+- ong/middleware: Fix DNS rebinding via http: https://github.com/komuw/ong/compare/issues/337
 
 # v0.0.69
 - ong/server: Bugfix; add ability to use mutual TLS authentication: https://github.com/komuw/ong/pull/335
