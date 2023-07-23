@@ -17,21 +17,24 @@ import (
 // [DNS rebinding]: https://en.wikipedia.org/wiki/DNS_rebinding
 func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		{ // 1. http -> https redirect.
-			isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
-			if !isTls {
-				url := r.URL
-				url.Scheme = "https"
-				url.Host = joinHostPort(domain, fmt.Sprint(httpsPort))
-				path := url.String()
-
-				http.Redirect(w, r, path, http.StatusPermanentRedirect)
-				return
-			}
-		}
-
 		host, port := getHostPort(r.Host)
-		{ // 2. bareIP -> https redirect.
+
+		/*
+		   The protections should happen in the order listed.
+		   - IP should be redirected to domain
+		   - Then DNS rebinding protection has to happen b4 http->https redirect.
+		   See: https://github.com/komuw/ong/issues/337
+
+		   There's still a small problem, suppose your domain is `good.com` at IP `87.45.2.3`
+		   a malicious actor could send the request.
+		       curl -vkL -H 'Host: 87.45.2.3' http://bad.com
+		   This middleware will redirect it to `https://good.com`
+		   So in a perfect world, you would also want to make sure that you only redirect IP addresses
+		   that you are in control of.
+		   Maybe by doing `net.LookupIP("good.com")`. But that seems like too much work for little gain??
+		*/
+
+		{ // 1. bareIP -> https redirect.
 			// A Host header field must be sent in all HTTP/1.1 request messages.
 			// Thus we expect `r.Host[0]` to always have a value.
 			// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host
@@ -40,14 +43,14 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			}
 			if _, err := netip.ParseAddr(host); err == nil {
 				/*
-					the request has tried to access us via an IP address, redirect them to our domain.
+				   the request has tried to access us via an IP address, redirect them to our domain.
 
-					curl -vkIL 172.217.170.174 #google
-					HEAD / HTTP/1.1
-					Host: 172.217.170.174
+				   curl -vkIL 172.217.170.174 #google
+				   HEAD / HTTP/1.1
+				   Host: 172.217.170.174
 
-					HTTP/1.1 301 Moved Permanently
-					Location: http://www.google.com/
+				   HTTP/1.1 301 Moved Permanently
+				   Location: http://www.google.com/
 				*/
 				url := r.URL
 				url.Scheme = "https"
@@ -59,7 +62,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			}
 		}
 
-		{ // 3. DNS rebinding attack protection.
+		{ // 2. DNS rebinding attack protection.
 			// todo: before calling `isDomainOrSubdomain` we need to make sure that both args are already be in canonical form.
 			// see; https://github.com/golang/go/blob/master/src/net/http/client.go#L1001-L1003
 			// We know that domain is kinda already canonical since [New] validates that. But host is not.
@@ -71,6 +74,19 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 					err.Error(),
 					http.StatusBadRequest,
 				)
+				return
+			}
+		}
+
+		{ // 3. http -> https redirect.
+			isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
+			if !isTls {
+				url := r.URL
+				url.Scheme = "https"
+				url.Host = joinHostPort(domain, fmt.Sprint(httpsPort))
+				path := url.String()
+
+				http.Redirect(w, r, path, http.StatusPermanentRedirect)
 				return
 			}
 		}
