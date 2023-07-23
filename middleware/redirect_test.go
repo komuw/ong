@@ -45,6 +45,7 @@ func TestHttpsRedirector(t *testing.T) {
 		msg := "hello world"
 		port := uint16(443)
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
+
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Host = "localhost"
@@ -127,10 +128,10 @@ func TestHttpsRedirector(t *testing.T) {
 
 		res, err := client.Get(ts.URL)
 		attest.Ok(t, err)
+		defer res.Body.Close()
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
-		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Zero(t, res.Header.Get(locationHeader))
@@ -155,10 +156,10 @@ func TestHttpsRedirector(t *testing.T) {
 		body := strings.NewReader(postMsg)
 		res, err := client.Post(ts.URL, "application/json", body)
 		attest.Ok(t, err)
+		defer res.Body.Close()
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
-		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Zero(t, res.Header.Get(locationHeader))
@@ -216,10 +217,10 @@ func TestHttpsRedirector(t *testing.T) {
 			url = strings.ReplaceAll(url, "localhost", "127.0.0.1")
 			res, err := client.Get(url)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
-			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Zero(t, res.Header.Get(locationHeader))
@@ -232,10 +233,10 @@ func TestHttpsRedirector(t *testing.T) {
 			url = strings.ReplaceAll(url, "127.0.0.1", "localhost")
 			res, err := client.Get(url)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
-			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Zero(t, res.Header.Get(locationHeader))
@@ -295,10 +296,10 @@ func TestHttpsRedirector(t *testing.T) {
 
 				res, err := client.Do(req)
 				attest.Ok(t, err)
+				defer res.Body.Close()
 
 				rb, err := io.ReadAll(res.Body)
 				attest.Ok(t, err)
-				defer res.Body.Close()
 
 				attest.Equal(t, res.StatusCode, tt.expectedCode)
 				attest.Zero(t, res.Header.Get(locationHeader))
