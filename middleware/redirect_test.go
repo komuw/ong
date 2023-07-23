@@ -179,6 +179,7 @@ func TestHttpsRedirector(t *testing.T) {
 			wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), p, domain)
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, uri, nil)
+			req.Host = domain
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
