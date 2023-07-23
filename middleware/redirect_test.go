@@ -47,6 +47,7 @@ func TestHttpsRedirector(t *testing.T) {
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Host = "localhost"
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -64,6 +65,7 @@ func TestHttpsRedirector(t *testing.T) {
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+		req.Host = "localhost"
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -98,6 +100,7 @@ func TestHttpsRedirector(t *testing.T) {
 			uri := uri
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, uri, nil)
+			req.Host = "localhost"
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -313,6 +316,7 @@ func TestHttpsRedirector(t *testing.T) {
 		runhandler := func() {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+			req.Host = "localhost"
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
