@@ -32,6 +32,8 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 		   So in a perfect world, you would also want to make sure that you only redirect IP addresses
 		   that you are in control of.
 		   Maybe by doing `net.LookupIP("good.com")`. But that seems like too much work for little gain??
+		   If you think about it, a malicious actor could setup `bad.com` on their own IP address and then in
+		   their webserver, redirect all requests to `good.com`. As the owner of `good.com` there's nothing you can do about it.
 		*/
 
 		{ // 1. bareIP -> https redirect.
