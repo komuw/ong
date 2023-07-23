@@ -17,7 +17,7 @@ import (
 // [DNS rebinding]: https://en.wikipedia.org/wiki/DNS_rebinding
 func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		host, port := getHostPort(r.Host)
+		host, _ := getHostPort(r.Host)
 
 		/*
 		   The protections should happen in the order listed.
@@ -40,9 +40,6 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			// A Host header field must be sent in all HTTP/1.1 request messages.
 			// Thus we expect `r.Host[0]` to always have a value.
 			// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Host
-			if port == "" {
-				port = fmt.Sprint(httpsPort)
-			}
 			if _, err := netip.ParseAddr(host); err == nil {
 				/*
 				   the request has tried to access us via an IP address, redirect them to our domain.
@@ -56,7 +53,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 				*/
 				url := r.URL
 				url.Scheme = "https"
-				url.Host = joinHostPort(domain, port)
+				url.Host = joinHostPort(domain, fmt.Sprint(httpsPort))
 				path := url.String()
 
 				http.Redirect(w, r, path, http.StatusPermanentRedirect)
