@@ -17,7 +17,8 @@ func TestPprofServer(t *testing.T) {
 	t.Parallel()
 
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
-	o := Opts{serverLogLevel: defaultServerLogLevel}
+	port := 65079
+	o := Opts{serverLogLevel: defaultServerLogLevel, pprofPort: fmt.Sprintf("%d", port)}
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
@@ -25,7 +26,6 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		port := 65079
 		ping(t, uint16(port))
 
 		uri := "/debug/pprof/heap"
@@ -42,7 +42,6 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		port := 65079
 		ping(t, uint16(port))
 
 		runhandler := func() {
