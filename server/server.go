@@ -86,6 +86,7 @@ type Opts struct {
 	serverAddress string
 	network       string
 	httpPort      string
+	pprofPort     string
 }
 
 // Equal compares two Opts for equality.
@@ -156,6 +157,7 @@ func NewOpts(
 	if port != 443 {
 		httpPort = port - 1
 	}
+	pprofPort := httpPort - 1
 
 	if maxBodyBytes <= 0 {
 		maxBodyBytes = defaultMaxBodyBytes
@@ -192,6 +194,7 @@ func NewOpts(
 		serverAddress: serverAddress,
 		network:       "tcp",
 		httpPort:      fmt.Sprintf(":%d", httpPort),
+		pprofPort:     fmt.Sprintf("%d", pprofPort),
 	}
 }
 

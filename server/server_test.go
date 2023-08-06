@@ -94,6 +94,7 @@ func TestOpts(t *testing.T) {
 			serverPort:        ":65081",
 			serverAddress:     "127.0.0.1:65081",
 			httpPort:          ":65080",
+			pprofPort:         "65079",
 			tls: tlsOpts{
 				certFile:         "/tmp/ong_dev_certificate.pem",
 				keyFile:          "/tmp/ong_dev_key.pem",
@@ -124,6 +125,7 @@ func TestOpts(t *testing.T) {
 			serverPort:        ":80",
 			serverAddress:     "0.0.0.0:80",
 			httpPort:          ":79",
+			pprofPort:         "78",
 			tls: tlsOpts{
 				certFile:         "/tmp/ong_dev_certificate.pem",
 				keyFile:          "/tmp/ong_dev_key.pem",
@@ -159,6 +161,7 @@ func TestOpts(t *testing.T) {
 			serverPort:    ":65081",
 			serverAddress: "127.0.0.1:65081",
 			httpPort:      ":65080",
+			pprofPort:     "65079",
 		}
 		attest.Equal(t, got, want)
 	})
