@@ -298,13 +298,13 @@ func TestMiddlewareServer(t *testing.T) {
 			// non-safe http methods(like POST) require a server-known csrf token;
 			// otherwise it fails with http 403
 			// so here we make a http GET so that we can have a csrf token.
-			o := WithOpts("localhost", 443, getSecretKey(), DirectIpStrategy, l)
+			httpsPort := getPort()
+			domain := "localhost"
+			o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 			msg := "hey"
 			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-			ts := httptest.NewTLSServer(
-				wrappedHandler,
-			)
+			ts := customServer(t, wrappedHandler, domain, httpsPort)
 			defer ts.Close()
 
 			res, err := client.Get(ts.URL)
@@ -321,12 +321,12 @@ func TestMiddlewareServer(t *testing.T) {
 		}
 
 		msg := "hello world"
-		o := WithOpts("localhost", 443, getSecretKey(), DirectIpStrategy, l)
+		httpsPort := getPort()
+		domain := "localhost"
+		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		ts := customServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		postMsg := "This is a post message"
@@ -379,12 +379,13 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("*.localhost", 443, getSecretKey(), DirectIpStrategy, l)
+		httpsPort := getPort()
+		domain := "*.localhost"
+
+		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		ts := customServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -451,14 +452,14 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("localhost", 443, getSecretKey(), DirectIpStrategy, l)
+		httpsPort := getPort()
+		domain := "localhost"
+		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		ts := customServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		runhandler := func() {
