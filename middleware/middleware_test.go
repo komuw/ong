@@ -381,7 +381,6 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := getPort()
 		domain := "*.localhost"
-
 		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
@@ -414,7 +413,9 @@ func TestMiddlewareServer(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
 		code := http.StatusAccepted
-		o := WithOpts("*.localhost", 443, getSecretKey(), DirectIpStrategy, getLogger(logOutput))
+		httpsPort := getPort()
+		domain := "*.localhost"
+		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, getLogger(logOutput))
 		doubleWrite := func(msg string, code int) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(code)
@@ -423,9 +424,7 @@ func TestMiddlewareServer(t *testing.T) {
 			}
 		}
 		wrappedHandler := All(doubleWrite(msg, code), o)
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		ts := customServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
