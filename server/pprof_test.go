@@ -25,7 +25,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		port := 65060
+		port := 65079
 		ping(t, uint16(port))
 
 		uri := "/debug/pprof/heap"
@@ -42,7 +42,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		port := 65060
+		port := 65079
 		ping(t, uint16(port))
 
 		runhandler := func() {
