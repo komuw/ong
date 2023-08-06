@@ -51,7 +51,7 @@ func checkAgeHandler() http.HandlerFunc {
 
 // customServer starts a server at a predetermined port.
 // It's upto callers to close the server.
-func customServer(t *testing.T, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
+func customServer(t attest.TB, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
 	t.Helper()
 
 	ts := httptest.NewUnstartedServer(h)

@@ -46,7 +46,7 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 
 // customServer starts a server at a predetermined port.
 // It's upto callers to close the server.
-func customServer(t *testing.T, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
+func customServer(t attest.TB, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
 	t.Helper()
 
 	ts := httptest.NewUnstartedServer(h)
@@ -495,11 +495,12 @@ var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
-	o := WithOpts("localhost", 443, getSecretKey(), DirectIpStrategy, l)
+	httpsPort := getPort()
+	domain := "localhost"
+	o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
-	ts := httptest.NewTLSServer(
-		wrappedHandler,
-	)
+
+	ts := customServer(b, wrappedHandler, domain, httpsPort)
 	defer ts.Close()
 
 	tr := &http.Transport{
