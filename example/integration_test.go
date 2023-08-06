@@ -43,7 +43,7 @@ func TestIntegration(t *testing.T) {
 
 	t.Run("pprof", func(t *testing.T) {
 		c := &http.Client{}
-		res, err := c.Get("http://127.0.0.1:65060/debug/pprof/profile?seconds=3")
+		res, err := c.Get("http://127.0.0.1:65079/debug/pprof/profile?seconds=3")
 		attest.Ok(t, err)
 		defer res.Body.Close()
 		attest.Equal(t, res.StatusCode, http.StatusOK)

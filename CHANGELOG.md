@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.70
+- ong/server: Dynamically assign port for pprof: https://github.com/komuw/ong/pull/343
+
 # v0.0.69
 - ong/server: Bugfix; add ability to use mutual TLS authentication: https://github.com/komuw/ong/pull/335
 
