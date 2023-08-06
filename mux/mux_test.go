@@ -235,8 +235,8 @@ func TestMux(t *testing.T) {
 			rStr := fmt.Sprintf("%v", r)
 			attest.Subsequence(t, rStr, uri2)
 			attest.Subsequence(t, rStr, method)
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:26") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:32") // location where `thisIsAnotherMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:34") // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/mux/mux_test.go:40") // location where `thisIsAnotherMuxHandler` is declared.
 		}()
 
 		_ = New(
@@ -289,28 +289,28 @@ func TestMux(t *testing.T) {
 				"api",
 				"/api/",
 				MethodGet,
-				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+				"ong/mux/mux_test.go:34", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with prefix slash",
 				"/api",
 				"/api/",
 				MethodGet,
-				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+				"ong/mux/mux_test.go:34", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with suffix slash",
 				"api/",
 				"/api/",
 				MethodGet,
-				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+				"ong/mux/mux_test.go:34", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with all slashes",
 				"/api/",
 				"/api/",
 				MethodGet,
-				"ong/mux/mux_test.go:26", // location where `someMuxHandler` is declared.
+				"ong/mux/mux_test.go:34", // location where `someMuxHandler` is declared.
 			},
 			{
 				"bad",
@@ -324,14 +324,14 @@ func TestMux(t *testing.T) {
 				"check/2625",
 				"/check/:age/",
 				MethodAll,
-				"ong/mux/mux_test.go:38", // location where `checkAgeHandler` is declared.
+				"ong/mux/mux_test.go:46", // location where `checkAgeHandler` is declared.
 			},
 			{
 				"url with domain name",
 				"https://localhost/check/2625",
 				"/check/:age/",
 				MethodAll,
-				"ong/mux/mux_test.go:38", // location where `checkAgeHandler` is declared.
+				"ong/mux/mux_test.go:46", // location where `checkAgeHandler` is declared.
 			},
 		}
 
