@@ -4,9 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"math"
-	"math/rand"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,31 +26,6 @@ func someHttpsRedirectorHandler(msg string) http.HandlerFunc {
 
 		fmt.Fprint(w, msg)
 	}
-}
-
-// customServer starts a server at a predetermined port.
-// It's upto callers to close the server.
-func customServer(t *testing.T, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
-	t.Helper()
-
-	ts := httptest.NewUnstartedServer(h)
-	ts.Listener.Close()
-
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", domain, httpsPort))
-	attest.Ok(t, err)
-
-	ts.Listener = l
-	ts.StartTLS()
-
-	return ts
-}
-
-// getPort returns a random port.
-// The idea is that different tests should run on different independent ports to avoid collisions.
-func getPort() uint16 {
-	r := rand.Intn(10_000) + 1
-	p := math.MaxUint16 - uint16(r)
-	return p
 }
 
 const locationHeader = "Location"

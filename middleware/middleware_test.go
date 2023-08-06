@@ -6,6 +6,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"math"
+	"math/rand"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,6 +21,11 @@ import (
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slog"
 )
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
+}
 
 func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -36,9 +44,29 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 	}
 }
 
-func TestMain(m *testing.M) {
-	// call flag.Parse() here if TestMain uses flags
-	goleak.VerifyTestMain(m)
+// customServer starts a server at a predetermined port.
+// It's upto callers to close the server.
+func customServer(t *testing.T, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
+	t.Helper()
+
+	ts := httptest.NewUnstartedServer(h)
+	ts.Listener.Close()
+
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", domain, httpsPort))
+	attest.Ok(t, err)
+
+	ts.Listener = l
+	ts.StartTLS()
+
+	return ts
+}
+
+// getPort returns a random port.
+// The idea is that different tests should run on different independent ports to avoid collisions.
+func getPort() uint16 {
+	r := rand.Intn(10_000) + 1
+	p := math.MaxUint16 - uint16(r)
+	return p
 }
 
 func TestAllMiddleware(t *testing.T) {
@@ -243,12 +271,12 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		o := WithOpts("localhost", 443, getSecretKey(), DirectIpStrategy, l)
+		httpsPort := getPort()
+		domain := "localhost"
+		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		ts := customServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
