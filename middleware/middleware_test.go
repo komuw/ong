@@ -191,14 +191,12 @@ func TestAllMiddleware(t *testing.T) {
 		// non-safe http methods(like POST) require a server-known csrf token;
 		// otherwise it fails with http 403
 		// so here we make a http GET so that we can have a csrf token.
-		o := WithOpts("localhost", 443, getSecretKey(), DirectIpStrategy, l)
+		httpsPort := getPort()
+		domain := "localhost"
+		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
-		t.Cleanup(func() {
-			ts.Close()
-		})
+		ts := customServer(t, wrappedHandler, "localhost", httpsPort)
+		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
 		attest.Ok(t, err)
@@ -221,15 +219,13 @@ func TestAllMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			o := WithOpts("localhost", 443, getSecretKey(), DirectIpStrategy, l)
+			httpsPort := getPort()
+			domain := "localhost"
+			o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
-			ts := httptest.NewTLSServer(
-				wrappedHandler,
-			)
-			t.Cleanup(func() {
-				ts.Close()
-			})
+			ts := customServer(t, wrappedHandler, "localhost", httpsPort)
+			defer ts.Close()
 
 			req, err := http.NewRequest(tt.httpMethod, ts.URL, nil)
 			attest.Ok(t, err)
