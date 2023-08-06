@@ -191,9 +191,11 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		uri := "/api"
+		httpsPort := getPort()
+		domain := "localhost"
 		mux := New(
 			l,
-			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts(domain, httpsPort, getSecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
 				uri,
@@ -202,9 +204,7 @@ func TestMux(t *testing.T) {
 			),
 		)
 
-		ts := httptest.NewTLSServer(
-			mux,
-		)
+		ts := customServer(t, mux, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL + uri)
