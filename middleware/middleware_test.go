@@ -435,8 +435,8 @@ func TestMiddlewareServer(t *testing.T) {
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
-		attest.Ok(t, err)
+		ts, errTls := tst.TlsServer(wrappedHandler, domain, httpsPort)
+		attest.Ok(t, errTls)
 		defer ts.Close()
 
 		runhandler := func() {
@@ -482,8 +482,8 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
-	ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
-	attest.Ok(b, err)
+	ts, errTls := tst.TlsServer(wrappedHandler, domain, httpsPort)
+	attest.Ok(b, errTls)
 	defer ts.Close()
 
 	tr := &http.Transport{

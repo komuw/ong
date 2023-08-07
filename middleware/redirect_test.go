@@ -212,8 +212,8 @@ func TestHttpsRedirector(t *testing.T) {
 		domain := "localhost"
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
 
-		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
-		attest.Ok(t, err)
+		ts, errTls := tst.TlsServer(wrappedHandler, domain, httpsPort)
+		attest.Ok(t, errTls)
 		defer ts.Close()
 
 		{
