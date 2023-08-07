@@ -2,6 +2,9 @@
 
 Most recent version is listed first.  
 
+# v0.0.71
+- Only use test dependencies in test files: https://github.com/komuw/ong/pull/348
+
 # v0.0.70
 - ong/middleware: Fix DNS rebinding via http: https://github.com/komuw/ong/compare/issues/337
 - ong/server: Dynamically assign port for pprof: https://github.com/komuw/ong/pull/343
