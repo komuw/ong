@@ -71,7 +71,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 				http.Error(
 					w,
 					err.Error(),
-					http.StatusBadRequest,
+					http.StatusNotFound,
 				)
 				return
 			}

@@ -281,7 +281,7 @@ func TestHttpsRedirector(t *testing.T) {
 			{
 				name:         "bad host",
 				host:         "example.com",
-				expectedCode: http.StatusBadRequest,
+				expectedCode: http.StatusNotFound,
 				expectedMsg:  "has an unexpected value",
 			},
 		}
