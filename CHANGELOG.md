@@ -4,6 +4,7 @@ Most recent version is listed first.
 
 # v0.0.70
 - ong/middleware: Fix DNS rebinding via http: https://github.com/komuw/ong/compare/issues/337
+- And test util: https://github.com/komuw/ong/pull/344
 
 # v0.0.70
 - ong/server: Dynamically assign port for pprof: https://github.com/komuw/ong/pull/343
