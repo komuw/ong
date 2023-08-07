@@ -13,13 +13,14 @@ import (
 	"go.akshayshah.org/attest"
 )
 
-// CustomServer starts a server at a predetermined port.
+// TlsServer starts a test TLS server at a predetermined port and returns it.
 // It's upto callers to close the server.
-func CustomServer(t attest.TB, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
+func TlsServer(t attest.TB, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
 	t.Helper()
 
 	ts := httptest.NewUnstartedServer(h)
-	ts.Listener.Close()
+	err := ts.Listener.Close()
+	attest.Ok(t, err)
 
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", domain, httpsPort))
 	attest.Ok(t, err)

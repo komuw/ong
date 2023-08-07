@@ -127,7 +127,7 @@ func TestMux(t *testing.T) {
 			),
 		)
 
-		ts := tst.CustomServer(t, mux, domain, httpsPort)
+		ts := tst.TlsServer(t, mux, domain, httpsPort)
 		defer ts.Close()
 
 		csrfToken := ""
@@ -172,7 +172,7 @@ func TestMux(t *testing.T) {
 			),
 		)
 
-		ts := tst.CustomServer(t, mux, domain, httpsPort)
+		ts := tst.TlsServer(t, mux, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL + uri)

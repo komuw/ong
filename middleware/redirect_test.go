@@ -125,7 +125,7 @@ func TestHttpsRedirector(t *testing.T) {
 		domain := "localhost"
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
 
-		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -151,7 +151,7 @@ func TestHttpsRedirector(t *testing.T) {
 		domain := "localhost"
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
 
-		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		postMsg := "my name is John"
@@ -210,7 +210,7 @@ func TestHttpsRedirector(t *testing.T) {
 		domain := "localhost"
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
 
-		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		{

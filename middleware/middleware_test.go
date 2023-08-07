@@ -169,7 +169,7 @@ func TestAllMiddleware(t *testing.T) {
 		domain := "localhost"
 		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
-		ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -198,7 +198,7 @@ func TestAllMiddleware(t *testing.T) {
 			o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
-			ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
+			ts := tst.TlsServer(t, wrappedHandler, "localhost", httpsPort)
 			defer ts.Close()
 
 			req, err := http.NewRequest(tt.httpMethod, ts.URL, nil)
@@ -246,7 +246,7 @@ func TestMiddlewareServer(t *testing.T) {
 		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -274,7 +274,7 @@ func TestMiddlewareServer(t *testing.T) {
 			msg := "hey"
 			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-			ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
+			ts := tst.TlsServer(t, wrappedHandler, domain, httpsPort)
 			defer ts.Close()
 
 			res, err := client.Get(ts.URL)
@@ -296,7 +296,7 @@ func TestMiddlewareServer(t *testing.T) {
 		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		postMsg := "This is a post message"
@@ -354,7 +354,7 @@ func TestMiddlewareServer(t *testing.T) {
 		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -394,7 +394,7 @@ func TestMiddlewareServer(t *testing.T) {
 			}
 		}
 		wrappedHandler := All(doubleWrite(msg, code), o)
-		ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
@@ -428,7 +428,7 @@ func TestMiddlewareServer(t *testing.T) {
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.TlsServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		runhandler := func() {
@@ -474,7 +474,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
-	ts := tst.CustomServer(b, wrappedHandler, domain, httpsPort)
+	ts := tst.TlsServer(b, wrappedHandler, domain, httpsPort)
 	defer ts.Close()
 
 	tr := &http.Transport{
