@@ -27,7 +27,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		tst.Ping(t, uint16(port))
+		attest.Ok(t, tst.Ping(uint16(port)))
 
 		uri := "/debug/pprof/heap"
 		res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
@@ -43,7 +43,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		tst.Ping(t, uint16(port))
+		attest.Ok(t, tst.Ping(uint16(port)))
 
 		runhandler := func() {
 			uri := "/debug/pprof/heap"

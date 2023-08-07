@@ -183,7 +183,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		tst.Ping(t, port)
+		attest.Ok(t, tst.Ping(port))
 
 		{
 			// https server.
@@ -286,7 +286,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		tst.Ping(t, port)
+		attest.Ok(t, tst.Ping(port))
 
 		t.Run("smallSize", func(t *testing.T) {
 			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
@@ -353,7 +353,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		tst.Ping(t, port)
+		attest.Ok(t, tst.Ping(port))
 
 		runhandler := func() {
 			res, err := client.Get(fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)) // note: the https scheme.
@@ -405,7 +405,7 @@ func BenchmarkServer(b *testing.B) {
 	}()
 
 	// await for the server to start.
-	tst.Ping(b, port)
+	attest.Ok(b, tst.Ping(port))
 
 	b.ResetTimer()
 	b.ReportAllocs()
