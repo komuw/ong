@@ -10,6 +10,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/internal/tst"
+
 	"go.akshayshah.org/attest"
 )
 
@@ -119,11 +121,11 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
 
-		ts := customServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -145,11 +147,11 @@ func TestHttpsRedirector(t *testing.T) {
 		// as might happen if `httpsRedirector` was using `http.StatusMovedPermanently`
 
 		msg := "hello world"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
 
-		ts := customServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		postMsg := "my name is John"
@@ -204,11 +206,11 @@ func TestHttpsRedirector(t *testing.T) {
 
 		msg := "hello world"
 
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
 
-		ts := customServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		{

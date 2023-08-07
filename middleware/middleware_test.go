@@ -6,9 +6,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"math"
-	"math/rand"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,7 +13,9 @@ import (
 	"testing"
 
 	"github.com/komuw/ong/id"
+	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
+
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slog"
@@ -42,31 +41,6 @@ func someMiddlewareTestHandler(msg string) http.HandlerFunc {
 
 		fmt.Fprint(w, msg)
 	}
-}
-
-// customServer starts a server at a predetermined port.
-// It's upto callers to close the server.
-func customServer(t attest.TB, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
-	t.Helper()
-
-	ts := httptest.NewUnstartedServer(h)
-	ts.Listener.Close()
-
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", domain, httpsPort))
-	attest.Ok(t, err)
-
-	ts.Listener = l
-	ts.StartTLS()
-
-	return ts
-}
-
-// getPort returns a random port.
-// The idea is that different tests should run on different independent ports to avoid collisions.
-func getPort() uint16 {
-	r := rand.Intn(10_000) + 1
-	p := math.MaxUint16 - uint16(r)
-	return p
 }
 
 func TestAllMiddleware(t *testing.T) {
@@ -191,11 +165,11 @@ func TestAllMiddleware(t *testing.T) {
 		// non-safe http methods(like POST) require a server-known csrf token;
 		// otherwise it fails with http 403
 		// so here we make a http GET so that we can have a csrf token.
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
-		ts := customServer(t, wrappedHandler, "localhost", httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -219,12 +193,12 @@ func TestAllMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			httpsPort := getPort()
+			httpsPort := tst.GetPort()
 			domain := "localhost"
 			o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
-			ts := customServer(t, wrappedHandler, "localhost", httpsPort)
+			ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
 			defer ts.Close()
 
 			req, err := http.NewRequest(tt.httpMethod, ts.URL, nil)
@@ -267,12 +241,12 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := customServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -294,13 +268,13 @@ func TestMiddlewareServer(t *testing.T) {
 			// non-safe http methods(like POST) require a server-known csrf token;
 			// otherwise it fails with http 403
 			// so here we make a http GET so that we can have a csrf token.
-			httpsPort := getPort()
+			httpsPort := tst.GetPort()
 			domain := "localhost"
 			o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 			msg := "hey"
 			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-			ts := customServer(t, wrappedHandler, domain, httpsPort)
+			ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
 			defer ts.Close()
 
 			res, err := client.Get(ts.URL)
@@ -317,12 +291,12 @@ func TestMiddlewareServer(t *testing.T) {
 		}
 
 		msg := "hello world"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := customServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		postMsg := "This is a post message"
@@ -375,12 +349,12 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "*.localhost"
 		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := customServer(t, wrappedHandler, "localhost", httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
@@ -409,7 +383,7 @@ func TestMiddlewareServer(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
 		code := http.StatusAccepted
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "*.localhost"
 		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, getLogger(logOutput))
 		doubleWrite := func(msg string, code int) http.HandlerFunc {
@@ -420,7 +394,7 @@ func TestMiddlewareServer(t *testing.T) {
 			}
 		}
 		wrappedHandler := All(doubleWrite(msg, code), o)
-		ts := customServer(t, wrappedHandler, "localhost", httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, "localhost", httpsPort)
 		defer ts.Close()
 
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
@@ -447,14 +421,14 @@ func TestMiddlewareServer(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-		ts := customServer(t, wrappedHandler, domain, httpsPort)
+		ts := tst.CustomServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		runhandler := func() {
@@ -495,12 +469,12 @@ var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
-	httpsPort := getPort()
+	httpsPort := tst.GetPort()
 	domain := "localhost"
 	o := WithOpts(domain, httpsPort, getSecretKey(), DirectIpStrategy, l)
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
-	ts := customServer(b, wrappedHandler, domain, httpsPort)
+	ts := tst.CustomServer(b, wrappedHandler, domain, httpsPort)
 	defer ts.Close()
 
 	tr := &http.Transport{

@@ -7,3 +7,4 @@ The packages in this directory:
 3. The `github.com/komuw/ong/internal/finger` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
 4. The `github.com/komuw/ong/internal/acme` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/server`
 5. The `github.com/komuw/ong/internal/key` package is need by both `github.com/komuw/ong/middleware` & `github.com/komuw/ong/cry`
+6. The `github.com/komuw/ong/internal/t` package is need by both `github.com/komuw/ong/middleware`, `github.com/komuw/ong/mux`, `github.com/komuw/ong/server`, etc

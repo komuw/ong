@@ -6,13 +6,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"math"
-	"math/rand"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 
@@ -47,31 +45,6 @@ func checkAgeHandler() http.HandlerFunc {
 		age := Param(r.Context(), "age")
 		_, _ = fmt.Fprintf(w, "Age is %s", age)
 	}
-}
-
-// customServer starts a server at a predetermined port.
-// It's upto callers to close the server.
-func customServer(t attest.TB, h http.Handler, domain string, httpsPort uint16) *httptest.Server {
-	t.Helper()
-
-	ts := httptest.NewUnstartedServer(h)
-	ts.Listener.Close()
-
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", domain, httpsPort))
-	attest.Ok(t, err)
-
-	ts.Listener = l
-	ts.StartTLS()
-
-	return ts
-}
-
-// getPort returns a random port.
-// The idea is that different tests should run on different independent ports to avoid collisions.
-func getPort() uint16 {
-	r := rand.Intn(10_000) + 1
-	p := math.MaxUint16 - uint16(r)
-	return p
 }
 
 func TestNewRoute(t *testing.T) {
@@ -146,7 +119,7 @@ func TestMux(t *testing.T) {
 
 		uri := "/api/" // forward slash at suffix is important.
 		msg := "hello world"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		mux := New(
 			l,
@@ -159,7 +132,7 @@ func TestMux(t *testing.T) {
 			),
 		)
 
-		ts := customServer(t, mux, domain, httpsPort)
+		ts := tst.CustomServer(t, mux, domain, httpsPort)
 		defer ts.Close()
 
 		csrfToken := ""
@@ -191,7 +164,7 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		uri := "/api"
-		httpsPort := getPort()
+		httpsPort := tst.GetPort()
 		domain := "localhost"
 		mux := New(
 			l,
@@ -204,7 +177,7 @@ func TestMux(t *testing.T) {
 			),
 		)
 
-		ts := customServer(t, mux, domain, httpsPort)
+		ts := tst.CustomServer(t, mux, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL + uri)
