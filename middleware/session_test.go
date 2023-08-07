@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/komuw/ong/cookie"
+	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/sess"
 
 	"go.akshayshah.org/attest"
@@ -67,7 +68,7 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		secretKey := "super-h@rd-Pa$1word"
+		secretKey := tst.SecretKey()
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
@@ -91,7 +92,7 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world wide."
-		secretKey := "super-h@rd-Pa$1word"
+		secretKey := tst.SecretKey()
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
@@ -139,7 +140,7 @@ func TestSession(t *testing.T) {
 	t.Run("with template variables", func(t *testing.T) {
 		t.Parallel()
 
-		secretKey := "super-h@rd-Pa$1word"
+		secretKey := tst.SecretKey()
 		domain := "localhost"
 		name := "John Doe"
 		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain)
@@ -166,7 +167,7 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		secretKey := "super-h@rd-Pa$1word"
+		secretKey := tst.SecretKey()
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"

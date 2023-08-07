@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
 )
@@ -123,7 +124,7 @@ func TestCookies(t *testing.T) {
 		value := "hello world are you okay"
 		domain := "localhost"
 		mAge := 23 * time.Hour
-		secretKey := "super-h@rd-Pa$1word"
+		secretKey := tst.SecretKey()
 		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
@@ -159,7 +160,7 @@ func TestCookies(t *testing.T) {
 		value := "hello world are you okay"
 		domain := "localhost"
 		mAge := -23 * time.Hour
-		secretKey := "super-h@rd-Pa$1word"
+		secretKey := tst.SecretKey()
 		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
@@ -238,6 +239,6 @@ func BenchmarkSetEncrypted(b *testing.B) {
 }
 
 func testSetEncrypted(req *http.Request, res http.ResponseWriter) int {
-	SetEncrypted(req, res, "name", "value", "example.com", 2*time.Hour, "super-h@rd-Pa$1word")
+	SetEncrypted(req, res, "name", "value", "example.com", 2*time.Hour, tst.SecretKey())
 	return 3
 }

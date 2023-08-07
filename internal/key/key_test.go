@@ -3,6 +3,7 @@ package key
 import (
 	"testing"
 
+	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
 )
 
@@ -16,7 +17,7 @@ func TestCheckSecretKey(t *testing.T) {
 	}{
 		{
 			name: "good key",
-			key:  "super-h@rd-Pa$1word",
+			key:  tst.SecretKey(),
 			check: func(err error) {
 				attest.Ok(t, err)
 			},
