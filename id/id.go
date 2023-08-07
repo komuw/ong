@@ -2,8 +2,8 @@
 package id
 
 import (
+	"crypto/rand"
 	"encoding/base64"
-	mathRand "math/rand"
 )
 
 // encodeURL is like [base64.EncodeURL] except we replace:
@@ -21,18 +21,23 @@ func encoding() *base64.Encoding {
 
 var enc = encoding() //nolint:gochecknoglobals
 
-// New returns a new random string.
-// It uses a character set that is legible.
-// It should not be used for cryptography purposes.
+// New returns a new random string consisting of a legible character set.
+// It uses [rand]
+//
+// Also see [UUID4] and [UUID8]
+//
+// It panics on error.
 func New() string {
 	return Random(16)
 }
 
-// Random generates a random string of size n.
-// It uses a character set that is legible.
+// Random generates a random string of size n consisting of a legible character set.
 // If n < 1 or significantly large, it is set to reasonable bounds.
+// It uses [rand]
 //
-// It should not be used for cryptography purposes.
+// Also see [UUID4] and [UUID8]
+//
+// It panics on error.
 func Random(n int) string {
 	if n < 1 {
 		n = 1
@@ -46,10 +51,10 @@ func Random(n int) string {
 	// This formula is from [base64.Encoding.EncodedLen]
 	byteSize := ((((n * 6) - 5) / 8) + 1)
 	b := make([]byte, byteSize)
-	//lint:ignore SA1019 `mathRand.Read` is deprecated.
-	// However, for our case here is okay since the func id.Random is not used for cryptography.
-	// Also we like the property of `mathRand.Read` always returning a nil error.
-	_, _ = mathRand.Read(b) // nolint:staticcheck
+
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
 
 	return enc.EncodeToString(b)[:n]
 }

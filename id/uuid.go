@@ -21,7 +21,7 @@ const (
 //   uuidv7: https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis
 
 // UUID represents a universally unique identifier.
-// See [UUID4] and [UUID8]
+// Also see [UUID4] and [UUID8]
 //
 // [unique]: https://en.wikipedia.org/wiki/Universally_unique_identifier
 type UUID [16]byte
@@ -52,7 +52,7 @@ func (u *UUID) setVersion(version byte) {
 // It is not correlated with timestamp, thus, when used as the identifief of an object, it does not leak its creation time.
 // On the other hand, this means that it has poor database index locality unlike [UUID8]. It might also be a good use as a shard key.
 //
-// See [UUID8] and [New]
+// Also see [UUID8] and [New]
 //
 // It panics on error.
 func UUID4() UUID {
@@ -92,7 +92,7 @@ func UUID4() UUID {
 // It is correlated with timestamp, thus, when used as the identifief of an object, it has good database locality.
 // On the other hand, this means that it can leak the object's creation time unlike [UUID4].
 //
-// See [UUID4] and [New]
+// Also see [UUID4] and [New]
 //
 // It panics on error.
 //
