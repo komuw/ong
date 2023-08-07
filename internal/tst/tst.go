@@ -22,7 +22,7 @@ func TlsServer(t attest.TB, h http.Handler, domain string, httpsPort uint16) *ht
 	err := ts.Listener.Close()
 	attest.Ok(t, err)
 
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", domain, httpsPort))
+	l, err := net.Listen("tcp", net.JoinHostPort(domain, fmt.Sprintf("%d", httpsPort)))
 	attest.Ok(t, err)
 
 	ts.Listener = l
