@@ -39,14 +39,16 @@ func TestHttpsRedirector(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	t.Run("get is redirected", func(t *testing.T) {
+	t.Run("get is redirected to https", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
 		port := uint16(443)
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
+
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Host = "localhost"
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -54,9 +56,10 @@ func TestHttpsRedirector(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
 		attest.NotZero(t, res.Header.Get(locationHeader))
+		attest.Equal(t, res.Header.Get(locationHeader), "https://localhost"+"/someUri")
 	})
 
-	t.Run("post is redirected", func(t *testing.T) {
+	t.Run("post is redirected to https", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello you"
@@ -64,6 +67,7 @@ func TestHttpsRedirector(t *testing.T) {
 		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+		req.Host = "localhost"
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -71,6 +75,7 @@ func TestHttpsRedirector(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
 		attest.NotZero(t, res.Header.Get(locationHeader))
+		attest.Equal(t, res.Header.Get(locationHeader), "https://localhost"+"/someUri")
 	})
 
 	t.Run("uri combinations", func(t *testing.T) {
@@ -98,6 +103,7 @@ func TestHttpsRedirector(t *testing.T) {
 			uri := uri
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, uri, nil)
+			req.Host = "localhost"
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -113,19 +119,19 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		port := uint16(443)
-		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		httpsPort := getPort()
+		domain := "localhost"
+		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
+
+		ts := customServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		res, err := client.Get(ts.URL)
 		attest.Ok(t, err)
+		defer res.Body.Close()
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
-		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Zero(t, res.Header.Get(locationHeader))
@@ -139,21 +145,21 @@ func TestHttpsRedirector(t *testing.T) {
 		// as might happen if `httpsRedirector` was using `http.StatusMovedPermanently`
 
 		msg := "hello world"
-		port := uint16(443)
-		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		httpsPort := getPort()
+		domain := "localhost"
+		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
+
+		ts := customServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		postMsg := "my name is John"
 		body := strings.NewReader(postMsg)
 		res, err := client.Post(ts.URL, "application/json", body)
 		attest.Ok(t, err)
+		defer res.Body.Close()
 
 		rb, err := io.ReadAll(res.Body)
 		attest.Ok(t, err)
-		defer res.Body.Close()
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Zero(t, res.Header.Get(locationHeader))
@@ -176,6 +182,7 @@ func TestHttpsRedirector(t *testing.T) {
 			wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), p, domain)
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, uri, nil)
+			req.Host = domain
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -196,12 +203,12 @@ func TestHttpsRedirector(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		port := uint16(443)
+
+		httpsPort := getPort()
 		domain := "localhost"
-		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, domain)
-		ts := httptest.NewTLSServer(
-			wrappedHandler,
-		)
+		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), httpsPort, domain)
+
+		ts := customServer(t, wrappedHandler, domain, httpsPort)
 		defer ts.Close()
 
 		{
@@ -210,10 +217,10 @@ func TestHttpsRedirector(t *testing.T) {
 			url = strings.ReplaceAll(url, "localhost", "127.0.0.1")
 			res, err := client.Get(url)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
-			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Zero(t, res.Header.Get(locationHeader))
@@ -226,10 +233,10 @@ func TestHttpsRedirector(t *testing.T) {
 			url = strings.ReplaceAll(url, "127.0.0.1", "localhost")
 			res, err := client.Get(url)
 			attest.Ok(t, err)
+			defer res.Body.Close()
 
 			rb, err := io.ReadAll(res.Body)
 			attest.Ok(t, err)
-			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Zero(t, res.Header.Get(locationHeader))
@@ -289,10 +296,10 @@ func TestHttpsRedirector(t *testing.T) {
 
 				res, err := client.Do(req)
 				attest.Ok(t, err)
+				defer res.Body.Close()
 
 				rb, err := io.ReadAll(res.Body)
 				attest.Ok(t, err)
-				defer res.Body.Close()
 
 				attest.Equal(t, res.StatusCode, tt.expectedCode)
 				attest.Zero(t, res.Header.Get(locationHeader))
@@ -313,6 +320,7 @@ func TestHttpsRedirector(t *testing.T) {
 		runhandler := func() {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
+			req.Host = "localhost"
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
