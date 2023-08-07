@@ -21,8 +21,8 @@
  },
  {
   "Description": "Generic API Key",
-  "StartLine": 26,
-  "EndLine": 26,
+  "StartLine": 27,
+  "EndLine": 27,
   "StartColumn": 5,
   "EndColumn": 48,
   "Match": "key:  \"663acecd-af38-4e02-9529-1498bd7bd96e\"",
@@ -37,6 +37,6 @@
   "Message": "",
   "Tags": [],
   "RuleID": "generic-api-key",
-  "Fingerprint": "internal/key/key_test.go:generic-api-key:26"
+  "Fingerprint": "internal/key/key_test.go:generic-api-key:27"
  }
 ]
