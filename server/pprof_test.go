@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 
 	"go.akshayshah.org/attest"
@@ -26,7 +27,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		ping(t, uint16(port))
+		tst.Ping(t, uint16(port))
 
 		uri := "/debug/pprof/heap"
 		res, err := http.Get(fmt.Sprintf("http://localhost:%d%s", port, uri))
@@ -42,7 +43,7 @@ func TestPprofServer(t *testing.T) {
 		startPprofServer(l, o)
 
 		// await for the server to start.
-		ping(t, uint16(port))
+		tst.Ping(t, uint16(port))
 
 		runhandler := func() {
 			uri := "/debug/pprof/heap"

@@ -4,14 +4,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
 	"golang.org/x/exp/slices"
 )
-
-func getSecretKey() string {
-	return "super-h@rd-Pa$1word"
-}
 
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
@@ -25,7 +22,7 @@ func TestEnc(t *testing.T) {
 		t.Parallel()
 
 		// okay key
-		key := getSecretKey()
+		key := tst.SecretKey()
 		_ = New(key)
 
 		// short key
@@ -38,7 +35,7 @@ func TestEnc(t *testing.T) {
 		t.Parallel()
 
 		msgToEncrypt := "hello world!"
-		key := getSecretKey()
+		key := tst.SecretKey()
 		enc := New(key)
 
 		encryptedMsg := enc.Encrypt(msgToEncrypt)
@@ -53,7 +50,7 @@ func TestEnc(t *testing.T) {
 		t.Parallel()
 
 		msgToEncrypt := "hello world!"
-		key := getSecretKey()
+		key := tst.SecretKey()
 		enc := New(key)
 
 		token := enc.EncryptEncode(msgToEncrypt)
@@ -70,7 +67,7 @@ func TestEnc(t *testing.T) {
 		// against breachattack.
 
 		msgToEncrypt := "hello world!"
-		key := getSecretKey()
+		key := tst.SecretKey()
 		enc := New(key)
 
 		encryptedMsg := enc.Encrypt(msgToEncrypt)
@@ -100,7 +97,7 @@ func TestEnc(t *testing.T) {
 		// even if the server was restarted; so long as the same key is re-used.
 
 		msgToEncrypt := "hello world!"
-		key := getSecretKey()
+		key := tst.SecretKey()
 
 		enc1 := New(key)
 		encryptedMsg := enc1.Encrypt(msgToEncrypt)
@@ -117,7 +114,7 @@ func TestEnc(t *testing.T) {
 		msgToEncrypt := "hello world!"
 
 		run := func() {
-			key := getSecretKey()
+			key := tst.SecretKey()
 			enc := New(key)
 
 			encryptedMsg := enc.Encrypt(msgToEncrypt)
@@ -143,7 +140,7 @@ var result []byte //nolint:gochecknoglobals
 func BenchmarkEnc(b *testing.B) {
 	var r []byte
 	msgToEncrypt := "hello world!"
-	key := getSecretKey()
+	key := tst.SecretKey()
 	enc := New(key)
 
 	b.ReportAllocs()

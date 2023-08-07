@@ -6,9 +6,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"math"
-	"math/rand"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -16,51 +13,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
 
 	"go.akshayshah.org/attest"
 )
-
-func getSecretKey() string {
-	key := "super-h@rd-Pa$1word"
-	return key
-}
-
-// getPort returns a random port.
-// The idea is that different tests should run on different independent ports to avoid collisions.
-func getPort() uint16 {
-	r := rand.Intn(10_000) + 1
-	p := math.MaxUint16 - uint16(r)
-	return p
-}
-
-// ping waits for port to be open.
-func ping(t attest.TB, port uint16) {
-	t.Helper()
-
-	var err error
-	count := 0
-	maxCount := 12
-	defer func() {
-		attest.Ok(t, err)
-	}()
-
-	for {
-		count = count + 1
-		time.Sleep(1 * time.Second)
-		_, err = net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), 1*time.Second)
-		if err == nil {
-			break
-		}
-
-		if count > maxCount {
-			err = fmt.Errorf("ping max count(%d) reached: %w", maxCount, err)
-			break
-		}
-	}
-}
 
 // todo: enable this.
 //
@@ -203,12 +162,12 @@ func TestServer(t *testing.T) {
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
 
-		port := getPort()
+		port := tst.GetPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
 			l,
-			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -224,7 +183,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		ping(t, port)
+		tst.Ping(t, port)
 
 		{
 			// https server.
@@ -306,12 +265,12 @@ func TestServer(t *testing.T) {
 			clientReqBody.CloseIdleConnections()
 		})
 
-		port := getPort()
+		port := tst.GetPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
 			l,
-			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -327,7 +286,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		ping(t, port)
+		tst.Ping(t, port)
 
 		t.Run("smallSize", func(t *testing.T) {
 			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
@@ -373,12 +332,12 @@ func TestServer(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		port := getPort()
+		port := tst.GetPort()
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
 			l,
-			middleware.WithOpts("localhost", port, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -394,7 +353,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// await for the server to start.
-		ping(t, port)
+		tst.Ping(t, port)
 
 		runhandler := func() {
 			res, err := client.Get(fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)) // note: the https scheme.
@@ -436,7 +395,7 @@ func BenchmarkServer(b *testing.B) {
 	l := log.New(&bytes.Buffer{}, 500)(context.Background())
 
 	handler := benchmarkServerHandler("helloWorld")
-	port := getPort()
+	port := tst.GetPort()
 
 	go func() {
 		certFile, keyFile := createDevCertKey(l)
@@ -446,7 +405,7 @@ func BenchmarkServer(b *testing.B) {
 	}()
 
 	// await for the server to start.
-	ping(b, port)
+	tst.Ping(b, port)
 
 	b.ResetTimer()
 	b.ReportAllocs()

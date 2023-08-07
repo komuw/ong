@@ -23,11 +23,6 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-func getSecretKey() string {
-	key := "super-h@rd-Pa$1word"
-	return key
-}
-
 func someMuxHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, msg)
@@ -73,7 +68,7 @@ func TestNewRoute(t *testing.T) {
 			MethodGet,
 			middleware.Get(
 				someMuxHandler("msg"),
-				middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+				middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			),
 		)
 	})
@@ -95,7 +90,7 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		mux := New(
 			l,
-			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
 				"/api",
@@ -123,7 +118,7 @@ func TestMux(t *testing.T) {
 		domain := "localhost"
 		mux := New(
 			l,
-			middleware.WithOpts(domain, httpsPort, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
 				uri,
@@ -168,7 +163,7 @@ func TestMux(t *testing.T) {
 		domain := "localhost"
 		mux := New(
 			l,
-			middleware.WithOpts(domain, httpsPort, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
 				uri,
@@ -214,7 +209,7 @@ func TestMux(t *testing.T) {
 
 		_ = New(
 			l,
-			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
 				uri1,
@@ -236,7 +231,7 @@ func TestMux(t *testing.T) {
 		expectedHandler := someMuxHandler(msg)
 		mux := New(
 			l,
-			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
 				"/api",
@@ -353,7 +348,7 @@ func BenchmarkMuxNew(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		mux := New(
 			l,
-			middleware.WithOpts("localhost", 443, getSecretKey(), middleware.DirectIpStrategy, l),
+			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			getManyRoutes()...,
 		)
