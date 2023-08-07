@@ -7,6 +7,7 @@ Most recent version is listed first.
 - And test util: https://github.com/komuw/ong/pull/344
 - ong/middleware: Send Allow http header when we respond with http 405 status code: https://github.com/komuw/ong/pull/345
 - ong/middleware: Return http 404 instead of 400 for bad host header: https://github.com/komuw/ong/pull/346
+- ong/id: Use crypto/rand in id.New(): https://github.com/komuw/ong/pull/347
 
 # v0.0.70
 - ong/server: Dynamically assign port for pprof: https://github.com/komuw/ong/pull/343
