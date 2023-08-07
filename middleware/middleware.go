@@ -39,6 +39,8 @@ const (
 	// An example, is when the Get middleware fails because it has been called with the wrong http method.
 	// Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
 	ongMiddlewareErrorHeader = "Ong-Middleware-Error"
+
+	allowHeader = "Allow"
 )
 
 // Opts are the various parameters(optionals) that can be used to configure middlewares.
@@ -262,6 +264,7 @@ func get(wrappedHandler http.Handler) http.HandlerFunc {
 		if r.Method != http.MethodGet {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			w.Header().Add(allowHeader, "GET")
 			http.Error(
 				w,
 				errMsg,
@@ -290,6 +293,7 @@ func post(wrappedHandler http.Handler) http.HandlerFunc {
 		if r.Method != http.MethodPost {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			w.Header().Add(allowHeader, "POST")
 			http.Error(
 				w,
 				errMsg,
@@ -318,6 +322,7 @@ func head(wrappedHandler http.Handler) http.HandlerFunc {
 		if r.Method != http.MethodHead {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			w.Header().Add(allowHeader, "HEAD")
 			http.Error(
 				w,
 				errMsg,
@@ -346,6 +351,7 @@ func put(wrappedHandler http.Handler) http.HandlerFunc {
 		if r.Method != http.MethodPut {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			w.Header().Add(allowHeader, "PUT")
 			http.Error(
 				w,
 				errMsg,
@@ -375,6 +381,7 @@ func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 		if r.Method != http.MethodDelete {
 			errMsg := fmt.Sprintf(msg, r.Method)
 			w.Header().Set(ongMiddlewareErrorHeader, errMsg)
+			w.Header().Add(allowHeader, "DELETE")
 			http.Error(
 				w,
 				errMsg,
