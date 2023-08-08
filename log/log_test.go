@@ -126,7 +126,7 @@ func TestLogger(t *testing.T) {
 		{
 			// it can log nils.
 			l(context.Background()).Info(msg, "someValue", nil)
-			l(context.Background()).Error(msg, nil)
+			l(context.Background()).Error(msg, "nil", nil)
 		}
 	})
 
