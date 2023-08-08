@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,7 +18,6 @@ import (
 	"testing"
 
 	"go.akshayshah.org/attest"
-	"golang.org/x/exp/slog"
 )
 
 // someAcmeServerHandler mimics an ACME server.

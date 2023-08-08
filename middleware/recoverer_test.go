@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"github.com/komuw/ong/log"
 
 	"go.akshayshah.org/attest"
-	"golang.org/x/exp/slog"
 )
 
 func handlerThatPanics(msg string, shouldPanic bool, err error) http.HandlerFunc {

@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,7 +19,6 @@ import (
 
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
-	"golang.org/x/exp/slog"
 )
 
 func TestMain(m *testing.M) {

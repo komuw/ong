@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,7 +12,6 @@ import (
 
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
-	"golang.org/x/exp/slog"
 )
 
 func getLogger() *slog.Logger {

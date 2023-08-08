@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -16,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/exp/slog"
 	"golang.org/x/net/idna"
 )
 

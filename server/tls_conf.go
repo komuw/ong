@@ -4,9 +4,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/komuw/ong/internal/acme"
-	"golang.org/x/exp/slog"
 )
 
 // Most of the code here is inspired(or taken from) by:

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,8 +24,6 @@ import (
 	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/sess"
 	"github.com/komuw/ong/xcontext"
-
-	"golang.org/x/exp/slog"
 )
 
 // db is a dummy database.
@@ -67,7 +66,7 @@ func (a app) health(secretKey string) http.HandlerFunc {
 
 		encryptedSrvID := enc.EncryptEncode(serverID)
 
-		a.l.InfoCtx(r.Context(), "health called", "serverId", encryptedSrvID, "functionality", "healthCheck")
+		a.l.InfoContext(r.Context(), "health called", "serverId", encryptedSrvID, "functionality", "healthCheck")
 		checkApiHealth(r.Context(), a.l)
 		go checkDatabaseHealth(xcontext.Detach(r.Context()), a.l)
 
@@ -77,11 +76,11 @@ func (a app) health(secretKey string) http.HandlerFunc {
 }
 
 func checkApiHealth(ctx context.Context, l *slog.Logger) {
-	l.InfoCtx(ctx, "api is healthy", "functionality", "healthCheck")
+	l.InfoContext(ctx, "api is healthy", "functionality", "healthCheck")
 }
 
 func checkDatabaseHealth(ctx context.Context, l *slog.Logger) {
-	l.ErrorCtx(ctx, "database is not healthy", "functionality", "healthCheck")
+	l.ErrorContext(ctx, "database is not healthy", "functionality", "healthCheck")
 }
 
 // check handler showcases the use of:

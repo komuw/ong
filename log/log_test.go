@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	mathRand "math/rand"
 	"strings"
 	"sync"
@@ -15,7 +16,6 @@ import (
 
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
-	"golang.org/x/exp/slog"
 )
 
 func TestMain(m *testing.M) {
@@ -126,7 +126,7 @@ func TestLogger(t *testing.T) {
 		{
 			// it can log nils.
 			l(context.Background()).Info(msg, "someValue", nil)
-			l(context.Background()).Error(msg, nil)
+			l(context.Background()).Error(msg, "nil", nil)
 		}
 	})
 
@@ -298,8 +298,8 @@ func TestLogger(t *testing.T) {
 		msg1 := "messageOne"
 		l := New(w, 3)(ctx)
 
-		l.InfoCtx(ctx, msg1)
-		l.ErrorCtx(ctx, "hey1", "err1", errors.New("badTingOne"))
+		l.InfoContext(ctx, msg1)
+		l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
 		attest.Subsequence(t, w.String(), msg1)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),
@@ -309,7 +309,7 @@ func TestLogger(t *testing.T) {
 
 		newId := "NEW-id-adh4e92427dajd"
 		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
-		l.ErrorCtx(ctx, "hey2", "err2", errors.New("badTingTwo"))
+		l.ErrorContext(ctx, "hey2", "err2", errors.New("badTingTwo"))
 		attest.Subsequence(t, w.String(), newId)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),
@@ -320,7 +320,7 @@ func TestLogger(t *testing.T) {
 
 		newId3 := "NEW-id3-alas"
 		ctx = context.WithValue(ctx, octx.LogCtxKey, newId3)
-		l.ErrorCtx(ctx, "hey3", "err3", errors.New("badTingThree"))
+		l.ErrorContext(ctx, "hey3", "err3", errors.New("badTingThree"))
 		attest.Subsequence(t, w.String(), newId)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),

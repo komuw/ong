@@ -13,13 +13,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slog"
 )
 
 // RFC 8555: https://datatracker.ietf.org/doc/html/rfc8555
@@ -428,7 +427,7 @@ func checkChallengeStatus(
 	ctx = context.WithValue(ctx, clientContextKey, "checkChallengeStatus")
 	for {
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			l.InfoCtx(ctx, "checkStatusSleep",
+			l.InfoContext(ctx, "checkStatusSleep",
 				"count", count,
 				"duration", dur,
 				"checkError", checkError,
@@ -599,7 +598,7 @@ func checkOrderStatus(
 	ctx = context.WithValue(ctx, clientContextKey, fmt.Sprintf("checkOrderStatus-%s", expectedStatus))
 	for {
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			l.InfoCtx(ctx, "checkStatusSleep",
+			l.InfoContext(ctx, "checkStatusSleep",
 				"count", count,
 				"duration", dur,
 				"checkError", checkError,

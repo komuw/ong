@@ -1,10 +1,10 @@
 module github.com/komuw/ong
 
-go 1.20
+go 1.21
 
 require (
 	golang.org/x/crypto v0.12.0
-	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
+	golang.org/x/exp v0.0.0-20230807204917-050eac23e9de
 	golang.org/x/net v0.14.0
 	golang.org/x/sys v0.11.0
 )

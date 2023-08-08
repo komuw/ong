@@ -3,14 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/pprof"
 	"time"
 
 	"github.com/komuw/ong/log"
-
-	"golang.org/x/exp/slog"
 )
 
 /*

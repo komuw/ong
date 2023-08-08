@@ -2,12 +2,11 @@ package middleware
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
-
-	"golang.org/x/exp/slog"
 )
 
 // Most of the code here is inspired(or taken from) by:

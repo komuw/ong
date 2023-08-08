@@ -5,6 +5,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -13,8 +14,6 @@ import (
 
 	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
-
-	"golang.org/x/exp/slog"
 )
 
 const (
@@ -123,14 +122,14 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 		if err != nil {
 			extra := []any{"err", err}
 			flds = append(flds, extra...)
-			lr.l.ErrorCtx(ctx, msg, flds...)
+			lr.l.ErrorContext(ctx, msg, flds...)
 		} else {
 			extra := []any{
 				"code", res.StatusCode,
 				"status", res.Status,
 			}
 			flds = append(flds, extra...)
-			lr.l.InfoCtx(ctx, msg, flds...)
+			lr.l.InfoContext(ctx, msg, flds...)
 		}
 	}()
 

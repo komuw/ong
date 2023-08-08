@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -15,7 +16,6 @@ import (
 	"github.com/komuw/ong/log"
 
 	"go.akshayshah.org/attest"
-	"golang.org/x/exp/slog"
 )
 
 const (
