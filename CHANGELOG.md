@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.72
 - ong/log: Use slog from stdlib: https://github.com/komuw/ong/pull/349
+- ong/xcontext: Remove the package since Go v1.21 has similar functionality: https://github.com/komuw/ong/pull/350
 
 # v0.0.71
 - Only use test dependencies in test files: https://github.com/komuw/ong/pull/348
