@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 
 	"golang.org/x/net/idna"
@@ -267,9 +268,11 @@ type manager struct {
 func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) *manager {
 	diskCacheDir := ""
 
-	if len(testDiskCache) > 0 {
-		// allow for tests.
-		// todo: check if `testing.Testing()` and panic if `testDiskCache` is there and it is not testing.
+	if len(testDiskCache) > 0 && !testing.Testing() {
+		panic("testDiskCache should only be passed in as an argument from tests")
+	}
+
+	if len(testDiskCache) > 0 && testing.Testing() {
 		diskCacheDir = testDiskCache[0]
 	} else {
 		d, errA := diskCachedir()
