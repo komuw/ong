@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
-
-	"golang.org/x/exp/slog"
 )
 
 func loginHandler() http.HandlerFunc {

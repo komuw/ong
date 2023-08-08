@@ -13,13 +13,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slog"
 )
 
 // RFC 8555: https://datatracker.ietf.org/doc/html/rfc8555

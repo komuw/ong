@@ -8,13 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"sync"
 	"time"
-
-	"golang.org/x/exp/slog"
 )
 
 type clientContextKeyType string

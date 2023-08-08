@@ -3,14 +3,13 @@ package mux
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/middleware"
-
-	"golang.org/x/exp/slog"
 )
 
 // Common HTTP methods.

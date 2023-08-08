@@ -11,6 +11,7 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"os"
 	"os/exec"
@@ -19,8 +20,6 @@ import (
 	"time"
 
 	"github.com/komuw/ong/errors"
-
-	"golang.org/x/exp/slog"
 )
 
 // Most of the code here is inspired(or taken from) by:

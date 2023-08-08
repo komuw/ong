@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log/slog"
 	mathRand "math/rand"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/komuw/ong/log"
-
-	"golang.org/x/exp/slog"
 )
 
 // logger is a middleware that logs http requests and responses using [log.Logger].

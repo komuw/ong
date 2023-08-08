@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"log/slog"
 	"math/big"
 	mathRand "math/rand"
 	"net/http"
@@ -22,7 +23,6 @@ import (
 	"time"
 
 	"go.akshayshah.org/attest"
-	"golang.org/x/exp/slog"
 )
 
 // getDomain returns a valid unique domain.

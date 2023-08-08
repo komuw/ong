@@ -5,6 +5,7 @@ import (
 	stdlibErrors "errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"math/rand"
 	"testing"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/slog"
 )
 
 func newZerolog() zerolog.Logger {

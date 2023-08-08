@@ -5,14 +5,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/internal/octx"
-
-	"golang.org/x/exp/slog"
 )
 
 const (

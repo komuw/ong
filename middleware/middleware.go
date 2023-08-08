@@ -22,13 +22,12 @@ package middleware
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/key"
-
-	"golang.org/x/exp/slog"
 )
 
 const (

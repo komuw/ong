@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	mathRand "math/rand"
 	"strings"
 	"sync"
@@ -15,7 +16,6 @@ import (
 
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
-	"golang.org/x/exp/slog"
 )
 
 func TestMain(m *testing.M) {

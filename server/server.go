@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -20,7 +21,6 @@ import (
 	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
 
-	"golang.org/x/exp/slog"
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 

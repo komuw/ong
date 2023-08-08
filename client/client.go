@@ -5,6 +5,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -13,8 +14,6 @@ import (
 
 	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
-
-	"golang.org/x/exp/slog"
 )
 
 const (
