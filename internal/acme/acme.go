@@ -269,7 +269,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 	diskCacheDir := ""
 
 	if len(testDiskCache) > 0 && !testing.Testing() {
-		panic("testDiskCache should only be passed in as an argument from tests")
+		panic("optional argument testDiskCache should only be used for internal test purposes")
 	}
 
 	if len(testDiskCache) > 0 && testing.Testing() {
