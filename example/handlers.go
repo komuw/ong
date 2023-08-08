@@ -23,7 +23,6 @@ import (
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/sess"
-	"github.com/komuw/ong/xcontext"
 )
 
 // db is a dummy database.
@@ -68,7 +67,7 @@ func (a app) health(secretKey string) http.HandlerFunc {
 
 		a.l.InfoContext(r.Context(), "health called", "serverId", encryptedSrvID, "functionality", "healthCheck")
 		checkApiHealth(r.Context(), a.l)
-		go checkDatabaseHealth(xcontext.Detach(r.Context()), a.l)
+		go checkDatabaseHealth(context.WithoutCancel(r.Context()), a.l)
 
 		res := fmt.Sprintf("serverBoot=%s, serverStart=%s, serverId=%s\n", serverBoot, serverStart, encryptedSrvID)
 		_, _ = io.WriteString(w, res)
@@ -86,7 +85,6 @@ func checkDatabaseHealth(ctx context.Context, l *slog.Logger) {
 // check handler showcases the use of:
 // - mux.Param.
 // - sessions.
-// - xcontext.Detach.
 // - safe http client.
 // - error wrapping.
 func (a app) check(msg string) http.HandlerFunc {
@@ -138,7 +136,7 @@ func (a app) check(msg string) http.HandlerFunc {
 		}(
 			// we need to detach context,
 			// since this goroutine can outlive the http request lifecycle.
-			xcontext.Detach(r.Context()),
+			context.WithoutCancel(r.Context()),
 		)
 
 		_, _ = fmt.Fprintf(w, "hello %s. Age is %s", msg, age)
