@@ -5,12 +5,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"sync"
 	"testing"
 	"time"
 
 	"go.akshayshah.org/attest"
-	"golang.org/x/exp/slices"
 )
 
 func someRateLimiterHandler(msg string) http.HandlerFunc {

@@ -3,12 +3,11 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/komuw/ong/cookie"
-
-	"golang.org/x/exp/slices"
 )
 
 const reloadProtectCookiePrefix = "ong_form_reload_protect"

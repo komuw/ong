@@ -8,12 +8,12 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
+	"slices"
 
 	"github.com/komuw/ong/internal/key"
 
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
-	"golang.org/x/exp/slices"
 )
 
 // Latacora recommends ChaCha20-Poly1305 for encryption.

@@ -3,10 +3,9 @@ package errors_test
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/komuw/ong/errors"
-
-	"golang.org/x/exp/slices"
 )
 
 const expectedUser = "admin"

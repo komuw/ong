@@ -2,11 +2,11 @@ package id
 
 import (
 	"math"
+	"slices"
 	"testing"
 
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
-	"golang.org/x/exp/slices"
 )
 
 func TestMain(m *testing.M) {

@@ -3,10 +3,9 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 // Most of the code here is inspired(or taken from) by:
