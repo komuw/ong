@@ -8,12 +8,17 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"testing"
 	"time"
 )
 
 // TlsServer starts a test TLS server at a predetermined port and returns it.
 // It's upto callers to close the server.
 func TlsServer(h http.Handler, domain string, httpsPort uint16) (*httptest.Server, error) {
+	if !testing.Testing() {
+		panic("this func should only be called from tests")
+	}
+
 	ts := httptest.NewUnstartedServer(h)
 	if err := ts.Listener.Close(); err != nil {
 		return nil, err
@@ -33,6 +38,10 @@ func TlsServer(h http.Handler, domain string, httpsPort uint16) (*httptest.Serve
 // GetPort returns a random port.
 // The idea is that different tests should run on different independent ports to avoid collisions.
 func GetPort() uint16 {
+	if !testing.Testing() {
+		panic("this func should only be called from tests")
+	}
+
 	r := rand.Intn(10_000) + 1
 	p := math.MaxUint16 - uint16(r)
 	return p
@@ -40,11 +49,19 @@ func GetPort() uint16 {
 
 // SecretKey returns a secret key that is valid and can be used in tests.
 func SecretKey() string {
+	if !testing.Testing() {
+		panic("this func should only be called from tests")
+	}
+
 	return "super-h@rd-Pa$1word"
 }
 
 // Ping waits for port to be open, it fails after a number of given seconds.
 func Ping(port uint16) error {
+	if !testing.Testing() {
+		panic("this func should only be called from tests")
+	}
+
 	var err error
 	count := 0
 	maxCount := 12
