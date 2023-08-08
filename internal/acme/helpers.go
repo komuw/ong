@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"golang.org/x/net/idna"
@@ -39,14 +40,15 @@ func diskCachedir() (string, error) {
 	4. https://github.com/gopasspw/gopass/blob/v1.15.3-rc1/pkg/tempfile/mount_linux.go#L13-L27
 	*/
 
-	// todo: Check testing.Testing() and set dir==/tmp/ for tests.
-	//       This is so that we do not fill the disk.
-
 	dir, _ := os.UserConfigDir()
 	if dir == "" {
 		dir = "/dev/shm"
 	}
 	if dir == "" {
+		dir = "/tmp/"
+	}
+	if testing.Testing() {
+		// Set dir==/tmp/ for tests, so that we do not fill the disk.
 		dir = "/tmp/"
 	}
 

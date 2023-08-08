@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"sync"
+	"testing"
 	"time"
 )
 
@@ -77,8 +78,9 @@ type logRT struct {
 func (lt *logRT) RoundTrip(req *http.Request) (res *http.Response, err error) {
 	ctx := req.Context()
 	requestType := getRequestType(ctx)
-	// todo: Gate this under testing.Testing()
-	req.Header.Set("ONG-TEST-REQ-TYPE", requestType)
+	if testing.Testing() {
+		req.Header.Set("ONG-TEST-REQ-TYPE", requestType)
+	}
 	start := time.Now()
 	url := req.URL.Redacted()
 

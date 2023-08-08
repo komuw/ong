@@ -1,6 +1,8 @@
 // Package automax automatically sets GOMEMLIMIT & GOMAXPROCS to match the linux container memory & cpu quotas, if any.
 package automax
 
+import "testing"
+
 // config is used for tests.
 type config struct {
 	memCgroupV1 string
@@ -14,6 +16,10 @@ type config struct {
 //
 // The optional argument c is only used for internal test purposes.
 func SetMem(c ...config) func() {
+	if len(c) > 0 && !testing.Testing() {
+		panic("optional argument c should only be used for internal test purposes")
+	}
+
 	return setMem(c...)
 }
 
@@ -23,5 +29,9 @@ func SetMem(c ...config) func() {
 //
 // The optional argument c is only used for internal test purposes.
 func SetCpu(c ...config) func() {
+	if len(c) > 0 && !testing.Testing() {
+		panic("optional argument c should only be used for internal test purposes")
+	}
+
 	return setCpu(c...)
 }
