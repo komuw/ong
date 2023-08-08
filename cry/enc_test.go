@@ -1,13 +1,13 @@
 package cry
 
 import (
+	"slices"
 	"sync"
 	"testing"
 
 	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
-	"golang.org/x/exp/slices"
 )
 
 func TestMain(m *testing.M) {

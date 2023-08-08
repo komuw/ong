@@ -5,12 +5,11 @@ package sess
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"net/http"
 	"time"
 
 	"github.com/komuw/ong/cookie"
-
-	"golang.org/x/exp/maps"
 )
 
 type (

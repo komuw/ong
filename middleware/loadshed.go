@@ -4,10 +4,9 @@ import (
 	"fmt"
 	mathRand "math/rand"
 	"net/http"
+	"slices"
 	"sync"
 	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 // Most of the code here is inspired by:
