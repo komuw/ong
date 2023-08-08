@@ -122,14 +122,14 @@ func (lr *loggingRT) RoundTrip(req *http.Request) (res *http.Response, err error
 		if err != nil {
 			extra := []any{"err", err}
 			flds = append(flds, extra...)
-			lr.l.ErrorCtx(ctx, msg, flds...)
+			lr.l.ErrorContext(ctx, msg, flds...)
 		} else {
 			extra := []any{
 				"code", res.StatusCode,
 				"status", res.Status,
 			}
 			flds = append(flds, extra...)
-			lr.l.InfoCtx(ctx, msg, flds...)
+			lr.l.InfoContext(ctx, msg, flds...)
 		}
 	}()
 

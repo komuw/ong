@@ -96,14 +96,14 @@ func (lt *logRT) RoundTrip(req *http.Request) (res *http.Response, err error) {
 		if err != nil {
 			extra := []any{"err", err}
 			flds = append(flds, extra...)
-			lt.l.ErrorCtx(ctx, msg, flds...)
+			lt.l.ErrorContext(ctx, msg, flds...)
 		} else if res.StatusCode > 399 {
 			extra := []any{
 				"code", res.StatusCode,
 				"status", res.Status,
 			}
 			flds = append(flds, extra...)
-			lt.l.ErrorCtx(ctx, msg, flds...)
+			lt.l.ErrorContext(ctx, msg, flds...)
 		}
 	}()
 
