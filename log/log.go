@@ -113,6 +113,8 @@ type handler struct {
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
+	//
+	// Also see: https://github.com/golang/example/blob/master/slog-handler-guide/README.md
 	wrappedHandler slog.Handler
 	cBuf           *circleBuf
 	logID          string
@@ -142,6 +144,8 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	//   - If a group has no Attrs (even if it has a non-empty key), ignore it.
 	// https://github.com/golang/go/blob/5c154986094bcc2fb28909cc5f01c9ba1dd9ddd4/src/log/slog/handler.go#L50-L59
 	// Note that this handler does not produce output and hence the above rules do not apply.
+	//
+	// Also see: https://github.com/golang/example/blob/master/slog-handler-guide/README.md
 
 	if ctx == nil {
 		ctx = context.Background()
