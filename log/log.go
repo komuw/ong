@@ -127,7 +127,7 @@ func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
 }
 
 func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	h.attrs = append(h.attrs, attrs...)
+	h.attrs = append(h.attrs, attrs...) // okay, since `h` is not a pointer.
 	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID, attrs: h.attrs}
 }
 
