@@ -157,10 +157,10 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	// Convert time to UTC.
 	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
 	// If we ever need that functionality, we would do that in `r.Attrs()`
-	if r.Time.IsZero() {
+	if !r.Time.IsZero() {
+		// According to the docs, If r.Time is the zero time, ignore the time.
 		r.Time = time.Now().UTC()
 	}
-	r.Time = r.Time.UTC()
 
 	newAttrs := h.attrs
 	id := h.logID

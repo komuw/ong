@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	mathRand "math/rand"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -571,15 +572,25 @@ func TestSlogtest(t *testing.T) {
 			hdlr := l.Handler()
 
 			results := func() []map[string]any {
+				const theFlushMsg = "helloWorld-92aac072-3d91-422e-837d-2c467c63f40b"
 				{
 					// Our handler only flushes on error, whereas slogtest only uses logger.Info
 					// https://github.com/golang/go/blob/go1.21.0/src/testing/slogtest/slogtest.go#L56-L76
 					// So we need to force a flush.
-					hdlr.Handle(context.Background(), slog.Record{Time: time.Now(), Message: "hello world", Level: slog.LevelError})
+					hdlr.Handle(context.Background(), slog.Record{Time: time.Now(), Message: theFlushMsg, Level: slog.LevelError})
 				}
 
 				ms, err := parseLines(buf.Bytes(), tt.parse)
 				attest.Ok(t, err)
+
+				ms = slices.DeleteFunc(ms, func(a map[string]any) bool {
+					if val, ok := a[slog.MessageKey]; ok && val == theFlushMsg {
+						return true
+					}
+
+					return false
+				})
+
 				return ms
 			}
 
