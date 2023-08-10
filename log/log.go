@@ -115,7 +115,7 @@ type handler struct {
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 	//
 	// Also see: https://github.com/golang/example/blob/master/slog-handler-guide/README.md
-	wrappedHandler slog.Handler
+	wrappedHandler *slog.JSONHandler // slog.Handler
 	cBuf           *circleBuf
 	logID          string
 }
@@ -125,11 +125,18 @@ func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
 }
 
 func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+	// h2 := handler{}
+	// h2.cBuf = h.cBuf
+	// h2.logID = h.logID
+	// c2.attrs = concat(c.attrs, attrs)
+	fmt.Println("\n\t WithAttrs.attrs: ", attrs, " h.logID: ", h.logID, "\n.")
+	// return handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h handler) WithGroup(name string) slog.Handler {
-	return handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+	// return handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h handler) Handle(ctx context.Context, r slog.Record) error {
@@ -165,9 +172,22 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	if fromCtx {
 		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
-		newAttrs = []slog.Attr{
-			{Key: logIDFieldName, Value: slog.StringValue(id)},
-		}
+		// newAttrs = []slog.Attr{
+		// 	{Key: logIDFieldName, Value: slog.StringValue(id)},
+		// }
+		fmt.Println("\n id2: ", id2)
+		// r.Attrs(func(a slog.Attr) bool {
+		// 	fmt.Println("\n\t found key,val: ", a)
+
+		// 	// if a.Key == logIDFieldName {
+		// 	// 	fmt.Println("\n\t found key,val: ", a)
+		// 	// 	return false
+		// 	// }
+		// 	return true
+		// })
+	}
+	newAttrs = []slog.Attr{
+		{Key: logIDFieldName, Value: slog.StringValue(id)},
 	}
 	ctx = context.WithValue(ctx, octx.LogCtxKey, id)
 

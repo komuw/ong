@@ -427,3 +427,40 @@ func TestLogger(t *testing.T) {
 		wg.Wait()
 	})
 }
+
+func TestKomu(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	w := &bytes.Buffer{}
+	msg1 := "messageOne"
+	l := New(w, 3)(ctx)
+
+	l.InfoContext(ctx, msg1)
+	l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
+	attest.Subsequence(t, w.String(), msg1)
+	// attest.Equal(t,
+	// 	strings.Count(w.String(), logIDFieldName),
+	// 	// One for the messageOne info log the other for the badTingOne error log
+	// 	2,
+	// )
+
+	fmt.Println("\n w.String() 1: ", "\n", w.String())
+
+	newId := "NEW-id-adh4e92427dajd"
+	ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
+	l.ErrorContext(ctx, "hey2", "err2", errors.New("badTingTwo"))
+	attest.Subsequence(t, w.String(), newId)
+	// attest.Equal(t,
+	// 	strings.Count(w.String(), logIDFieldName),
+	// 	// One for the messageOne info log the other for the badTingOne error log
+	// 	// For badTingTwo error log, it has two logIDs.
+	// 	4,
+	// )
+
+	fmt.Println("\n w.String() 2: ", "\n", w.String())
+
+	l.ErrorContext(ctx, "hey3", "err3", errors.New("badTingThree"))
+	attest.Subsequence(t, w.String(), newId)
+	fmt.Println("\n w.String() 3: ", "\n", w.String())
+}
