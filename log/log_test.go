@@ -3,13 +3,16 @@ package log
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	mathRand "math/rand"
 	"strings"
 	"sync"
 	"testing"
+	"testing/slogtest"
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/internal/octx"
@@ -426,4 +429,54 @@ func TestLogger(t *testing.T) {
 		}
 		wg.Wait()
 	})
+}
+
+func TestSlogtest(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		new   func(io.Writer) slog.Handler
+		parse func([]byte) (map[string]any, error)
+	}{
+		{"JSON", func(w io.Writer) slog.Handler { return slog.NewJSONHandler(w, nil) }, parseJSON},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			results := func() []map[string]any {
+				ms, err := parseLines(buf.Bytes(), test.parse)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return ms
+			}
+			ctx := context.Background()
+			l := New(&buf, 30_000)(ctx)
+
+			if err := slogtest.TestHandler(l.Handler(), results); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func parseLines(src []byte, parse func([]byte) (map[string]any, error)) ([]map[string]any, error) {
+	var records []map[string]any
+	for _, line := range bytes.Split(src, []byte{'\n'}) {
+		if len(line) == 0 {
+			continue
+		}
+		m, err := parse(line)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", string(line), err)
+		}
+		records = append(records, m)
+	}
+	return records, nil
+}
+
+func parseJSON(bs []byte) (map[string]any, error) {
+	var m map[string]any
+	if err := json.Unmarshal(bs, &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
