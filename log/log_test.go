@@ -431,6 +431,8 @@ func TestLogger(t *testing.T) {
 	})
 }
 
+// Check that our handler is conformant with log/slog expectations.
+// Taken from https://github.com/golang/go/blob/go1.21.0/src/log/slog/slogtest_test.go#L18-L26
 func TestSlogtest(t *testing.T) {
 	for _, test := range []struct {
 		name  string
