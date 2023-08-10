@@ -9,10 +9,12 @@ import (
 	"io"
 	"log/slog"
 	mathRand "math/rand"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"testing/slogtest"
+	"time"
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/internal/octx"
@@ -478,15 +480,40 @@ func TestSlogtest(t *testing.T) {
 			t.Parallel()
 
 			var buf bytes.Buffer
-			results := func() []map[string]any {
-				ms, err := parseLines(buf.Bytes(), tt.parse)
-				attest.Ok(t, err)
-				return ms
-			}
 			ctx := context.Background()
 			l := New(&buf, 30_000)(ctx)
+			hdlr := l.Handler()
 
-			err := slogtest.TestHandler(l.Handler(), results)
+			results := func() []map[string]any {
+				const theFlushMsg = "helloWorld-92aac072-3d91-422e-837d-2c467c63f40b"
+				{
+					// Our handler only flushes on error, whereas slogtest only uses logger.Info
+					// https://github.com/golang/go/blob/go1.21.0/src/testing/slogtest/slogtest.go#L56-L76
+					// So we need to force a flush.
+					hdlr.Handle(context.Background(), slog.Record{Time: time.Now(), Message: theFlushMsg, Level: slog.LevelError})
+				}
+
+				ms, err := parseLines(buf.Bytes(), tt.parse)
+				attest.Ok(t, err)
+
+				fmt.Println("\n ms1 ")
+				fmt.Println(ms, len(ms))
+				ms = slices.DeleteFunc(ms, func(a map[string]any) bool {
+					if val, ok := a[slog.MessageKey]; ok && val == theFlushMsg {
+						fmt.Println("\n ")
+						fmt.Println("toDelete: ", a)
+						return true
+					}
+
+					return false
+				})
+				fmt.Println("\n ms2 ")
+				fmt.Println(ms, len(ms))
+
+				return ms
+			}
+
+			err := slogtest.TestHandler(hdlr, results)
 			attest.Ok(t, err)
 		})
 	}
