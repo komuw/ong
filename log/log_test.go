@@ -436,6 +436,33 @@ func TestLogger(t *testing.T) {
 func TestSlogtest(t *testing.T) {
 	t.Parallel()
 
+	parseLines := func(src []byte, parse func([]byte) (map[string]any, error)) ([]map[string]any, error) {
+		t.Helper()
+
+		var records []map[string]any
+		for _, line := range bytes.Split(src, []byte{'\n'}) {
+			if len(line) == 0 {
+				continue
+			}
+			m, err := parse(line)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", string(line), err)
+			}
+			records = append(records, m)
+		}
+		return records, nil
+	}
+
+	parseJSON := func(bs []byte) (map[string]any, error) {
+		t.Helper()
+
+		var m map[string]any
+		if err := json.Unmarshal(bs, &m); err != nil {
+			return nil, err
+		}
+		return m, nil
+	}
+
 	tests := []struct {
 		name  string
 		new   func(io.Writer) slog.Handler
@@ -463,27 +490,4 @@ func TestSlogtest(t *testing.T) {
 			attest.Ok(t, err)
 		})
 	}
-}
-
-func parseLines(src []byte, parse func([]byte) (map[string]any, error)) ([]map[string]any, error) {
-	var records []map[string]any
-	for _, line := range bytes.Split(src, []byte{'\n'}) {
-		if len(line) == 0 {
-			continue
-		}
-		m, err := parse(line)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", string(line), err)
-		}
-		records = append(records, m)
-	}
-	return records, nil
-}
-
-func parseJSON(bs []byte) (map[string]any, error) {
-	var m map[string]any
-	if err := json.Unmarshal(bs, &m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
