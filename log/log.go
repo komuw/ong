@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"slices"
 	"sync"
 	"time"
 
@@ -118,6 +119,7 @@ type handler struct {
 	wrappedHandler *slog.JSONHandler // slog.Handler
 	cBuf           *circleBuf
 	logID          string
+	attrs          []slog.Attr
 }
 
 func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
@@ -131,7 +133,12 @@ func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	// c2.attrs = concat(c.attrs, attrs)
 	fmt.Println("\n\t WithAttrs.attrs: ", attrs, " h.logID: ", h.logID, "\n.")
 	// return handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
-	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID}
+
+	newAttrs := make([]slog.Attr, 0) // TODO: optimize
+	newAttrs = append(newAttrs, h.attrs...)
+	newAttrs = append(newAttrs, attrs...)
+
+	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID, attrs: newAttrs}
 }
 
 func (h handler) WithGroup(name string) slog.Handler {
@@ -166,7 +173,7 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	}
 	r.Time = r.Time.UTC()
 
-	newAttrs := []slog.Attr{}
+	newAttrs := h.attrs
 	id := h.logID
 	id2, fromCtx := getId(ctx)
 	if fromCtx {
@@ -175,6 +182,12 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 		// newAttrs = []slog.Attr{
 		// 	{Key: logIDFieldName, Value: slog.StringValue(id)},
 		// }
+
+		newAttrs = slices.DeleteFunc(newAttrs, func(n slog.Attr) bool {
+			return n.Key == logIDFieldName
+		})
+
+		newAttrs = append(newAttrs, slog.Attr{Key: logIDFieldName, Value: slog.StringValue(id)})
 		fmt.Println("\n id2: ", id2)
 		// r.Attrs(func(a slog.Attr) bool {
 		// 	fmt.Println("\n\t found key,val: ", a)
@@ -186,9 +199,11 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 		// 	return true
 		// })
 	}
-	newAttrs = []slog.Attr{
-		{Key: logIDFieldName, Value: slog.StringValue(id)},
-	}
+	fmt.Println("h.atts: ", h.attrs)
+	// newAttrs = []slog.Attr{
+	// 	{Key: logIDFieldName, Value: slog.StringValue(id)},
+	// }
+
 	ctx = context.WithValue(ctx, octx.LogCtxKey, id)
 
 	r.Attrs(func(a slog.Attr) bool {
