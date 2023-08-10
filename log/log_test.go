@@ -434,28 +434,33 @@ func TestLogger(t *testing.T) {
 // Check that our handler is conformant with log/slog expectations.
 // Taken from https://github.com/golang/go/blob/go1.21.0/src/log/slog/slogtest_test.go#L18-L26
 func TestSlogtest(t *testing.T) {
-	for _, test := range []struct {
+	t.Parallel()
+
+	tests := []struct {
 		name  string
 		new   func(io.Writer) slog.Handler
 		parse func([]byte) (map[string]any, error)
 	}{
 		{"JSON", func(w io.Writer) slog.Handler { return slog.NewJSONHandler(w, nil) }, parseJSON},
-	} {
-		t.Run(test.name, func(t *testing.T) {
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			var buf bytes.Buffer
 			results := func() []map[string]any {
-				ms, err := parseLines(buf.Bytes(), test.parse)
-				if err != nil {
-					t.Fatal(err)
-				}
+				ms, err := parseLines(buf.Bytes(), tt.parse)
+				attest.Ok(t, err)
 				return ms
 			}
 			ctx := context.Background()
 			l := New(&buf, 30_000)(ctx)
 
-			if err := slogtest.TestHandler(l.Handler(), results); err != nil {
-				t.Fatal(err)
-			}
+			err := slogtest.TestHandler(l.Handler(), results)
+			attest.Ok(t, err)
 		})
 	}
 }
