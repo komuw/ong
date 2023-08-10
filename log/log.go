@@ -116,7 +116,7 @@ type handler struct {
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 	//
 	// Also see: https://github.com/golang/example/blob/master/slog-handler-guide/README.md
-	wrappedHandler *slog.JSONHandler // slog.Handler
+	wrappedHandler slog.Handler
 	cBuf           *circleBuf
 	logID          string
 	attrs          []slog.Attr
@@ -132,9 +132,7 @@ func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 }
 
 func (h handler) WithGroup(name string) slog.Handler {
-	// return handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
-	// TODO:
-	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID, attrs: h.attrs}
+	return handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID, attrs: h.attrs}
 }
 
 func (h handler) Handle(ctx context.Context, r slog.Record) error {

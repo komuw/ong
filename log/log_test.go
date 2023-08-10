@@ -431,41 +431,87 @@ func TestLogger(t *testing.T) {
 func TestKomu(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	w := &bytes.Buffer{}
-	msg1 := "messageOne"
-	l := New(w, 3)(ctx)
+	{
+		ctx := context.Background()
+		w := &bytes.Buffer{}
+		msg1 := "messageOne"
+		l := New(w, 3)(ctx)
 
-	l = l.With("app", "mpesa")
+		l = l.With("app", "mpesa")
 
-	l.InfoContext(ctx, msg1)
-	l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
-	attest.Subsequence(t, w.String(), msg1)
-	attest.Subsequence(t, w.String(), "mpesa")
-	// attest.Equal(t,
-	// 	strings.Count(w.String(), logIDFieldName),
-	// 	// One for the messageOne info log the other for the badTingOne error log
-	// 	2,
-	// )
+		l.InfoContext(ctx, msg1)
+		l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), msg1)
+		attest.Subsequence(t, w.String(), "mpesa")
+		// attest.Equal(t,
+		// 	strings.Count(w.String(), logIDFieldName),
+		// 	// One for the messageOne info log the other for the badTingOne error log
+		// 	2,
+		// )
 
-	fmt.Println("\n w.String() 1: ", "\n", w.String())
+		fmt.Println("\n w.String() 1: ", "\n", w.String())
 
-	newId := "NEW-id-adh4e92427dajd"
-	ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
-	l.ErrorContext(ctx, "hey2", "err2", errors.New("badTingTwo"))
-	attest.Subsequence(t, w.String(), newId)
-	attest.Subsequence(t, w.String(), "mpesa")
-	// attest.Equal(t,
-	// 	strings.Count(w.String(), logIDFieldName),
-	// 	// One for the messageOne info log the other for the badTingOne error log
-	// 	// For badTingTwo error log, it has two logIDs.
-	// 	4,
-	// )
+		newId := "NEW-id-adh4e92427dajd"
+		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
+		l.ErrorContext(ctx, "hey2", "err2", errors.New("badTingTwo"))
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		// attest.Equal(t,
+		// 	strings.Count(w.String(), logIDFieldName),
+		// 	// One for the messageOne info log the other for the badTingOne error log
+		// 	// For badTingTwo error log, it has two logIDs.
+		// 	4,
+		// )
 
-	fmt.Println("\n w.String() 2: ", "\n", w.String())
+		fmt.Println("\n w.String() 2: ", "\n", w.String())
 
-	l.ErrorContext(ctx, "hey3", "err3", errors.New("badTingThree"))
-	attest.Subsequence(t, w.String(), newId)
-	attest.Subsequence(t, w.String(), "mpesa")
-	fmt.Println("\n w.String() 3: ", "\n", w.String())
+		l.ErrorContext(ctx, "hey3", "err3", errors.New("badTingThree"))
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		fmt.Println("\n w.String() 3: ", "\n", w.String())
+	}
+
+	{
+		ctx := context.Background()
+		w := &bytes.Buffer{}
+		msg1 := "messageOne"
+		l := New(w, 3)(ctx)
+
+		l = l.With("app", "mpesa")
+		l = l.WithGroup("af-south-1")
+
+		l.InfoContext(ctx, msg1)
+		l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), msg1)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Subsequence(t, w.String(), "af-south-1")
+		// attest.Equal(t,
+		// 	strings.Count(w.String(), logIDFieldName),
+		// 	// One for the messageOne info log the other for the badTingOne error log
+		// 	2,
+		// )
+
+		fmt.Println("\n w.String() 1: ", "\n", w.String())
+
+		newId := "NEW-id-adh4e92427dajd"
+		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
+		l.ErrorContext(ctx, "hey2", "err2", errors.New("badTingTwo"))
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Subsequence(t, w.String(), "af-south-1")
+		// attest.Equal(t,
+		// 	strings.Count(w.String(), logIDFieldName),
+		// 	// One for the messageOne info log the other for the badTingOne error log
+		// 	// For badTingTwo error log, it has two logIDs.
+		// 	4,
+		// )
+
+		fmt.Println("\n w.String() 2: ", "\n", w.String())
+
+		l.ErrorContext(ctx, "hey3", "err3", errors.New("badTingThree"))
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Subsequence(t, w.String(), "af-south-1")
+		fmt.Println("\n w.String() 3: ", "\n", w.String())
+	}
 }
