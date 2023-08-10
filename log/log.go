@@ -127,23 +127,14 @@ func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
 }
 
 func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	// h2 := handler{}
-	// h2.cBuf = h.cBuf
-	// h2.logID = h.logID
-	// c2.attrs = concat(c.attrs, attrs)
-	fmt.Println("\n\t WithAttrs.attrs: ", attrs, " h.logID: ", h.logID, "\n.")
-	// return handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
-
-	newAttrs := make([]slog.Attr, 0) // TODO: optimize
-	newAttrs = append(newAttrs, h.attrs...)
-	newAttrs = append(newAttrs, attrs...)
-
-	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID, attrs: newAttrs}
+	h.attrs = append(h.attrs, attrs...)
+	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID, attrs: h.attrs}
 }
 
 func (h handler) WithGroup(name string) slog.Handler {
 	// return handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
-	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID}
+	// TODO:
+	return handler{wrappedHandler: h.wrappedHandler, cBuf: h.cBuf, logID: h.logID, attrs: h.attrs}
 }
 
 func (h handler) Handle(ctx context.Context, r slog.Record) error {
@@ -177,33 +168,13 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	id := h.logID
 	id2, fromCtx := getId(ctx)
 	if fromCtx {
-		// if ctx did not contain a logId, do not use the generated one.
 		id = id2
-		// newAttrs = []slog.Attr{
-		// 	{Key: logIDFieldName, Value: slog.StringValue(id)},
-		// }
-
 		newAttrs = slices.DeleteFunc(newAttrs, func(n slog.Attr) bool {
+			// delete old logID
 			return n.Key == logIDFieldName
 		})
-
 		newAttrs = append(newAttrs, slog.Attr{Key: logIDFieldName, Value: slog.StringValue(id)})
-		fmt.Println("\n id2: ", id2)
-		// r.Attrs(func(a slog.Attr) bool {
-		// 	fmt.Println("\n\t found key,val: ", a)
-
-		// 	// if a.Key == logIDFieldName {
-		// 	// 	fmt.Println("\n\t found key,val: ", a)
-		// 	// 	return false
-		// 	// }
-		// 	return true
-		// })
 	}
-	fmt.Println("h.atts: ", h.attrs)
-	// newAttrs = []slog.Attr{
-	// 	{Key: logIDFieldName, Value: slog.StringValue(id)},
-	// }
-
 	ctx = context.WithValue(ctx, octx.LogCtxKey, id)
 
 	r.Attrs(func(a slog.Attr) bool {
