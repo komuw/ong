@@ -13,6 +13,7 @@ import (
 	"sync"
 	"testing"
 	"testing/slogtest"
+	"time"
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/internal/octx"
@@ -565,15 +566,24 @@ func TestSlogtest(t *testing.T) {
 			t.Parallel()
 
 			var buf bytes.Buffer
+			ctx := context.Background()
+			l := New(&buf, 30_000)(ctx)
+			hdlr := l.Handler()
+
 			results := func() []map[string]any {
+				{
+					// Our handler only flushes on error, whereas slogtest only uses logger.Info
+					// https://github.com/golang/go/blob/go1.21.0/src/testing/slogtest/slogtest.go#L56-L76
+					// So we need to force a flush.
+					hdlr.Handle(context.Background(), slog.Record{Time: time.Now(), Message: "hello world", Level: slog.LevelError})
+				}
+
 				ms, err := parseLines(buf.Bytes(), tt.parse)
 				attest.Ok(t, err)
 				return ms
 			}
-			ctx := context.Background()
-			l := New(&buf, 30_000)(ctx)
 
-			err := slogtest.TestHandler(l.Handler(), results)
+			err := slogtest.TestHandler(hdlr, results)
 			attest.Ok(t, err)
 		})
 	}
