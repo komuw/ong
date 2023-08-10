@@ -496,19 +496,13 @@ func TestSlogtest(t *testing.T) {
 				ms, err := parseLines(buf.Bytes(), tt.parse)
 				attest.Ok(t, err)
 
-				fmt.Println("\n ms1 ")
-				fmt.Println(ms, len(ms))
 				ms = slices.DeleteFunc(ms, func(a map[string]any) bool {
 					if val, ok := a[slog.MessageKey]; ok && val == theFlushMsg {
-						fmt.Println("\n ")
-						fmt.Println("toDelete: ", a)
 						return true
 					}
 
 					return false
 				})
-				fmt.Println("\n ms2 ")
-				fmt.Println(ms, len(ms))
 
 				return ms
 			}
