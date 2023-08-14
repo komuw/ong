@@ -37,7 +37,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)(context.Background())
+		l := log.New(context.Background(), &bytes.Buffer{}, 500)
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
@@ -98,7 +98,7 @@ func TestOpts(t *testing.T) {
 	t.Run("default tls opts", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(&bytes.Buffer{}, 500)(context.Background())
+		l := log.New(context.Background(), &bytes.Buffer{}, 500)
 		got := DevOpts(l)
 		want := Opts{
 			port:              65081,
@@ -157,7 +157,7 @@ func TestServer(t *testing.T) {
 		client.CloseIdleConnections()
 	})
 
-	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
 	t.Run("tls", func(t *testing.T) {
 		t.Parallel()
@@ -392,7 +392,7 @@ func BenchmarkServer(b *testing.B) {
 	// For example we can use it to see the effect of tls fingerprinting on requests throughput/latency.
 	//
 
-	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
 	handler := benchmarkServerHandler("helloWorld")
 	port := tst.GetPort()

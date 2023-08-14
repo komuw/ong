@@ -26,7 +26,7 @@ func loginHandler() http.HandlerFunc {
 }
 
 func ExampleSetM() {
-	l := log.New(os.Stdout, 100)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 100)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	handler := middleware.Get(

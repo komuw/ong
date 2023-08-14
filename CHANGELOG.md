@@ -6,6 +6,7 @@ Most recent version is listed first.
 # v0.0.74
 - ong/log: Conform to log/slog: https://github.com/komuw/ong/pull/357
            Eliminate duplicate logIDs
+- ong/log: Integrate ong packages with new logger: https://github.com/komuw/ong/pull/358
 
 # v0.0.73
 - Remove /ex/exp: https://github.com/komuw/ong/pull/352

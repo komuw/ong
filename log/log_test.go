@@ -508,13 +508,21 @@ func TestLogger(t *testing.T) {
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l.Error("some-error", errors.New("bad"+t))
+				l.Error("some-error", "err", errors.New("bad"+t))
 			}(tok)
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l.Error("some-other-error", errors.New("bad-two"+t))
+				l.Error("some-other-error", "err", errors.New("bad-two"+t))
+			}(tok)
+		}
+
+		for _, tok := range tokens {
+			go func(t string) {
+				_ = l.Enabled(context.Background(), slog.LevelDebug)
+				l.With("env", "dev").Error("some-other-error", "err", errors.New("bad-two"+t))
+				l.WithGroup("group-one").Error("some-error", "err", errors.New("bad-"+t))
 			}(tok)
 		}
 
@@ -527,8 +535,8 @@ func TestLogger(t *testing.T) {
 				xl.Info("okay-" + t)
 
 				if mathRand.Intn(100) > 75 { // log errors 25% of the time.
-					l.Error("hey", errors.New("some-err-"+t))
-					xl.Error("some-xl-error", errors.New("other-err-"+t))
+					l.Error("hey", "err", errors.New("some-err-"+t))
+					xl.Error("some-xl-error", "err", errors.New("other-err-"+t))
 				}
 			}(tok)
 		}

@@ -31,7 +31,7 @@ func welcomeHandler() http.HandlerFunc {
 }
 
 func Example_getCspNonce() {
-	l := log.New(os.Stdout, 100)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 100)
 	handler := middleware.Get(
 		loginHandler(),
 		middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
@@ -42,7 +42,7 @@ func Example_getCspNonce() {
 }
 
 func Example_getCsrfToken() {
-	l := log.New(os.Stdout, 100)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 100)
 	handler := middleware.Get(
 		welcomeHandler(),
 		middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
@@ -53,7 +53,7 @@ func Example_getCsrfToken() {
 }
 
 func ExampleGet() {
-	l := log.New(os.Stdout, 100)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 100)
 	opts := middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l)
 	handler := middleware.Get(loginHandler(), opts)
 	_ = handler // use handler
@@ -62,7 +62,7 @@ func ExampleGet() {
 }
 
 func ExampleAll() {
-	l := log.New(os.Stdout, 100)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 100)
 	opts := middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l)
 
 	myHandler := http.HandlerFunc(

@@ -17,7 +17,7 @@ import (
 func getLogger() *slog.Logger {
 	w := &bytes.Buffer{}
 	maxMsgs := 15
-	return log.New(w, maxMsgs)(context.Background())
+	return log.New(context.Background(), w, maxMsgs)
 }
 
 func TestMain(m *testing.M) {
@@ -104,7 +104,7 @@ func TestClient(t *testing.T) {
 			// error
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)(context.Background())
+			l := log.New(context.Background(), w, maxMsgs)
 
 			cli := Safe(l)
 
@@ -120,7 +120,7 @@ func TestClient(t *testing.T) {
 			// success
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)(context.Background())
+			l := log.New(context.Background(), w, maxMsgs)
 
 			cli := Safe(l)
 
@@ -140,7 +140,7 @@ func TestClient(t *testing.T) {
 			// error
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)(context.Background())
+			l := log.New(context.Background(), w, maxMsgs)
 
 			cli := Safe(l)
 
@@ -157,7 +157,7 @@ func TestClient(t *testing.T) {
 			// success
 			w := &bytes.Buffer{}
 			maxMsgs := 15
-			l := log.New(w, maxMsgs)(context.Background())
+			l := log.New(context.Background(), w, maxMsgs)
 
 			cli := Safe(l)
 

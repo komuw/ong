@@ -14,7 +14,7 @@ import (
 func TestGetTlsConfig(t *testing.T) {
 	t.Parallel()
 
-	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
 	tests := []struct {
 		name   string

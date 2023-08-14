@@ -52,7 +52,7 @@ func TestAllMiddleware(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
 	msg := "hello world"
 	errMsg := "not allowed. only allows http"
@@ -237,7 +237,7 @@ func TestMiddlewareServer(t *testing.T) {
 	}
 	client := &http.Client{Transport: tr}
 
-	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
 	t.Run("integration with server succeds", func(t *testing.T) {
 		t.Parallel()
@@ -384,7 +384,7 @@ func TestMiddlewareServer(t *testing.T) {
 		// See: https://github.com/komuw/ong/issues/48#issuecomment-1260654535
 
 		getLogger := func(w io.Writer) *slog.Logger {
-			return log.New(w, 500)(context.Background())
+			return log.New(context.Background(), w, 500)
 		}
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
@@ -476,7 +476,7 @@ var resultBenchmarkAllMiddlewares int //nolint:gochecknoglobals
 
 func BenchmarkAllMiddlewares(b *testing.B) {
 	var r int
-	l := log.New(&bytes.Buffer{}, 500)(context.Background())
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 	httpsPort := tst.GetPort()
 	domain := "localhost"
 	o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)

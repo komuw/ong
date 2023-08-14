@@ -13,7 +13,7 @@ import (
 )
 
 func ExampleRun() {
-	l := log.New(os.Stdout, 1000)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 1000)
 	secretKey := "super-h@rd-Pa$1word"
 	mux := mux.New(
 		l,
