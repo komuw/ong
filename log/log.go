@@ -84,7 +84,6 @@ type handler struct {
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
-	// +checklocksignore: mu is not required, it just happens to be held always.
 	wrappedHandler slog.Handler
 
 	// mu protects cBuf & logID
@@ -134,14 +133,18 @@ func (h *handler) Enabled(_ context.Context, l slog.Level) bool {
 
 func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	h.mu.Lock()
-	defer h.mu.Unlock()
-	return &handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), mu: h.mu, cBuf: h.cBuf, logID: h.logID}
+	cBuf := h.cBuf
+	id := h.logID
+	h.mu.Unlock()
+	return &handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), mu: h.mu, cBuf: cBuf, logID: id}
 }
 
 func (h *handler) WithGroup(name string) slog.Handler {
 	h.mu.Lock()
-	defer h.mu.Unlock()
-	return &handler{wrappedHandler: h.wrappedHandler.WithGroup(name), mu: h.mu, cBuf: h.cBuf, logID: h.logID}
+	cBuf := h.cBuf
+	id := h.logID
+	h.mu.Unlock()
+	return &handler{wrappedHandler: h.wrappedHandler.WithGroup(name), mu: h.mu, cBuf: cBuf, logID: id}
 }
 
 func (h *handler) Handle(ctx context.Context, r slog.Record) error {
