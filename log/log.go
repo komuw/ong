@@ -160,10 +160,6 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	// https://github.com/golang/go/blob/5c154986094bcc2fb28909cc5f01c9ba1dd9ddd4/src/log/slog/handler.go#L50-L59
 	// Note that this handler does not produce output and hence the above rules do not apply.
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	theID := h.logID
 	{ // 1. Add some required fields.
 
 		// Convert time to UTC.
@@ -177,14 +173,19 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 		newAttrs := []slog.Attr{}
 
 		// Add logID
-		id2, fromCtx := getId(ctx)
-		if fromCtx || (theID == "") {
-			theID = id2
+		h.mu.Lock()
+		{
+			theID := h.logID
+			id2, fromCtx := getId(ctx)
+			if fromCtx || (theID == "") {
+				theID = id2
+			}
+			newAttrs = []slog.Attr{
+				{Key: logIDFieldName, Value: slog.StringValue(theID)},
+			}
+			h.logID = theID
 		}
-		newAttrs = []slog.Attr{
-			{Key: logIDFieldName, Value: slog.StringValue(theID)},
-		}
-		h.logID = theID
+		h.mu.Unlock()
 
 		// Add stackTraces
 		r.Attrs(func(a slog.Attr) bool {
@@ -199,6 +200,9 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 		r.AddAttrs(newAttrs...)
 	}
 
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	{ // 2. save record.
 		h.cBuf.store(r)
 	}
@@ -206,23 +210,19 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	{ // 3. flush on error.
 		if r.Level >= slog.LevelError {
 			var err error
-			defer func() {
-				if err == nil {
-					// Only reset if `h.Handler.Handle` succeded.
-					// This is so that users do not loose valuable info that might be useful in debugging their app.
-					h.cBuf.reset()
-				}
-			}()
-
 			for _, v := range h.cBuf.buf {
-				ctx = context.WithValue(ctx, octx.LogCtxKey, theID)
 				if e := h.wrappedHandler.Handle(ctx, v); e != nil {
 					err = errors.Join([]error{err, e}...)
 				}
 			}
+
+			if err == nil {
+				// Only reset if `h.Handler.Handle` succeded.
+				// This is so that users do not loose valuable info that might be useful in debugging their app.
+				h.cBuf.reset()
+			}
 			return err
 		} else if r.Level == LevelImmediate {
-			ctx = context.WithValue(ctx, octx.LogCtxKey, theID)
 			return h.wrappedHandler.Handle(ctx, r)
 		}
 	}
