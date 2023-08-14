@@ -84,6 +84,7 @@ type handler struct {
 	// Any of the Handler's methods may be called concurrently with itself or with other methods.
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
+	// +checklocksignore: mu is not required, it just happens to be held always.
 	wrappedHandler slog.Handler
 
 	// mu protects cBuf & logID
