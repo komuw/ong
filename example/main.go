@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	l := log.New(os.Stdout, 100)(context.Background()).With("pid", os.Getpid())
+	l := log.New(context.Background(), os.Stdout, 100).With("pid", os.Getpid())
 	const secretKey = "super-h@rd-Pa$1word"
 
 	api := NewApp(myDB{map[string]string{}}, l)
