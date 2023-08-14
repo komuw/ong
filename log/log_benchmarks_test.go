@@ -53,9 +53,10 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 func newNewOngLogger() *slog.Logger {
 	maxMsgs := 50_000
 	return log.New(
+		context.Background(),
 		io.Discard,
 		maxMsgs,
-	)(context.Background())
+	)
 }
 
 func getMessage() ([]string, []any) {

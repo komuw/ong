@@ -3,13 +3,14 @@ package log
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"sync"
 	"time"
 
-	"github.com/komuw/ong/errors"
+	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/internal/octx"
 )
@@ -41,63 +42,33 @@ func getId(ctx context.Context) (string, bool) {
 	return id.New(), false
 }
 
-// New returns a function that returns an [slog.Logger]
-// The logger is backed by a handler that stores log messages into a [circular buffer].
+// New returns an [slog.Logger]
+// The logger is backed by an [slog.Handler] that stores log messages into a [circular buffer].
 // Those log messages are only flushed to the underlying io.Writer when a message with level >= [slog.LevelError] is logged.
 // A unique logID is also added to the logs that acts as a correlation id of log events from diffrent components that
 // neverthless are related.
 //
 // [circular buffer]: https://en.wikipedia.org/wiki/Circular_buffer
-func New(w io.Writer, maxMsgs int) func(ctx context.Context) *slog.Logger {
-	opts := &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.LevelDebug,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			v := a.Value
-			if a.Key == "source" {
-				if t, ok := v.Any().(*slog.Source); ok {
-					// log the source in one line.
-					return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
-				}
-			}
-			return a
-		},
-	}
-	jh := slog.NewJSONHandler(
-		// os.Stderr is not buffered. Thus it will make a sycall for every write.
-		// os.Stdout on the other hand is buffered.
-		// https://eklitzke.org/stdout-buffering
-		w,
-		opts,
-	)
-	cbuf := newCirleBuf(maxMsgs)
-	hdlr := handler{wrappedHandler: jh, cBuf: cbuf, logID: id.New()}
-	l := slog.New(hdlr)
-
-	return func(ctx context.Context) *slog.Logger {
-		id := hdlr.logID
-		if id2, ok := getId(ctx); ok {
-			// if ctx did not contain a logId, do not use the generated one.
-			id = id2
-		}
-
-		return l.With(logIDFieldName, id)
-	}
+func New(ctx context.Context, w io.Writer, maxSize int) *slog.Logger {
+	h := newHandler(ctx, w, maxSize)
+	return slog.New(h)
 }
 
 // WithID returns a [slog.Logger] based on l, that includes a logID from ctx.
 // If ctx does not contain a logID, one will be auto-generated.
 func WithID(ctx context.Context, l *slog.Logger) *slog.Logger {
-	id, fromCtx := getId(ctx)
+	if hdlr, okHandler := l.Handler().(*handler); okHandler {
+		hdlr.mu.Lock()
+		defer hdlr.mu.Unlock()
 
-	if hdlr, okHandler := l.Handler().(handler); okHandler {
-		id2 := hdlr.logID
-		if !fromCtx {
+		id := hdlr.logID
+		if id2, fromCtx := getId(ctx); fromCtx {
 			id = id2
 		}
+		hdlr.logID = id
 	}
 
-	return l.With(logIDFieldName, id)
+	return l
 }
 
 // handler is an [slog.handler]
@@ -114,23 +85,56 @@ type handler struct {
 	// It is the responsibility of the Handler to manage this concurrency.
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 	wrappedHandler slog.Handler
-	cBuf           *circleBuf
-	logID          string
+
+	mu sync.Mutex // protects cBuf & logID
+	// +checklocks:mu
+	cBuf *circleBuf
+	// +checklocks:mu
+	logID string
 }
 
-func (h handler) Enabled(_ context.Context, _ slog.Level) bool {
-	return true /* support all logging levels*/
+func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
+	opts := &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			v := a.Value
+			if a.Key == "source" {
+				if t, ok := v.Any().(*slog.Source); ok {
+					// log the source in one line.
+					return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
+				}
+			}
+			return a
+		},
+	}
+
+	return &handler{
+		wrappedHandler: slog.NewJSONHandler(
+			// os.Stderr is not buffered. Thus it will make a sycall for every write.
+			// os.Stdout on the other hand is buffered.
+			// https://eklitzke.org/stdout-buffering
+			w,
+			opts,
+		),
+		cBuf:  newCirleBuf(maxSize),
+		logID: GetId(ctx),
+	}
 }
 
-func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+func (h *handler) Enabled(_ context.Context, l slog.Level) bool {
+	return true
 }
 
-func (h handler) WithGroup(name string) slog.Handler {
-	return handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
 }
 
-func (h handler) Handle(ctx context.Context, r slog.Record) error {
+func (h *handler) WithGroup(name string) slog.Handler {
+	return &handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+}
+
+func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	// Obey the following rules form the slog documentation:
 	// Handle methods that produce OUTPUT should observe the following rules:
 	//   - If r.Time is the zero time, ignore the time.
@@ -143,66 +147,79 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	// https://github.com/golang/go/blob/5c154986094bcc2fb28909cc5f01c9ba1dd9ddd4/src/log/slog/handler.go#L50-L59
 	// Note that this handler does not produce output and hence the above rules do not apply.
 
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
-	// Convert time to UTC.
-	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
-	// If we ever need that functionality, we would do that in `r.Attrs()`
-	if r.Time.IsZero() {
-		r.Time = time.Now().UTC()
-	}
-	r.Time = r.Time.UTC()
+	theID := h.logID
+	{ // 1. Add some required fields.
 
-	newAttrs := []slog.Attr{}
-	id := h.logID
-	id2, fromCtx := getId(ctx)
-	if fromCtx {
-		// if ctx did not contain a logId, do not use the generated one.
-		id = id2
+		// Convert time to UTC.
+		// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
+		// If we ever need that functionality, we would do that in `r.Attrs()`
+		if !r.Time.IsZero() {
+			// According to the docs, If r.Time is the zero time, ignore the time.
+			r.Time = time.Now().UTC()
+		}
+
+		newAttrs := []slog.Attr{}
+
+		// Add logID
+		id2, fromCtx := getId(ctx)
+		if fromCtx || (theID == "") {
+			theID = id2
+		}
 		newAttrs = []slog.Attr{
-			{Key: logIDFieldName, Value: slog.StringValue(id)},
+			{Key: logIDFieldName, Value: slog.StringValue(theID)},
 		}
-	}
-	ctx = context.WithValue(ctx, octx.LogCtxKey, id)
+		h.logID = theID
 
-	r.Attrs(func(a slog.Attr) bool {
-		if e, ok := a.Value.Any().(error); ok {
-			if stack := errors.StackTrace(e); stack != "" {
-				newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+		// Add stackTraces
+		r.Attrs(func(a slog.Attr) bool {
+			if e, ok := a.Value.Any().(error); ok {
+				if stack := ongErrors.StackTrace(e); stack != "" {
+					newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+				}
 			}
-		}
-		return true
-	})
-	if len(newAttrs) > 0 {
+			return true
+		})
+
 		r.AddAttrs(newAttrs...)
 	}
 
-	h.cBuf.mu.Lock()
-	defer h.cBuf.mu.Unlock()
-
-	// store record only after manipulating it.
-	h.cBuf.store(r)
-
-	var err error
-	if r.Level >= slog.LevelError {
-		for _, v := range h.cBuf.buf {
-			err = h.wrappedHandler.Handle(ctx, v)
-		}
-		h.cBuf.reset()
-	} else if r.Level == LevelImmediate {
-		err = h.wrappedHandler.Handle(ctx, r)
+	{ // 2. save record.
+		h.cBuf.store(r)
 	}
 
-	return err
+	{ // 3. flush on error.
+		if r.Level >= slog.LevelError {
+			var err error
+			defer func() {
+				if err == nil {
+					// Only reset if `h.Handler.Handle` succeded.
+					// This is so that users do not loose valuable info that might be useful in debugging their app.
+					h.cBuf.reset()
+				}
+			}()
+
+			for _, v := range h.cBuf.buf {
+				ctx = context.WithValue(ctx, octx.LogCtxKey, theID)
+				if e := h.wrappedHandler.Handle(ctx, v); e != nil {
+					err = errors.Join([]error{err, e}...)
+				}
+			}
+			return err
+		} else if r.Level == LevelImmediate {
+			ctx = context.WithValue(ctx, octx.LogCtxKey, theID)
+			return h.wrappedHandler.Handle(ctx, r)
+		}
+	}
+
+	return nil
 }
 
 // circleBuf implements a very simple & naive circular buffer.
 // users of circleBuf are responsible for concurrency safety.
 type circleBuf struct {
-	mu sync.Mutex // protects buf
-	// +checklocks:mu
 	buf     []slog.Record
 	maxSize int
 }
@@ -221,7 +238,6 @@ func newCirleBuf(maxSize int) *circleBuf {
 
 // store is a private api(thus needs no locking).
 // It should only ever be called by `handler.Handle` which already takes a lock.
-// +checklocksignore
 func (c *circleBuf) store(r slog.Record) {
 	availableSpace := c.maxSize - len(c.buf)
 	if availableSpace <= 0 {
@@ -241,7 +257,6 @@ func (c *circleBuf) store(r slog.Record) {
 
 // reset is a private api(thus needs no locking).
 // It should only ever be called by `handler.Handle` which already takes a lock.
-// +checklocksignore
 func (c *circleBuf) reset() {
 	c.buf = c.buf[:0]
 }
