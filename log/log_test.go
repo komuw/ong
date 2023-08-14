@@ -3,6 +3,7 @@ package log
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -106,8 +107,8 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(w, maxMsgs)
-		l(context.Background()).Info("hey", "one", "one")
+		l := New(context.Background(), w, maxMsgs)
+		l.Info("hey", "one", "one")
 
 		attest.Zero(t, w.String())
 	})
@@ -117,16 +118,16 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(w, maxMsgs)
+		l := New(context.Background(), w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
-		l(context.Background()).Error(msg, errors.New(msg))
+		l.Error(msg, errors.New(msg))
 
 		attest.Subsequence(t, w.String(), msg)
 
 		{
 			// it can log nils.
-			l(context.Background()).Info(msg, "someValue", nil)
-			l(context.Background()).Error(msg, "nil", nil)
+			l.Info(msg, "someValue", nil)
+			l.Error(msg, "nil", nil)
 		}
 	})
 
@@ -135,21 +136,19 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(w, maxMsgs)
+		l := New(context.Background(), w, maxMsgs)
 
-		logger := l(context.Background())
+		logger := l
 		infoMsg := "hello world"
 		logger.Info(infoMsg, "what", "ok", "passwd", "ak&dHyS>47K")
 		errMsg := "oops, Houston we got 99 problems."
-		logger.Error("some-error", errors.New(errMsg))
+		logger.Error("some-error", "err", errors.New(errMsg))
 
-		hdlr, ok := logger.Handler().(handler)
+		_, ok := logger.Handler().(*handler)
 		attest.True(t, ok)
-		logID := hdlr.logID
 
 		attest.Subsequence(t, w.String(), infoMsg)
 		attest.Subsequence(t, w.String(), errMsg)
-		attest.Subsequence(t, w.String(), logID)
 
 		// special characters are not quoted.
 		attest.Subsequence(t, w.String(), "&")
@@ -162,11 +161,11 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			maxMsgs := 3
-			l := New(w, maxMsgs)
+			l := New(context.Background(), w, maxMsgs)
 
 			infoMsg := "hello world"
-			l(context.Background()).Info(infoMsg)
-			l(context.Background()).Error("some-err", errors.New("this-ting-is-bad"))
+			l.Info(infoMsg)
+			l.Error("some-err", errors.New("this-ting-is-bad"))
 
 			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "level")
@@ -177,15 +176,15 @@ func TestLogger(t *testing.T) {
 		{
 			w := &bytes.Buffer{}
 			maxMsgs := 3
-			l := New(w, maxMsgs)
+			l := New(context.Background(), w, maxMsgs)
 
 			infoMsg := "hello world"
-			l(context.Background()).Info(infoMsg)
-			l(context.Background()).Error("some-ong-err", ongErrors.New("bad"))
+			l.Info(infoMsg)
+			l.Error("some-ong-err", "err", ongErrors.New("bad"))
 
 			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "stack")
-			attest.Subsequence(t, w.String(), "log/log_test.go:184") // stacktrace added.
+			attest.Subsequence(t, w.String(), "log_test.go:182") // stacktrace added.
 		}
 	})
 
@@ -194,14 +193,14 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(w, maxMsgs)
+		l := New(context.Background(), w, maxMsgs)
 
 		for i := 0; i <= (maxMsgs + 4); i++ {
 			infoMsg := "hello world" + " : " + fmt.Sprint(i)
-			l(context.Background()).Info(infoMsg)
+			l.Info(infoMsg)
 		}
 		errMsg := "oops, Houston we got 99 problems."
-		l(context.Background()).Error("somer-error", errors.New(errMsg))
+		l.Error("somer-error", errors.New(errMsg))
 
 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
@@ -217,15 +216,14 @@ func TestLogger(t *testing.T) {
 		w := &bytes.Buffer{}
 		maxMsgs := 3
 
-		l1 := New(w, maxMsgs)(context.Background())
-		hdlr, ok := l1.Handler().(handler)
+		l1 := New(context.Background(), w, maxMsgs)
+		_, ok := l1.Handler().(*handler)
 		attest.True(t, ok)
-		logid1 := hdlr.logID
 		l1.Error("hey1", errors.New("cool1"))
 
 		attest.Subsequence(t, w.String(), "hey1")
-		attest.Subsequence(t, w.String(), logid1)
-		h, ok := l1.Handler().(handler)
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		h, ok := l1.Handler().(*handler)
 		attest.True(t, ok)
 		attest.Equal(t, len(h.cBuf.buf), 0)
 
@@ -235,7 +233,7 @@ func TestLogger(t *testing.T) {
 		l2.Error("hey2", errors.New("cool2"))
 		attest.Subsequence(t, w.String(), "hey2")
 		attest.False(t, strings.Contains(w.String(), "hey1")) // hey1 is not loggged here.
-		attest.Subsequence(t, w.String(), logid1)
+		attest.Subsequence(t, w.String(), logIDFieldName)
 	})
 
 	t.Run(
@@ -248,7 +246,7 @@ func TestLogger(t *testing.T) {
 			maxMsgs := 3
 
 			msg := "hey"
-			l := New(w, maxMsgs)(context.Background())
+			l := New(context.Background(), w, maxMsgs)
 			l.Error(msg)
 
 			attest.Equal(t, strings.Count(w.String(), logIDFieldName), 1)
@@ -264,9 +262,9 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 3
-		l := New(w, maxMsgs)
+		l := New(context.Background(), w, maxMsgs)
 		{
-			logger1 := l(context.Background())
+			logger1 := l
 			for i := 0; i <= (maxMsgs); i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
 				logger1.Info(infoMsg)
@@ -278,7 +276,7 @@ func TestLogger(t *testing.T) {
 		}
 
 		{
-			logger2 := l(context.Background()).With("name", "Kim")
+			logger2 := l.With("name", "Kim")
 			errMsg := "oops, Houston we got 99 problems."
 			logger2.Error("some-error", errors.New(errMsg))
 
@@ -296,7 +294,7 @@ func TestLogger(t *testing.T) {
 		ctx := context.Background()
 		w := &bytes.Buffer{}
 		msg1 := "messageOne"
-		l := New(w, 3)(ctx)
+		l := New(context.Background(), w, 3)
 
 		l.InfoContext(ctx, msg1)
 		l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
@@ -313,9 +311,8 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), newId)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),
-			// One for the messageOne info log the other for the badTingOne error log
-			// For badTingTwo error log, it has two logIDs.
-			4,
+			// One each for messageOne, badTingOne & badTingTwo.
+			3,
 		)
 
 		newId3 := "NEW-id3-alas"
@@ -324,11 +321,51 @@ func TestLogger(t *testing.T) {
 		attest.Subsequence(t, w.String(), newId)
 		attest.Equal(t,
 			strings.Count(w.String(), logIDFieldName),
-			// One for the messageOne info log the other for the badTingOne error log
-			// For badTingTwo error log, it has two logIDs.
-			// For badTingThree error log, it has two logIDs.
-			6,
+			// One each for messageOne, badTingOne, badTingTwo & badTingThree.
+			4,
 		)
+	})
+
+	t.Run("logID reused with no context", func(t *testing.T) {
+		t.Parallel()
+
+		w := &bytes.Buffer{}
+		msg1 := "messageOne"
+		msg2 := "messageTwo"
+		l := New(context.Background(), w, 30)
+
+		l.Info(msg1)
+		l.Info(msg2)
+		l.Error("badTingOne", "err1", errors.New("badTingOne"))
+
+		fmt.Println("\t cool: ")
+		fmt.Println(w.String())
+		attest.Subsequence(t, w.String(), msg1)
+		attest.Subsequence(t, w.String(), msg2)
+		attest.Subsequence(t, w.String(), "badTingOne")
+
+		parts := strings.Split(w.String(), "\n")
+		attest.Equal(t, len(parts), 4) // one of them is an empty line.
+
+		type logStruct struct {
+			Time  string `json:"time"`
+			Msg   string `json:"msg"`
+			LogID string `json:"logID"`
+		}
+
+		resp1 := &logStruct{}
+		attest.Ok(t, json.Unmarshal([]byte(parts[0]), resp1))
+
+		resp2 := &logStruct{}
+		attest.Ok(t, json.Unmarshal([]byte(parts[1]), resp2))
+
+		resp3 := &logStruct{}
+		attest.Ok(t, json.Unmarshal([]byte(parts[2]), resp3))
+
+		// All the logIDs should be the same.
+		attest.NotZero(t, resp1.LogID)
+		attest.Equal(t, resp1.LogID, resp2.LogID)
+		attest.Equal(t, resp1.LogID, resp3.LogID)
 	})
 
 	t.Run("stdlibLog", func(t *testing.T) {
@@ -337,7 +374,7 @@ func TestLogger(t *testing.T) {
 		{ // normal loglevels go through circular buffer.
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(w, 2)(context.Background())
+			l := New(context.Background(), w, 2)
 
 			stdLogger := slog.NewLogLogger(l.Handler(), slog.LevelInfo)
 			stdLogger.Println(msg)
@@ -347,14 +384,85 @@ func TestLogger(t *testing.T) {
 		{ // `LevelImmediate` loglevel is logged ASAP.
 			w := &bytes.Buffer{}
 			msg := "hey what up?"
-			l := New(w, 2)(context.Background())
+			l := New(context.Background(), w, 2)
 
 			stdLogger := slog.NewLogLogger(l.Handler(), LevelImmediate)
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
-			attest.Subsequence(t, w.String(), `log/log_test.go`)
-			attest.Subsequence(t, w.String(), `log_test.go:353`)
+			attest.Subsequence(t, w.String(), `log_test.go`)
+			attest.Subsequence(t, w.String(), `log_test.go:390`)
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
+		}
+	})
+
+	t.Run("WithID", func(t *testing.T) {
+		t.Parallel()
+
+		type logStruct struct {
+			Time  string `json:"time"`
+			Msg   string `json:"msg"`
+			LogID string `json:"logID"`
+		}
+
+		{
+			w := &bytes.Buffer{}
+			l := New(context.Background(), w, 200)
+
+			msg1 := "hello"
+			l.Info(msg1)
+
+			l = WithID(context.Background(), l)
+			l.Error("badTingOne", "err1", errors.New("badTingOne"))
+			l.Error("badTingTwo", "err2", errors.New("badTingTwo"))
+
+			parts := strings.Split(w.String(), "\n")
+			attest.Equal(t, len(parts), 4) // one of them is an empty line.
+
+			resp1 := &logStruct{}
+			attest.Ok(t, json.Unmarshal([]byte(parts[0]), resp1))
+
+			resp2 := &logStruct{}
+			attest.Ok(t, json.Unmarshal([]byte(parts[1]), resp2))
+
+			resp3 := &logStruct{}
+			attest.Ok(t, json.Unmarshal([]byte(parts[2]), resp3))
+
+			// All the logIDs should be the same.
+			attest.NotZero(t, resp1.LogID)
+			attest.Equal(t, resp1.LogID, resp2.LogID)
+			attest.Equal(t, resp1.LogID, resp3.LogID)
+		}
+
+		{
+			w := &bytes.Buffer{}
+			l := New(context.Background(), w, 200)
+
+			msg1 := "hello"
+			l.Info(msg1)
+
+			newId := "NEW-id-adh4e92427dajd"
+			ctx := context.WithValue(context.Background(), octx.LogCtxKey, newId)
+			l = WithID(ctx, l)
+			l.Error("badTingOne", "err1", errors.New("badTingOne"))
+			l.Error("badTingTwo", "err2", errors.New("badTingTwo"))
+
+			parts := strings.Split(w.String(), "\n")
+			attest.Equal(t, len(parts), 4) // one of them is an empty line.
+
+			resp1 := &logStruct{}
+			attest.Ok(t, json.Unmarshal([]byte(parts[0]), resp1))
+
+			resp2 := &logStruct{}
+			attest.Ok(t, json.Unmarshal([]byte(parts[1]), resp2))
+
+			resp3 := &logStruct{}
+			attest.Ok(t, json.Unmarshal([]byte(parts[2]), resp3))
+
+			// The first log shouldn't have same id with the other two.
+			attest.NotZero(t, resp1.LogID)
+			attest.NotZero(t, resp2.LogID)
+			attest.NotEqual(t, resp1.LogID, resp2.LogID)
+			attest.Equal(t, resp2.LogID, resp3.LogID)
 		}
 	})
 
@@ -363,9 +471,9 @@ func TestLogger(t *testing.T) {
 
 		w := &bytes.Buffer{}
 		maxMsgs := 12
-		l := New(w, maxMsgs)
+		l := New(context.Background(), w, maxMsgs)
 
-		xl := l(context.Background())
+		xl := l
 
 		tokens := []string{
 			"a", "aa", "aaa", "aaron", "ab", "abandoned", "abc", "aberdeen", "abilities", "ability", "able", "aboriginal", "abortion",
@@ -393,20 +501,20 @@ func TestLogger(t *testing.T) {
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l(context.Background()).Info("one" + t)
+				l.Info("one" + t)
 				xl.Info("one" + t)
 			}(tok)
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l(context.Background()).Error("some-error", errors.New("bad"+t))
+				l.Error("some-error", errors.New("bad"+t))
 			}(tok)
 		}
 
 		for _, tok := range tokens {
 			go func(t string) {
-				l(context.Background()).Error("some-other-error", errors.New("bad-two"+t))
+				l.Error("some-other-error", errors.New("bad-two"+t))
 			}(tok)
 		}
 
@@ -415,15 +523,119 @@ func TestLogger(t *testing.T) {
 			wg.Add(1)
 			go func(t string) {
 				defer wg.Done()
-				l(context.Background()).Info("four" + t)
+				l.Info("four" + t)
 				xl.Info("okay-" + t)
 
 				if mathRand.Intn(100) > 75 { // log errors 25% of the time.
-					l(context.Background()).Error("hey", errors.New("some-err-"+t))
+					l.Error("hey", errors.New("some-err-"+t))
 					xl.Error("some-xl-error", errors.New("other-err-"+t))
 				}
 			}(tok)
 		}
 		wg.Wait()
 	})
+}
+
+func TestGrouping(t *testing.T) {
+	t.Parallel()
+
+	{
+		ctx := context.Background()
+		w := &bytes.Buffer{}
+		msg1 := "messageOne"
+		l := New(context.Background(), w, 300)
+
+		l = l.With("app", "mpesa")
+
+		l.InfoContext(ctx, msg1)
+		l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		attest.Subsequence(t, w.String(), msg1)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One for the messageOne info log the other for the badTingOne error log
+			2,
+		)
+
+		newId := "NEW-id-adh4e92427dajd"
+		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
+		l.ErrorContext(ctx, "hey2", "err2", errors.New("badTingTwo"))
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One each for messageOne, badTingOne & badTingTwo.
+			3,
+		)
+
+		l.ErrorContext(ctx, "hey3", "err3", errors.New("badTingThree"))
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One each for messageOne, badTingOne, badTingTwo & badTingThree.
+			4,
+		)
+	}
+
+	{
+		ctx := context.Background()
+		w := &bytes.Buffer{}
+		msg1 := "messageOne"
+		l := New(context.Background(), w, 300)
+
+		l = l.With("app", "mpesa")
+		l = l.WithGroup("af-south-1")
+
+		l.InfoContext(ctx, msg1)
+		l.ErrorContext(ctx, "hey1", "err1", errors.New("badTingOne"))
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		attest.Subsequence(t, w.String(), msg1)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Subsequence(t, w.String(), "af-south-1")
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One for the messageOne info log the other for the badTingOne error log
+			2,
+		)
+
+		newId := "NEW-id-adh4e92427dajd"
+		ctx = context.WithValue(ctx, octx.LogCtxKey, newId)
+		l.ErrorContext(ctx, "hey2", "err2", errors.New("badTingTwo"))
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Subsequence(t, w.String(), "af-south-1")
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One each for messageOne, badTingOne & badTingTwo.
+			3,
+		)
+
+		l.ErrorContext(ctx, "hey3", "err3", errors.New("badTingThree"))
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		attest.Subsequence(t, w.String(), newId)
+		attest.Subsequence(t, w.String(), "mpesa")
+		attest.Subsequence(t, w.String(), "af-south-1")
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			// One each for messageOne, badTingOne, badTingTwo & badTingThree.
+
+			4,
+		)
+	}
+
+	{ // groups for an empty Record.
+		w := &bytes.Buffer{}
+		l := New(context.Background(), w, 3)
+		l.With("a", "b").WithGroup("G").With("c", "d").WithGroup("H").Error("hello-cool")
+		attest.Subsequence(t, w.String(), logIDFieldName)
+		attest.Equal(t,
+			strings.Count(w.String(), logIDFieldName),
+			1,
+		)
+	}
 }
