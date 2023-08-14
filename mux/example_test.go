@@ -25,7 +25,7 @@ func BooksByAuthorHandler() http.HandlerFunc {
 }
 
 func ExampleMux() {
-	l := log.New(os.Stdout, 1000)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
@@ -53,7 +53,7 @@ func ExampleMux() {
 }
 
 func ExampleMux_Resolve() {
-	l := log.New(os.Stdout, 1000)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := mux.New(
 		l,
 		middleware.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),

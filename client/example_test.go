@@ -9,7 +9,7 @@ import (
 )
 
 func ExampleSafe() {
-	l := log.New(os.Stdout, 7)(context.Background())
+	l := log.New(context.Background(), os.Stdout, 7)
 
 	cli := client.Safe(l)
 	// This is the AWS metadata url.
