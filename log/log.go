@@ -86,7 +86,11 @@ type handler struct {
 	// https://go-review.googlesource.com/c/exp/+/463255/2/slog/doc.go
 	wrappedHandler slog.Handler
 
-	mu sync.Mutex // protects cBuf & logID
+	// mu protects cBuf & logID
+	// For why it is a pointer to mutex(which is unusual),
+	// see: https://github.com/golang/go/commit/847d40d699832a1e054bc08c498548eff6a73ab6
+	//      https://github.com/golang/example/blob/master/slog-handler-guide/README.md
+	mu *sync.Mutex
 	// +checklocks:mu
 	cBuf *circleBuf
 	// +checklocks:mu
@@ -117,6 +121,7 @@ func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
 			w,
 			opts,
 		),
+		mu:    &sync.Mutex{},
 		cBuf:  newCirleBuf(maxSize),
 		logID: GetId(ctx),
 	}
@@ -127,11 +132,15 @@ func (h *handler) Enabled(_ context.Context, l slog.Level) bool {
 }
 
 func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), cBuf: h.cBuf, logID: h.logID}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return &handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), mu: h.mu, cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h *handler) WithGroup(name string) slog.Handler {
-	return &handler{wrappedHandler: h.wrappedHandler.WithGroup(name), cBuf: h.cBuf, logID: h.logID}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return &handler{wrappedHandler: h.wrappedHandler.WithGroup(name), mu: h.mu, cBuf: h.cBuf, logID: h.logID}
 }
 
 func (h *handler) Handle(ctx context.Context, r slog.Record) error {
