@@ -49,7 +49,7 @@ func TestPanic(t *testing.T) {
 	t.Parallel()
 
 	getLogger := func(w io.Writer) *slog.Logger {
-		return log.New(w, 500)(context.Background())
+		return log.New(context.Background(), w, 500)
 	}
 
 	t.Run("ok if no panic", func(t *testing.T) {
