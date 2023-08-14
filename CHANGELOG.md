@@ -3,6 +3,10 @@
 Most recent version is listed first.  
 
 
+# v0.0.74
+- ong/log: Conform to log/slog: https://github.com/komuw/ong/pull/357
+           Eliminate duplicate logIDs
+
 # v0.0.73
 - Remove /ex/exp: https://github.com/komuw/ong/pull/352
 
