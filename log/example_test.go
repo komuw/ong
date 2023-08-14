@@ -12,7 +12,7 @@ func ExampleNew() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 
 	l.Info("sending email", "email", "jane@example.com")
-	l.Error("fail", errors.New("sending email failed."), "email", "jane@example.com")
+	l.Error("fail", "err", errors.New("sending email failed."), "email", "jane@example.com")
 
 	// example output:
 	//   {"time":"2023-02-03T11:26:47.460792396Z","level":"INFO","source":"main.go:17","msg":"sending email","email":"jane@example.com","logID":"DQTXGs3HM8Xgx3yt"}
