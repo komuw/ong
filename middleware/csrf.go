@@ -48,10 +48,10 @@ const (
 	formUrlEncoded           = "application/x-www-form-urlencoded"
 	multiformData            = "multipart/form-data"
 
-	// gorilla/csrf; 12hrs
-	// django: 1yr??
-	// gofiber/fiber; 1hr
-	tokenMaxAge = 12 * time.Hour
+	// DefaultCsrfTokenMaxDuration is the duration(in seconds that) csrf cookie will be valid for by default.
+	//
+	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
+	DefaultCsrfTokenMaxDuration = 12 * time.Hour
 
 	// django appears to use 32 random characters for its csrf token.
 	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
@@ -67,11 +67,15 @@ const (
 // csrf is a middleware that provides protection against Cross Site Request Forgeries.
 //
 // If a csrf token is not provided(or is not valid), when it ought to have been; this middleware will issue a http GET redirect to the same url.
-func csrf(wrappedHandler http.Handler, secretKey, domain string) http.HandlerFunc {
+func csrf(wrappedHandler http.Handler, secretKey, domain string, csrfTokenMaxDuration time.Duration) http.HandlerFunc {
 	once.Do(func() {
 		enc = cry.New(secretKey)
 	})
 	msgToEncrypt := id.Random(16)
+
+	if csrfTokenMaxDuration < 1*time.Second { // is measured in seconds.
+		csrfTokenMaxDuration = DefaultCsrfTokenMaxDuration
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
@@ -178,7 +182,7 @@ func csrf(wrappedHandler http.Handler, secretKey, domain string) http.HandlerFun
 			2. https://security.stackexchange.com/a/172646
 		*/
 		expires := strconv.FormatInt(
-			time.Now().UTC().Add(tokenMaxAge).Unix(),
+			time.Now().UTC().Add(csrfTokenMaxDuration).Unix(),
 			10,
 		)
 		tokenToIssue := enc.EncryptEncode(
@@ -192,7 +196,7 @@ func csrf(wrappedHandler http.Handler, secretKey, domain string) http.HandlerFun
 			csrfCookieName,
 			tokenToIssue,
 			domain,
-			tokenMaxAge,
+			csrfTokenMaxDuration,
 			true, // accessible to javascript
 		)
 

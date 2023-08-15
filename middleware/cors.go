@@ -72,6 +72,7 @@ func cors(
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
+
 	if corsCacheDuration < 1*time.Second { // It is measured in seconds.
 		corsCacheDuration = DefaultCorsCacheDuration
 	}

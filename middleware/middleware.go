@@ -56,6 +56,9 @@ type Opts struct {
 	allowedHeaders    []string
 	corsCacheDuration time.Duration
 
+	// csrf
+	csrfTokenMaxDuration time.Duration
+
 	secretKey string
 	strategy  ClientIPstrategy
 	l         *slog.Logger
@@ -74,6 +77,8 @@ type Opts struct {
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 // corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
 //
+// csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfTokenMaxDuration] is used instead.
+//
 // secretKey is used for securing signed data.
 // It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
@@ -86,10 +91,14 @@ type Opts struct {
 func New(
 	domain string,
 	httpsPort uint16,
+	// cors
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
 	corsCacheDuration time.Duration,
+	// csrf
+	csrfTokenMaxDuration time.Duration,
+
 	secretKey string,
 	strategy ClientIPstrategy,
 	l *slog.Logger,
@@ -117,6 +126,9 @@ func New(
 		allowedHeaders:    allowedHeaders,
 		corsCacheDuration: corsCacheDuration,
 
+		// csrf
+		csrfTokenMaxDuration: csrfTokenMaxDuration,
+
 		secretKey: secretKey,
 		strategy:  strategy,
 		l:         l,
@@ -132,7 +144,18 @@ func WithOpts(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	return New(domain, httpsPort, nil, nil, nil, DefaultCorsCacheDuration, secretKey, strategy, l)
+	return New(
+		domain,
+		httpsPort,
+		nil,
+		nil,
+		nil,
+		DefaultCorsCacheDuration,
+		DefaultCsrfTokenMaxDuration,
+		secretKey,
+		strategy,
+		l,
+	)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -152,6 +175,9 @@ func allDefaultMiddlewares(
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
 	corsCacheDuration := o.corsCacheDuration
+
+	// csrf
+	csrfTokenMaxDuration := o.csrfTokenMaxDuration
 
 	secretKey := o.secretKey
 	strategy := o.strategy
@@ -220,6 +246,7 @@ func allDefaultMiddlewares(
 													),
 													secretKey,
 													domain,
+													csrfTokenMaxDuration,
 												),
 												allowedOrigins,
 												allowedMethods,
