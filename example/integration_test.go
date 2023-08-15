@@ -127,10 +127,6 @@ func TestIntegration(t *testing.T) {
 		}
 		metrics.Close()
 
-		fmt.Println("\n\t metrics:")
-		fmt.Println(metrics)
-		fmt.Println("\n.")
-
 		expectedSuccesses := 1782
 		attest.Approximately(
 			t,
@@ -140,7 +136,7 @@ func TestIntegration(t *testing.T) {
 			metrics.StatusCodes[fmt.Sprintf("%d", http.StatusOK)],
 			expectedSuccesses,
 			3,
-			attest.Sprintf("metrics = %v", metrics),
+			attest.Sprintf("\n\t metrics = %v\n", metrics),
 		)
 
 		attest.Subsequence(t,
