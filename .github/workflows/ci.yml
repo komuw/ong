@@ -239,9 +239,7 @@ jobs:
           cat logs_two.json
           ls -lsha coverage/
 
-          netstat -tunapl | grep -i 'listen'
           ss --listening --processes --query=tcp,udp
-          curl -vk "https://localhost:65081/check/67"
 
           go test -timeout 4m -race --tags=integration github.com/komuw/ong/example -v
 
