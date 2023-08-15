@@ -181,7 +181,7 @@ func WithOpts(
 		nil,
 		nil,
 		DefaultCorsCacheDuration,
-		DefaultCsrfTokenMaxDuration,
+		DefaultCsrfCookieMaxDuration,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
