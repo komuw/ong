@@ -170,6 +170,7 @@ func New(
 }
 
 // WithOpts returns a new Opts that has sensible defaults.
+// It panics on error.
 // See [New] for extra documentation.
 func WithOpts(
 	domain string,
