@@ -25,6 +25,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/key"
@@ -46,14 +47,18 @@ const (
 //
 // Use either [New] or [WithOpts] to get a valid Opts.
 type Opts struct {
-	domain         string
-	httpsPort      uint16
-	allowedOrigins []string
-	allowedMethods []string
-	allowedHeaders []string
-	secretKey      string
-	strategy       ClientIPstrategy
-	l              *slog.Logger
+	domain    string
+	httpsPort uint16
+
+	// cors
+	allowedOrigins    []string
+	allowedMethods    []string
+	allowedHeaders    []string
+	corsCacheDuration time.Duration
+
+	secretKey string
+	strategy  ClientIPstrategy
+	l         *slog.Logger
 }
 
 // New returns a new Opts.
@@ -63,10 +68,11 @@ type Opts struct {
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
-// allowedOrigins, allowedMethods, & allowedHeaders are used by the CORS middleware.
+// allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, all origins are allowed. You can also use * to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
 //
 // secretKey is used for securing signed data.
 // It should be unique & kept secret.
@@ -83,6 +89,7 @@ func New(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
+	corsCacheDuration time.Duration,
 	secretKey string,
 	strategy ClientIPstrategy,
 	l *slog.Logger,
@@ -101,14 +108,18 @@ func New(
 	}
 
 	return Opts{
-		domain:         domain,
-		httpsPort:      httpsPort,
-		allowedOrigins: allowedOrigins,
-		allowedMethods: allowedMethods,
-		allowedHeaders: allowedHeaders,
-		secretKey:      secretKey,
-		strategy:       strategy,
-		l:              l,
+		domain:    domain,
+		httpsPort: httpsPort,
+
+		// cors
+		allowedOrigins:    allowedOrigins,
+		allowedMethods:    allowedMethods,
+		allowedHeaders:    allowedHeaders,
+		corsCacheDuration: corsCacheDuration,
+
+		secretKey: secretKey,
+		strategy:  strategy,
+		l:         l,
 	}
 }
 
@@ -121,7 +132,7 @@ func WithOpts(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	return New(domain, httpsPort, nil, nil, nil, secretKey, strategy, l)
+	return New(domain, httpsPort, nil, nil, nil, DefaultCorsCacheDuration, secretKey, strategy, l)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -135,9 +146,13 @@ func allDefaultMiddlewares(
 ) http.HandlerFunc {
 	domain := o.domain
 	httpsPort := o.httpsPort
+
+	// cors
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
 	allowedHeaders := o.allowedHeaders
+	corsCacheDuration := o.corsCacheDuration
+
 	secretKey := o.secretKey
 	strategy := o.strategy
 	l := o.l
@@ -209,6 +224,7 @@ func allDefaultMiddlewares(
 												allowedOrigins,
 												allowedMethods,
 												allowedHeaders,
+												corsCacheDuration,
 											),
 											domain,
 										),
