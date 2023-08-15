@@ -128,13 +128,15 @@ func TestIntegration(t *testing.T) {
 		metrics.Close()
 
 		expectedSuccesses := 1782
-		attest.Approximately(t,
+		attest.Approximately(
+			t,
 			// Actually, we would expect 1800 successes(20 *90) since the sending rate is 90/secs
 			// which is below the ratelimit of 100/sec.
 			// But ratelimiting is imprecise; https://github.com/komuw/ong/issues/235
 			metrics.StatusCodes[fmt.Sprintf("%d", http.StatusOK)],
 			expectedSuccesses,
 			3,
+			attest.Sprintf("\n\t metrics = %v\n", metrics),
 		)
 
 		attest.Subsequence(t,
