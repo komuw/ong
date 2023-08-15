@@ -94,7 +94,7 @@ type handler struct {
 	// +checklocks:mu
 	cBuf *circleBuf
 	// +checklocks:mu
-	logID string // TODO: is this required?
+	logID string
 }
 
 func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {

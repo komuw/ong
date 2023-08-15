@@ -338,8 +338,6 @@ func TestLogger(t *testing.T) {
 		l.Info(msg2)
 		l.Error("badTingOne", "err1", errors.New("badTingOne"))
 
-		fmt.Println("\t cool: ")
-		fmt.Println(w.String())
 		attest.Subsequence(t, w.String(), msg1)
 		attest.Subsequence(t, w.String(), msg2)
 		attest.Subsequence(t, w.String(), "badTingOne")
