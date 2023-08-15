@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/log"
 
 	"github.com/rs/zerolog"
@@ -50,12 +51,18 @@ func newZapLogger(lvl zapcore.Level) *zap.Logger {
 	))
 }
 
-func newNewOngLogger() *slog.Logger {
+func newOngLogger() *slog.Logger {
 	maxMsgs := 50_000
 	return log.New(
 		context.Background(),
 		io.Discard,
 		maxMsgs,
+	)
+}
+
+func newSlogLogger() *slog.Logger {
+	return slog.New(
+		slog.NewJSONHandler(io.Discard, nil),
 	)
 }
 
@@ -78,6 +85,7 @@ func getMessage() ([]string, []any) {
 		"car_length":     float32(123.8999),
 		"carVal":         c,
 		"carPtr":         &c,
+		"ongError":       ongErrors.New("This is an ong/errors error"),
 	}
 
 	sl := make([]string, 0, len(f))
@@ -132,7 +140,16 @@ func BenchmarkBestCase(b *testing.B) {
 	})
 
 	b.Run("ong", func(b *testing.B) {
-		l := newNewOngLogger()
+		l := newOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
+		}
+	})
+
+	b.Run("slog/json", func(b *testing.B) {
+		l := newSlogLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
@@ -193,7 +210,19 @@ func BenchmarkAverageCase(b *testing.B) {
 	})
 
 	b.Run("ong", func(b *testing.B) {
-		l := newNewOngLogger()
+		l := newOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
+			if rand.Intn(100) >= 99 {
+				l.Error("some-error", logErr)
+			}
+		}
+	})
+
+	b.Run("slog/json", func(b *testing.B) {
+		l := newSlogLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
@@ -251,7 +280,17 @@ func BenchmarkWorstCase(b *testing.B) {
 	})
 
 	b.Run("ong", func(b *testing.B) {
-		l := newNewOngLogger()
+		l := newOngLogger()
+		b.ReportAllocs()
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			l.Info(sl[0], slAny...)
+			l.Error("some-error", logErr)
+		}
+	})
+
+	b.Run("slog/json", func(b *testing.B) {
+		l := newSlogLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {

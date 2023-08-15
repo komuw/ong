@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"sync"
-	"time"
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
@@ -25,6 +24,9 @@ const (
 
 // GetId gets a logId either from the provided context or auto-generated.
 func GetId(ctx context.Context) string {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	id, _ := getId(ctx)
 	return id
 }
@@ -32,11 +34,9 @@ func GetId(ctx context.Context) string {
 // getId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
 func getId(ctx context.Context) (string, bool) {
-	if ctx != nil {
-		if vCtx := ctx.Value(octx.LogCtxKey); vCtx != nil {
-			if s, ok := vCtx.(string); ok {
-				return s, true
-			}
+	if vCtx := ctx.Value(octx.LogCtxKey); vCtx != nil {
+		if s, ok := vCtx.(string); ok {
+			return s, true
 		}
 	}
 	return id.New(), false
@@ -160,55 +160,59 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	// https://github.com/golang/go/blob/5c154986094bcc2fb28909cc5f01c9ba1dd9ddd4/src/log/slog/handler.go#L50-L59
 	// Note that this handler does not produce output and hence the above rules do not apply.
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	{ // 1. Add some required fields.
-
-		// Convert time to UTC.
-		// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
-		// If we ever need that functionality, we would do that in `r.Attrs()`
-		if !r.Time.IsZero() {
-			// According to the docs, If r.Time is the zero time, ignore the time.
-			r.Time = time.Now().UTC()
-		}
-
-		newAttrs := []slog.Attr{}
-
-		// Add logID
-		theID := h.logID
-		id2, fromCtx := getId(ctx)
-		if fromCtx || (theID == "") {
-			theID = id2
-		}
-		newAttrs = []slog.Attr{
-			{Key: logIDFieldName, Value: slog.StringValue(theID)},
-		}
-		h.logID = theID
-
-		// Add stackTraces
-		r.Attrs(func(a slog.Attr) bool {
-			if e, ok := a.Value.Any().(error); ok {
-				if stack := ongErrors.StackTrace(e); stack != "" {
-					newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
-				}
-			}
-			return true
-		})
-
-		r.AddAttrs(newAttrs...)
+	{ // 1. save record.
+		h.mu.Lock()
+		h.cBuf.store(extendedLogRecord{r: r, logID: h.logID, ctx: ctx})
+		h.mu.Unlock()
 	}
 
-	{ // 2. save record.
-		h.cBuf.store(r)
-	}
-
-	{ // 3. flush on error.
+	{ // 2. flush on error.
 		if r.Level >= slog.LevelError {
+			h.mu.Lock()
+			defer h.mu.Unlock()
+
 			var err error
 			for _, v := range h.cBuf.buf {
-				if e := h.wrappedHandler.Handle(ctx, v); e != nil {
-					err = errors.Join([]error{err, e}...)
+				{ // 3. Add some required fields.
+
+					// Convert time to UTC.
+					// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
+					// If we ever need that functionality, we would do that in `r.Attrs()`
+					if !v.r.Time.IsZero() {
+						// According to the docs, If r.Time is the zero time, ignore the time.
+						v.r.Time = v.r.Time.UTC()
+					}
+
+					newAttrs := []slog.Attr{}
+
+					// Add logID
+					theID := v.logID
+					id2, fromCtx := getId(v.ctx)
+					if fromCtx || (theID == "") {
+						theID = id2
+					}
+					newAttrs = []slog.Attr{
+						{Key: logIDFieldName, Value: slog.StringValue(theID)},
+					}
+
+					// Add stackTraces
+					v.r.Attrs(func(a slog.Attr) bool {
+						if e, ok := a.Value.Any().(error); ok {
+							if stack := ongErrors.StackTrace(e); stack != "" {
+								newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+								return false // Stop iteration. This assumes that the log fields had only one error.
+							}
+						}
+						return true
+					})
+
+					v.r.AddAttrs(newAttrs...)
+				}
+
+				{ // 4. flush to underlying handler.
+					if e := h.wrappedHandler.Handle(v.ctx, v.r); e != nil {
+						err = errors.Join([]error{err, e}...)
+					}
 				}
 			}
 
@@ -226,10 +230,18 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
+// extendedLogRecord is similar to [slog.Record] except that
+// it has been expanded to also include items that are specific to ong/log.
+type extendedLogRecord struct {
+	r     slog.Record
+	logID string
+	ctx   context.Context
+}
+
 // circleBuf implements a very simple & naive circular buffer.
 // users of circleBuf are responsible for concurrency safety.
 type circleBuf struct {
-	buf     []slog.Record
+	buf     []extendedLogRecord
 	maxSize int
 }
 
@@ -238,7 +250,7 @@ func newCirleBuf(maxSize int) *circleBuf {
 		maxSize = 10
 	}
 	c := &circleBuf{
-		buf:     make([]slog.Record, maxSize),
+		buf:     make([]extendedLogRecord, maxSize),
 		maxSize: maxSize,
 	}
 	c.reset() // remove the nils from `make()`
@@ -247,7 +259,7 @@ func newCirleBuf(maxSize int) *circleBuf {
 
 // store is a private api(thus needs no locking).
 // It should only ever be called by `handler.Handle` which already takes a lock.
-func (c *circleBuf) store(r slog.Record) {
+func (c *circleBuf) store(r extendedLogRecord) {
 	availableSpace := c.maxSize - len(c.buf)
 	if availableSpace <= 0 {
 		// clear space.

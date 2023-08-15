@@ -33,12 +33,12 @@ func TestCircleBuf(t *testing.T) {
 		maxSize := 4
 		c := newCirleBuf(maxSize)
 
-		c.store(slog.Record{Message: "one"})
-		c.store(slog.Record{Message: "two"})
+		c.store(extendedLogRecord{r: slog.Record{Message: "one"}})
+		c.store(extendedLogRecord{r: slog.Record{Message: "two"}})
 
-		attest.Equal(t, c.buf[0].Message, "one")
+		attest.Equal(t, c.buf[0].r.Message, "one")
 
-		attest.Equal(t, c.buf[1].Message, "two")
+		attest.Equal(t, c.buf[1].r.Message, "two")
 
 		attest.Equal(t, len(c.buf), 2)
 		attest.Equal(t, cap(c.buf), 4)
@@ -51,7 +51,7 @@ func TestCircleBuf(t *testing.T) {
 		c := newCirleBuf(maxSize)
 		for i := 0; i <= (13 * maxSize); i++ {
 			x := fmt.Sprint(i)
-			c.store(slog.Record{Message: x})
+			c.store(extendedLogRecord{r: slog.Record{Message: x}})
 
 			attest.True(t, len(c.buf) <= maxSize)
 			attest.True(t, cap(c.buf) <= maxSize)
@@ -67,15 +67,15 @@ func TestCircleBuf(t *testing.T) {
 		c := newCirleBuf(maxSize)
 		for i := 0; i <= (6 * maxSize); i++ {
 			x := fmt.Sprint(i)
-			c.store(slog.Record{Message: x})
+			c.store(extendedLogRecord{r: slog.Record{Message: x}})
 			attest.True(t, len(c.buf) <= maxSize)
 			attest.True(t, cap(c.buf) <= maxSize)
 		}
 		attest.True(t, len(c.buf) <= maxSize)
 		attest.True(t, cap(c.buf) <= maxSize)
 
-		attest.Equal(t, c.buf[1].Message, "29")
-		attest.Equal(t, c.buf[2].Message, "30")
+		attest.Equal(t, c.buf[1].r.Message, "29")
+		attest.Equal(t, c.buf[2].r.Message, "30")
 	})
 
 	t.Run("reset", func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestCircleBuf(t *testing.T) {
 		c := newCirleBuf(maxSize)
 		for i := 0; i <= (13 * maxSize); i++ {
 			x := fmt.Sprint(i)
-			c.store(slog.Record{Message: x})
+			c.store(extendedLogRecord{r: slog.Record{Message: x}})
 			attest.True(t, len(c.buf) <= maxSize)
 			attest.True(t, cap(c.buf) <= maxSize)
 		}
@@ -338,8 +338,6 @@ func TestLogger(t *testing.T) {
 		l.Info(msg2)
 		l.Error("badTingOne", "err1", errors.New("badTingOne"))
 
-		fmt.Println("\t cool: ")
-		fmt.Println(w.String())
 		attest.Subsequence(t, w.String(), msg1)
 		attest.Subsequence(t, w.String(), msg2)
 		attest.Subsequence(t, w.String(), "badTingOne")
@@ -390,7 +388,7 @@ func TestLogger(t *testing.T) {
 			stdLogger.Println(msg)
 			attest.Subsequence(t, w.String(), msg)
 			attest.Subsequence(t, w.String(), `log_test.go`)
-			attest.Subsequence(t, w.String(), `log_test.go:390`)
+			attest.Subsequence(t, w.String(), `log_test.go:388`)
 			attest.True(t, LevelImmediate < 0) // otherwise it will trigger `log.handler` to flush all logs, which we dont want.
 		}
 	})

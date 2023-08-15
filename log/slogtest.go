@@ -29,8 +29,8 @@ type testCase struct {
 	checks []check
 }
 
-// TODO: make this test Parallel?
-//       the one in stdlib probably isn't, we should preserve that.
+// The `TestHandler` in the stdlib does not use t.Parallel,
+// hence this one doesn't also.
 
 // TestHandler tests a [slog.Handler].
 // If TestHandler finds any misbehaviors, it returns an error for each,
