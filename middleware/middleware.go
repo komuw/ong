@@ -95,7 +95,7 @@ type Opts struct {
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 // corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
 //
-// csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfTokenMaxDuration] is used instead.
+// csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieMaxDuration] is used instead.
 //
 // loadShedSamplingPeriod is the duration over which we calculate response latencies. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
 // loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
