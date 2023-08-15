@@ -67,6 +67,9 @@ type Opts struct {
 	// ratelimit
 	rateLimit float64
 
+	// session
+	sessionCookieMaxDuration time.Duration
+
 	secretKey string
 	strategy  ClientIPstrategy
 	l         *slog.Logger
@@ -78,6 +81,13 @@ type Opts struct {
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 //
 // httpsPort is the tls port where http requests will be redirected to.
+//
+// secretKey is used for securing signed data.
+// It should be unique & kept secret.
+// If it becomes compromised, generate a new one and restart your application using the new one.
+//
+// strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
+// It is important to choose your strategy carefully, see the warning in [ClientIP].
 //
 // allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, all origins are allowed. You can also use * to allow all.
@@ -95,18 +105,14 @@ type Opts struct {
 //
 // rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
-// secretKey is used for securing signed data.
-// It should be unique & kept secret.
-// If it becomes compromised, generate a new one and restart your application using the new one.
-//
-// strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
-// It is important to choose your strategy carefully, see the warning in [ClientIP].
-//
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
 // [letsencrypt]: https://letsencrypt.org/
 func New(
 	domain string,
 	httpsPort uint16,
+	secretKey string,
+	strategy ClientIPstrategy,
+	l *slog.Logger,
 	// cors
 	allowedOrigins []string,
 	allowedMethods []string,
@@ -120,10 +126,7 @@ func New(
 	loadShedBreachLatency time.Duration,
 	// ratelimiter
 	rateLimit float64,
-
-	secretKey string,
-	strategy ClientIPstrategy,
-	l *slog.Logger,
+	sessionCookieMaxDuration time.Duration,
 ) Opts {
 	if err := acme.Validate(domain); err != nil {
 		panic(err)
@@ -159,6 +162,9 @@ func New(
 		// ratelimiter
 		rateLimit: rateLimit,
 
+		// session
+		sessionCookieMaxDuration: sessionCookieMaxDuration,
+
 		secretKey: secretKey,
 		strategy:  strategy,
 		l:         l,
@@ -177,6 +183,9 @@ func WithOpts(
 	return New(
 		domain,
 		httpsPort,
+		secretKey,
+		strategy,
+		l,
 		nil,
 		nil,
 		nil,
@@ -186,9 +195,7 @@ func WithOpts(
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
 		DefaultRateLimit,
-		secretKey,
-		strategy,
-		l,
+		DefaultSessionCookieMaxDuration,
 	)
 }
 
@@ -203,6 +210,9 @@ func allDefaultMiddlewares(
 ) http.HandlerFunc {
 	domain := o.domain
 	httpsPort := o.httpsPort
+	secretKey := o.secretKey
+	strategy := o.strategy
+	l := o.l
 
 	// cors
 	allowedOrigins := o.allowedOrigins
@@ -221,9 +231,8 @@ func allDefaultMiddlewares(
 	// ratelimit
 	rateLimit := o.rateLimit
 
-	secretKey := o.secretKey
-	strategy := o.strategy
-	l := o.l
+	// session
+	sessionCookieMaxDuration := o.sessionCookieMaxDuration
 
 	// The way the middlewares are layered is:
 	// 1.  trace on outer most since we need to add logID's earliest for use by inner middlewares.
@@ -283,6 +292,7 @@ func allDefaultMiddlewares(
 															wrappedHandler,
 															secretKey,
 															domain,
+															sessionCookieMaxDuration,
 														),
 														domain,
 													),

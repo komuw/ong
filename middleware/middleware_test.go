@@ -484,6 +484,9 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	o := New(
 		domain,
 		httpsPort,
+		tst.SecretKey(),
+		DirectIpStrategy,
+		l,
 		nil,
 		nil,
 		nil,
@@ -493,9 +496,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
 		rateLimit,
-		tst.SecretKey(),
-		DirectIpStrategy,
-		l,
+		DefaultSessionCookieMaxDuration,
 	)
 
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
@@ -568,6 +569,9 @@ func TestNew(t *testing.T) {
 					New(
 						tt.domain,
 						443,
+						tst.SecretKey(),
+						DirectIpStrategy,
+						slog.Default(),
 						nil,
 						nil,
 						nil,
@@ -577,15 +581,16 @@ func TestNew(t *testing.T) {
 						DefaultLoadShedMinSampleSize,
 						DefaultLoadShedBreachLatency,
 						DefaultRateLimit,
-						tst.SecretKey(),
-						DirectIpStrategy,
-						slog.Default(),
+						DefaultSessionCookieMaxDuration,
 					)
 				})
 			} else {
 				New(
 					tt.domain,
 					443,
+					tst.SecretKey(),
+					DirectIpStrategy,
+					slog.Default(),
 					nil,
 					nil,
 					nil,
@@ -595,9 +600,7 @@ func TestNew(t *testing.T) {
 					DefaultLoadShedMinSampleSize,
 					DefaultLoadShedBreachLatency,
 					DefaultRateLimit,
-					tst.SecretKey(),
-					DirectIpStrategy,
-					slog.Default(),
+					DefaultSessionCookieMaxDuration,
 				)
 			}
 		})

@@ -37,7 +37,7 @@ const (
 	CsrfTokenFormName = "csrftoken" // named after what django uses.
 	// CsrfHeader is the name of the http header that Ong uses to store csrf token.
 	CsrfHeader = "X-Csrf-Token" // named after what fiber uses.
-	// DefaultCsrfCookieMaxDuration is the duration(in seconds that) csrf cookie will be valid for by default.
+	// DefaultCsrfCookieMaxDuration is the duration that csrf cookie will be valid for by default.
 	//
 	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
 	DefaultCsrfCookieMaxDuration = 12 * time.Hour

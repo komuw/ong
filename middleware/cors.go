@@ -24,7 +24,7 @@ import (
 // - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
 const (
-	// DefaultCorsCacheDuration is the length in time(in seconds) that preflight responses will be cached by default.
+	// DefaultCorsCacheDuration is the length in time that preflight responses will be cached by default.
 	// 2hrs is chosen since that is the maximum for chromium based browsers.
 	// Firefox had a maximum of 24hrs as at the time of writing.
 	DefaultCorsCacheDuration = 2 * time.Hour
@@ -47,9 +47,7 @@ const (
 	// Otherwise omit it entirely(as we will in this library)
 	acrpnHeader = "Access-Control-Request-Private-Network"
 	_           = acrpnHeader
-	// how long(in seconds) the results of a preflight request can be cached.
-	// firefox uses 24hrs, chromium uses 2hrs, the default is 5minutes.
-	acmaHeader = "Access-Control-Max-Age"
+	acmaHeader  = "Access-Control-Max-Age"
 	// allows a server to indicate which response headers should be made available to scripts running in the browser for cross-origin-requests.
 	// by default only the cors-safelisted response headers(https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_response_header) are allowed.
 	// For this library, we won't allow any other headers to be exposed; which means we will omit setting this header entirely.
