@@ -59,6 +59,11 @@ type Opts struct {
 	// csrf
 	csrfTokenMaxDuration time.Duration
 
+	// loadshed
+	loadShedSamplingPeriod time.Duration
+	loadShedMinSampleSize  int
+	loadShedBreachLatency  time.Duration
+
 	secretKey string
 	strategy  ClientIPstrategy
 	l         *slog.Logger
@@ -79,6 +84,12 @@ type Opts struct {
 //
 // csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfTokenMaxDuration] is used instead.
 //
+// loadShedSamplingPeriod is the duration over which we calculate response latencies. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
+// loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
+// If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
+// If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
+// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
+//
 // secretKey is used for securing signed data.
 // It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
@@ -98,6 +109,10 @@ func New(
 	corsCacheDuration time.Duration,
 	// csrf
 	csrfTokenMaxDuration time.Duration,
+	// loadshed
+	loadShedSamplingPeriod time.Duration,
+	loadShedMinSampleSize int,
+	loadShedBreachLatency time.Duration,
 
 	secretKey string,
 	strategy ClientIPstrategy,
@@ -129,6 +144,11 @@ func New(
 		// csrf
 		csrfTokenMaxDuration: csrfTokenMaxDuration,
 
+		// loadshed
+		loadShedSamplingPeriod: loadShedSamplingPeriod,
+		loadShedMinSampleSize:  loadShedMinSampleSize,
+		loadShedBreachLatency:  loadShedBreachLatency,
+
 		secretKey: secretKey,
 		strategy:  strategy,
 		l:         l,
@@ -152,6 +172,9 @@ func WithOpts(
 		nil,
 		DefaultCorsCacheDuration,
 		DefaultCsrfTokenMaxDuration,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
 		secretKey,
 		strategy,
 		l,
@@ -178,6 +201,11 @@ func allDefaultMiddlewares(
 
 	// csrf
 	csrfTokenMaxDuration := o.csrfTokenMaxDuration
+
+	// loadshed
+	loadShedSamplingPeriod := o.loadShedSamplingPeriod
+	loadShedMinSampleSize := o.loadShedMinSampleSize
+	loadShedBreachLatency := o.loadShedBreachLatency
 
 	secretKey := o.secretKey
 	strategy := o.strategy
@@ -259,6 +287,9 @@ func allDefaultMiddlewares(
 										domain,
 									),
 								),
+								loadShedSamplingPeriod,
+								loadShedMinSampleSize,
+								loadShedBreachLatency,
 							),
 						),
 						l,

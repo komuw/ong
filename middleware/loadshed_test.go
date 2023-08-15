@@ -35,7 +35,12 @@ func TestLoadShedder(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := loadShedder(someLoadShedderHandler(msg))
+		wrappedHandler := loadShedder(
+			someLoadShedderHandler(msg),
+			DefaultLoadShedSamplingPeriod,
+			DefaultLoadShedMinSampleSize,
+			DefaultLoadShedBreachLatency,
+		)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -58,7 +63,12 @@ func TestLoadShedder(t *testing.T) {
 		msg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := loadShedder(someLoadShedderHandler(msg))
+		wrappedHandler := loadShedder(
+			someLoadShedderHandler(msg),
+			DefaultLoadShedSamplingPeriod,
+			DefaultLoadShedMinSampleSize,
+			DefaultLoadShedBreachLatency,
+		)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -77,7 +87,7 @@ func TestLoadShedder(t *testing.T) {
 		}
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 50+minSampleSize; rN++ {
+		for rN := 0; rN <= 50+DefaultLoadShedMinSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -226,7 +236,7 @@ func TestLatencyQueue(t *testing.T) {
 		lq := newLatencyQueue()
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 50+minSampleSize; rN++ {
+		for rN := 0; rN <= 50+DefaultLoadShedMinSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -251,7 +261,13 @@ func loadShedderBenchmarkHandler() http.HandlerFunc {
 func BenchmarkLoadShedder(b *testing.B) {
 	var r int
 
-	wrappedHandler := loadShedder(loadShedderBenchmarkHandler())
+	wrappedHandler := loadShedder(
+		loadShedderBenchmarkHandler(),
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+	)
+
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 
