@@ -127,6 +127,10 @@ func TestIntegration(t *testing.T) {
 		}
 		metrics.Close()
 
+		fmt.Println("\n\t metrics:")
+		fmt.Println(metrics)
+		fmt.Println("\n")
+
 		expectedSuccesses := 1782
 		attest.Approximately(t,
 			// Actually, we would expect 1800 successes(20 *90) since the sending rate is 90/secs
