@@ -22,10 +22,12 @@ const (
 	// DefaultLoadShedBreachLatency is the p99 latency at which point we start dropping requests, by default.
 	//
 	// The value chosen here is because;
-	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
-	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
-	// and the p95 response times for http POST requests is ~900ms.
+	// The wikipedia [monitoring] dashboards are public.
+	// In there we can see that the p95 [response] times for http GET requests is ~700ms, & the p95 response times for http POST requests is ~900ms.
 	// Thus, we'll use a `loadShedBreachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
+	//
+	// [monitoring]: https://grafana.wikimedia.org/?orgId=1
+	// [response]: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
 	DefaultLoadShedBreachLatency = 700 * time.Millisecond
 
 	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.

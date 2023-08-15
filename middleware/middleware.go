@@ -64,6 +64,9 @@ type Opts struct {
 	loadShedMinSampleSize  int
 	loadShedBreachLatency  time.Duration
 
+	// ratelimit
+	rateLimit float64
+
 	secretKey string
 	strategy  ClientIPstrategy
 	l         *slog.Logger
@@ -90,6 +93,8 @@ type Opts struct {
 // If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
 // loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
 //
+// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
+//
 // secretKey is used for securing signed data.
 // It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
@@ -113,6 +118,8 @@ func New(
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
 	loadShedBreachLatency time.Duration,
+	// ratelimiter
+	rateLimit float64,
 
 	secretKey string,
 	strategy ClientIPstrategy,
@@ -149,6 +156,9 @@ func New(
 		loadShedMinSampleSize:  loadShedMinSampleSize,
 		loadShedBreachLatency:  loadShedBreachLatency,
 
+		// ratelimiter
+		rateLimit: rateLimit,
+
 		secretKey: secretKey,
 		strategy:  strategy,
 		l:         l,
@@ -175,6 +185,7 @@ func WithOpts(
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
+		DefaultRateLimit,
 		secretKey,
 		strategy,
 		l,
@@ -206,6 +217,9 @@ func allDefaultMiddlewares(
 	loadShedSamplingPeriod := o.loadShedSamplingPeriod
 	loadShedMinSampleSize := o.loadShedMinSampleSize
 	loadShedBreachLatency := o.loadShedBreachLatency
+
+	// ratelimit
+	rateLimit := o.rateLimit
 
 	secretKey := o.secretKey
 	strategy := o.strategy
@@ -291,6 +305,7 @@ func allDefaultMiddlewares(
 								loadShedMinSampleSize,
 								loadShedBreachLatency,
 							),
+							rateLimit,
 						),
 						l,
 					),

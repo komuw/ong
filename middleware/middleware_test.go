@@ -479,7 +479,25 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 	httpsPort := tst.GetPort()
 	domain := "localhost"
-	o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+	// need to increase rateLimit for tests otherwise the benchmark fails with http.StatusTooManyRequests
+	rateLimit := 500.0
+	o := New(
+		domain,
+		httpsPort,
+		nil,
+		nil,
+		nil,
+		DefaultCorsCacheDuration,
+		DefaultCsrfTokenMaxDuration,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+		rateLimit,
+		tst.SecretKey(),
+		DirectIpStrategy,
+		l,
+	)
+
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
 
 	ts, errTls := tst.TlsServer(wrappedHandler, domain, httpsPort)
@@ -491,13 +509,6 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-
-	intialRateLimiterSendRate := rateLimiterSendRate
-	b.Cleanup(func() {
-		rateLimiterSendRate = intialRateLimiterSendRate
-	})
-	// need to increase this  for tests otherwise the benchmark fails with http.StatusTooManyRequests
-	rateLimiterSendRate = 500.0
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -565,6 +576,7 @@ func TestNew(t *testing.T) {
 						DefaultLoadShedSamplingPeriod,
 						DefaultLoadShedMinSampleSize,
 						DefaultLoadShedBreachLatency,
+						DefaultRateLimit,
 						tst.SecretKey(),
 						DirectIpStrategy,
 						slog.Default(),
@@ -582,6 +594,7 @@ func TestNew(t *testing.T) {
 					DefaultLoadShedSamplingPeriod,
 					DefaultLoadShedMinSampleSize,
 					DefaultLoadShedBreachLatency,
+					DefaultRateLimit,
 					tst.SecretKey(),
 					DirectIpStrategy,
 					slog.Default(),
