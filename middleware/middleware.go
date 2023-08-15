@@ -115,18 +115,14 @@ func New(
 	secretKey string,
 	strategy ClientIPstrategy,
 	l *slog.Logger,
-	// cors
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
 	corsCacheDuration time.Duration,
-	// csrf
 	csrfTokenMaxDuration time.Duration,
-	// loadshed
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
 	loadShedBreachLatency time.Duration,
-	// ratelimiter
 	rateLimit float64,
 	sessionCookieMaxDuration time.Duration,
 ) Opts {
