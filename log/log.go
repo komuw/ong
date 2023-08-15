@@ -210,7 +210,7 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 				}
 
 				{ // 4. flush to underlying handler.
-					if e := h.wrappedHandler.Handle(ctx, v.r); e != nil {
+					if e := h.wrappedHandler.Handle(v.ctx, v.r); e != nil {
 						err = errors.Join([]error{err, e}...)
 					}
 				}
