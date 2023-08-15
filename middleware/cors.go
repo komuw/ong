@@ -50,7 +50,6 @@ const (
 	// For this library, we won't allow any other headers to be exposed; which means we will omit setting this header entirely.
 	acehHeader = "Access-Control-Expose-Headers"
 	_          = acehHeader
-
 	// DefaultCorsCacheDuration is the length in time(in seconds) that preflight responses will be cached by default.
 	// 2hrs is chosen since that is the maximum for chromium based browsers.
 	// Firefox had a maximum of 24hrs as at the time of writing.
