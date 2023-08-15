@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"sync"
-	"time"
 
 	ongErrors "github.com/komuw/ong/errors"
 	"github.com/komuw/ong/id"
@@ -181,7 +180,7 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 					// If we ever need that functionality, we would do that in `r.Attrs()`
 					if !r.Time.IsZero() {
 						// According to the docs, If r.Time is the zero time, ignore the time.
-						v.r.Time = time.Now().UTC()
+						v.r.Time = v.r.Time.UTC()
 					}
 
 					newAttrs := []slog.Attr{}
