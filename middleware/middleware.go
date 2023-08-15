@@ -97,7 +97,7 @@ type Opts struct {
 //
 // csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieMaxDuration] is used instead.
 //
-// loadShedSamplingPeriod is the duration over which we calculate response latencies. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
+// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
 // loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
 // If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
 // If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
