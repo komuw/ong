@@ -129,7 +129,7 @@ func TestIntegration(t *testing.T) {
 
 		fmt.Println("\n\t metrics:")
 		fmt.Println(metrics)
-		fmt.Println("\n")
+		fmt.Println("\n.")
 
 		expectedSuccesses := 1782
 		attest.Approximately(t,
