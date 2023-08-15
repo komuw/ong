@@ -95,7 +95,7 @@ type handler struct {
 	// +checklocks:mu
 	cBuf *circleBuf
 	// +checklocks:mu
-	logID string
+	logID string // TODO: is this required?
 }
 
 func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
@@ -161,67 +161,32 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	// https://github.com/golang/go/blob/5c154986094bcc2fb28909cc5f01c9ba1dd9ddd4/src/log/slog/handler.go#L50-L59
 	// Note that this handler does not produce output and hence the above rules do not apply.
 
-	// h.mu.Lock()
-	// defer h.mu.Unlock()
-
-	// { // 1. Add some required fields.
-
-	// 	// Convert time to UTC.
-	// 	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
-	// 	// If we ever need that functionality, we would do that in `r.Attrs()`
-	// 	if !r.Time.IsZero() {
-	// 		// According to the docs, If r.Time is the zero time, ignore the time.
-	// 		r.Time = time.Now().UTC()
-	// 	}
-
-	// 	newAttrs := []slog.Attr{}
-
-	// 	// Add logID
-	// 	theID := h.logID
-	// 	id2, fromCtx := getId(ctx)
-	// 	if fromCtx || (theID == "") {
-	// 		theID = id2
-	// 	}
-	// 	newAttrs = []slog.Attr{
-	// 		{Key: logIDFieldName, Value: slog.StringValue(theID)},
-	// 	}
-	// 	h.logID = theID
-
-	// 	// Add stackTraces
-	// 	r.Attrs(func(a slog.Attr) bool {
-	// 		if e, ok := a.Value.Any().(error); ok {
-	// 			if stack := ongErrors.StackTrace(e); stack != "" {
-	// 				newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
-	// 				return false // Stop iteration. This assumes that the log fields had only one error.
-	// 			}
-	// 		}
-	// 		return true
-	// 	})
-
-	// 	r.AddAttrs(newAttrs...)
-	// }
-
-	{ // 2. save record.
+	{ // 1. save record.
 		h.mu.Lock()
 		h.cBuf.store(extendedLogRecord{r: r, logID: h.logID, ctx: ctx})
 		h.mu.Unlock()
 	}
 
-	{ // 3. flush on error.
+	{ // 2. flush on error.
 		if r.Level >= slog.LevelError {
 			h.mu.Lock()
 			defer h.mu.Unlock()
 
 			var err error
 			for _, v := range h.cBuf.buf {
-				////////////////////////////////
-				{
+				{ // 3. Add some required fields.
+
+					// Convert time to UTC.
+					// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
+					// If we ever need that functionality, we would do that in `r.Attrs()`
 					if !r.Time.IsZero() {
+						// According to the docs, If r.Time is the zero time, ignore the time.
 						v.r.Time = time.Now().UTC()
 					}
 
 					newAttrs := []slog.Attr{}
 
+					// Add logID
 					theID := v.logID
 					id2, fromCtx := getId(v.ctx)
 					if fromCtx || (theID == "") {
@@ -244,9 +209,11 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 
 					v.r.AddAttrs(newAttrs...)
 				}
-				////////////////////////////////
-				if e := h.wrappedHandler.Handle(ctx, v.r); e != nil {
-					err = errors.Join([]error{err, e}...)
+
+				{ // 4. flush to underlying handler.
+					if e := h.wrappedHandler.Handle(ctx, v.r); e != nil {
+						err = errors.Join([]error{err, e}...)
+					}
 				}
 			}
 
