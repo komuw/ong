@@ -25,6 +25,9 @@ const (
 
 // GetId gets a logId either from the provided context or auto-generated.
 func GetId(ctx context.Context) string {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	id, _ := getId(ctx)
 	return id
 }
@@ -32,11 +35,9 @@ func GetId(ctx context.Context) string {
 // getId gets a logId either from the provided context or auto-generated.
 // It returns the logID and true if the id came from ctx else false
 func getId(ctx context.Context) (string, bool) {
-	if ctx != nil {
-		if vCtx := ctx.Value(octx.LogCtxKey); vCtx != nil {
-			if s, ok := vCtx.(string); ok {
-				return s, true
-			}
+	if vCtx := ctx.Value(octx.LogCtxKey); vCtx != nil {
+		if s, ok := vCtx.(string); ok {
+			return s, true
 		}
 	}
 	return id.New(), false
@@ -191,6 +192,7 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 			if e, ok := a.Value.Any().(error); ok {
 				if stack := ongErrors.StackTrace(e); stack != "" {
 					newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+					return false // Stop iteration. This assumes that the log fields had only one error.
 				}
 			}
 			return true
