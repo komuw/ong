@@ -24,6 +24,11 @@ import (
 // - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
 const (
+	// DefaultCorsCacheDuration is the length in time(in seconds) that preflight responses will be cached by default.
+	// 2hrs is chosen since that is the maximum for chromium based browsers.
+	// Firefox had a maximum of 24hrs as at the time of writing.
+	DefaultCorsCacheDuration = 2 * time.Hour
+
 	// header is used by browsers when issuing a preflight request.
 	acrmHeader = "Access-Control-Request-Method"
 	// used by browsers when issuing a preflight request to let the server know which HTTP headers the client might send when the actual request is made
@@ -50,10 +55,6 @@ const (
 	// For this library, we won't allow any other headers to be exposed; which means we will omit setting this header entirely.
 	acehHeader = "Access-Control-Expose-Headers"
 	_          = acehHeader
-	// DefaultCorsCacheDuration is the length in time(in seconds) that preflight responses will be cached by default.
-	// 2hrs is chosen since that is the maximum for chromium based browsers.
-	// Firefox had a maximum of 24hrs as at the time of writing.
-	DefaultCorsCacheDuration = 2 * time.Hour
 )
 
 // cors is a middleware to implement Cross-Origin Resource Sharing support.

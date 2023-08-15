@@ -14,15 +14,11 @@ import (
 //   (b) https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/
 
 const (
-	retryAfterHeader = "Retry-After"
-
 	// DefaultLoadShedSamplingPeriod is the duration over which we calculate response latencies by default.
 	DefaultLoadShedSamplingPeriod = 12 * time.Minute
-
 	// DefaultLoadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
 	// If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
 	DefaultLoadShedMinSampleSize = 50
-
 	// DefaultLoadShedBreachLatency is the p99 latency at which point we start dropping requests, by default.
 	//
 	// The value chosen here is because;
@@ -34,6 +30,8 @@ const (
 
 	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.
 	maxLatencyItems = 1_000
+
+	retryAfterHeader = "Retry-After"
 )
 
 // loadShedder is a middleware that sheds load based on http response latencies.

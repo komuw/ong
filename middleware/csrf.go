@@ -36,7 +36,12 @@ const (
 	// CsrfTokenFormName is the name of the html form name attribute for csrf token.
 	CsrfTokenFormName = "csrftoken" // named after what django uses.
 	// CsrfHeader is the name of the http header that Ong uses to store csrf token.
-	CsrfHeader               = "X-Csrf-Token" // named after what fiber uses.
+	CsrfHeader = "X-Csrf-Token" // named after what fiber uses.
+	// DefaultCsrfTokenMaxDuration is the duration(in seconds that) csrf cookie will be valid for by default.
+	//
+	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
+	DefaultCsrfTokenMaxDuration = 12 * time.Hour
+
 	csrfCtxKey               = csrfContextKey("csrfContextKey")
 	csrfDefaultToken         = ""
 	csrfCookieName           = CsrfTokenFormName
@@ -47,11 +52,6 @@ const (
 	ctHeader                 = "Content-Type"
 	formUrlEncoded           = "application/x-www-form-urlencoded"
 	multiformData            = "multipart/form-data"
-
-	// DefaultCsrfTokenMaxDuration is the duration(in seconds that) csrf cookie will be valid for by default.
-	//
-	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
-	DefaultCsrfTokenMaxDuration = 12 * time.Hour
 
 	// django appears to use 32 random characters for its csrf token.
 	// so does gorilla/csrf; https://github.com/gorilla/csrf/blob/v1.7.1/csrf.go#L13-L14
