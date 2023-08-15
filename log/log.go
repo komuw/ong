@@ -161,55 +161,91 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	// https://github.com/golang/go/blob/5c154986094bcc2fb28909cc5f01c9ba1dd9ddd4/src/log/slog/handler.go#L50-L59
 	// Note that this handler does not produce output and hence the above rules do not apply.
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	// h.mu.Lock()
+	// defer h.mu.Unlock()
 
-	{ // 1. Add some required fields.
+	// { // 1. Add some required fields.
 
-		// Convert time to UTC.
-		// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
-		// If we ever need that functionality, we would do that in `r.Attrs()`
-		if !r.Time.IsZero() {
-			// According to the docs, If r.Time is the zero time, ignore the time.
-			r.Time = time.Now().UTC()
-		}
+	// 	// Convert time to UTC.
+	// 	// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
+	// 	// If we ever need that functionality, we would do that in `r.Attrs()`
+	// 	if !r.Time.IsZero() {
+	// 		// According to the docs, If r.Time is the zero time, ignore the time.
+	// 		r.Time = time.Now().UTC()
+	// 	}
 
-		newAttrs := []slog.Attr{}
+	// 	newAttrs := []slog.Attr{}
 
-		// Add logID
-		theID := h.logID
-		id2, fromCtx := getId(ctx)
-		if fromCtx || (theID == "") {
-			theID = id2
-		}
-		newAttrs = []slog.Attr{
-			{Key: logIDFieldName, Value: slog.StringValue(theID)},
-		}
-		h.logID = theID
+	// 	// Add logID
+	// 	theID := h.logID
+	// 	id2, fromCtx := getId(ctx)
+	// 	if fromCtx || (theID == "") {
+	// 		theID = id2
+	// 	}
+	// 	newAttrs = []slog.Attr{
+	// 		{Key: logIDFieldName, Value: slog.StringValue(theID)},
+	// 	}
+	// 	h.logID = theID
 
-		// Add stackTraces
-		r.Attrs(func(a slog.Attr) bool {
-			if e, ok := a.Value.Any().(error); ok {
-				if stack := ongErrors.StackTrace(e); stack != "" {
-					newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
-					return false // Stop iteration. This assumes that the log fields had only one error.
-				}
-			}
-			return true
-		})
+	// 	// Add stackTraces
+	// 	r.Attrs(func(a slog.Attr) bool {
+	// 		if e, ok := a.Value.Any().(error); ok {
+	// 			if stack := ongErrors.StackTrace(e); stack != "" {
+	// 				newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+	// 				return false // Stop iteration. This assumes that the log fields had only one error.
+	// 			}
+	// 		}
+	// 		return true
+	// 	})
 
-		r.AddAttrs(newAttrs...)
-	}
+	// 	r.AddAttrs(newAttrs...)
+	// }
 
 	{ // 2. save record.
-		h.cBuf.store(r)
+		h.mu.Lock()
+		h.cBuf.store(extendedLogRecord{r: r, logID: h.logID, ctx: ctx})
+		h.mu.Unlock()
 	}
 
 	{ // 3. flush on error.
 		if r.Level >= slog.LevelError {
+			h.mu.Lock()
+			defer h.mu.Unlock()
+
 			var err error
 			for _, v := range h.cBuf.buf {
-				if e := h.wrappedHandler.Handle(ctx, v); e != nil {
+				////////////////////////////////
+				{
+					if !r.Time.IsZero() {
+						v.r.Time = time.Now().UTC()
+					}
+
+					newAttrs := []slog.Attr{}
+
+					theID := v.logID
+					id2, fromCtx := getId(v.ctx)
+					if fromCtx || (theID == "") {
+						theID = id2
+					}
+					newAttrs = []slog.Attr{
+						{Key: logIDFieldName, Value: slog.StringValue(theID)},
+					}
+
+					// Add stackTraces
+					v.r.Attrs(func(a slog.Attr) bool {
+						if e, ok := a.Value.Any().(error); ok {
+							if stack := ongErrors.StackTrace(e); stack != "" {
+								newAttrs = append(newAttrs, slog.Attr{Key: "stack", Value: slog.StringValue(stack)})
+								return false // Stop iteration. This assumes that the log fields had only one error.
+							}
+						}
+						return true
+					})
+
+					v.r.AddAttrs(newAttrs...)
+				}
+				////////////////////////////////
+				if e := h.wrappedHandler.Handle(ctx, v.r); e != nil {
 					err = errors.Join([]error{err, e}...)
 				}
 			}
@@ -228,10 +264,17 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
+// TODO: docs
+type extendedLogRecord struct {
+	r     slog.Record
+	logID string
+	ctx   context.Context // TODO: needed?
+}
+
 // circleBuf implements a very simple & naive circular buffer.
 // users of circleBuf are responsible for concurrency safety.
 type circleBuf struct {
-	buf     []slog.Record
+	buf     []extendedLogRecord
 	maxSize int
 }
 
@@ -240,7 +283,7 @@ func newCirleBuf(maxSize int) *circleBuf {
 		maxSize = 10
 	}
 	c := &circleBuf{
-		buf:     make([]slog.Record, maxSize),
+		buf:     make([]extendedLogRecord, maxSize),
 		maxSize: maxSize,
 	}
 	c.reset() // remove the nils from `make()`
@@ -249,7 +292,7 @@ func newCirleBuf(maxSize int) *circleBuf {
 
 // store is a private api(thus needs no locking).
 // It should only ever be called by `handler.Handle` which already takes a lock.
-func (c *circleBuf) store(r slog.Record) {
+func (c *circleBuf) store(r extendedLogRecord) {
 	availableSpace := c.maxSize - len(c.buf)
 	if availableSpace <= 0 {
 		// clear space.
