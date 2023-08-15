@@ -178,7 +178,7 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 					// Convert time to UTC.
 					// Note that we do not convert any other fields(that may be of type time.Time) into UTC.
 					// If we ever need that functionality, we would do that in `r.Attrs()`
-					if !r.Time.IsZero() {
+					if !v.r.Time.IsZero() {
 						// According to the docs, If r.Time is the zero time, ignore the time.
 						v.r.Time = v.r.Time.UTC()
 					}
@@ -230,11 +230,12 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
-// TODO: docs
+// extendedLogRecord is similar to [slog.Record] except that
+// it has been expanded to also include items that are specific to ong/log.
 type extendedLogRecord struct {
 	r     slog.Record
 	logID string
-	ctx   context.Context // TODO: needed?
+	ctx   context.Context
 }
 
 // circleBuf implements a very simple & naive circular buffer.
