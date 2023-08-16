@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -47,6 +48,46 @@ func Example_getCsrfToken() {
 		welcomeHandler(),
 		middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
 	)
+	_ = handler // use handler
+
+	// Output:
+}
+
+func ExampleNew() {
+	l := log.New(context.Background(), os.Stdout, 100)
+	opts := middleware.New(
+		// The domain where our application will be available on.
+		"example.com",
+		// The https port that our application will be listening on.
+		443,
+		// The security key to use for securing signed data.
+		"super-h@rd-Pa$1word",
+		// In this case, the actual client IP address is fetched from the given http header.
+		middleware.SingleIpStrategy("CF-Connecting-IP"),
+		// Logger.
+		l,
+		// Allow access from these origins for CORs.
+		[]string{"example.net", "example.org"},
+		// Allow only GET and POST for CORs.
+		[]string{"GET", "POST"},
+		// Allow all http headers for CORs.
+		[]string{"*"},
+		// Cache CORs preflight requests for 1day.
+		24*time.Hour,
+		// Expire csrf cookie after 3days.
+		3*24*time.Hour,
+		// Sample response latencies over a 5 minute window to determine if to loadshed.
+		5*time.Minute,
+		// If the number of responses in the last 5minutes is less than 10, do not make a loadshed determination.
+		10,
+		// If the p99 response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
+		200*time.Millisecond,
+		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
+		13.0,
+		// Expire session cookie after 6hours.
+		6*time.Hour,
+	)
+	handler := middleware.Get(loginHandler(), opts)
 	_ = handler // use handler
 
 	// Output:

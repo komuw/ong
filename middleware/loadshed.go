@@ -14,40 +14,57 @@ import (
 //   (b) https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/
 
 const (
-	retryAfterHeader = "Retry-After"
-
-	// samplingPeriod is the duration over which we will calculate the latency.
-	samplingPeriod = 12 * time.Minute
-
-	// minSampleSize is the minimum number of past requests that have to be available, in the last `samplingPeriod` seconds for us to make a decision.
-	// If there were fewer requests(than `minSampleSize`) in the `samplingPeriod`, then we do decide to let things continue without load shedding.
-	minSampleSize = 50
-
-	// breachLatency is the p99 latency at which point we start dropping requests.
-	// The wikipedia monitoring dashboards are public: https://grafana.wikimedia.org/?orgId=1
-	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
-	// and the p95 response times for http POST requests is ~900ms.
-	// Thus, we'll use a `breachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
-	breachLatency = 700 * time.Millisecond
-
-	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
-	retryAfter = samplingPeriod + (5 * time.Minute)
-
-	// resizePeriod is the duration after which we should trim the latencyQueue.
-	// It should always be > samplingPeriod
-	// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
-	resizePeriod = samplingPeriod + (3 * time.Minute)
+	// DefaultLoadShedSamplingPeriod is the duration over which we calculate response latencies by default.
+	DefaultLoadShedSamplingPeriod = 12 * time.Minute
+	// DefaultLoadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
+	// If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
+	DefaultLoadShedMinSampleSize = 50
+	// DefaultLoadShedBreachLatency is the p99 latency at which point we start dropping requests, by default.
+	//
+	// The value chosen here is because;
+	// The wikipedia [monitoring] dashboards are public.
+	// In there we can see that the p95 [response] times for http GET requests is ~700ms, & the p95 response times for http POST requests is ~900ms.
+	// Thus, we'll use a `loadShedBreachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
+	//
+	// [monitoring]: https://grafana.wikimedia.org/?orgId=1
+	// [response]: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
+	DefaultLoadShedBreachLatency = 700 * time.Millisecond
 
 	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.
 	maxLatencyItems = 1_000
+
+	retryAfterHeader = "Retry-After"
 )
 
 // loadShedder is a middleware that sheds load based on http response latencies.
-func loadShedder(wrappedHandler http.Handler) http.HandlerFunc {
+func loadShedder(
+	wrappedHandler http.Handler,
+	loadShedSamplingPeriod time.Duration,
+	loadShedMinSampleSize int,
+	loadShedBreachLatency time.Duration,
+) http.HandlerFunc {
 	// lq should not be a global variable, we want it to be per handler.
 	// This is because different handlers(URIs) could have different latencies and we want each to be loadshed independently.
 	lq := newLatencyQueue()
 	loadShedCheckStart := time.Now().UTC()
+
+	if loadShedSamplingPeriod < 1*time.Second {
+		loadShedSamplingPeriod = DefaultLoadShedSamplingPeriod
+	}
+	if loadShedMinSampleSize < 1 {
+		loadShedMinSampleSize = DefaultLoadShedMinSampleSize
+	}
+	if loadShedBreachLatency < 1*time.Nanosecond {
+		loadShedBreachLatency = DefaultLoadShedBreachLatency
+	}
+	var (
+		// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
+		retryAfter = loadShedSamplingPeriod + (5 * time.Minute)
+		// resizePeriod is the duration after which we should trim the latencyQueue.
+		// It should always be > loadShedSamplingPeriod
+		// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getP99()` will always return zero.
+		resizePeriod = loadShedSamplingPeriod + (3 * time.Minute)
+	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		startReq := time.Now().UTC()
@@ -56,7 +73,7 @@ func loadShedder(wrappedHandler http.Handler) http.HandlerFunc {
 			durReq := endReq.Sub(startReq)
 			lq.add(durReq)
 
-			// we do not want to reduce size of `lq` before a period `> samplingPeriod` otherwise `lq.getP99()` will always return zero.
+			// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > resizePeriod {
 				// lets reduce the size of latencyQueue
 				lq.reSize()
@@ -72,11 +89,11 @@ func loadShedder(wrappedHandler http.Handler) http.HandlerFunc {
 			sendProbe = mathRand.Intn(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
 		}
 
-		p99 := lq.getP99(minSampleSize)
-		if p99.Milliseconds() > breachLatency.Milliseconds() && !sendProbe {
+		p99 := lq.getP99(loadShedMinSampleSize)
+		if p99.Milliseconds() > loadShedBreachLatency.Milliseconds() && !sendProbe {
 			// drop request
 			err := fmt.Errorf("ong/middleware: server is overloaded, retry after %s", retryAfter)
-			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. breachLatency: %s", err.Error(), p99, breachLatency))
+			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. loadShedBreachLatency: %s", err.Error(), p99, loadShedBreachLatency))
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(
 				w,
@@ -98,7 +115,7 @@ type latencyQueue struct {
 
 		We do not need to have a field specifying when the latency measurement was taken.
 		Since [latencyQueue.reSize] is called oftenly; all the latencies in the queue will
-		aways be within `samplingPeriod` give or take.
+		aways be within `loadShedSamplingPeriod` give or take.
 	*/
 	// +checklocks:mu
 	sl []int64
@@ -126,13 +143,13 @@ func (lq *latencyQueue) reSize() {
 	}
 }
 
-func (lq *latencyQueue) getP99(minSampleSize int) (p99latency time.Duration) {
+func (lq *latencyQueue) getP99(loadShedMinSampleSize int) (p99latency time.Duration) {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
 	lenSl := len(lq.sl)
-	if lenSl < minSampleSize {
-		// the number of requests in the last `samplingPeriod` seconds is less than
+	if lenSl < loadShedMinSampleSize {
+		// the number of requests in the last `loadShedSamplingPeriod` seconds is less than
 		// is neccessary to make a decision
 		return 0 * time.Millisecond
 	}

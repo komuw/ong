@@ -11,29 +11,37 @@ import (
 // Most of the code here is inspired by(or taken from):
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
 
-/*
-	Github uses a rate limit of 5_000 reqs/hr(1req/sec)
-	Twitter uses 900 reqs/15mins(1req/sec)
-	Stripe uses 100req/sec.
-
-
-	- https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
-	- https://developer.twitter.com/en/docs/twitter-api/rate-limits
-	- https://stripe.com/docs/rate-limits
-*/
-// rateLimiterSendRate is the rate limit in requests/sec.
-var rateLimiterSendRate = 100.00 //nolint:gochecknoglobals
+const (
+	// DefaultRateLimit is the maximum requests allowed (from one IP address) per second, by default.
+	//
+	// The figure chosen here is because;
+	// [github] uses a rate limit of 1 reqs/sec (5_000 reqs/hr).
+	// [twitter] uses 1 reqs/sec (900 reqs/15mins).
+	// [stripe] uses 100 reqs/sec.
+	//
+	// [github]: https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
+	// [twitter]: https://developer.twitter.com/en/docs/twitter-api/rate-limits
+	// [stripe]: https://stripe.com/docs/rate-limits
+	DefaultRateLimit = 100.00
+)
 
 // rateLimiter is a middleware that limits requests by IP address.
-func rateLimiter(wrappedHandler http.Handler) http.HandlerFunc {
+func rateLimiter(
+	wrappedHandler http.Handler,
+	rateLimit float64,
+) http.HandlerFunc {
 	rl := newRl()
 	const retryAfter = 15 * time.Minute
+
+	if rateLimit < 1.0 {
+		rateLimit = DefaultRateLimit
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
 
 		host := ClientIP(r)
-		tb := rl.get(host, rateLimiterSendRate)
+		tb := rl.get(host, rateLimit)
 
 		if !tb.allow() {
 			err := fmt.Errorf("ong/middleware: rate limited, retry after %s", retryAfter)

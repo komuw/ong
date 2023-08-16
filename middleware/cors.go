@@ -24,6 +24,11 @@ import (
 // - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
 const (
+	// DefaultCorsCacheDuration is the length in time that preflight responses will be cached by default.
+	// 2hrs is chosen since that is the maximum for chromium based browsers.
+	// Firefox had a maximum of 24hrs as at the time of writing.
+	DefaultCorsCacheDuration = 2 * time.Hour
+
 	// header is used by browsers when issuing a preflight request.
 	acrmHeader = "Access-Control-Request-Method"
 	// used by browsers when issuing a preflight request to let the server know which HTTP headers the client might send when the actual request is made
@@ -42,15 +47,13 @@ const (
 	// Otherwise omit it entirely(as we will in this library)
 	acrpnHeader = "Access-Control-Request-Private-Network"
 	_           = acrpnHeader
-	// how long(in seconds) the results of a preflight request can be cached.
-	// firefox uses 24hrs, chromium uses 2hrs, the default is 5minutes.
+	// acmaHeader stores how long(in seconds) the results of a preflight request can be cached.
 	acmaHeader = "Access-Control-Max-Age"
 	// allows a server to indicate which response headers should be made available to scripts running in the browser for cross-origin-requests.
 	// by default only the cors-safelisted response headers(https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_response_header) are allowed.
 	// For this library, we won't allow any other headers to be exposed; which means we will omit setting this header entirely.
-	acehHeader   = "Access-Control-Expose-Headers"
-	_            = acehHeader
-	corsCacheDur = 2 * time.Hour
+	acehHeader = "Access-Control-Expose-Headers"
+	_          = acehHeader
 )
 
 // cors is a middleware to implement Cross-Origin Resource Sharing support.
@@ -63,15 +66,20 @@ func cors(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
+	corsCacheDuration time.Duration,
 ) http.HandlerFunc {
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
 
+	if corsCacheDuration < 1*time.Second { // It is measured in seconds.
+		corsCacheDuration = DefaultCorsCacheDuration
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
 			// handle preflight request
-			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders)
+			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders, corsCacheDuration)
 			// Preflight requests are standalone and should stop the chain as some other
 			// middleware may not handle OPTIONS requests correctly. One typical example
 			// is authentication middleware ; OPTIONS requests won't carry authentication headers.
@@ -91,6 +99,7 @@ func handlePreflight(
 	allowedWildcardOrigins []wildcard,
 	allowedMethods []string,
 	allowedHeaders []string,
+	corsCacheDuration time.Duration,
 ) {
 	headers := w.Header()
 	origin := r.Header.Get(originHeader)
@@ -153,7 +162,7 @@ func handlePreflight(
 	}
 
 	// (d)
-	headers.Set(acmaHeader, fmt.Sprintf("%d", int(corsCacheDur.Seconds())))
+	headers.Set(acmaHeader, fmt.Sprintf("%d", int(corsCacheDuration.Seconds())))
 }
 
 func handleActualRequest(

@@ -25,6 +25,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/key"
@@ -46,14 +47,32 @@ const (
 //
 // Use either [New] or [WithOpts] to get a valid Opts.
 type Opts struct {
-	domain         string
-	httpsPort      uint16
-	allowedOrigins []string
-	allowedMethods []string
-	allowedHeaders []string
-	secretKey      string
-	strategy       ClientIPstrategy
-	l              *slog.Logger
+	domain    string
+	httpsPort uint16
+
+	// cors
+	allowedOrigins    []string
+	allowedMethods    []string
+	allowedHeaders    []string
+	corsCacheDuration time.Duration
+
+	// csrf
+	csrfTokenMaxDuration time.Duration
+
+	// loadshed
+	loadShedSamplingPeriod time.Duration
+	loadShedMinSampleSize  int
+	loadShedBreachLatency  time.Duration
+
+	// ratelimit
+	rateLimit float64
+
+	// session
+	sessionCookieMaxDuration time.Duration
+
+	secretKey string
+	strategy  ClientIPstrategy
+	l         *slog.Logger
 }
 
 // New returns a new Opts.
@@ -63,11 +82,6 @@ type Opts struct {
 //
 // httpsPort is the tls port where http requests will be redirected to.
 //
-// allowedOrigins, allowedMethods, & allowedHeaders are used by the CORS middleware.
-// If allowedOrigins is nil, all origins are allowed. You can also use * to allow all.
-// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
-// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
-//
 // secretKey is used for securing signed data.
 // It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
@@ -75,17 +89,44 @@ type Opts struct {
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
 // It is important to choose your strategy carefully, see the warning in [ClientIP].
 //
+// allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
+// If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
+// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
+// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
+//
+// csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieMaxDuration] is used instead.
+//
+// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
+// loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
+// If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
+// If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
+// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
+//
+// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
+//
+// sessionCookieMaxDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieMaxDuration] is used instead.
+//
+// Also see [WithOpts].
+//
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
 // [letsencrypt]: https://letsencrypt.org/
 func New(
 	domain string,
 	httpsPort uint16,
-	allowedOrigins []string,
-	allowedMethods []string,
-	allowedHeaders []string,
 	secretKey string,
 	strategy ClientIPstrategy,
 	l *slog.Logger,
+	allowedOrigins []string,
+	allowedMethods []string,
+	allowedHeaders []string,
+	corsCacheDuration time.Duration,
+	csrfTokenMaxDuration time.Duration,
+	loadShedSamplingPeriod time.Duration,
+	loadShedMinSampleSize int,
+	loadShedBreachLatency time.Duration,
+	rateLimit float64,
+	sessionCookieMaxDuration time.Duration,
 ) Opts {
 	if err := acme.Validate(domain); err != nil {
 		panic(err)
@@ -101,18 +142,38 @@ func New(
 	}
 
 	return Opts{
-		domain:         domain,
-		httpsPort:      httpsPort,
-		allowedOrigins: allowedOrigins,
-		allowedMethods: allowedMethods,
-		allowedHeaders: allowedHeaders,
-		secretKey:      secretKey,
-		strategy:       strategy,
-		l:              l,
+		domain:    domain,
+		httpsPort: httpsPort,
+
+		// cors
+		allowedOrigins:    allowedOrigins,
+		allowedMethods:    allowedMethods,
+		allowedHeaders:    allowedHeaders,
+		corsCacheDuration: corsCacheDuration,
+
+		// csrf
+		csrfTokenMaxDuration: csrfTokenMaxDuration,
+
+		// loadshed
+		loadShedSamplingPeriod: loadShedSamplingPeriod,
+		loadShedMinSampleSize:  loadShedMinSampleSize,
+		loadShedBreachLatency:  loadShedBreachLatency,
+
+		// ratelimiter
+		rateLimit: rateLimit,
+
+		// session
+		sessionCookieMaxDuration: sessionCookieMaxDuration,
+
+		secretKey: secretKey,
+		strategy:  strategy,
+		l:         l,
 	}
 }
 
 // WithOpts returns a new Opts that has sensible defaults.
+// It panics on error.
+//
 // See [New] for extra documentation.
 func WithOpts(
 	domain string,
@@ -121,7 +182,23 @@ func WithOpts(
 	strategy ClientIPstrategy,
 	l *slog.Logger,
 ) Opts {
-	return New(domain, httpsPort, nil, nil, nil, secretKey, strategy, l)
+	return New(
+		domain,
+		httpsPort,
+		secretKey,
+		strategy,
+		l,
+		nil,
+		nil,
+		nil,
+		DefaultCorsCacheDuration,
+		DefaultCsrfCookieMaxDuration,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+		DefaultRateLimit,
+		DefaultSessionCookieMaxDuration,
+	)
 }
 
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
@@ -135,12 +212,29 @@ func allDefaultMiddlewares(
 ) http.HandlerFunc {
 	domain := o.domain
 	httpsPort := o.httpsPort
-	allowedOrigins := o.allowedOrigins
-	allowedMethods := o.allowedOrigins
-	allowedHeaders := o.allowedHeaders
 	secretKey := o.secretKey
 	strategy := o.strategy
 	l := o.l
+
+	// cors
+	allowedOrigins := o.allowedOrigins
+	allowedMethods := o.allowedOrigins
+	allowedHeaders := o.allowedHeaders
+	corsCacheDuration := o.corsCacheDuration
+
+	// csrf
+	csrfTokenMaxDuration := o.csrfTokenMaxDuration
+
+	// loadshed
+	loadShedSamplingPeriod := o.loadShedSamplingPeriod
+	loadShedMinSampleSize := o.loadShedMinSampleSize
+	loadShedBreachLatency := o.loadShedBreachLatency
+
+	// ratelimit
+	rateLimit := o.rateLimit
+
+	// session
+	sessionCookieMaxDuration := o.sessionCookieMaxDuration
 
 	// The way the middlewares are layered is:
 	// 1.  trace on outer most since we need to add logID's earliest for use by inner middlewares.
@@ -200,15 +294,18 @@ func allDefaultMiddlewares(
 															wrappedHandler,
 															secretKey,
 															domain,
+															sessionCookieMaxDuration,
 														),
 														domain,
 													),
 													secretKey,
 													domain,
+													csrfTokenMaxDuration,
 												),
 												allowedOrigins,
 												allowedMethods,
 												allowedHeaders,
+												corsCacheDuration,
 											),
 											domain,
 										),
@@ -216,7 +313,11 @@ func allDefaultMiddlewares(
 										domain,
 									),
 								),
+								loadShedSamplingPeriod,
+								loadShedMinSampleSize,
+								loadShedBreachLatency,
 							),
+							rateLimit,
 						),
 						l,
 					),
