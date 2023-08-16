@@ -56,14 +56,18 @@ func Example_getCsrfToken() {
 func ExampleNew() {
 	l := log.New(context.Background(), os.Stdout, 100)
 	opts := middleware.New(
+		// The domain where our application will be available on.
 		"example.com",
+		// The https port that our application will be listening on.
 		443,
+		// The security key to use for securing signed data.
 		"super-h@rd-Pa$1word",
 		// In this case, the actual client IP address is fetched from the given http header.
 		middleware.SingleIpStrategy("CF-Connecting-IP"),
+		// Logger.
 		l,
 		// Allow access from these origins for CORs.
-		[]string{"*example.net", "example.org"},
+		[]string{"example.net", "example.org"},
 		// Allow only GET and POST for CORs.
 		[]string{"GET", "POST"},
 		// Allow all http headers for CORs.

@@ -107,6 +107,8 @@ type Opts struct {
 //
 // sessionCookieMaxDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieMaxDuration] is used instead.
 //
+// Also see [WithOpts].
+//
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
 // [letsencrypt]: https://letsencrypt.org/
 func New(
