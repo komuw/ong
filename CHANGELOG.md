@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.75
+- ong/middleware: Make more middleware configurable: https://github.com/komuw/ong/pull/362
+
 # v0.0.74
 - ong/log: Conform to log/slog: https://github.com/komuw/ong/pull/357
            Eliminate duplicate logIDs
