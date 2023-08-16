@@ -90,9 +90,9 @@ type Opts struct {
 // It is important to choose your strategy carefully, see the warning in [ClientIP].
 //
 // allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
-// If allowedOrigins is nil, all origins are allowed. You can also use * to allow all.
-// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
-// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
+// If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
+// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
+// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
 // corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
 //
 // csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieMaxDuration] is used instead.
