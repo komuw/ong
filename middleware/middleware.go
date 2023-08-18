@@ -49,6 +49,20 @@ const (
 type Opts struct {
 	domain    string
 	httpsPort uint16
+	secretKey string
+	strategy  ClientIPstrategy
+	l         *slog.Logger
+
+	// logger
+	rateShedSamplePercent int
+
+	// ratelimit
+	rateLimit float64
+
+	// loadshed
+	loadShedSamplingPeriod time.Duration
+	loadShedMinSampleSize  int
+	loadShedBreachLatency  time.Duration
 
 	// cors
 	allowedOrigins    []string
@@ -59,20 +73,8 @@ type Opts struct {
 	// csrf
 	csrfTokenMaxDuration time.Duration
 
-	// loadshed
-	loadShedSamplingPeriod time.Duration
-	loadShedMinSampleSize  int
-	loadShedBreachLatency  time.Duration
-
-	// ratelimit
-	rateLimit float64
-
 	// session
 	sessionCookieMaxDuration time.Duration
-
-	secretKey string
-	strategy  ClientIPstrategy
-	l         *slog.Logger
 }
 
 // New returns a new Opts.
@@ -89,13 +91,11 @@ type Opts struct {
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
 // It is important to choose your strategy carefully, see the warning in [ClientIP].
 //
-// allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
-// If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
-// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
-// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
-// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
+// l is an [slog.Logger] that will be used for logging.
 //
-// csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieMaxDuration] is used instead.
+// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [DefaultRateShedSamplePercent] is used instead.
+//
+// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
 // loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
 // loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
@@ -103,7 +103,13 @@ type Opts struct {
 // If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
 // loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
 //
-// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
+// allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
+// If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
+// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
+// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
+//
+// csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieMaxDuration] is used instead.
 //
 // sessionCookieMaxDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieMaxDuration] is used instead.
 //
@@ -117,15 +123,16 @@ func New(
 	secretKey string,
 	strategy ClientIPstrategy,
 	l *slog.Logger,
+	rateShedSamplePercent int,
+	rateLimit float64,
+	loadShedSamplingPeriod time.Duration,
+	loadShedMinSampleSize int,
+	loadShedBreachLatency time.Duration,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
 	corsCacheDuration time.Duration,
 	csrfTokenMaxDuration time.Duration,
-	loadShedSamplingPeriod time.Duration,
-	loadShedMinSampleSize int,
-	loadShedBreachLatency time.Duration,
-	rateLimit float64,
 	sessionCookieMaxDuration time.Duration,
 ) Opts {
 	if err := acme.Validate(domain); err != nil {
@@ -144,6 +151,20 @@ func New(
 	return Opts{
 		domain:    domain,
 		httpsPort: httpsPort,
+		secretKey: secretKey,
+		strategy:  strategy,
+		l:         l,
+
+		// logger
+		rateShedSamplePercent: rateShedSamplePercent,
+
+		// ratelimiter
+		rateLimit: rateLimit,
+
+		// loadshed
+		loadShedSamplingPeriod: loadShedSamplingPeriod,
+		loadShedMinSampleSize:  loadShedMinSampleSize,
+		loadShedBreachLatency:  loadShedBreachLatency,
 
 		// cors
 		allowedOrigins:    allowedOrigins,
@@ -154,20 +175,8 @@ func New(
 		// csrf
 		csrfTokenMaxDuration: csrfTokenMaxDuration,
 
-		// loadshed
-		loadShedSamplingPeriod: loadShedSamplingPeriod,
-		loadShedMinSampleSize:  loadShedMinSampleSize,
-		loadShedBreachLatency:  loadShedBreachLatency,
-
-		// ratelimiter
-		rateLimit: rateLimit,
-
 		// session
 		sessionCookieMaxDuration: sessionCookieMaxDuration,
-
-		secretKey: secretKey,
-		strategy:  strategy,
-		l:         l,
 	}
 }
 
@@ -188,15 +197,16 @@ func WithOpts(
 		secretKey,
 		strategy,
 		l,
+		DefaultRateShedSamplePercent,
+		DefaultRateLimit,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
 		nil,
 		nil,
 		nil,
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieMaxDuration,
-		DefaultLoadShedSamplingPeriod,
-		DefaultLoadShedMinSampleSize,
-		DefaultLoadShedBreachLatency,
-		DefaultRateLimit,
 		DefaultSessionCookieMaxDuration,
 	)
 }
@@ -216,6 +226,17 @@ func allDefaultMiddlewares(
 	strategy := o.strategy
 	l := o.l
 
+	// logger
+	rateShedSamplePercent := o.rateShedSamplePercent
+
+	// ratelimit
+	rateLimit := o.rateLimit
+
+	// loadshed
+	loadShedSamplingPeriod := o.loadShedSamplingPeriod
+	loadShedMinSampleSize := o.loadShedMinSampleSize
+	loadShedBreachLatency := o.loadShedBreachLatency
+
 	// cors
 	allowedOrigins := o.allowedOrigins
 	allowedMethods := o.allowedOrigins
@@ -224,14 +245,6 @@ func allDefaultMiddlewares(
 
 	// csrf
 	csrfTokenMaxDuration := o.csrfTokenMaxDuration
-
-	// loadshed
-	loadShedSamplingPeriod := o.loadShedSamplingPeriod
-	loadShedMinSampleSize := o.loadShedMinSampleSize
-	loadShedBreachLatency := o.loadShedBreachLatency
-
-	// ratelimit
-	rateLimit := o.rateLimit
 
 	// session
 	sessionCookieMaxDuration := o.sessionCookieMaxDuration
@@ -320,6 +333,7 @@ func allDefaultMiddlewares(
 							rateLimit,
 						),
 						l,
+						rateShedSamplePercent,
 					),
 					l,
 				),

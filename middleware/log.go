@@ -13,13 +13,26 @@ import (
 	"github.com/komuw/ong/log"
 )
 
+const (
+	// DefaultRateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
+	DefaultRateShedSamplePercent = 10
+)
+
 // logger is a middleware that logs http requests and responses using [log.Logger].
-func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
+func logger(
+	wrappedHandler http.Handler,
+	l *slog.Logger,
+	rateShedSamplePercent int,
+) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
 	//
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
+
+	if rateShedSamplePercent < 0 {
+		rateShedSamplePercent = DefaultRateShedSamplePercent
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -56,8 +69,8 @@ func logger(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 
 			if (lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
 				// We are either in load shedding or rate-limiting.
-				// Only log 10% of the errors.
-				shouldLog := mathRand.Intn(100) > 90
+				// Only log (rateShedSamplePercent)% of the errors.
+				shouldLog := mathRand.Intn(100) <= rateShedSamplePercent
 				if shouldLog {
 					reqL.Error(msg, flds...)
 				}
