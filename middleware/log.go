@@ -30,6 +30,7 @@ func logger(
 	//
 	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 
+	// Note: a value of 0, disables logging of ratelimited and loadshed responses.
 	if rateShedSamplePercent < 0 {
 		rateShedSamplePercent = DefaultRateShedSamplePercent
 	}
