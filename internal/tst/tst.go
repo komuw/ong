@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"golang.org/x/net/nettest"
 )
 
 // TlsServer starts a test TLS server at a predetermined port and returns it.
@@ -42,9 +44,31 @@ func GetPort() uint16 {
 		panic("this func should only be called from tests")
 	}
 
-	r := rand.Intn(10_000) + 1
-	p := math.MaxUint16 - uint16(r)
-	return p
+	{
+		// Note: There's a possible race condition here.
+		// Where this scope gets us a free port, but it becomes used by someone else before we can.
+		l, err := nettest.NewLocalListener("tcp4")
+		if err != nil {
+			goto fallback
+		}
+		defer func() {
+			_ = l.Close()
+		}()
+
+		addr, ok := l.Addr().(*net.TCPAddr)
+		if !ok || (addr == nil) {
+			goto fallback
+		}
+
+		return uint16(addr.Port)
+	}
+
+fallback:
+	{
+		r := rand.Intn(10_000) + 1
+		p := math.MaxUint16 - uint16(r)
+		return p
+	}
 }
 
 // SecretKey returns a secret key that is valid and can be used in tests.

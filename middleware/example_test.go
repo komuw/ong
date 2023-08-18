@@ -66,6 +66,16 @@ func ExampleNew() {
 		middleware.SingleIpStrategy("CF-Connecting-IP"),
 		// Logger.
 		l,
+		// log 90% of all responses that are either rate-limited or loadshed.
+		90,
+		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
+		13.0,
+		// Sample response latencies over a 5 minute window to determine if to loadshed.
+		5*time.Minute,
+		// If the number of responses in the last 5minutes is less than 10, do not make a loadshed determination.
+		10,
+		// If the p99 response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
+		200*time.Millisecond,
 		// Allow access from these origins for CORs.
 		[]string{"example.net", "example.org"},
 		// Allow only GET and POST for CORs.
@@ -76,14 +86,6 @@ func ExampleNew() {
 		24*time.Hour,
 		// Expire csrf cookie after 3days.
 		3*24*time.Hour,
-		// Sample response latencies over a 5 minute window to determine if to loadshed.
-		5*time.Minute,
-		// If the number of responses in the last 5minutes is less than 10, do not make a loadshed determination.
-		10,
-		// If the p99 response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
-		200*time.Millisecond,
-		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
-		13.0,
 		// Expire session cookie after 6hours.
 		6*time.Hour,
 	)
