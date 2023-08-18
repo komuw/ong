@@ -44,9 +44,10 @@ func GetPort() uint16 {
 		panic("this func should only be called from tests")
 	}
 
-	{ // Note: There's a possible race condition here.
+	{
+		// Note: There's a possible race condition here.
 		// Where this scope gets us a free port, but it becomes used by someone else before we can.
-		l, err := nettest.NewLocalListener("tcp")
+		l, err := nettest.NewLocalListener("tcp4")
 		if err != nil {
 			goto fallback
 		}
