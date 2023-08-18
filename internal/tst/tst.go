@@ -51,7 +51,9 @@ func GetPort() uint16 {
 		if err != nil {
 			goto fallback
 		}
-		defer l.Close()
+		defer func() {
+			_ = l.Close()
+		}()
 
 		addr, ok := l.Addr().(*net.TCPAddr)
 		if !ok || (addr == nil) {
