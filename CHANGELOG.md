@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.76
+- ong/middleware: Configure what percentage of ratelimited or loadshed responses should be logged: https://github.com/komuw/ong/pull/364
+
 # v0.0.75
 - ong/middleware: Make more middleware configurable: https://github.com/komuw/ong/pull/362
 
