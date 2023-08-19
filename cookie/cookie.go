@@ -145,7 +145,9 @@ func SetEncrypted(
 	})
 
 	ip := clientip.Get(
-		// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
+		// Note:
+		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
+		//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
 		r,
 	)
 	fingerprint := finger.Get(
@@ -227,7 +229,9 @@ func GetEncrypted(
 		// Try and prevent replay attacks & session hijacking(https://twitter.com/4A4133/status/1615103474739429377)
 		// This does not completely stop them, but it is better than nothing.
 		incomingIP := clientip.Get(
-			// Note: client IP can be spoofed easily and this could lead to issues with their cookies.
+			// Note:
+			//   - client IP can be spoofed easily and this could lead to issues with their cookies.
+			//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
 			r,
 		)
 		if ip != incomingIP {
