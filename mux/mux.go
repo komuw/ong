@@ -83,17 +83,15 @@ func pprofTT() http.HandlerFunc {
 		now := time.Now()
 		rc := http.NewResponseController(w)
 
-		_ = now
-		_ = rc
-		// if err := rc.SetReadDeadline(now.Add(read)); err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
+		if err := rc.SetReadDeadline(now.Add(read)); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		// if err := rc.SetWriteDeadline(now.Add(write)); err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
+		if err := rc.SetWriteDeadline(now.Add(write)); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		path := r.URL.Path
 		fmt.Println("\n\t pprofTT called. path: ", path)

@@ -45,6 +45,7 @@ func startPprofServer(o Opts, l *slog.Logger) {
 
 		// the pprof muxer is failing to work with `http.TimeoutHandler`
 		// https://github.com/komuw/ong/issues/62
+		// Additionally, http.TimeoutHandler does not implement [http.ResponseController] so we no longer use it.
 		Handler:           mux,
 		ReadHeaderTimeout: readHeader,
 		ReadTimeout:       read,
