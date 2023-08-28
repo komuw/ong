@@ -18,7 +18,7 @@ example usage:
 	go tool pprof  http://localhost:65079/debug/pprof/heap
 */
 func startPprofServer(o Opts, l *slog.Logger) {
-	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
+	// This is taken from: https://github.com/golang/go/blob/go1.21.0/src/net/http/pprof/pprof.go#L93-L99
 	//
 	mux := http.NewServeMux()
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
@@ -33,8 +33,16 @@ func startPprofServer(o Opts, l *slog.Logger) {
 	addr := fmt.Sprintf("127.0.0.1:%s", o.pprofPort)
 	readHeader, read, write, idle := pprofTimeouts()
 
+	tlsConf, errTc := getTlsConfig(o, l)
+	if errTc != nil {
+		l.Error("pprof server, unable to get TLS config", "error", errTc)
+		return
+	}
+
 	pprofSrv := &http.Server{
-		Addr: addr,
+		Addr:      addr,
+		TLSConfig: tlsConf,
+
 		// the pprof muxer is failing to work with `http.TimeoutHandler`
 		// https://github.com/komuw/ong/issues/62
 		Handler:           mux,
@@ -47,17 +55,24 @@ func startPprofServer(o Opts, l *slog.Logger) {
 	}
 
 	go func() {
-		cfg := listenerConfig()
-		cl, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
+		// cfg := listenerConfig()
+		// cl, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
+
+		cl, err := net.Listen("tcp", pprofSrv.Addr)
 		if err != nil {
 			l.Error("pprof server, unable to create listener", "error", err)
 			return
 		}
 
 		slog.NewLogLogger(l.Handler(), log.LevelImmediate).
-			Printf("pprof server listening at %s", pprofSrv.Addr)
+			Printf("pprof https server listening at %s", pprofSrv.Addr)
 
-		errPprofSrv := pprofSrv.Serve(cl)
+		errPprofSrv := pprofSrv.ServeTLS(
+			cl,
+			// use empty cert & key. they will be picked from `pprofSrv.TLSConfig`
+			"",
+			"",
+		)
 		if errPprofSrv != nil {
 			l.Error("unable to start pprof server", "error", errPprofSrv)
 		}
@@ -73,9 +88,9 @@ func pprofTimeouts() (readHeader, read, write, idle time.Duration) {
 			http://localhost:65079/debug/pprof/profile?seconds=300: server response: 400 Bad Request - profile duration exceeds server's WriteTimeout
 		So we need to be generous with our timeouts. Which is okay since pprof runs in a mux that is not exposed to the internet(localhost)
 	*/
-	readHeader = 7 * time.Second
-	read = readHeader + (20 * time.Second)
-	write = 20 * time.Minute
+	readHeader = 13 * time.Second
+	read = readHeader + (30 * time.Second)
+	write = 30 * time.Minute
 	idle = write + (3 * time.Minute)
 
 	return readHeader, read, write, idle

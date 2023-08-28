@@ -324,7 +324,8 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	sigHandler(server, ctx, cancel, l, o.drainTimeout)
 
 	{
-		startPprofServer(o, l)
+		// startPprofServer(o, l)
+		_ = 90
 	}
 
 	err := serve(ctx, server, o, l)
@@ -400,7 +401,7 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 			}
 
 			slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
-				Printf("redirect server listening at %s", redirectSrv.Addr)
+				Printf("redirect http server listening at %s", redirectSrv.Addr)
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
 				logger.Error("unable to start redirect server", "error", errRedirectSrv)

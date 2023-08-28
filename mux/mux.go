@@ -3,8 +3,10 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 	"net/url"
 	"strings"
 
@@ -117,6 +119,58 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 			middleware.All(acmeHandler, opt),
 		)
 	}
+
+	// TODO:
+
+	// TODO: add BasicAuth.
+	{
+		// This is taken from: https://github.com/golang/go/blob/go1.21.0/src/net/http/pprof/pprof.go#L93-L99
+		//
+		// m.addPattern(
+		// 	MethodAll,
+		// 	"/debug/", // TODO: is this one needed?
+		// 	http.HandlerFunc(pprof.Index),
+		// 	middleware.All(http.HandlerFunc(pprof.Index), opt),
+		// )
+		m.addPattern(
+			MethodAll,
+			"/debug/pprof/",
+			http.HandlerFunc(pprof.Index),
+			middleware.All(http.HandlerFunc(pprof.Index), opt),
+		)
+		m.addPattern(
+			MethodAll,
+			"/debug/pprof/cmdline",
+			http.HandlerFunc(pprof.Cmdline),
+			middleware.All(http.HandlerFunc(pprof.Cmdline), opt),
+		)
+		m.addPattern(
+			MethodAll,
+			"/debug/pprof/profile",
+			http.HandlerFunc(pprof.Profile),
+			middleware.All(http.HandlerFunc(pprof.Profile), opt),
+		)
+		m.addPattern(
+			MethodAll,
+			"/debug/pprof/symbol",
+			http.HandlerFunc(pprof.Symbol),
+			middleware.All(http.HandlerFunc(pprof.Symbol), opt),
+		)
+		m.addPattern(
+			MethodAll,
+			"/debug/pprof/trace",
+			http.HandlerFunc(pprof.Trace),
+			middleware.All(http.HandlerFunc(pprof.Trace), opt),
+		)
+
+		// mux.HandleFunc("/debug/pprof/", pprof.Index)
+		// mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		// mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		// mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		// mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
+
+	fmt.Println(m.router.routes)
 
 	return m
 }

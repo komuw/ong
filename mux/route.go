@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"path"
 	"reflect"
 	"runtime"
@@ -96,15 +97,15 @@ func pathSegments(p string) []string {
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
 func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) {
-	if !strings.HasSuffix(pattern, "/") {
+	if !strings.HasPrefix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
 		//   - localhost:80/check/
 		// to the same handler.
-		pattern = pattern + "/"
-	}
-	if !strings.HasPrefix(pattern, "/") {
 		pattern = "/" + pattern
+	}
+	if !strings.HasSuffix(pattern, "/") {
+		pattern = pattern + "/"
 	}
 
 	// Try and detect conflict before adding a new route.
@@ -129,6 +130,26 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+
+	if name, found := strings.CutPrefix(req.URL.Path, "/debug/pprof/"); found {
+		if name != "" {
+			pprof.Handler(name).ServeHTTP(w, req)
+			return
+		}
+	}
+
+	if name, found := strings.CutPrefix(req.URL.Path, "/debug/"); found {
+		if name != "" {
+			pprof.Handler(name).ServeHTTP(w, req)
+			return
+		}
+	}
+
+	// if strings.HasPrefix(req.URL.Path, "/debug/pprof") {
+	// 	pprof.Index(w, req)
+
+	// 	return
+	// }
 
 	r.notFoundHandler.ServeHTTP(w, req)
 }
