@@ -17,7 +17,7 @@ example usage:
 
 	go tool pprof  http://localhost:65079/debug/pprof/heap
 */
-func startPprofServer(l *slog.Logger, o Opts) {
+func startPprofServer(o Opts, l *slog.Logger) {
 	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
 	//
 	mux := http.NewServeMux()

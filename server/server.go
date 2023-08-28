@@ -324,7 +324,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	sigHandler(server, ctx, cancel, l, o.drainTimeout)
 
 	{
-		startPprofServer(l, o)
+		startPprofServer(o, l)
 	}
 
 	err := serve(ctx, server, o, l)

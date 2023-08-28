@@ -24,7 +24,7 @@ func TestPprofServer(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
-		startPprofServer(l, o)
+		startPprofServer(o, l)
 
 		// await for the server to start.
 		attest.Ok(t, tst.Ping(uint16(port)))
@@ -40,7 +40,7 @@ func TestPprofServer(t *testing.T) {
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		startPprofServer(l, o)
+		startPprofServer(o, l)
 
 		// await for the server to start.
 		attest.Ok(t, tst.Ping(uint16(port)))
