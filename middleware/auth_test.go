@@ -24,14 +24,14 @@ func TestBasicAuth(t *testing.T) {
 	{
 		// small passwd panics.
 		attest.Panics(t, func() {
-			BasicAuth(protectedHandler("hello"), "user", strings.Repeat("a", (minPasswdSize-3)))
+			BasicAuth(protectedHandler("hello"), "user", strings.Repeat("a", 8))
 		},
 		)
 	}
 
 	msg := "hello"
 	user := "some-user"
-	passwd := "some-long-passwd"
+	passwd := "some-long-p1sswd"
 	wrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
 
 	tests := []struct {
@@ -81,7 +81,6 @@ func TestBasicAuth(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			attest.True(t, len(passwd) >= minPasswdSize)
 			attest.Equal(t, res.StatusCode, tt.wantCode)
 		})
 	}

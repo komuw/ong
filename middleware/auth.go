@@ -2,18 +2,17 @@ package middleware
 
 import (
 	"crypto/subtle"
-	"fmt"
 	"net/http"
-)
 
-const minPasswdSize = 16
+	"github.com/komuw/ong/internal/key"
+)
 
 // BasicAuth is a middleware that protects wrappedHandler using basic authentication.
 func BasicAuth(wrappedHandler http.Handler, user, passwd string) http.HandlerFunc {
 	const realm = "enter username and password"
 
-	if len(passwd) < minPasswdSize {
-		panic(fmt.Sprintf("passwd cannot be less than %d in size.", minPasswdSize))
+	if err := key.IsSecure(passwd); err != nil {
+		panic(err)
 	}
 
 	e := func(w http.ResponseWriter) {

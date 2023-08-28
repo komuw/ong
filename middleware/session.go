@@ -138,3 +138,10 @@ func (srw *sessRW) ReadFrom(src io.Reader) (n int64, err error) {
 	}
 	return io.Copy(srw.ResponseWriter, src)
 }
+
+// Unwrap implements http.ResponseController.
+// It returns the underlying ResponseWriter,
+// which is necessary for http.ResponseController to work correctly.
+func (srw *sessRW) Unwrap() http.ResponseWriter {
+	return srw.ResponseWriter
+}
