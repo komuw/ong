@@ -17,7 +17,7 @@ example usage:
 
 	go tool pprof  http://localhost:65079/debug/pprof/heap
 */
-func startPprofServer(logger *slog.Logger, o Opts) {
+func startPprofServer(l *slog.Logger, o Opts) {
 	// This is taken from: https://github.com/golang/go/blob/go1.18.3/src/net/http/pprof/pprof.go#L80-L86
 	//
 	mux := http.NewServeMux()
@@ -42,24 +42,24 @@ func startPprofServer(logger *slog.Logger, o Opts) {
 		ReadTimeout:       read,
 		WriteTimeout:      write,
 		IdleTimeout:       idle,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), o.serverLogLevel),
+		ErrorLog:          slog.NewLogLogger(l.Handler(), o.serverLogLevel),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 	}
 
 	go func() {
 		cfg := listenerConfig()
-		l, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
+		cl, err := cfg.Listen(ctx, "tcp", pprofSrv.Addr)
 		if err != nil {
-			logger.Error("pprof server, unable to create listener", "error", err)
+			l.Error("pprof server, unable to create listener", "error", err)
 			return
 		}
 
-		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
+		slog.NewLogLogger(l.Handler(), log.LevelImmediate).
 			Printf("pprof server listening at %s", pprofSrv.Addr)
 
-		errPprofSrv := pprofSrv.Serve(l)
+		errPprofSrv := pprofSrv.Serve(cl)
 		if errPprofSrv != nil {
-			logger.Error("unable to start pprof server", "error", errPprofSrv)
+			l.Error("unable to start pprof server", "error", errPprofSrv)
 		}
 	}()
 }
