@@ -63,6 +63,7 @@ var (
 	_ http.Hijacker       = &sessRW{}
 	_ http.Pusher         = &sessRW{}
 	_ io.ReaderFrom       = &sessRW{}
+	_ httpRespCtrler      = &logRW{}
 	// _ http.CloseNotifier  = &sessRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
@@ -132,10 +133,8 @@ func (srw *sessRW) Push(target string, opts *http.PushOptions) error {
 // ReadFrom implements io.ReaderFrom
 // It is necessary for the sendfile syscall
 // https://github.com/caddyserver/caddy/pull/5022
+// https://github.com/caddyserver/caddy/blob/v2.7.4/modules/caddyhttp/responsewriter.go#L45-L49
 func (srw *sessRW) ReadFrom(src io.Reader) (n int64, err error) {
-	if rf, ok := srw.ResponseWriter.(io.ReaderFrom); ok {
-		return rf.ReadFrom(src)
-	}
 	return io.Copy(srw.ResponseWriter, src)
 }
 
@@ -143,14 +142,5 @@ func (srw *sessRW) ReadFrom(src io.Reader) (n int64, err error) {
 // It returns the underlying ResponseWriter,
 // which is necessary for http.ResponseController to work correctly.
 func (srw *sessRW) Unwrap() http.ResponseWriter {
-	switch t := srw.ResponseWriter.(type) {
-	case rwUnwrapper:
-		return t.Unwrap()
-	}
-
 	return srw.ResponseWriter
-}
-
-type rwUnwrapper interface {
-	Unwrap() http.ResponseWriter
 }
