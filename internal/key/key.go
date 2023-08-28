@@ -9,7 +9,12 @@ import (
 // IsSecure checks that secretKey has at least some minimum desirable security properties.
 func IsSecure(secretKey string) error {
 	const (
-		minLen   = 6
+		// Using a password like `4$kplejewjdsnv`(one number, one symbol & length 14)
+		// would take about 90 million years to crack.
+		// see:
+		//   - https://www.passwordmonster.com/
+		//   - https://thesecurityfactory.be/password-cracking-speed/
+		minLen   = 14
 		maxLen   = 256
 		expected = 1
 	)
@@ -28,7 +33,7 @@ func IsSecure(secretKey string) error {
 		if unicode.IsDigit(r) {
 			hasDigit = hasDigit + 1
 		}
-		if unicode.IsPunct(r) {
+		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
 			hasSymbol = hasSymbol + 1
 		}
 		if unicode.IsLetter(r) {

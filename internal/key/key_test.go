@@ -30,6 +30,13 @@ func TestCheckSecretKey(t *testing.T) {
 			},
 		},
 		{
+			name: "small secure key is ok",
+			key:  "4$kplejewjdsnv",
+			check: func(err error) {
+				attest.Ok(t, err)
+			},
+		},
+		{
 			name: "bad key",
 			key:  "super-h@rd-password",
 			check: func(err error) {
