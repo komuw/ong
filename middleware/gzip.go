@@ -235,6 +235,18 @@ func (grw *gzipRW) Push(target string, opts *http.PushOptions) error {
 	return fmt.Errorf("ong/middleware: http.Pusher interface is not supported")
 }
 
+// Unwrap implements http.ResponseController.
+// It returns the underlying ResponseWriter,
+// which is necessary for http.ResponseController to work correctly.
+func (grw *gzipRW) Unwrap() http.ResponseWriter {
+	switch t := grw.ResponseWriter.(type) {
+	case rwUnwrapper:
+		return t.Unwrap()
+	}
+
+	return grw.ResponseWriter
+}
+
 // shouldGzipReq checks whether the request is eligible to be gzipped.
 func shouldGzipReq(r *http.Request) bool {
 	// Examples of the `acceptEncodingHeader` are:

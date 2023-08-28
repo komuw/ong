@@ -178,3 +178,15 @@ func (lrw *logRW) ReadFrom(src io.Reader) (n int64, err error) {
 	}
 	return io.Copy(lrw.ResponseWriter, src)
 }
+
+// Unwrap implements http.ResponseController.
+// It returns the underlying ResponseWriter,
+// which is necessary for http.ResponseController to work correctly.
+func (lrw *logRW) Unwrap() http.ResponseWriter {
+	switch t := lrw.ResponseWriter.(type) {
+	case rwUnwrapper:
+		return t.Unwrap()
+	}
+
+	return lrw.ResponseWriter
+}

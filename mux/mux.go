@@ -9,6 +9,7 @@ import (
 	"net/http/pprof"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/middleware"
@@ -62,6 +63,71 @@ type Mux struct {
 	l      *slog.Logger
 	router *router // some router
 }
+
+// /////////////////////////////////////////////////
+func pprofTT() http.HandlerFunc {
+	const (
+		/*
+			The pprof tool supports fetching profles by duration.
+			eg; fetch cpu profile for the last 5mins(300sec):
+				go tool pprof http://localhost:65079/debug/pprof/profile?seconds=300
+			This may fail with an error like:
+				http://localhost:65079/debug/pprof/profile?seconds=300: server response: 400 Bad Request - profile duration exceeds server's WriteTimeout
+			So we need to be generous with our timeouts. Which is okay since pprof runs in a mux that is not exposed to the internet(localhost)
+		*/
+		read  = 30 * time.Second
+		write = 30 * time.Minute
+	)
+
+	pprof := func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now()
+		rc := http.NewResponseController(w)
+
+		_ = now
+		_ = rc
+		// if err := rc.SetReadDeadline(now.Add(read)); err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+
+		// if err := rc.SetWriteDeadline(now.Add(write)); err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+
+		path := r.URL.Path
+		fmt.Println("\n\t pprofTT called. path: ", path)
+
+		switch path {
+		case "/debug/pprof":
+			pprof.Index(w, r)
+			return
+		case "/debug/pprof/cmdline":
+			pprof.Cmdline(w, r)
+			return
+		case "/debug/pprof/profile":
+			pprof.Profile(w, r)
+			return
+		case "/debug/pprof/symbol":
+			pprof.Symbol(w, r)
+			return
+		case "/debug/pprof/trace":
+			pprof.Trace(w, r)
+			return
+		default:
+			pprof.Index(w, r)
+			return
+		}
+	}
+
+	return middleware.BasicAuth(
+		http.HandlerFunc(pprof),
+		"TODO-KJ#4p-Pad64adH",
+		"TODO-KJ#4p-Pad64adH",
+	)
+}
+
+/////////////////////////////////////////////////////
 
 // New returns a HTTP request multiplexer that has the paths in routes.
 //
@@ -132,36 +198,52 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 		// 	http.HandlerFunc(pprof.Index),
 		// 	middleware.All(http.HandlerFunc(pprof.Index), opt),
 		// )
+
+		h := pprofTT()
+		m.addPattern(
+			MethodAll,
+			"/debug/pprof/:part",
+			h,
+			middleware.All(h, opt),
+		)
 		m.addPattern(
 			MethodAll,
 			"/debug/pprof/",
-			http.HandlerFunc(pprof.Index),
-			middleware.All(http.HandlerFunc(pprof.Index), opt),
+			h,
+			middleware.All(h, opt),
 		)
-		m.addPattern(
-			MethodAll,
-			"/debug/pprof/cmdline",
-			http.HandlerFunc(pprof.Cmdline),
-			middleware.All(http.HandlerFunc(pprof.Cmdline), opt),
-		)
-		m.addPattern(
-			MethodAll,
-			"/debug/pprof/profile",
-			http.HandlerFunc(pprof.Profile),
-			middleware.All(http.HandlerFunc(pprof.Profile), opt),
-		)
-		m.addPattern(
-			MethodAll,
-			"/debug/pprof/symbol",
-			http.HandlerFunc(pprof.Symbol),
-			middleware.All(http.HandlerFunc(pprof.Symbol), opt),
-		)
-		m.addPattern(
-			MethodAll,
-			"/debug/pprof/trace",
-			http.HandlerFunc(pprof.Trace),
-			middleware.All(http.HandlerFunc(pprof.Trace), opt),
-		)
+
+		//
+		// m.addPattern(
+		// 	MethodAll,
+		// 	"/debug/pprof/",
+		// 	http.HandlerFunc(pprof.Index),
+		// 	middleware.All(http.HandlerFunc(pprof.Index), opt),
+		// )
+		// m.addPattern(
+		// 	MethodAll,
+		// 	"/debug/pprof/cmdline",
+		// 	http.HandlerFunc(pprof.Cmdline),
+		// 	middleware.All(http.HandlerFunc(pprof.Cmdline), opt),
+		// )
+		// m.addPattern(
+		// 	MethodAll,
+		// 	"/debug/pprof/profile",
+		// 	http.HandlerFunc(pprof.Profile),
+		// 	middleware.All(http.HandlerFunc(pprof.Profile), opt),
+		// )
+		// m.addPattern(
+		// 	MethodAll,
+		// 	"/debug/pprof/symbol",
+		// 	http.HandlerFunc(pprof.Symbol),
+		// 	middleware.All(http.HandlerFunc(pprof.Symbol), opt),
+		// )
+		// m.addPattern(
+		// 	MethodAll,
+		// 	"/debug/pprof/trace",
+		// 	http.HandlerFunc(pprof.Trace),
+		// 	middleware.All(http.HandlerFunc(pprof.Trace), opt),
+		// )
 
 		// mux.HandleFunc("/debug/pprof/", pprof.Index)
 		// mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)

@@ -27,7 +27,7 @@ func main() {
 		mux.NewRoute(
 			"staticAssets/:file",
 			mux.MethodAll,
-			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-passwd"),
+			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-p1sswd"),
 		),
 		mux.NewRoute(
 			"check/:age/",

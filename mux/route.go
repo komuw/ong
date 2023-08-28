@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/pprof"
 	"path"
 	"reflect"
 	"runtime"
@@ -128,22 +127,6 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		if ctx, ok := rt.match(req.Context(), segs); ok {
 			rt.wrappingHandler.ServeHTTP(w, req.WithContext(ctx))
 			return
-		}
-	}
-
-	{ // pprof
-		if name, found := strings.CutPrefix(req.URL.Path, "/debug/pprof/"); found {
-			if name != "" {
-				pprof.Handler(name).ServeHTTP(w, req)
-				return
-			}
-		}
-
-		if name, found := strings.CutPrefix(req.URL.Path, "/debug/"); found {
-			if name != "" {
-				pprof.Handler(name).ServeHTTP(w, req)
-				return
-			}
 		}
 	}
 
