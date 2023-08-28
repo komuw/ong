@@ -82,6 +82,7 @@ var (
 	_ http.Pusher         = &gzipRW{}
 	_ io.WriteCloser      = &gzipRW{}
 	_ io.ReaderFrom       = &gzipRW{}
+	_ httpRespCtrler      = &logRW{}
 	// _ http.CloseNotifier  = &gzipRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
@@ -220,10 +221,8 @@ func (grw *gzipRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // ReadFrom implements io.ReaderFrom
 // It is necessary for the sendfile syscall
 // https://github.com/caddyserver/caddy/pull/5022
+// https://github.com/caddyserver/caddy/blob/v2.7.4/modules/caddyhttp/responsewriter.go#L45-L49
 func (grw *gzipRW) ReadFrom(src io.Reader) (n int64, err error) {
-	if rf, ok := grw.ResponseWriter.(io.ReaderFrom); ok {
-		return rf.ReadFrom(src)
-	}
 	return io.Copy(grw.ResponseWriter, src)
 }
 
@@ -233,6 +232,13 @@ func (grw *gzipRW) Push(target string, opts *http.PushOptions) error {
 		return p.Push(target, opts)
 	}
 	return fmt.Errorf("ong/middleware: http.Pusher interface is not supported")
+}
+
+// Unwrap implements http.ResponseController.
+// It returns the underlying ResponseWriter,
+// which is necessary for http.ResponseController to work correctly.
+func (grw *gzipRW) Unwrap() http.ResponseWriter {
+	return grw.ResponseWriter
 }
 
 // shouldGzipReq checks whether the request is eligible to be gzipped.

@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.77
+- ong/middleware: Add support for http.NewResponseController: https://github.com/komuw/ong/pull/368
+
 # v0.0.76
 - ong/middleware: Configure what percentage of ratelimited or loadshed responses should be logged: https://github.com/komuw/ong/pull/364
 

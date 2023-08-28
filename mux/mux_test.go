@@ -58,7 +58,7 @@ func TestNewRoute(t *testing.T) {
 	_ = NewRoute(
 		"/api",
 		MethodGet,
-		middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-hard-passwd"),
+		middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-h1rd-passwd"),
 	)
 
 	// fails
