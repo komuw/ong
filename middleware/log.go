@@ -172,10 +172,8 @@ func (lrw *logRW) Push(target string, opts *http.PushOptions) error {
 // ReadFrom implements io.ReaderFrom
 // It is necessary for the sendfile syscall
 // https://github.com/caddyserver/caddy/pull/5022
+// https://github.com/caddyserver/caddy/blob/v2.7.4/modules/caddyhttp/responsewriter.go#L45-L49
 func (lrw *logRW) ReadFrom(src io.Reader) (n int64, err error) {
-	if rf, ok := lrw.ResponseWriter.(io.ReaderFrom); ok {
-		return rf.ReadFrom(src)
-	}
 	return io.Copy(lrw.ResponseWriter, src)
 }
 

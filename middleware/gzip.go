@@ -220,10 +220,8 @@ func (grw *gzipRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // ReadFrom implements io.ReaderFrom
 // It is necessary for the sendfile syscall
 // https://github.com/caddyserver/caddy/pull/5022
+// https://github.com/caddyserver/caddy/blob/v2.7.4/modules/caddyhttp/responsewriter.go#L45-L49
 func (grw *gzipRW) ReadFrom(src io.Reader) (n int64, err error) {
-	if rf, ok := grw.ResponseWriter.(io.ReaderFrom); ok {
-		return rf.ReadFrom(src)
-	}
 	return io.Copy(grw.ResponseWriter, src)
 }
 
