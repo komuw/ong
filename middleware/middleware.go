@@ -510,6 +510,8 @@ func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 
 // httpRespCtrler represents the interface that has to be implemented for a
 // responseWriter to satisfy [http.ResponseController]
+//
+// https://github.com/golang/go/blob/go1.21.0/src/net/http/responsecontroller.go#L42-L44
 type httpRespCtrler interface {
 	Unwrap() http.ResponseWriter
 }
