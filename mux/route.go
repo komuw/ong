@@ -131,25 +131,21 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	if name, found := strings.CutPrefix(req.URL.Path, "/debug/pprof/"); found {
-		if name != "" {
-			pprof.Handler(name).ServeHTTP(w, req)
-			return
+	{ // pprof
+		if name, found := strings.CutPrefix(req.URL.Path, "/debug/pprof/"); found {
+			if name != "" {
+				pprof.Handler(name).ServeHTTP(w, req)
+				return
+			}
+		}
+
+		if name, found := strings.CutPrefix(req.URL.Path, "/debug/"); found {
+			if name != "" {
+				pprof.Handler(name).ServeHTTP(w, req)
+				return
+			}
 		}
 	}
-
-	if name, found := strings.CutPrefix(req.URL.Path, "/debug/"); found {
-		if name != "" {
-			pprof.Handler(name).ServeHTTP(w, req)
-			return
-		}
-	}
-
-	// if strings.HasPrefix(req.URL.Path, "/debug/pprof") {
-	// 	pprof.Index(w, req)
-
-	// 	return
-	// }
 
 	r.notFoundHandler.ServeHTTP(w, req)
 }
