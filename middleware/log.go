@@ -118,6 +118,7 @@ var (
 	_ http.Hijacker       = &logRW{}
 	_ http.Pusher         = &logRW{}
 	_ io.ReaderFrom       = &logRW{}
+	_ httpRespCtrler      = &logRW{}
 	// _ http.CloseNotifier  = &logRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 

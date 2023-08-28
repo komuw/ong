@@ -507,3 +507,9 @@ func deleteH(wrappedHandler http.Handler) http.HandlerFunc {
 		wrappedHandler.ServeHTTP(w, r)
 	}
 }
+
+// httpRespCtrler represents the interface that has to be implemented for a
+// responseWriter to satisfy [http.ResponseController]
+type httpRespCtrler interface {
+	Unwrap() http.ResponseWriter
+}

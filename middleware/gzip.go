@@ -82,6 +82,7 @@ var (
 	_ http.Pusher         = &gzipRW{}
 	_ io.WriteCloser      = &gzipRW{}
 	_ io.ReaderFrom       = &gzipRW{}
+	_ httpRespCtrler      = &logRW{}
 	// _ http.CloseNotifier  = &gzipRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
