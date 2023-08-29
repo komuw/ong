@@ -80,7 +80,22 @@ func pprofTT() http.HandlerFunc {
 	)
 
 	pprof := func(w http.ResponseWriter, r *http.Request) {
-		extendTimeouts(w)
+		{
+			now := time.Now()
+			rc := http.NewResponseController(w)
+
+			if err := rc.SetReadDeadline(now.Add(readTimeout)); err != nil {
+				err := fmt.Errorf("ong/mux: unable to extend pprof readTimeout(%s): %w", readTimeout, err)
+				serveError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+
+			if err := rc.SetWriteDeadline(now.Add(writeTimeout)); err != nil {
+				err := fmt.Errorf("ong/mux: unable to extend pprof writeTimeout(%s): %w", writeTimeout, err)
+				serveError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
 
 		path := r.URL.Path
 		fmt.Println("\n\t pprofTT called. path: ", path)

@@ -70,24 +70,6 @@ func sleep(r *http.Request, d time.Duration) {
 	}
 }
 
-// TODO: only call it once.
-func extendTimeouts(w http.ResponseWriter) {
-	now := time.Now()
-	rc := http.NewResponseController(w)
-
-	if err := rc.SetReadDeadline(now.Add(readTimeout)); err != nil {
-		err := fmt.Errorf("ong/mux: unable to extend pprof readTimeout: %w", err)
-		serveError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if err := rc.SetWriteDeadline(now.Add(writeTimeout)); err != nil {
-		err := fmt.Errorf("ong/mux: unable to extend pprof writeTimeout: %w", err)
-		serveError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-}
-
 func durationExceedsWriteTimeout(r *http.Request, seconds float64) bool {
 	// TODO: maybe kill this func?
 	return seconds >= writeTimeout.Seconds()
