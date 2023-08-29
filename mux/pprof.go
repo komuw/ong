@@ -214,15 +214,16 @@ func Symbol(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
+// TODO:
 // Handler returns an HTTP handler that serves the named profile.
-// Available profiles can be found in [runtime/pprof.Profile].
-func Handler(name string) http.Handler {
-	return handler(name)
-}
+// // Available profiles can be found in [runtime/pprof.Profile].
+// func Handler(name string) http.Handler {
+// 	return pprofHandler(name)
+// }
 
-type handler string
+type pprofHandler string
 
-func (name handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	extendTimeouts(w)
 
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -330,7 +331,7 @@ func (name handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // 	return p0, nil
 // }
 
-var profileSupportsDelta = map[handler]bool{
+var profileSupportsDelta = map[pprofHandler]bool{
 	"allocs":       true,
 	"block":        true,
 	"goroutine":    true,
@@ -367,7 +368,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	if name, found := strings.CutPrefix(r.URL.Path, "/debug/pprof/"); found {
 		if name != "" {
-			handler(name).ServeHTTP(w, r)
+			pprofHandler(name).ServeHTTP(w, r)
 			return
 		}
 	}
