@@ -227,7 +227,7 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if sec := r.FormValue("seconds"); sec != "" {
 		// name.serveDeltaProfile(w, r, p, sec)
 		// TODO:
-		err := fmt.Errorf("TODO: ong/mux handle serveDeltaProfile. name=%s, seconds=%s", name, sec)
+		err := fmt.Errorf("TODO: ong/mux: handle serveDeltaProfile. name=%s, seconds=%s", name, sec)
 		serveError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
