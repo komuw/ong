@@ -233,7 +233,8 @@ func (name handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if sec := r.FormValue("seconds"); sec != "" {
 		// name.serveDeltaProfile(w, r, p, sec)
-		panic("TODO: ong/ handle serveDeltaProfile")
+		err := fmt.Errorf("TODO: ong/ handle serveDeltaProfile. name=%s, seconds=%s", name, sec)
+		serveError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	gc, _ := strconv.Atoi(r.FormValue("gc"))
