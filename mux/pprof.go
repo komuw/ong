@@ -58,8 +58,6 @@ const (
 // command line, with arguments separated by NUL bytes.
 // The package initialization registers it as /debug/pprof/cmdline.
 func Cmdline(w http.ResponseWriter, r *http.Request) {
-	extendTimeouts(w)
-
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprint(w, strings.Join(os.Args, "\x00"))
@@ -107,8 +105,6 @@ func serveError(w http.ResponseWriter, status int, txt string) {
 // Profiling lasts for duration specified in seconds GET parameter, or for 30 seconds if not specified.
 // The package initialization registers it as /debug/pprof/profile.
 func Profile(w http.ResponseWriter, r *http.Request) {
-	extendTimeouts(w)
-
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	sec, err := strconv.ParseInt(r.FormValue("seconds"), 10, 64)
 	if sec <= 0 || err != nil {
@@ -138,8 +134,6 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 // Tracing lasts for duration specified in seconds GET parameter, or for 1 second if not specified.
 // The package initialization registers it as /debug/pprof/trace.
 func Trace(w http.ResponseWriter, r *http.Request) {
-	extendTimeouts(w)
-
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	sec, err := strconv.ParseFloat(r.FormValue("seconds"), 64)
 	if sec <= 0 || err != nil {
@@ -169,8 +163,6 @@ func Trace(w http.ResponseWriter, r *http.Request) {
 // responding with a table mapping program counters to function names.
 // The package initialization registers it as /debug/pprof/symbol.
 func Symbol(w http.ResponseWriter, r *http.Request) {
-	extendTimeouts(w)
-
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
@@ -226,8 +218,6 @@ func Symbol(w http.ResponseWriter, r *http.Request) {
 type pprofHandler string
 
 func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	extendTimeouts(w)
-
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	p := pprof.Lookup(string(name))
 	if p == nil {
@@ -236,6 +226,7 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if sec := r.FormValue("seconds"); sec != "" {
 		// name.serveDeltaProfile(w, r, p, sec)
+		// TODO:
 		err := fmt.Errorf("TODO: ong/mux handle serveDeltaProfile. name=%s, seconds=%s", name, sec)
 		serveError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -244,7 +235,6 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if name == "heap" && gc > 0 {
 		runtime.GC()
 	}
-	fmt.Println("\n ServeHTTP. name: ", name, " gc: ", gc)
 	debug, _ := strconv.Atoi(r.FormValue("debug"))
 	if debug != 0 {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -255,7 +245,7 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.WriteTo(w, debug)
 }
 
-// func (name handler) serveDeltaProfile(w http.ResponseWriter, r *http.Request, p *pprof.Profile, secStr string) {
+// func (name pprofHandler) serveDeltaProfile(w http.ResponseWriter, r *http.Request, p *pprof.Profile, secStr string) {
 // 	sec, err := strconv.ParseInt(secStr, 10, 64)
 // 	if err != nil || sec <= 0 {
 // 		serveError(w, http.StatusBadRequest, `invalid value for "seconds" - must be a positive integer`)
@@ -367,8 +357,6 @@ type profileEntry struct {
 // Index responds to a request for "/debug/pprof/" with an HTML page
 // listing the available profiles.
 func Index(w http.ResponseWriter, r *http.Request) {
-	extendTimeouts(w)
-
 	if name, found := strings.CutPrefix(r.URL.Path, "/debug/pprof/"); found {
 		if name != "" {
 			pprofHandler(name).ServeHTTP(w, r)
