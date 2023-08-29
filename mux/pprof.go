@@ -39,6 +39,8 @@ import (
 
 // TODO: borrow tests.
 
+// TODO: move to middleware??
+
 const (
 	/*
 		The pprof tool supports fetching profles by duration.
