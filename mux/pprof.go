@@ -234,7 +234,7 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if sec := r.FormValue("seconds"); sec != "" {
 		// name.serveDeltaProfile(w, r, p, sec)
-		err := fmt.Errorf("TODO: ong/ handle serveDeltaProfile. name=%s, seconds=%s", name, sec)
+		err := fmt.Errorf("TODO: ong/mux handle serveDeltaProfile. name=%s, seconds=%s", name, sec)
 		serveError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -242,6 +242,7 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if name == "heap" && gc > 0 {
 		runtime.GC()
 	}
+	fmt.Println("\n ServeHTTP. name: ", name, " gc: ", gc)
 	debug, _ := strconv.Atoi(r.FormValue("debug"))
 	if debug != 0 {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")

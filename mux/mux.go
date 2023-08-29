@@ -109,6 +109,7 @@ func pprofTT() http.HandlerFunc {
 
 	return middleware.BasicAuth(
 		http.HandlerFunc(pprof),
+		// TODO:
 		"TODO-KJ#4p-Pad64adH",
 		"TODO-KJ#4p-Pad64adH",
 	)
