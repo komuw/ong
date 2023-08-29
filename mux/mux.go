@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/http/pprof"
 	"net/url"
 	"strings"
 	"time"
@@ -65,6 +64,7 @@ type Mux struct {
 }
 
 // /////////////////////////////////////////////////
+// TODO: move this to mux/pprof.go
 func pprofTT() http.HandlerFunc {
 	const (
 		/*
@@ -80,40 +80,29 @@ func pprofTT() http.HandlerFunc {
 	)
 
 	pprof := func(w http.ResponseWriter, r *http.Request) {
-		now := time.Now()
-		rc := http.NewResponseController(w)
-
-		if err := rc.SetReadDeadline(now.Add(read)); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if err := rc.SetWriteDeadline(now.Add(write)); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		extendTimeouts(w)
 
 		path := r.URL.Path
 		fmt.Println("\n\t pprofTT called. path: ", path)
 
 		switch path {
 		case "/debug/pprof":
-			pprof.Index(w, r)
+			Index(w, r)
 			return
 		case "/debug/pprof/cmdline":
-			pprof.Cmdline(w, r)
+			Cmdline(w, r)
 			return
 		case "/debug/pprof/profile":
-			pprof.Profile(w, r)
+			Profile(w, r)
 			return
 		case "/debug/pprof/symbol":
-			pprof.Symbol(w, r)
+			Symbol(w, r)
 			return
 		case "/debug/pprof/trace":
-			pprof.Trace(w, r)
+			Trace(w, r)
 			return
 		default:
-			pprof.Index(w, r)
+			Index(w, r)
 			return
 		}
 	}
