@@ -37,10 +37,10 @@ const (
 	CsrfTokenFormName = "csrftoken" // named after what django uses.
 	// CsrfHeader is the name of the http header that Ong uses to store csrf token.
 	CsrfHeader = "X-Csrf-Token" // named after what fiber uses.
-	// DefaultCsrfCookieMaxDuration is the duration that csrf cookie will be valid for by default.
+	// DefaultCsrfCookieDuration is the duration that csrf cookie will be valid for by default.
 	//
 	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
-	DefaultCsrfCookieMaxDuration = 12 * time.Hour
+	DefaultCsrfCookieDuration = 12 * time.Hour
 
 	csrfCtxKey               = csrfContextKey("csrfContextKey")
 	csrfDefaultToken         = ""
@@ -71,15 +71,15 @@ func csrf(
 	wrappedHandler http.Handler,
 	secretKey string,
 	domain string,
-	csrfTokenMaxDuration time.Duration,
+	csrfTokenDuration time.Duration,
 ) http.HandlerFunc {
 	once.Do(func() {
 		enc = cry.New(secretKey)
 	})
 	msgToEncrypt := id.Random(16)
 
-	if csrfTokenMaxDuration < 1*time.Second { // is measured in seconds.
-		csrfTokenMaxDuration = DefaultCsrfCookieMaxDuration
+	if csrfTokenDuration < 1*time.Second { // is measured in seconds.
+		csrfTokenDuration = DefaultCsrfCookieDuration
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -187,7 +187,7 @@ func csrf(
 			2. https://security.stackexchange.com/a/172646
 		*/
 		expires := strconv.FormatInt(
-			time.Now().UTC().Add(csrfTokenMaxDuration).Unix(),
+			time.Now().UTC().Add(csrfTokenDuration).Unix(),
 			10,
 		)
 		tokenToIssue := enc.EncryptEncode(
@@ -201,7 +201,7 @@ func csrf(
 			csrfCookieName,
 			tokenToIssue,
 			domain,
-			csrfTokenMaxDuration,
+			csrfTokenDuration,
 			true, // accessible to javascript
 		)
 

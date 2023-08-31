@@ -71,10 +71,54 @@ type Opts struct {
 	corsCacheDuration time.Duration
 
 	// csrf
-	csrfTokenMaxDuration time.Duration
+	csrfTokenDuration time.Duration
 
 	// session
-	sessionCookieMaxDuration time.Duration
+	sessionCookieDuration time.Duration
+}
+
+// String implements [fmt.Stringer]
+func (o Opts) String() string {
+	return fmt.Sprintf(`Opts{
+  domain: %s
+  httpsPort: %d
+  secretKey: %s
+  strategy: %v
+  l: %v
+  rateShedSamplePercent: %v
+  rateLimit: %v
+  loadShedSamplingPeriod: %v
+  loadShedMinSampleSize: %v
+  loadShedBreachLatency: %v
+  allowedOrigins: %v
+  allowedMethods: %v
+  allowedHeaders: %v
+  corsCacheDuration: %v
+  csrfTokenDuration: %v
+  sessionCookieDuration: %v
+}`,
+		o.domain,
+		o.httpsPort,
+		fmt.Sprintf("%s<REDACTED>", string(o.secretKey[0])),
+		o.strategy,
+		o.l,
+		o.rateShedSamplePercent,
+		o.rateLimit,
+		o.loadShedSamplingPeriod,
+		o.loadShedMinSampleSize,
+		o.loadShedBreachLatency,
+		o.allowedOrigins,
+		o.allowedMethods,
+		o.allowedHeaders,
+		o.corsCacheDuration,
+		o.csrfTokenDuration,
+		o.sessionCookieDuration,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (o Opts) GoString() string {
+	return o.String()
 }
 
 // New returns a new Opts.
@@ -109,9 +153,9 @@ type Opts struct {
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
 // corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
 //
-// csrfTokenMaxDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieMaxDuration] is used instead.
+// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
 //
-// sessionCookieMaxDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieMaxDuration] is used instead.
+// sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
 //
 // Also see [WithOpts].
 //
@@ -132,8 +176,8 @@ func New(
 	allowedMethods []string,
 	allowedHeaders []string,
 	corsCacheDuration time.Duration,
-	csrfTokenMaxDuration time.Duration,
-	sessionCookieMaxDuration time.Duration,
+	csrfTokenDuration time.Duration,
+	sessionCookieDuration time.Duration,
 ) Opts {
 	if err := acme.Validate(domain); err != nil {
 		panic(err)
@@ -173,10 +217,10 @@ func New(
 		corsCacheDuration: corsCacheDuration,
 
 		// csrf
-		csrfTokenMaxDuration: csrfTokenMaxDuration,
+		csrfTokenDuration: csrfTokenDuration,
 
 		// session
-		sessionCookieMaxDuration: sessionCookieMaxDuration,
+		sessionCookieDuration: sessionCookieDuration,
 	}
 }
 
@@ -206,8 +250,8 @@ func WithOpts(
 		nil,
 		nil,
 		DefaultCorsCacheDuration,
-		DefaultCsrfCookieMaxDuration,
-		DefaultSessionCookieMaxDuration,
+		DefaultCsrfCookieDuration,
+		DefaultSessionCookieDuration,
 	)
 }
 
@@ -244,10 +288,10 @@ func allDefaultMiddlewares(
 	corsCacheDuration := o.corsCacheDuration
 
 	// csrf
-	csrfTokenMaxDuration := o.csrfTokenMaxDuration
+	csrfTokenDuration := o.csrfTokenDuration
 
 	// session
-	sessionCookieMaxDuration := o.sessionCookieMaxDuration
+	sessionCookieDuration := o.sessionCookieDuration
 
 	// The way the middlewares are layered is:
 	// 1.  trace on outer most since we need to add logID's earliest for use by inner middlewares.
@@ -307,13 +351,13 @@ func allDefaultMiddlewares(
 															wrappedHandler,
 															secretKey,
 															domain,
-															sessionCookieMaxDuration,
+															sessionCookieDuration,
 														),
 														domain,
 													),
 													secretKey,
 													domain,
-													csrfTokenMaxDuration,
+													csrfTokenDuration,
 												),
 												allowedOrigins,
 												allowedMethods,
