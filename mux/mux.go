@@ -41,7 +41,7 @@ type Muxer = mx.Muxer
 // Typically, an application should only have one mx.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...mx.Route) Muxer {
+func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
 	return mx.New(opt, notFoundHandler, routes...)
 }
 
