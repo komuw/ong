@@ -12,6 +12,71 @@ import (
 	"github.com/komuw/ong/internal/key"
 )
 
+// logging
+const (
+	// DefaultRateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
+	DefaultRateShedSamplePercent = 10
+)
+
+// ratelimit
+const (
+	// DefaultRateLimit is the maximum requests allowed (from one IP address) per second, by default.
+	//
+	// The figure chosen here is because;
+	// [github] uses a rate limit of 1 reqs/sec (5_000 reqs/hr).
+	// [twitter] uses 1 reqs/sec (900 reqs/15mins).
+	// [stripe] uses 100 reqs/sec.
+	//
+	// [github]: https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
+	// [twitter]: https://developer.twitter.com/en/docs/twitter-api/rate-limits
+	// [stripe]: https://stripe.com/docs/rate-limits
+	DefaultRateLimit = 100.00
+)
+
+// loadshed
+const (
+	// DefaultLoadShedSamplingPeriod is the duration over which we calculate response latencies by default.
+	DefaultLoadShedSamplingPeriod = 12 * time.Minute
+	// DefaultLoadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
+	// If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
+	DefaultLoadShedMinSampleSize = 50
+	// DefaultLoadShedBreachLatency is the p99 latency at which point we start dropping requests, by default.
+	//
+	// The value chosen here is because;
+	// The wikipedia [monitoring] dashboards are public.
+	// In there we can see that the p95 [response] times for http GET requests is ~700ms, & the p95 response times for http POST requests is ~900ms.
+	// Thus, we'll use a `loadShedBreachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
+	//
+	// [monitoring]: https://grafana.wikimedia.org/?orgId=1
+	// [response]: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
+	DefaultLoadShedBreachLatency = 700 * time.Millisecond
+)
+
+// cors
+const (
+	// DefaultCorsCacheDuration is the length in time that preflight responses will be cached by default.
+	// 2hrs is chosen since that is the maximum for chromium based browsers.
+	// Firefox had a maximum of 24hrs as at the time of writing.
+	DefaultCorsCacheDuration = 2 * time.Hour
+)
+
+// csrf
+const (
+	// DefaultCsrfCookieDuration is the duration that csrf cookie will be valid for by default.
+	//
+	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
+	DefaultCsrfCookieDuration = 12 * time.Hour
+)
+
+// session
+const (
+	// DefaultSessionCookieDuration is the duration that session cookie will be valid for by default.
+	// [django] uses a value of 2 weeks by default.
+	//
+	// [django]: https://docs.djangoproject.com/en/4.1/ref/settings/#session-cookie-age
+	DefaultSessionCookieDuration = 14 * time.Hour
+)
+
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 type ClientIPstrategy = clientip.ClientIPstrategy
 
@@ -301,68 +366,3 @@ func WithMiddlewareOpts(
 		DefaultSessionCookieDuration,
 	)
 }
-
-// logging
-const (
-	// DefaultRateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
-	DefaultRateShedSamplePercent = 10
-)
-
-// ratelimit
-const (
-	// DefaultRateLimit is the maximum requests allowed (from one IP address) per second, by default.
-	//
-	// The figure chosen here is because;
-	// [github] uses a rate limit of 1 reqs/sec (5_000 reqs/hr).
-	// [twitter] uses 1 reqs/sec (900 reqs/15mins).
-	// [stripe] uses 100 reqs/sec.
-	//
-	// [github]: https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
-	// [twitter]: https://developer.twitter.com/en/docs/twitter-api/rate-limits
-	// [stripe]: https://stripe.com/docs/rate-limits
-	DefaultRateLimit = 100.00
-)
-
-// loadshed
-const (
-	// DefaultLoadShedSamplingPeriod is the duration over which we calculate response latencies by default.
-	DefaultLoadShedSamplingPeriod = 12 * time.Minute
-	// DefaultLoadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
-	// If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
-	DefaultLoadShedMinSampleSize = 50
-	// DefaultLoadShedBreachLatency is the p99 latency at which point we start dropping requests, by default.
-	//
-	// The value chosen here is because;
-	// The wikipedia [monitoring] dashboards are public.
-	// In there we can see that the p95 [response] times for http GET requests is ~700ms, & the p95 response times for http POST requests is ~900ms.
-	// Thus, we'll use a `loadShedBreachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
-	//
-	// [monitoring]: https://grafana.wikimedia.org/?orgId=1
-	// [response]: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
-	DefaultLoadShedBreachLatency = 700 * time.Millisecond
-)
-
-// cors
-const (
-	// DefaultCorsCacheDuration is the length in time that preflight responses will be cached by default.
-	// 2hrs is chosen since that is the maximum for chromium based browsers.
-	// Firefox had a maximum of 24hrs as at the time of writing.
-	DefaultCorsCacheDuration = 2 * time.Hour
-)
-
-// csrf
-const (
-	// DefaultCsrfCookieDuration is the duration that csrf cookie will be valid for by default.
-	//
-	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
-	DefaultCsrfCookieDuration = 12 * time.Hour
-)
-
-// session
-const (
-	// DefaultSessionCookieDuration is the duration that session cookie will be valid for by default.
-	// [django] uses a value of 2 weeks by default.
-	//
-	// [django]: https://docs.djangoproject.com/en/4.1/ref/settings/#session-cookie-age
-	DefaultSessionCookieDuration = 14 * time.Hour
-)
