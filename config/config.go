@@ -534,7 +534,7 @@ func newMiddlewareOpts(
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
 ) middlewareOpts {
-	// TODO: return error instead of panic. Only [New] should panic.
+	// todo: return error instead of panic. Only [New] should panic.
 	if err := acme.Validate(domain); err != nil {
 		panic(err)
 	}
