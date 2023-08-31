@@ -348,6 +348,20 @@ func TestMux(t *testing.T) {
 			)
 		}
 
+		{ // detects conflicts
+			attest.Panics(t,
+				func() {
+					mux.AddRoute(
+						NewRoute(
+							uri,
+							MethodGet,
+							someMuxHandler(msg),
+						),
+					)
+				},
+			)
+		}
+
 		ts, err := tst.TlsServer(mux, domain, httpsPort)
 		attest.Ok(t, err)
 		defer ts.Close()
