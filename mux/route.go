@@ -79,6 +79,22 @@ type router struct {
 	notFoundHandler http.Handler
 }
 
+// String implements [fmt.Stringer]
+func (r router) String() string {
+	return fmt.Sprintf(`router{
+  routes: %v
+  notFoundHandler: %v
+}`,
+		r.routes,
+		r.notFoundHandler,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (r router) GoString() string {
+	return r.String()
+}
+
 // NewRouter makes a new Router.
 func newRouter(notFoundHandler http.Handler) *router {
 	if notFoundHandler == nil {

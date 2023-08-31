@@ -3,6 +3,7 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -61,6 +62,22 @@ type Mux struct {
 	opt    middleware.Opts // needed by AddRoute
 }
 
+// String implements [fmt.Stringer]
+func (m Mux) String() string {
+	return fmt.Sprintf(`Opts{
+  router: %v
+  opt: %s
+}`,
+		m.router,
+		m.opt,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (m Mux) GoString() string {
+	return m.String()
+}
+
 // New returns a HTTP request multiplexer that has the paths in routes.
 //
 // notFoundHandler is the handler that will be used if a url is not found.
@@ -103,6 +120,7 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 		)
 	}
 
+	// TODO: rmeove this.
 	{
 		// Support for acme certificate manager needs to be added in three places:
 		// (a) In http middlewares.
@@ -121,6 +139,7 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 	return m
 }
 
+// TODO: maybe this should return an error??
 // AddRoute adds a new [Route] to an existing Mux.
 // This is only expected to be used internally by ong.
 // Users of ong should not use this method. Instead, pass all your routes when calling [New]
@@ -128,7 +147,6 @@ func (m Mux) AddRoute(rt Route) {
 	_, file, _, _ := runtime.Caller(1)
 	if strings.Contains(file, "/ong/server/") || strings.Contains(file, "/ong/mux/") {
 		// The m.AddRoute method should only be used internally by ong.
-
 		m.addPattern(
 			rt.method,
 			rt.pattern,
