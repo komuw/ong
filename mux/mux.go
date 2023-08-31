@@ -3,6 +3,7 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -59,6 +60,20 @@ func NewRoute(
 type Mux struct {
 	l      *slog.Logger
 	router *router // some router
+}
+
+// String implements [fmt.Stringer]
+func (m Mux) String() string {
+	return fmt.Sprintf(`Opts{
+  router: %v
+}`,
+		m.router,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (m Mux) GoString() string {
+	return m.String()
 }
 
 // New returns a HTTP request multiplexer that has the paths in routes.

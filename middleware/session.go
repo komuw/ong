@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	// DefaultCsrfCookieMaxDuration is the duration that session cookie will be valid for by default.
+	// DefaultSessionCookieDuration is the duration that session cookie will be valid for by default.
 	// [django] uses a value of 2 weeks by default.
 	//
 	// [django]: https://docs.djangoproject.com/en/4.1/ref/settings/#session-cookie-age
-	DefaultSessionCookieMaxDuration = 14 * time.Hour
+	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
 // session is a middleware that implements http sessions.
@@ -27,10 +27,10 @@ func session(
 	wrappedHandler http.Handler,
 	secretKey string,
 	domain string,
-	sessionCookieMaxDuration time.Duration,
+	sessionCookieDuration time.Duration,
 ) http.HandlerFunc {
-	if sessionCookieMaxDuration < 1*time.Second { // It is measured in seconds.
-		sessionCookieMaxDuration = DefaultSessionCookieMaxDuration
+	if sessionCookieDuration < 1*time.Second { // It is measured in seconds.
+		sessionCookieDuration = DefaultSessionCookieDuration
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func session(
 		// 2. Get that cookie and save it to r.context
 		r = sess.Initialise(r, secretKey)
 
-		srw := newSessRW(w, r, domain, secretKey, sessionCookieMaxDuration)
+		srw := newSessRW(w, r, domain, secretKey, sessionCookieDuration)
 
 		wrappedHandler.ServeHTTP(srw, r)
 	}
@@ -47,11 +47,11 @@ func session(
 // sessRW provides an http.ResponseWriter interface, which provides http session functionality.
 type sessRW struct {
 	http.ResponseWriter
-	r                        *http.Request
-	domain                   string
-	secretKey                string
-	sessionCookieMaxDuration time.Duration
-	written                  bool
+	r                     *http.Request
+	domain                string
+	secretKey             string
+	sessionCookieDuration time.Duration
+	written               bool
 }
 
 var (
@@ -72,15 +72,15 @@ func newSessRW(
 	r *http.Request,
 	domain string,
 	secretKey string,
-	sessionCookieMaxDuration time.Duration,
+	sessionCookieDuration time.Duration,
 ) *sessRW {
 	return &sessRW{
-		ResponseWriter:           w,
-		r:                        r,
-		domain:                   domain,
-		secretKey:                secretKey,
-		sessionCookieMaxDuration: sessionCookieMaxDuration,
-		written:                  false,
+		ResponseWriter:        w,
+		r:                     r,
+		domain:                domain,
+		secretKey:             secretKey,
+		sessionCookieDuration: sessionCookieDuration,
+		written:               false,
 	}
 }
 
@@ -98,7 +98,7 @@ func (srw *sessRW) Write(b []byte) (int, error) {
 			srw.r,
 			srw.ResponseWriter,
 			srw.domain,
-			srw.sessionCookieMaxDuration,
+			srw.sessionCookieDuration,
 			srw.secretKey,
 		)
 		srw.written = true

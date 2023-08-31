@@ -496,8 +496,8 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		nil,
 		nil,
 		DefaultCorsCacheDuration,
-		DefaultCsrfCookieMaxDuration,
-		DefaultSessionCookieMaxDuration,
+		DefaultCsrfCookieDuration,
+		DefaultSessionCookieDuration,
 	)
 
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
@@ -582,8 +582,8 @@ func TestNew(t *testing.T) {
 						nil,
 						nil,
 						DefaultCorsCacheDuration,
-						DefaultCsrfCookieMaxDuration,
-						DefaultSessionCookieMaxDuration,
+						DefaultCsrfCookieDuration,
+						DefaultSessionCookieDuration,
 					)
 				})
 			} else {
@@ -602,8 +602,8 @@ func TestNew(t *testing.T) {
 					nil,
 					nil,
 					DefaultCorsCacheDuration,
-					DefaultCsrfCookieMaxDuration,
-					DefaultSessionCookieMaxDuration,
+					DefaultCsrfCookieDuration,
+					DefaultSessionCookieDuration,
 				)
 			}
 		})

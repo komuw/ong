@@ -72,7 +72,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieMaxDuration)
+		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -96,7 +96,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieMaxDuration)
+		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieDuration)
 
 		ts := httptest.NewServer(
 			wrappedHandler,
@@ -143,7 +143,7 @@ func TestSession(t *testing.T) {
 		secretKey := tst.SecretKey()
 		domain := "localhost"
 		name := "John Doe"
-		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain, DefaultSessionCookieMaxDuration)
+		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain, DefaultSessionCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -171,7 +171,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieMaxDuration)
+		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieDuration)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
