@@ -328,7 +328,7 @@ func TestConflicts(t *testing.T) {
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
 		err := r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
-		attest.Error(t, err)
+		attest.Ok(t, err)
 
 		// This one returns with a conflict message.
 		errH := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
@@ -355,7 +355,7 @@ func TestConflicts(t *testing.T) {
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
 		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
-		attest.Error(t, err)
+		attest.Ok(t, err)
 
 		// This one returns with a conflict message.
 		errH := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
@@ -377,11 +377,11 @@ func TestConflicts(t *testing.T) {
 		msg1 := "firstRoute-one"
 		msg2 := "secondRoute-two"
 		err := r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
-		attest.Error(t, err)
+		attest.Ok(t, err)
 
 		// This one should not conflict.
 		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errH)
+		attest.Ok(t, errH)
 	})
 }
 
