@@ -16,7 +16,6 @@ func main() {
 
 	api := NewApp(myDB{map[string]string{}}, l)
 	mux := mux.New(
-		l,
 		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(

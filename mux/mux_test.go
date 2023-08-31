@@ -89,7 +89,6 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		mux := New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -117,7 +116,6 @@ func TestMux(t *testing.T) {
 		httpsPort := tst.GetPort()
 		domain := "localhost"
 		mux := New(
-			l,
 			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -163,7 +161,6 @@ func TestMux(t *testing.T) {
 		httpsPort := tst.GetPort()
 		domain := "localhost"
 		mux := New(
-			l,
 			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -210,7 +207,6 @@ func TestMux(t *testing.T) {
 		}()
 
 		_ = New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -232,7 +228,6 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		expectedHandler := someMuxHandler(msg)
 		mux := New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -338,10 +333,10 @@ func getManyRoutes() []Route {
 	return routes
 }
 
-var result Mux //nolint:gochecknoglobals
+var result Muxer //nolint:gochecknoglobals
 
 func BenchmarkMuxNew(b *testing.B) {
-	var r Mux
+	var r Muxer
 
 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
@@ -349,7 +344,6 @@ func BenchmarkMuxNew(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		mux := New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			getManyRoutes()...,
