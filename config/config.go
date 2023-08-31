@@ -397,22 +397,22 @@ type middlewareOpts struct {
 // String implements [fmt.Stringer]
 func (m middlewareOpts) String() string {
 	return fmt.Sprintf(`middlewareOpts{
-  domain: %s
-  httpsPort: %d
-  secretKey: %s
-  strategy: %v
-  l: %v
-  rateShedSamplePercent: %v
-  rateLimit: %v
-  loadShedSamplingPeriod: %v
-  loadShedMinSampleSize: %v
-  loadShedBreachLatency: %v
-  allowedOrigins: %v
-  allowedMethods: %v
-  allowedHeaders: %v
-  corsCacheDuration: %v
-  csrfTokenDuration: %v
-  sessionCookieDuration: %v
+  Domain: %s
+  HttpsPort: %d
+  SecretKey: %s
+  Strategy: %v
+  Logger: %v
+  RateShedSamplePercent: %v
+  RateLimit: %v
+  LoadShedSamplingPeriod: %v
+  LoadShedMinSampleSize: %v
+  LoadShedBreachLatency: %v
+  AllowedOrigins: %v
+  AllowedMethods: %v
+  AllowedHeaders: %v
+  CorsCacheDuration: %v
+  CsrfTokenDuration: %v
+  SessionCookieDuration: %v
 }`,
 		m.Domain,
 		m.HttpsPort,

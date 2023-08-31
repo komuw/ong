@@ -100,7 +100,7 @@ func TestOpts(t *testing.T) {
 
 		l := log.New(context.Background(), &bytes.Buffer{}, 500)
 		got := DevOpts(l, tst.SecretKey())
-		fmt.Println(got)
+		fmt.Printf("%v", got)
 		want := Opts{
 			// port:              65081,
 			// maxBodyBytes:      defaultMaxBodyBytes,
