@@ -120,8 +120,9 @@ type Opts struct {
 func New(
 	// common
 	domain string,
+	port uint16,
+
 	// middleware
-	httpsPort uint16,
 	secretKey string,
 	strategy ClientIPstrategy,
 	logger *slog.Logger,
@@ -137,7 +138,6 @@ func New(
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
 	// server
-	port uint16,
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
 	readHeaderTimeout time.Duration,
@@ -154,7 +154,7 @@ func New(
 	return Opts{
 		middlewareOpts: NewMiddlewareOpts(
 			domain,
-			httpsPort,
+			port,
 			secretKey,
 			strategy,
 			logger,
