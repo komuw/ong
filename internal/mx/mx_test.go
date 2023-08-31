@@ -48,30 +48,31 @@ func TestNewRoute(t *testing.T) {
 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
 	// succeds
-	_ = NewRoute(
+	_, err := NewRoute(
 		"/api",
 		MethodGet,
 		someMuxHandler("msg"),
 	)
+	attest.Ok(t, err)
 
 	// succeds
-	_ = NewRoute(
+	_, errA := NewRoute(
 		"/api",
 		MethodGet,
 		middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-h1rd-passwd"),
 	)
+	attest.Ok(t, errA)
 
 	// fails
-	attest.Panics(t, func() {
-		_ = NewRoute(
-			"/api",
-			MethodGet,
-			middleware.Get(
-				someMuxHandler("msg"),
-				middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
-			),
-		)
-	})
+	_, errB := NewRoute(
+		"/api",
+		MethodGet,
+		middleware.Get(
+			someMuxHandler("msg"),
+			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+		),
+	)
+	attest.Error(t, errB)
 }
 
 func TestMux(t *testing.T) {
@@ -88,15 +89,18 @@ func TestMux(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello world"
-		mux := New(
+		rt, err := NewRoute(
+			"/api",
+			MethodGet,
+			someMuxHandler(msg),
+		)
+		attest.Ok(t, err)
+		mux, err := New(
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
-			NewRoute(
-				"/api",
-				MethodGet,
-				someMuxHandler(msg),
-			),
+			rt,
 		)
+		attest.Ok(t, err)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/UnknownUri", nil)
@@ -115,15 +119,18 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		mux := New(
+		rt, err := NewRoute(
+			uri,
+			MethodGet,
+			someMuxHandler(msg),
+		)
+		attest.Ok(t, err)
+		mux, err := New(
 			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
-			NewRoute(
-				uri,
-				MethodGet,
-				someMuxHandler(msg),
-			),
+			rt,
 		)
+		attest.Ok(t, err)
 
 		ts, errTlS := tst.TlsServer(mux, domain, httpsPort)
 		attest.Ok(t, errTlS)
@@ -160,15 +167,18 @@ func TestMux(t *testing.T) {
 		uri := "/api"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		mux := New(
+		rt, err := NewRoute(
+			uri,
+			MethodGet,
+			someMuxHandler(msg),
+		)
+		attest.Ok(t, err)
+		mux, err := New(
 			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
-			NewRoute(
-				uri,
-				MethodGet,
-				someMuxHandler(msg),
-			),
+			rt,
 		)
+		attest.Ok(t, err)
 
 		ts, err := tst.TlsServer(mux, domain, httpsPort)
 		attest.Ok(t, err)
@@ -190,36 +200,35 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		uri1 := "/api/hi"
-		uri2 := "/api/:someId"
+		uri2 := "/api/:someId" // This conflicts with uri1
 		method := MethodGet
 
-		defer func() {
-			r := recover()
-			if r == nil {
-				t.Fatal("expected a panic, yet did not panic.")
-			}
+		rt1, err := NewRoute(
+			uri1,
+			method,
+			someMuxHandler(msg),
+		)
+		attest.Ok(t, err)
 
-			rStr := fmt.Sprintf("%v", r)
-			attest.Subsequence(t, rStr, uri2)
-			attest.Subsequence(t, rStr, method)
-			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:27") // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:33") // location where `thisIsAnotherMuxHandler` is declared.
-		}()
+		rt2, err := NewRoute(
+			uri2,
+			method,
+			thisIsAnotherMuxHandler(),
+		)
+		attest.Ok(t, err)
 
-		_ = New(
+		_, errC := New(
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
-			NewRoute(
-				uri1,
-				method,
-				someMuxHandler(msg),
-			),
-			NewRoute(
-				uri2,
-				method,
-				thisIsAnotherMuxHandler(),
-			),
+			rt1,
+			rt2,
 		)
+		attest.Error(t, errC)
+		rStr := errC.Error()
+		attest.Subsequence(t, rStr, uri2)
+		attest.Subsequence(t, rStr, method)
+		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:27") // location where `someMuxHandler` is declared.
+		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:33") // location where `thisIsAnotherMuxHandler` is declared.
 	})
 
 	t.Run("resolve url", func(t *testing.T) {
@@ -227,20 +236,25 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		expectedHandler := someMuxHandler(msg)
-		mux := New(
+		rt1, err := NewRoute(
+			"/api",
+			MethodGet,
+			expectedHandler,
+		)
+		attest.Ok(t, err)
+		rt2, err := NewRoute(
+			"check/:age/",
+			MethodAll,
+			checkAgeHandler(),
+		)
+		attest.Ok(t, err)
+		mux, err := New(
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
-			NewRoute(
-				"/api",
-				MethodGet,
-				expectedHandler,
-			),
-			NewRoute(
-				"check/:age/",
-				MethodAll,
-				checkAgeHandler(),
-			),
+			rt1,
+			rt2,
 		)
+		attest.Ok(t, err)
 
 		tests := []struct {
 			name      string
@@ -321,15 +335,18 @@ func TestMux(t *testing.T) {
 		uri := "/api"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		mux := New(
+		rt, err := NewRoute(
+			uri,
+			MethodGet,
+			someMuxHandler(msg),
+		)
+		attest.Ok(t, err)
+		mux, err := New(
 			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
-			NewRoute(
-				uri,
-				MethodGet,
-				someMuxHandler(msg),
-			),
+			rt,
 		)
+		attest.Ok(t, err)
 
 		{
 			someOtherMuxHandler := func(msg string) http.HandlerFunc {
@@ -339,25 +356,24 @@ func TestMux(t *testing.T) {
 			}
 
 			msg := "someOtherMuxHandler"
-			mux.AddRoute(
-				NewRoute(
-					"/someOtherMuxHandler",
-					MethodAll,
-					someOtherMuxHandler(msg),
-				),
+			rt, err := NewRoute(
+				"/someOtherMuxHandler",
+				MethodAll,
+				someOtherMuxHandler(msg),
 			)
+			attest.Ok(t, err)
+			mux.AddRoute(rt)
 		}
 
 		{ // detects conflicts
-
-			err := mux.AddRoute(
-				NewRoute(
-					uri,
-					MethodGet,
-					someMuxHandler(msg),
-				),
+			rt, err := NewRoute(
+				uri,
+				MethodGet,
+				someMuxHandler(msg),
 			)
-			attest.Error(t, err)
+			attest.Ok(t, err)
+			errA := mux.AddRoute(rt)
+			attest.Error(t, errA)
 		}
 
 		ts, err := tst.TlsServer(mux, domain, httpsPort)
@@ -388,18 +404,22 @@ func TestMux(t *testing.T) {
 	})
 }
 
-func getManyRoutes() []Route {
+func getManyRoutes(b *testing.B) []Route {
+	b.Helper()
+
 	routes := []Route{}
 
 	for i := 0; i <= 200; i++ {
 		uri := fmt.Sprintf("uri-%d", i)
+		rt, err := NewRoute(
+			uri,
+			MethodAll,
+			someMuxHandler(uri),
+		)
+		attest.Ok(b, err)
 		routes = append(
 			routes,
-			NewRoute(
-				uri,
-				MethodAll,
-				someMuxHandler(uri),
-			),
+			rt,
 		)
 	}
 
@@ -416,11 +436,12 @@ func BenchmarkMuxNew(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		mux := New(
+		mux, err := New(
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
-			getManyRoutes()...,
+			getManyRoutes(b)...,
 		)
+		attest.Ok(b, err)
 		r = mux
 	}
 	// always store the result to a package level variable

@@ -49,7 +49,7 @@ func (m Muxer) GoString() string {
 }
 
 // New returns a HTTP request multiplexer that has the paths in routes.
-func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
+func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) (Muxer, error) {
 	m := Muxer{
 		router: newRouter(notFoundHandler),
 		opt:    opt,
@@ -80,11 +80,11 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 			rt.originalHandler,
 			mid(rt.originalHandler, opt),
 		); err != nil {
-			panic(err)
+			return Muxer{}, err
 		}
 	}
 
-	return m
+	return m, nil
 }
 
 func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) error {
@@ -118,12 +118,9 @@ func (m Muxer) Resolve(path string) Route {
 	return zero
 }
 
-// TODO: maybe this should return an error??
 // AddRoute adds a new [Route] to an existing Mux.
 // This is only expected to be used internally by ong.
 // Users of ong should not use this method. Instead, pass all your routes when calling [New]
-//
-// It panics with a helpful error message if it detects conflicting routes.
 func (m Muxer) AddRoute(rt Route) error {
 	// AddRoute should only be used internally by ong.
 	return m.addPattern(

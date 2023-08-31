@@ -2,6 +2,7 @@ package mx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
@@ -48,18 +49,16 @@ Route{
 }
 
 // NewRoute creates a new Route.
-//
-// It panics if handler has already been wrapped with ong/middleware
 func NewRoute(
 	pattern string,
 	method string,
 	handler http.Handler,
-) Route {
+) (Route, error) {
 	h := getfunc(handler)
 	if strings.Contains(h, "ong/middleware/") &&
 		!strings.Contains(h, "ong/middleware.BasicAuth") {
 		// BasicAuth is allowed.
-		panic("the handler should not be wrapped with ong middleware")
+		return Route{}, errors.New("ong/mux: the handler should not be wrapped with ong middleware")
 	}
 
 	return Route{
@@ -67,7 +66,7 @@ func NewRoute(
 		pattern:         pattern,
 		segments:        pathSegments(pattern),
 		originalHandler: handler,
-	}
+	}, nil
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
@@ -206,7 +205,6 @@ func (r *router) detectConflict(method, pattern string, originalHandler http.Han
 		}
 
 		panicMsg := fmt.Errorf(`
-
 You are trying to add
   pattern: %s
   method: %s
