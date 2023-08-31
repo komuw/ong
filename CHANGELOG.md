@@ -7,6 +7,7 @@ Most recent version is listed first.
 - ong/middleware: Add support for http.NewResponseController: https://github.com/komuw/ong/pull/368
 - ong/middleware: Improve formatting of some types: https://github.com/komuw/ong/pull/370
 - ong/mux: Remove logger from mux: https://github.com/komuw/ong/pull/371
+- ong/mux: Add internal/mux: https://github.com/komuw/ong/pull/372
 
 # v0.0.76
 - ong/middleware: Configure what percentage of ratelimited or loadshed responses should be logged: https://github.com/komuw/ong/pull/364
