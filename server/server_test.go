@@ -82,8 +82,14 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+			err := Run(mux,
+				config.WithOpts(
+					"localhost",
+					port,
+					tst.SecretKey(),
+					middleware.DirectIpStrategy,
+					l,
+				), l)
 			attest.Ok(t, err)
 		}()
 
@@ -205,8 +211,14 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+			err := Run(mux,
+				config.WithOpts(
+					"localhost",
+					port,
+					tst.SecretKey(),
+					middleware.DirectIpStrategy,
+					l,
+				), l)
 			attest.Ok(t, err)
 		}()
 
@@ -271,8 +283,14 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+			err := Run(mux,
+				config.WithOpts(
+					"localhost",
+					port,
+					tst.SecretKey(),
+					middleware.DirectIpStrategy,
+					l,
+				), l)
 			attest.Ok(t, err)
 		}()
 
@@ -322,9 +340,15 @@ func BenchmarkServer(b *testing.B) {
 	port := tst.GetPort()
 
 	go func() {
-		certFile, keyFile := createDevCertKey(l)
 		time.Sleep(1 * time.Second)
-		err := Run(handler, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+		err := Run(handler,
+			config.WithOpts(
+				"localhost",
+				port,
+				tst.SecretKey(),
+				middleware.DirectIpStrategy,
+				l,
+			), l)
 		attest.Ok(b, err)
 	}()
 
