@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -166,7 +167,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -289,7 +290,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -355,7 +356,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,

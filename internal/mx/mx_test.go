@@ -228,8 +228,8 @@ func TestMux(t *testing.T) {
 		rStr := errC.Error()
 		attest.Subsequence(t, rStr, uri2)
 		attest.Subsequence(t, rStr, method)
-		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:27") // location where `someMuxHandler` is declared.
-		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:33") // location where `thisIsAnotherMuxHandler` is declared.
+		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:28") // location where `someMuxHandler` is declared.
+		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:34") // location where `thisIsAnotherMuxHandler` is declared.
 	})
 
 	t.Run("resolve url", func(t *testing.T) {
@@ -269,28 +269,28 @@ func TestMux(t *testing.T) {
 				"api",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with prefix slash",
 				"/api",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with suffix slash",
 				"api/",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with all slashes",
 				"/api/",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"bad",
@@ -304,14 +304,14 @@ func TestMux(t *testing.T) {
 				"check/2625",
 				"/check/:age/",
 				MethodAll,
-				"ong/internal/mx/mx_test.go:39", // location where `checkAgeHandler` is declared.
+				"ong/internal/mx/mx_test.go:40", // location where `checkAgeHandler` is declared.
 			},
 			{
 				"url with domain name",
 				"https://localhost/check/2625",
 				"/check/:age/",
 				MethodAll,
-				"ong/internal/mx/mx_test.go:39", // location where `checkAgeHandler` is declared.
+				"ong/internal/mx/mx_test.go:40", // location where `checkAgeHandler` is declared.
 			},
 		}
 

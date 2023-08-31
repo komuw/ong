@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/sess"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
@@ -16,7 +17,7 @@ func main() {
 
 	api := NewApp(myDB{map[string]string{}}, l)
 	mux := mux.New(
-		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
+		config.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"/health",
