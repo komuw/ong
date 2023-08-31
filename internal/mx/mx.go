@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"runtime"
-	"strings"
 
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/middleware"
@@ -109,16 +107,13 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 // This is only expected to be used internally by ong.
 // Users of ong should not use this method. Instead, pass all your routes when calling [New]
 func (m Muxer) AddRoute(rt Route) {
-	_, file, _, _ := runtime.Caller(1)
-	if strings.Contains(file, "/ong/server/") || strings.Contains(file, "/ong/mux/") {
-		// The m.AddRoute method should only be used internally by ong.
-		m.addPattern(
-			rt.method,
-			rt.pattern,
-			rt.originalHandler,
-			middleware.All(rt.originalHandler, m.opt),
-		)
-	}
+	// The m.AddRoute method should only be used internally by ong.
+	m.addPattern(
+		rt.method,
+		rt.pattern,
+		rt.originalHandler,
+		middleware.All(rt.originalHandler, m.opt),
+	)
 }
 
 func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
