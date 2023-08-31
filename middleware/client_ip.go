@@ -12,7 +12,7 @@ import (
 //
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
-type ClientIPstrategy string
+type ClientIPstrategy = clientip.ClientIPstrategy
 
 const (
 	// DirectIpStrategy derives the client IP from [http.Request.RemoteAddr].

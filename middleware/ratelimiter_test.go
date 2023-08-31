@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"go.akshayshah.org/attest"
 )
 
@@ -26,7 +27,7 @@ func TestRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), DefaultRateLimit)
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), config.DefaultRateLimit)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -46,11 +47,11 @@ func TestRateLimiter(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), DefaultRateLimit)
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), config.DefaultRateLimit)
 
 		msgsDelivered := []int{}
 		start := time.Now().UTC()
-		for i := 0; i < int(DefaultRateLimit*6); i++ {
+		for i := 0; i < int(config.DefaultRateLimit*6); i++ {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			wrappedHandler.ServeHTTP(rec, req)
@@ -75,14 +76,14 @@ func TestRateLimiter(t *testing.T) {
 		attest.True(t, slices.Contains(msgsDelivered, http.StatusTooManyRequests))
 		attest.True(t, slices.Contains(msgsDelivered, http.StatusOK))
 		attest.True(t, rateLimitedreqs > 4)
-		attest.Approximately(t, effectiveMessageRate, int(DefaultRateLimit), 4)
+		attest.Approximately(t, effectiveMessageRate, int(config.DefaultRateLimit), 4)
 	})
 
 	t.Run("bad remoteAddr", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), DefaultRateLimit)
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), config.DefaultRateLimit)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -105,7 +106,7 @@ func TestRateLimiter(t *testing.T) {
 		msg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), DefaultRateLimit)
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), config.DefaultRateLimit)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

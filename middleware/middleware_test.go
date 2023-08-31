@@ -13,6 +13,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
@@ -487,17 +488,17 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		tst.SecretKey(),
 		DirectIpStrategy,
 		l,
-		DefaultRateShedSamplePercent,
+		config.DefaultRateShedSamplePercent,
 		rateLimit,
-		DefaultLoadShedSamplingPeriod,
-		DefaultLoadShedMinSampleSize,
-		DefaultLoadShedBreachLatency,
+		config.DefaultLoadShedSamplingPeriod,
+		config.DefaultLoadShedMinSampleSize,
+		config.DefaultLoadShedBreachLatency,
 		nil,
 		nil,
 		nil,
-		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
-		DefaultSessionCookieDuration,
+		config.DefaultCorsCacheDuration,
+		config.DefaultCsrfCookieDuration,
+		config.DefaultSessionCookieDuration,
 	)
 
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
@@ -573,17 +574,17 @@ func TestNew(t *testing.T) {
 						tst.SecretKey(),
 						DirectIpStrategy,
 						slog.Default(),
-						DefaultRateShedSamplePercent,
-						DefaultRateLimit,
-						DefaultLoadShedSamplingPeriod,
-						DefaultLoadShedMinSampleSize,
-						DefaultLoadShedBreachLatency,
+						config.DefaultRateShedSamplePercent,
+						config.DefaultRateLimit,
+						config.DefaultLoadShedSamplingPeriod,
+						config.DefaultLoadShedMinSampleSize,
+						config.DefaultLoadShedBreachLatency,
 						nil,
 						nil,
 						nil,
-						DefaultCorsCacheDuration,
-						DefaultCsrfCookieDuration,
-						DefaultSessionCookieDuration,
+						config.DefaultCorsCacheDuration,
+						config.DefaultCsrfCookieDuration,
+						config.DefaultSessionCookieDuration,
 					)
 				})
 			} else {
@@ -593,17 +594,17 @@ func TestNew(t *testing.T) {
 					tst.SecretKey(),
 					DirectIpStrategy,
 					slog.Default(),
-					DefaultRateShedSamplePercent,
-					DefaultRateLimit,
-					DefaultLoadShedSamplingPeriod,
-					DefaultLoadShedMinSampleSize,
-					DefaultLoadShedBreachLatency,
+					config.DefaultRateShedSamplePercent,
+					config.DefaultRateLimit,
+					config.DefaultLoadShedSamplingPeriod,
+					config.DefaultLoadShedMinSampleSize,
+					config.DefaultLoadShedBreachLatency,
 					nil,
 					nil,
 					nil,
-					DefaultCorsCacheDuration,
-					DefaultCsrfCookieDuration,
-					DefaultSessionCookieDuration,
+					config.DefaultCorsCacheDuration,
+					config.DefaultCsrfCookieDuration,
+					config.DefaultSessionCookieDuration,
 				)
 			}
 		})

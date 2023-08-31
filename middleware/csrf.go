@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
@@ -37,10 +38,6 @@ const (
 	CsrfTokenFormName = "csrftoken" // named after what django uses.
 	// CsrfHeader is the name of the http header that Ong uses to store csrf token.
 	CsrfHeader = "X-Csrf-Token" // named after what fiber uses.
-	// DefaultCsrfCookieDuration is the duration that csrf cookie will be valid for by default.
-	//
-	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
-	DefaultCsrfCookieDuration = 12 * time.Hour
 
 	csrfCtxKey               = csrfContextKey("csrfContextKey")
 	csrfDefaultToken         = ""
@@ -79,7 +76,7 @@ func csrf(
 	msgToEncrypt := id.Random(16)
 
 	if csrfTokenDuration < 1*time.Second { // is measured in seconds.
-		csrfTokenDuration = DefaultCsrfCookieDuration
+		csrfTokenDuration = config.DefaultCsrfCookieDuration
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

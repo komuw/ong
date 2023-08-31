@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/key"
 )
@@ -137,25 +138,25 @@ func (o Opts) GoString() string {
 //
 // l is an [slog.Logger] that will be used for logging.
 //
-// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [DefaultRateShedSamplePercent] is used instead.
+// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [config.DefaultRateShedSamplePercent] is used instead.
 //
-// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
+// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [config.DefaultRateLimit] is used instead.
 //
-// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
+// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [config.DefaultLoadShedSamplingPeriod] is used instead.
 // loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
 // If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
-// If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
-// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
+// If it is less than 1, [config.DefaultLoadShedMinSampleSize] is used instead.
+// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [config.DefaultLoadShedBreachLatency] is used instead.
 //
 // allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
-// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [config.DefaultCorsCacheDuration] is used instead.
 //
-// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
+// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [config.DefaultCsrfCookieDuration] is used instead.
 //
-// sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
+// sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [config.DefaultSessionCookieDuration] is used instead.
 //
 // Also see [WithOpts].
 //
@@ -241,17 +242,17 @@ func WithOpts(
 		secretKey,
 		strategy,
 		l,
-		DefaultRateShedSamplePercent,
-		DefaultRateLimit,
-		DefaultLoadShedSamplingPeriod,
-		DefaultLoadShedMinSampleSize,
-		DefaultLoadShedBreachLatency,
+		config.DefaultRateShedSamplePercent,
+		config.DefaultRateLimit,
+		config.DefaultLoadShedSamplingPeriod,
+		config.DefaultLoadShedMinSampleSize,
+		config.DefaultLoadShedBreachLatency,
 		nil,
 		nil,
 		nil,
-		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
-		DefaultSessionCookieDuration,
+		config.DefaultCorsCacheDuration,
+		config.DefaultCsrfCookieDuration,
+		config.DefaultSessionCookieDuration,
 	)
 }
 

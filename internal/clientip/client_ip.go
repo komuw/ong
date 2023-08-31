@@ -37,6 +37,9 @@ Algorithm:
 - https://adam-p.ca/blog/2022/03/x-forwarded-for/#algorithms
 */
 
+// ClientIPstrategy is an option that describes the strategy to use when fetching the client's IP address.
+type ClientIPstrategy string
+
 type clientIPcontextKeyType string
 
 const (
