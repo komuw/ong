@@ -47,28 +47,18 @@ func TestGetTlsConfig(t *testing.T) {
 				attest.Zero(t, c)
 			},
 		},
-		// {
-		// 	name: "non nil pool with no tls args",
-		// 	opts: func() config.Opts {
-		// 		o := config.WithOpts("example.com", 65081, tst.SecretKey(), middleware.DirectIpStrategy, l)
-		// 		o.Tls.ClientCertificatePool = &x509.CertPool{}
-		// 		o.Tls.AcmeDirectoryUrl = letsEncryptStagingUrl
-		// 		o.Tls.AcmeEmail = ""
-		// 		return o
-		// 		// Opts{
-		// 		// 	tls: tlsOpts{
-		// 		// 		domain:                "example.com",
-		// 		// 		acmeEmail:             "",
-		// 		// 		acmeDirectoryUrl:      letsEncryptStagingUrl,
-		// 		// 		clientCertificatePool: &x509.CertPool{},
-		// 		// 	},
-		// 		// }
-		// 	},
-		// 	assert: func(c *tls.Config, err error) {
-		// 		attest.Error(t, err)
-		// 		attest.Zero(t, c)
-		// 	},
-		// },
+		{
+			name: "non nil pool with no tls args",
+			opts: func() config.Opts {
+				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "", letsEncryptStagingUrl)
+				o.Tls.ClientCertificatePool = &x509.CertPool{}
+				return o
+			},
+			assert: func(c *tls.Config, err error) {
+				attest.Error(t, err)
+				attest.Zero(t, c)
+			},
+		},
 		{
 			name: "cert pool success",
 			opts: func() config.Opts {
