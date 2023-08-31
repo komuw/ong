@@ -11,7 +11,13 @@ import (
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"go.akshayshah.org/attest"
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	// call flag.Parse() here if TestMain uses flags
+	goleak.VerifyTestMain(m)
+}
 
 func TestNewMiddlewareOpts(t *testing.T) {
 	t.Parallel()
