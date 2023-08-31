@@ -3,9 +3,9 @@ package mux
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 
 	"github.com/komuw/ong/internal/acme"
@@ -57,8 +57,8 @@ func NewRoute(
 //
 // Use [New] to get a valid Mux.
 type Mux struct {
-	l      *slog.Logger
-	router *router // some router
+	router *router
+	opt    middleware.Opts // needed by AddRoute
 }
 
 // New returns a HTTP request multiplexer that has the paths in routes.
@@ -70,10 +70,10 @@ type Mux struct {
 // Typically, an application should only have one Mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux {
+func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux {
 	m := Mux{
-		l:      l,
 		router: newRouter(notFoundHandler),
+		opt:    opt,
 	}
 
 	mid := middleware.All //nolint:ineffassign
@@ -119,6 +119,17 @@ func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, rout
 	}
 
 	return m
+}
+
+// TODO:
+func (m Mux) AddRoute(rt Route) {
+	runtime.Caller(0)
+	m.addPattern(
+		rt.method,
+		rt.pattern,
+		rt.originalHandler,
+		middleware.All(rt.originalHandler, m.opt),
+	)
 }
 
 func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {

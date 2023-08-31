@@ -39,7 +39,6 @@ func main() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	secretKey := "super-h@rd-Pa$1word"
 	mux := mux.New(
-		l,
 		middleware.WithOpts(
 			"localhost",
 			65081,

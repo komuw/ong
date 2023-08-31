@@ -89,7 +89,6 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		mux := New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -117,7 +116,6 @@ func TestMux(t *testing.T) {
 		httpsPort := tst.GetPort()
 		domain := "localhost"
 		mux := New(
-			l,
 			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -163,7 +161,6 @@ func TestMux(t *testing.T) {
 		httpsPort := tst.GetPort()
 		domain := "localhost"
 		mux := New(
-			l,
 			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -210,7 +207,6 @@ func TestMux(t *testing.T) {
 		}()
 
 		_ = New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -232,7 +228,6 @@ func TestMux(t *testing.T) {
 		msg := "hello world"
 		expectedHandler := someMuxHandler(msg)
 		mux := New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			NewRoute(
@@ -318,6 +313,52 @@ func TestMux(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("AddRoute", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		uri := "/api"
+		httpsPort := tst.GetPort()
+		domain := "localhost"
+		mux := New(
+			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			nil,
+			NewRoute(
+				uri,
+				MethodGet,
+				someMuxHandler(msg),
+			),
+		)
+
+		// {
+		// 	const acmeChallengeURI = "/.well-known/acme-challenge/:token"
+		// 	acmeHandler := acme.Handler(mux)
+		// 	mux.AddRoute(
+		// 		NewRoute(
+		// 			acmeChallengeURI,
+		// 			MethodAll,
+		// 			acmeHandler,
+		// 		),
+		// 	)
+
+		// 	fmt.Println("mux: ", mux.router)
+		// }
+
+		ts, err := tst.TlsServer(mux, domain, httpsPort)
+		attest.Ok(t, err)
+		defer ts.Close()
+
+		res, err := client.Get(ts.URL + uri)
+		attest.Ok(t, err)
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+	})
 }
 
 func getManyRoutes() []Route {
@@ -349,7 +390,6 @@ func BenchmarkMuxNew(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		mux := New(
-			l,
 			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			getManyRoutes()...,
