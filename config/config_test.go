@@ -102,6 +102,7 @@ func TestOpts(t *testing.T) {
 		got := DevOpts(l, tst.SecretKey())
 		fmt.Printf("%v", got)
 		want := Opts{
+
 			// port:              65081,
 			// maxBodyBytes:      defaultMaxBodyBytes,
 			// host:              "127.0.0.1",

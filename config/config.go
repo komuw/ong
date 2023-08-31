@@ -397,22 +397,22 @@ type middlewareOpts struct {
 // String implements [fmt.Stringer]
 func (m middlewareOpts) String() string {
 	return fmt.Sprintf(`middlewareOpts{
-  Domain: %s
-  HttpsPort: %d
-  SecretKey: %s
-  Strategy: %v
-  Logger: %v
-  RateShedSamplePercent: %v
-  RateLimit: %v
-  LoadShedSamplingPeriod: %v
-  LoadShedMinSampleSize: %v
-  LoadShedBreachLatency: %v
-  AllowedOrigins: %v
-  AllowedMethods: %v
-  AllowedHeaders: %v
-  CorsCacheDuration: %v
-  CsrfTokenDuration: %v
-  SessionCookieDuration: %v
+  Domain: %s,
+  HttpsPort: %d,
+  SecretKey: %s,
+  Strategy: %v,
+  Logger: %v,
+  RateShedSamplePercent: %v,
+  RateLimit: %v,
+  LoadShedSamplingPeriod: %v,
+  LoadShedMinSampleSize: %v,
+  LoadShedBreachLatency: %v,
+  AllowedOrigins: %v,
+  AllowedMethods: %v,
+  AllowedHeaders: %v,
+  CorsCacheDuration: %v,
+  CsrfTokenDuration: %v,
+  SessionCookieDuration: %v,
 }`,
 		m.Domain,
 		m.HttpsPort,
@@ -595,12 +595,12 @@ type tlsOpts struct {
 // String implements [fmt.Stringer]
 func (t tlsOpts) String() string {
 	return fmt.Sprintf(`tlsOpts{
-  CertFile: %v
-  KeyFile: %v
-  AcmeEmail: %v
-  Domain: %v
-  AcmeDirectoryUrl: %v
-  ClientCertificatePool: %v
+  CertFile: %v,
+  KeyFile: %v,
+  AcmeEmail: %v,
+  Domain: %v,
+  AcmeDirectoryUrl: %v,
+  ClientCertificatePool: %v,
 }`,
 		t.CertFile,
 		t.KeyFile,
@@ -702,7 +702,6 @@ func NewServerOpts(
 	if port != 443 {
 		httpPort = port - 1
 	}
-	pprofPort := httpPort - 1
 
 	if maxBodyBytes <= 0 {
 		maxBodyBytes = defaultMaxBodyBytes
@@ -740,7 +739,6 @@ func NewServerOpts(
 		ServerAddress: serverAddress,
 		Network:       "tcp",
 		HttpPort:      fmt.Sprintf(":%d", httpPort),
-		pprofPort:     fmt.Sprintf("%d", pprofPort),
 	}
 }
 
@@ -775,20 +773,20 @@ func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirec
 // String implements [fmt.Stringer]
 func (s serverOpts) String() string {
 	return fmt.Sprintf(`serverOpts{
-  port: %v
-  MaxBodyBytes: %v
-  ServerLogLevel: %v
-  ReadHeaderTimeout: %v
-  ReadTimeout: %v
-  WriteTimeout: %v
-  IdleTimeout: %v
-  DrainTimeout: %v
-  Tls: %v
-  Host: %v
-  ServerPort: %v
-  ServerAddress: %v
-  Network: %v
-  HttpPort: %v
+  port: %v,
+  MaxBodyBytes: %v,
+  ServerLogLevel: %v,
+  ReadHeaderTimeout: %v,
+  ReadTimeout: %v,
+  WriteTimeout: %v,
+  IdleTimeout: %v,
+  DrainTimeout: %v,
+  Tls: %v,
+  Host: %v,
+  ServerPort: %v,
+  ServerAddress: %v,
+  Network: %v,
+  HttpPort: %v,
 }`,
 		s.port,
 		s.MaxBodyBytes,
