@@ -250,6 +250,104 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 	}
 }
 
+// CertOpts returns a new Opts that has sensible defaults given certFile & keyFile.
+func CertOpts(
+	// middleware
+	domain string,
+	secretKey string,
+	strategy ClientIPstrategy,
+	logger *slog.Logger,
+	// server
+	certFile string,
+	keyFile string,
+) Opts {
+	httpsPort := uint16(443)
+	return Opts{
+		middlewareOpts: WithMiddlewareOpts(
+			domain,
+			httpsPort,
+			secretKey,
+			strategy,
+			logger,
+		),
+		serverOpts: withServerOpts(
+			httpsPort,
+			certFile,
+			keyFile,
+			"",
+			domain,
+			"",
+		),
+	}
+}
+
+// AcmeOpts returns a new Opts that procures certificates from an [ACME] certificate authority.
+// Also see [LetsEncryptOpts]
+//
+// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
+func AcmeOpts(
+	// middleware
+	domain string,
+	secretKey string,
+	strategy ClientIPstrategy,
+	logger *slog.Logger,
+	// server
+	acmeEmail string,
+	acmeDirectoryUrl string,
+) Opts {
+	httpsPort := uint16(443)
+	return Opts{
+		middlewareOpts: WithMiddlewareOpts(
+			domain,
+			httpsPort,
+			secretKey,
+			strategy,
+			logger,
+		),
+		serverOpts: withServerOpts(
+			httpsPort,
+			"",
+			"",
+			acmeEmail,
+			domain,
+			acmeDirectoryUrl,
+		),
+	}
+}
+
+// LetsEncryptOpts returns a new Opts that procures certificates from [letsencrypt].
+// Also see [AcmeOpts]
+//
+// [letsencrypt]: https://letsencrypt.org/
+func LetsEncryptOpts(
+	// middleware
+	domain string,
+	secretKey string,
+	strategy ClientIPstrategy,
+	logger *slog.Logger,
+	// server
+	acmeEmail string,
+) Opts {
+	httpsPort := uint16(443)
+	return Opts{
+		middlewareOpts: WithMiddlewareOpts(
+			domain,
+			httpsPort,
+			secretKey,
+			strategy,
+			logger,
+		),
+		serverOpts: withServerOpts(
+			httpsPort,
+			"",
+			"",
+			acmeEmail,
+			domain,
+			"",
+		),
+	}
+}
+
 type middlewareOpts struct {
 	Domain    string
 	HttpsPort uint16
