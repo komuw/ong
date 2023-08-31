@@ -270,7 +270,10 @@ func New(
 	}
 }
 
-// TODO: docs
+// WithOpts returns a new Opts that has sensible defaults.
+// It panics on error.
+//
+// See [New] for extra documentation.
 func WithOpts(
 	// middleware
 	domain string,
@@ -303,6 +306,9 @@ func WithOpts(
 
 // DevOpts returns a new Opts that has sensible defaults, especially for dev environments.
 // It also automatically creates & configures the developer TLS certificates/key.
+// It panics on error.
+//
+// See [New] for extra documentation.
 func DevOpts(logger *slog.Logger, secretKey string) Opts {
 	domain := "localhost"
 	httpsPort := uint16(65081)
@@ -328,6 +334,9 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 }
 
 // CertOpts returns a new Opts that has sensible defaults given certFile & keyFile.
+// It panics on error.
+//
+// See [New] for extra documentation.
 func CertOpts(
 	// middleware
 	domain string,
@@ -359,7 +368,10 @@ func CertOpts(
 }
 
 // AcmeOpts returns a new Opts that procures certificates from an [ACME] certificate authority.
+// It panics on error.
 // Also see [LetsEncryptOpts]
+//
+// See [New] for extra documentation.
 //
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
 func AcmeOpts(
@@ -393,7 +405,10 @@ func AcmeOpts(
 }
 
 // LetsEncryptOpts returns a new Opts that procures certificates from [letsencrypt].
+// It panics on error.
 // Also see [AcmeOpts]
+//
+// See [New] for extra documentation.
 //
 // [letsencrypt]: https://letsencrypt.org/
 func LetsEncryptOpts(
