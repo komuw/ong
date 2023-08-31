@@ -102,20 +102,6 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 	return m
 }
 
-// TODO: maybe this should return an error??
-// AddRoute adds a new [Route] to an existing Mux.
-// This is only expected to be used internally by ong.
-// Users of ong should not use this method. Instead, pass all your routes when calling [New]
-func (m Muxer) AddRoute(rt Route) {
-	// The m.AddRoute method should only be used internally by ong.
-	m.addPattern(
-		rt.method,
-		rt.pattern,
-		rt.originalHandler,
-		middleware.All(rt.originalHandler, m.opt),
-	)
-}
-
 func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
 	m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
@@ -145,6 +131,22 @@ func (m Muxer) Resolve(path string) Route {
 	}
 
 	return zero
+}
+
+// TODO: maybe this should return an error??
+// AddRoute adds a new [Route] to an existing Mux.
+// This is only expected to be used internally by ong.
+// Users of ong should not use this method. Instead, pass all your routes when calling [New]
+//
+// It panics with a helpful error message if it detects conflicting routes.
+func (m Muxer) AddRoute(rt Route) {
+	// AddRoute should only be used internally by ong.
+	m.addPattern(
+		rt.method,
+		rt.pattern,
+		rt.originalHandler,
+		middleware.All(rt.originalHandler, m.opt),
+	)
 }
 
 // Param gets the path/url parameter from the specified Context.
