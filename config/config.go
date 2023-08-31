@@ -15,13 +15,13 @@ import (
 	"github.com/komuw/ong/internal/key"
 )
 
-// logging
+// logging middleware.
 const (
 	// DefaultRateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
 	DefaultRateShedSamplePercent = 10
 )
 
-// ratelimit
+// ratelimit middleware.
 const (
 	// DefaultRateLimit is the maximum requests allowed (from one IP address) per second, by default.
 	//
@@ -36,7 +36,7 @@ const (
 	DefaultRateLimit = 100.00
 )
 
-// loadshed
+// loadshed middleware.
 const (
 	// DefaultLoadShedSamplingPeriod is the duration over which we calculate response latencies by default.
 	DefaultLoadShedSamplingPeriod = 12 * time.Minute
@@ -55,7 +55,7 @@ const (
 	DefaultLoadShedBreachLatency = 700 * time.Millisecond
 )
 
-// cors
+// cors middleware.
 const (
 	// DefaultCorsCacheDuration is the length in time that preflight responses will be cached by default.
 	// 2hrs is chosen since that is the maximum for chromium based browsers.
@@ -71,7 +71,7 @@ const (
 	DefaultCsrfCookieDuration = 12 * time.Hour
 )
 
-// session
+// session middleware.
 const (
 	// DefaultSessionCookieDuration is the duration that session cookie will be valid for by default.
 	// [django] uses a value of 2 weeks by default.
@@ -80,7 +80,6 @@ const (
 	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
-// TODO: export this??
 const (
 	// DefaultMaxBodyBytes is the value used as the limit for incoming request bodies, if a custom value was not provided.
 	//
