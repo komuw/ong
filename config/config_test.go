@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"testing"
+	"time"
 
 	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/internal/tst"
@@ -102,6 +103,48 @@ func TestOpts(t *testing.T) {
 		got := DevOpts(l, tst.SecretKey())
 		fmt.Printf("%v", got)
 		want := Opts{
+			middlewareOpts: middlewareOpts{
+				Domain:                 "localhost",
+				HttpsPort:              65081,
+				SecretKey:              tst.SecretKey(),
+				Strategy:               clientip.DirectIpStrategy,
+				Logger:                 l,
+				RateShedSamplePercent:  DefaultRateShedSamplePercent,
+				RateLimit:              DefaultRateLimit,
+				LoadShedSamplingPeriod: DefaultLoadShedSamplingPeriod,
+				LoadShedMinSampleSize:  DefaultLoadShedMinSampleSize,
+				LoadShedBreachLatency:  DefaultLoadShedBreachLatency,
+				AllowedOrigins:         []string{},
+				AllowedMethods:         []string{},
+				AllowedHeaders:         []string{},
+				CorsCacheDuration:      DefaultCorsCacheDuration,
+				CsrfTokenDuration:      DefaultCsrfCookieDuration,
+				SessionCookieDuration:  DefaultSessionCookieDuration,
+			},
+
+			serverOpts: serverOpts{
+				port:              65081,
+				MaxBodyBytes:      defaultMaxBodyBytes,
+				ServerLogLevel:    defaultServerLogLevel,
+				ReadHeaderTimeout: 1 * time.Second,
+				ReadTimeout:       2 * time.Second,
+				WriteTimeout:      3 * time.Second,
+				IdleTimeout:       113 * time.Second,
+				DrainTimeout:      defaultDrainDuration,
+				Tls: tlsOpts{
+					CertFile:              "/tmp/ong_dev_certificate.pem",
+					KeyFile:               "/tmp/ong_dev_key.pem",
+					AcmeEmail:             "",
+					Domain:                "localhost",
+					AcmeDirectoryUrl:      "",
+					ClientCertificatePool: nil,
+				},
+				Host:          "127.0.0.1",
+				ServerPort:    ":65081",
+				ServerAddress: "127.0.0.1:65081",
+				Network:       "tcp",
+				HttpPort:      ":65080",
+			},
 
 			// port:              65081,
 			// maxBodyBytes:      defaultMaxBodyBytes,
