@@ -114,7 +114,7 @@ type ClientIPstrategy = clientip.ClientIPstrategy
 
 // Opts are the various parameters(optionals) that can be used to configure ong.
 //
-// Use either [New] or [WithOpts] to get a valid Opts. TODO:
+// Use either [New], [WithOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts.
 type Opts struct {
 	// middlewareOpts are parameters that are used by middleware.
 	middlewareOpts
@@ -366,6 +366,7 @@ func LetsEncryptOpts(
 	}
 }
 
+// middlewareOpts are parameters that are used by middleware.
 type middlewareOpts struct {
 	Domain    string
 	HttpsPort uint16
@@ -621,8 +622,6 @@ func (t tlsOpts) GoString() string {
 }
 
 // serverOpts are the various parameters(optionals) that can be used to configure a HTTP server.
-//
-// Use either [NewOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts. // TODO:
 type serverOpts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
 	MaxBodyBytes      uint64 // max size of request body allowed.
