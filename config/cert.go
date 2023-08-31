@@ -1,6 +1,4 @@
-package server
-
-// TODO: remove this file.
+package config
 
 import (
 	"bytes"

@@ -79,6 +79,7 @@ const (
 	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
+// TODO: export this??
 const (
 	// defaultMaxBodyBytes the value used as the limit for incoming request bodies, if a custom value was not provided.
 	//
@@ -96,6 +97,9 @@ const (
 	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
 	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB
 	defaultServerLogLevel = slog.LevelInfo
+
+	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
+	defaultDrainDuration = 13 * time.Second
 
 	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
 	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
@@ -199,6 +203,8 @@ func WithOpts(
 	logger *slog.Logger,
 	// server
 ) Opts {
+	certFile, keyFile := createDevCertKey(logger)
+
 	return Opts{
 		middlewareOpts: WithMiddlewareOpts(
 			domain,
@@ -206,6 +212,40 @@ func WithOpts(
 			secretKey,
 			strategy,
 			logger,
+		),
+		serverOpts: withServerOpts(
+			httpsPort,
+			certFile,
+			keyFile,
+			"",
+			domain,
+			"",
+		),
+	}
+}
+
+// DevOpts returns a new Opts that has sensible defaults, especially for dev environments.
+// It also automatically creates & configures the developer TLS certificates/key.
+func DevOpts(logger *slog.Logger, secretKey string) Opts {
+	domain := "localhost"
+	httpsPort := uint16(65081)
+	certFile, keyFile := createDevCertKey(logger)
+
+	return Opts{
+		middlewareOpts: WithMiddlewareOpts(
+			domain,
+			httpsPort,
+			secretKey,
+			clientip.DirectIpStrategy,
+			logger,
+		),
+		serverOpts: withServerOpts(
+			httpsPort,
+			certFile,
+			keyFile,
+			"",
+			domain,
+			"",
 		),
 	}
 }
@@ -465,7 +505,7 @@ type serverOpts struct {
 //
 // NewServerOpts returns a new Opts.
 //
-// port is the port at which the server should listen on.
+// port is the TLS port at which the server should listen on.
 //
 // maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
 //
@@ -570,4 +610,32 @@ func NewServerOpts(
 		HttpPort:      fmt.Sprintf(":%d", httpPort),
 		pprofPort:     fmt.Sprintf("%d", pprofPort),
 	}
+}
+
+func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUrl string) serverOpts {
+	readHeaderTimeout := 1 * time.Second
+	readTimeout := readHeaderTimeout + (1 * time.Second)
+	writeTimeout := readTimeout + (1 * time.Second)
+	handlerTimeout := writeTimeout + (10 * time.Second)
+	idleTimeout := handlerTimeout + (100 * time.Second)
+	drainTimeout := defaultDrainDuration
+
+	maxBodyBytes := defaultMaxBodyBytes
+	serverLogLevel := defaultServerLogLevel
+	return NewServerOpts(
+		port,
+		maxBodyBytes,
+		serverLogLevel,
+		readHeaderTimeout,
+		readTimeout,
+		writeTimeout,
+		idleTimeout,
+		drainTimeout,
+		certFile,
+		keyFile,
+		acmeEmail,
+		domain,
+		acmeDirectoryUrl,
+		nil,
+	)
 }
