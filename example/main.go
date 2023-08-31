@@ -46,7 +46,7 @@ func main() {
 		),
 	)
 
-	err := server.Run(mux, server.DevOpts(l), l)
+	err := server.Run(mux, config.DevOpts(l, secretKey), l)
 	if err != nil {
 		l.Error("server.Run error", "error", err)
 		os.Exit(1)
