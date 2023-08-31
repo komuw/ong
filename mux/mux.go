@@ -3,6 +3,7 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/komuw/ong/internal/mx"
@@ -32,6 +33,20 @@ const (
 // Use [New] to get a valid Muxer.
 type Muxer struct {
 	internalMux mx.Muxer
+}
+
+// String implements [fmt.Stringer]
+func (m Muxer) String() string {
+	return fmt.Sprintf(`Muxer{
+  internalMux: %v
+}`,
+		m.internalMux,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (m Muxer) GoString() string {
+	return m.String()
 }
 
 // New returns a HTTP request multiplexer that has the paths in routes.

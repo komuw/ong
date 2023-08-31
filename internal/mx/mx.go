@@ -34,7 +34,7 @@ type Muxer struct {
 
 // String implements [fmt.Stringer]
 func (m Muxer) String() string {
-	return fmt.Sprintf(`Opts{
+	return fmt.Sprintf(`Muxer{
   router: %v
   opt: %s
 }`,
