@@ -26,38 +26,14 @@ import (
 // See documentation:
 // https://github.com/golang/go/blob/go1.21.0/src/net/http/pprof/pprof.go#L5-L70
 
-// TODO:
-// func init() {
-// 	http.HandleFunc("/debug/pprof/", Index)
-// 	http.HandleFunc("/debug/pprof/cmdline", Cmdline)
-// 	http.HandleFunc("/debug/pprof/profile", Profile)
-// 	http.HandleFunc("/debug/pprof/symbol", Symbol)
-// 	http.HandleFunc("/debug/pprof/trace", Trace)
-// }
-
-// TODO: un-export API.
-
 // TODO: borrow tests.
 
 // TODO: move to middleware??
 
-const (
-	/*
-		The pprof tool supports fetching profles by duration.
-		eg; fetch cpu profile for the last 5mins(300sec):
-			go tool pprof http://localhost:65079/debug/pprof/profile?seconds=300
-		This may fail with an error like:
-			http://localhost:65079/debug/pprof/profile?seconds=300: server response: 400 Bad Request - profile duration exceeds server's WriteTimeout
-		So we need to be generous with our timeouts. Which is okay since pprof runs in a mux that is not exposed to the internet(localhost)
-	*/
-	readTimeout  = 30 * time.Second
-	writeTimeout = 30 * time.Minute
-)
-
-// Cmdline responds with the running program's
+// cmdline responds with the running program's
 // command line, with arguments separated by NUL bytes.
 // The package initialization registers it as /debug/pprof/cmdline.
-func Cmdline(w http.ResponseWriter, r *http.Request) {
+func cmdline(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprint(w, strings.Join(os.Args, "\x00"))
@@ -70,11 +46,6 @@ func sleep(r *http.Request, d time.Duration) {
 	}
 }
 
-func durationExceedsWriteTimeout(r *http.Request, seconds float64) bool {
-	// TODO: maybe kill this func?
-	return seconds >= writeTimeout.Seconds()
-}
-
 func serveError(w http.ResponseWriter, status int, txt string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("X-Go-Pprof", "1")
@@ -83,19 +54,14 @@ func serveError(w http.ResponseWriter, status int, txt string) {
 	fmt.Fprintln(w, txt)
 }
 
-// Profile responds with the pprof-formatted cpu profile.
+// profile responds with the pprof-formatted cpu profile.
 // Profiling lasts for duration specified in seconds GET parameter, or for 30 seconds if not specified.
 // The package initialization registers it as /debug/pprof/profile.
-func Profile(w http.ResponseWriter, r *http.Request) {
+func profile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	sec, err := strconv.ParseInt(r.FormValue("seconds"), 10, 64)
 	if sec <= 0 || err != nil {
 		sec = 30
-	}
-
-	if durationExceedsWriteTimeout(r, float64(sec)) {
-		serveError(w, http.StatusBadRequest, "profile duration exceeds server's WriteTimeout")
-		return
 	}
 
 	// Set Content Type assuming StartCPUProfile will work,
@@ -112,19 +78,14 @@ func Profile(w http.ResponseWriter, r *http.Request) {
 	pprof.StopCPUProfile()
 }
 
-// Trace responds with the execution trace in binary form.
+// traceHandler responds with the execution trace in binary form.
 // Tracing lasts for duration specified in seconds GET parameter, or for 1 second if not specified.
 // The package initialization registers it as /debug/pprof/trace.
-func Trace(w http.ResponseWriter, r *http.Request) {
+func traceHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	sec, err := strconv.ParseFloat(r.FormValue("seconds"), 64)
 	if sec <= 0 || err != nil {
 		sec = 1
-	}
-
-	if durationExceedsWriteTimeout(r, sec) {
-		serveError(w, http.StatusBadRequest, "profile duration exceeds server's WriteTimeout")
-		return
 	}
 
 	// Set Content Type assuming trace.Start will work,
@@ -141,10 +102,10 @@ func Trace(w http.ResponseWriter, r *http.Request) {
 	trace.Stop()
 }
 
-// Symbol looks up the program counters listed in the request,
+// symbol looks up the program counters listed in the request,
 // responding with a table mapping program counters to function names.
 // The package initialization registers it as /debug/pprof/symbol.
-func Symbol(w http.ResponseWriter, r *http.Request) {
+func symbol(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
@@ -190,16 +151,9 @@ func Symbol(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
-// TODO:
-// Handler returns an HTTP handler that serves the named profile.
-// // Available profiles can be found in [runtime/pprof.Profile].
-// func Handler(name string) http.Handler {
-// 	return pprofHandler(name)
-// }
+type handler string
 
-type pprofHandler string
-
-func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (name handler) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	p := pprof.Lookup(string(name))
 	if p == nil {
@@ -207,9 +161,9 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if sec := r.FormValue("seconds"); sec != "" {
+		// TODO: Handle serveDeltaProfile
 		// name.serveDeltaProfile(w, r, p, sec)
-		// TODO:
-		err := fmt.Errorf("TODO: ong/mux: handle serveDeltaProfile. name=%s, seconds=%s", name, sec)
+		err := fmt.Errorf(`ong/mux: cannot handle serveDeltaProfile for; name=%s, seconds=%s. See=https://github.com/komuw/ong/issues/366`, name, sec)
 		serveError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -227,86 +181,7 @@ func (name pprofHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.WriteTo(w, debug)
 }
 
-// func (name pprofHandler) serveDeltaProfile(w http.ResponseWriter, r *http.Request, p *pprof.Profile, secStr string) {
-// 	sec, err := strconv.ParseInt(secStr, 10, 64)
-// 	if err != nil || sec <= 0 {
-// 		serveError(w, http.StatusBadRequest, `invalid value for "seconds" - must be a positive integer`)
-// 		return
-// 	}
-// 	if !profileSupportsDelta[name] {
-// 		serveError(w, http.StatusBadRequest, `"seconds" parameter is not supported for this profile type`)
-// 		return
-// 	}
-// 	// 'name' should be a key in profileSupportsDelta.
-// 	if durationExceedsWriteTimeout(r, float64(sec)) {
-// 		serveError(w, http.StatusBadRequest, "profile duration exceeds server's WriteTimeout")
-// 		return
-// 	}
-// 	debug, _ := strconv.Atoi(r.FormValue("debug"))
-// 	if debug != 0 {
-// 		serveError(w, http.StatusBadRequest, "seconds and debug params are incompatible")
-// 		return
-// 	}
-// 	p0, err := collectProfile(p)
-// 	if err != nil {
-// 		serveError(w, http.StatusInternalServerError, "failed to collect profile")
-// 		return
-// 	}
-
-// 	t := time.NewTimer(time.Duration(sec) * time.Second)
-// 	defer t.Stop()
-
-// 	select {
-// 	case <-r.Context().Done():
-// 		err := r.Context().Err()
-// 		if err == context.DeadlineExceeded {
-// 			serveError(w, http.StatusRequestTimeout, err.Error())
-// 		} else { // TODO: what's a good status code for canceled requests? 400?
-// 			serveError(w, http.StatusInternalServerError, err.Error())
-// 		}
-// 		return
-// 	case <-t.C:
-// 	}
-
-// 	p1, err := collectProfile(p)
-// 	if err != nil {
-// 		serveError(w, http.StatusInternalServerError, "failed to collect profile")
-// 		return
-// 	}
-// 	ts := p1.TimeNanos
-// 	dur := p1.TimeNanos - p0.TimeNanos
-
-// 	p0.Scale(-1)
-
-// 	p1, err = profile.Merge([]*profile.Profile{p0, p1})
-// 	if err != nil {
-// 		serveError(w, http.StatusInternalServerError, "failed to compute delta")
-// 		return
-// 	}
-
-// 	p1.TimeNanos = ts // set since we don't know what profile.Merge set for TimeNanos.
-// 	p1.DurationNanos = dur
-
-// 	w.Header().Set("Content-Type", "application/octet-stream")
-// 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s-delta"`, name))
-// 	p1.Write(w)
-// }
-
-// func collectProfile(p *pprof.Profile) (*profile.Profile, error) {
-// 	var buf bytes.Buffer
-// 	if err := p.WriteTo(&buf, 0); err != nil {
-// 		return nil, err
-// 	}
-// 	ts := time.Now().UnixNano()
-// 	p0, err := profile.Parse(&buf)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	p0.TimeNanos = ts
-// 	return p0, nil
-// }
-
-var profileSupportsDelta = map[pprofHandler]bool{
+var profileSupportsDelta = map[handler]bool{
 	"allocs":       true,
 	"block":        true,
 	"goroutine":    true,
@@ -334,14 +209,14 @@ type profileEntry struct {
 	Count int
 }
 
-// Index responds with the pprof-formatted profile named by the request.
+// index responds with the pprof-formatted profile named by the request.
 // For example, "/debug/pprof/heap" serves the "heap" profile.
-// Index responds to a request for "/debug/pprof/" with an HTML page
+// index responds to a request for "/debug/pprof/" with an HTML page
 // listing the available profiles.
-func Index(w http.ResponseWriter, r *http.Request) {
+func index(w http.ResponseWriter, r *http.Request) {
 	if name, found := strings.CutPrefix(r.URL.Path, "/debug/pprof/"); found {
 		if name != "" {
-			pprofHandler(name).ServeHTTP(w, r)
+			handler(name).serveHTTP(w, r)
 			return
 		}
 	}

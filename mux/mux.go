@@ -102,22 +102,22 @@ func pprofTT() http.HandlerFunc {
 
 		switch path {
 		case "/debug/pprof":
-			Index(w, r)
+			index(w, r)
 			return
 		case "/debug/pprof/cmdline":
-			Cmdline(w, r)
+			cmdline(w, r)
 			return
 		case "/debug/pprof/profile":
-			Profile(w, r)
+			profile(w, r)
 			return
 		case "/debug/pprof/symbol":
-			Symbol(w, r)
+			symbol(w, r)
 			return
 		case "/debug/pprof/trace":
-			Trace(w, r)
+			traceHandler(w, r)
 			return
 		default:
-			Index(w, r)
+			index(w, r)
 			return
 		}
 	}
