@@ -15,11 +15,12 @@ import (
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 type ClientIPstrategy = clientip.ClientIPstrategy
 
-// Opts are the various parameters(optionals) that can be used to configure middlewares.
+// Opts are the various parameters(optionals) that can be used to configure ong.
 //
 // Use either [New] or [WithOpts] to get a valid Opts. TODO:
 type Opts struct {
-	middleware middlewareOpts
+	// Middleware are parameters that are used by middleware.
+	Middleware middlewareOpts
 }
 
 // TODO: string & go string for Opts.
