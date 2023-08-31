@@ -58,7 +58,7 @@ func NewRoute(
 //
 // Use [New] to get a valid Muxer.
 type Muxer struct {
-	router *router         // some router
+	router *router
 	opt    middleware.Opts // needed by AddRoute
 }
 
