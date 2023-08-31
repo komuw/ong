@@ -44,7 +44,11 @@ type Muxer struct {
 //
 // It panics with a helpful error message if it detects conflicting routes.
 func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
-	return Muxer{internalMux: mx.New(opt, notFoundHandler, routes...)}
+	m, err := mx.New(opt, notFoundHandler, routes...)
+	if err != nil {
+		panic(err)
+	}
+	return Muxer{internalMux: m}
 }
 
 // ServeHTTP implements a http.Handler

@@ -19,5 +19,9 @@ func NewRoute(
 	method string,
 	handler http.Handler,
 ) Route {
-	return mx.NewRoute(pattern, method, handler)
+	rt, err := mx.NewRoute(pattern, method, handler)
+	if err != nil {
+		panic(err)
+	}
+	return rt
 }
