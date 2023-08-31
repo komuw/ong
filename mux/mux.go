@@ -120,7 +120,7 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 		)
 	}
 
-	// TODO: rmeove this.
+	// TODO: remove this.
 	{
 		// Support for acme certificate manager needs to be added in three places:
 		// (a) In http middlewares.
