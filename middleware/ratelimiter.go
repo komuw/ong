@@ -43,7 +43,9 @@ func rateLimiter(
 			return
 		}
 
-		// todo: maybe also limit max body size using something like `http.MaxBytesHandler`
+		// Note: We also limit max body size using `http.MaxBytesHandler`
+		// See: ong/server
+
 		// todo: also maybe add another limiter for IP subnet.
 		//      see limitation: https://github.com/komuw/ong/issues/17#issuecomment-1114551281
 
