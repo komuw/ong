@@ -333,10 +333,10 @@ func getManyRoutes() []Route {
 	return routes
 }
 
-var result Mux //nolint:gochecknoglobals
+var result Muxer //nolint:gochecknoglobals
 
 func BenchmarkMuxNew(b *testing.B) {
-	var r Mux
+	var r Muxer
 
 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 

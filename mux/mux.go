@@ -49,19 +49,19 @@ func NewRoute(
 	}
 }
 
-// Mux is a HTTP request multiplexer.
+// Muxer is a HTTP request multiplexer.
 //
 // It matches the URL of each incoming request against a list of registered
 // patterns and calls the handler for the pattern that most closely matches the URL.
 // It implements http.Handler
 //
-// Use [New] to get a valid Mux.
-type Mux struct {
+// Use [New] to get a valid Muxer.
+type Muxer struct {
 	router *router // some router
 }
 
 // String implements [fmt.Stringer]
-func (m Mux) String() string {
+func (m Muxer) String() string {
 	return fmt.Sprintf(`Opts{
   router: %v
 }`,
@@ -70,7 +70,7 @@ func (m Mux) String() string {
 }
 
 // GoString implements [fmt.GoStringer]
-func (m Mux) GoString() string {
+func (m Muxer) GoString() string {
 	return m.String()
 }
 
@@ -83,8 +83,8 @@ func (m Mux) GoString() string {
 // Typically, an application should only have one Mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux {
-	m := Mux{
+func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
+	m := Muxer{
 		router: newRouter(notFoundHandler),
 	}
 
@@ -133,14 +133,14 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 	return m
 }
 
-func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
+func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
 	m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
 
 // ServeHTTP implements a http.Handler
 //
 // It routes incoming http requests based on method and path extracting path parameters as it goes.
-func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m Muxer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.router.serveHTTP(w, r)
 }
 
@@ -151,7 +151,7 @@ func (m Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // It is inspired by django's [resolve] url utility.
 //
 // [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
-func (m Mux) Resolve(path string) Route {
+func (m Muxer) Resolve(path string) Route {
 	zero := Route{}
 
 	u, err := url.Parse(path)
