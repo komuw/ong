@@ -40,6 +40,32 @@ Algorithm:
 // ClientIPstrategy is an option that describes the strategy to use when fetching the client's IP address.
 type ClientIPstrategy string
 
+const (
+	// DirectIpStrategy derives the client IP from [http.Request.RemoteAddr].
+	// It should be used if the server accepts direct connections, rather than through a proxy.
+	//
+	// See the warning in [ClientIP]
+	DirectIpStrategy = ClientIPstrategy("DirectIpStrategy")
+
+	// LeftIpStrategy derives the client IP from the leftmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	//
+	// See the warning in [ClientIP]
+	LeftIpStrategy = ClientIPstrategy("LeftIpStrategy")
+
+	// RightIpStrategy derives the client IP from the rightmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	//
+	// See the warning in [ClientIP]
+	RightIpStrategy = ClientIPstrategy("RightIpStrategy")
+
+	// ProxyStrategy derives the client IP from the [PROXY protocol v1].
+	// This should be used when your application is behind a TCP proxy that uses the v1 PROXY protocol.
+	//
+	// 	See the warning in [ClientIP]
+	//
+	// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
+	ProxyStrategy = ClientIPstrategy("ProxyStrategy")
+)
+
 type clientIPcontextKeyType string
 
 const (
