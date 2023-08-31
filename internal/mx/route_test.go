@@ -327,10 +327,12 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
-		// This one returns with a conflict message.
-		err := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
+		err := r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
 		attest.Error(t, err)
+
+		// This one returns with a conflict message.
+		errH := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errH)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/post/create", nil)
@@ -352,10 +354,12 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
-		// This one returns with a conflict message.
-		err := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
+		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
 		attest.Error(t, err)
+
+		// This one returns with a conflict message.
+		errH := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errH)
 
 		// This one returns with a conflict message.
 		errB := r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
@@ -372,9 +376,12 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute-one"
 		msg2 := "secondRoute-two"
-		r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
+		err := r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
+		attest.Error(t, err)
+
 		// This one should not conflict.
-		r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
+		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errH)
 	})
 }
 

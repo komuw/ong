@@ -838,7 +838,7 @@ func (o Opts) Equal(other Opts) bool {
 		if o.RateShedSamplePercent != other.RateShedSamplePercent {
 			return false
 		}
-		if o.RateLimit != other.RateLimit {
+		if int(o.RateLimit) != int(other.RateLimit) {
 			return false
 		}
 
