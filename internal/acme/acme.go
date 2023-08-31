@@ -179,16 +179,6 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 					return
 				}
 
-				if _, errC := netip.ParseAddr(domain); errC == nil {
-					e := errors.New("ong/acme: request.host for well-known/acme-challenge request should not be IP address")
-					http.Error(
-						w,
-						e.Error(),
-						http.StatusTeapot,
-					)
-					return
-				}
-
 				if strings.Contains(domain, ":") {
 					d, _, errD := net.SplitHostPort(domain)
 					if errD != nil {
@@ -201,6 +191,16 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 					}
 
 					domain = d
+				}
+
+				if _, errC := netip.ParseAddr(domain); errC == nil {
+					e := errors.New("ong/acme: request.host for well-known/acme-challenge request should not be IP address")
+					http.Error(
+						w,
+						e.Error(),
+						http.StatusTeapot,
+					)
+					return
 				}
 
 				// todo: check if the token supplied in the url is known to us and error otherwise.
