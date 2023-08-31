@@ -2,6 +2,7 @@
 package config
 
 import (
+	"crypto/x509"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -86,6 +87,8 @@ type ClientIPstrategy = clientip.ClientIPstrategy
 type Opts struct {
 	// middlewareOpts are parameters that are used by middleware.
 	middlewareOpts
+	// serverOpts are parameters that are used by server.
+	serverOpts
 }
 
 // TODO: string & go string for Opts.
@@ -112,7 +115,7 @@ func New(
 	// server
 ) Opts {
 	return Opts{
-		NewMiddlewareOpts(
+		middlewareOpts: NewMiddlewareOpts(
 			domain,
 			httpsPort,
 			secretKey,
@@ -144,7 +147,7 @@ func WithOpts(
 	// server
 ) Opts {
 	return Opts{
-		WithMiddlewareOpts(
+		middlewareOpts: WithMiddlewareOpts(
 			domain,
 			httpsPort,
 			secretKey,
@@ -365,4 +368,43 @@ func WithMiddlewareOpts(
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
 	)
+}
+
+// serverOpts are the various parameters(optionals) that can be used to configure a HTTP server.
+//
+// Use either [NewOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts. // TODO:
+type serverOpts struct {
+	port              uint16 // tcp port is a 16bit unsigned integer.
+	maxBodyBytes      uint64 // max size of request body allowed.
+	serverLogLevel    slog.Level
+	readHeaderTimeout time.Duration
+	readTimeout       time.Duration
+	writeTimeout      time.Duration
+	handlerTimeout    time.Duration
+	idleTimeout       time.Duration
+	drainTimeout      time.Duration
+
+	tls struct {
+		// if certFile is present, tls will be served from certificates on disk.
+		certFile string
+		keyFile  string
+		// if acmeEmail is present, tls will be served from ACME certificates.
+		acmeEmail string
+		// domain can be a wildcard.
+		// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
+		// Instead, we'll get a certificate per subdomain.
+		// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
+		domain string
+		// URL of the ACME certificate authority's directory endpoint.
+		acmeDirectoryUrl      string
+		clientCertificatePool *x509.CertPool
+	}
+
+	// the following ones are created automatically
+	host          string
+	serverPort    string
+	serverAddress string
+	network       string
+	httpPort      string
+	pprofPort     string // TODO: remove this
 }
