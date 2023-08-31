@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -69,7 +70,7 @@ func TestNewRoute(t *testing.T) {
 		MethodGet,
 		middleware.Get(
 			someMuxHandler("msg"),
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 		),
 	)
 	attest.Error(t, errB)
@@ -96,7 +97,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -126,7 +127,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -174,7 +175,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -218,7 +219,7 @@ func TestMux(t *testing.T) {
 		attest.Ok(t, err)
 
 		_, errC := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt1,
 			rt2,
@@ -249,7 +250,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt1,
 			rt2,
@@ -342,7 +343,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -437,7 +438,7 @@ func BenchmarkMuxNew(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		mux, err := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			getManyRoutes(b)...,
 		)

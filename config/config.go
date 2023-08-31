@@ -3,13 +3,13 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/internal/key"
-	"golang.org/x/exp/slog"
 )
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
@@ -19,41 +19,105 @@ type ClientIPstrategy = clientip.ClientIPstrategy
 //
 // Use either [New] or [WithOpts] to get a valid Opts. TODO:
 type Opts struct {
-	// Middleware are parameters that are used by middleware.
-	Middleware middlewareOpts
+	// middlewareOpts are parameters that are used by middleware.
+	middlewareOpts
 }
 
 // TODO: string & go string for Opts.
 
+// TODO: docs
+func New(
+	// middleware
+	domain string,
+	httpsPort uint16,
+	secretKey string,
+	strategy ClientIPstrategy,
+	logger *slog.Logger,
+	rateShedSamplePercent int,
+	rateLimit float64,
+	loadShedSamplingPeriod time.Duration,
+	loadShedMinSampleSize int,
+	loadShedBreachLatency time.Duration,
+	allowedOrigins []string,
+	allowedMethods []string,
+	allowedHeaders []string,
+	corsCacheDuration time.Duration,
+	csrfTokenDuration time.Duration,
+	sessionCookieDuration time.Duration,
+	// server
+) Opts {
+	return Opts{
+		NewMiddlewareOpts(
+			domain,
+			httpsPort,
+			secretKey,
+			strategy,
+			logger,
+			rateShedSamplePercent,
+			rateLimit,
+			loadShedSamplingPeriod,
+			loadShedMinSampleSize,
+			loadShedBreachLatency,
+			allowedOrigins,
+			allowedMethods,
+			allowedHeaders,
+			corsCacheDuration,
+			csrfTokenDuration,
+			sessionCookieDuration,
+		),
+	}
+}
+
+// TODO: docs
+func WithOpts(
+	// middleware
+	domain string,
+	httpsPort uint16,
+	secretKey string,
+	strategy ClientIPstrategy,
+	logger *slog.Logger,
+	// server
+) Opts {
+	return Opts{
+		WithMiddlewareOpts(
+			domain,
+			httpsPort,
+			secretKey,
+			strategy,
+			logger,
+		),
+	}
+}
+
 type middlewareOpts struct {
-	domain    string
-	httpsPort uint16
-	secretKey string
-	strategy  ClientIPstrategy
-	l         *slog.Logger
+	Domain    string
+	HttpsPort uint16
+	SecretKey string
+	Strategy  ClientIPstrategy
+	Logger    *slog.Logger
 
 	// logger
-	rateShedSamplePercent int
+	RateShedSamplePercent int
 
 	// ratelimit
-	rateLimit float64
+	RateLimit float64
 
 	// loadshed
-	loadShedSamplingPeriod time.Duration
-	loadShedMinSampleSize  int
-	loadShedBreachLatency  time.Duration
+	LoadShedSamplingPeriod time.Duration
+	LoadShedMinSampleSize  int
+	LoadShedBreachLatency  time.Duration
 
 	// cors
-	allowedOrigins    []string
-	allowedMethods    []string
-	allowedHeaders    []string
-	corsCacheDuration time.Duration
+	AllowedOrigins    []string
+	AllowedMethods    []string
+	AllowedHeaders    []string
+	CorsCacheDuration time.Duration
 
 	// csrf
-	csrfTokenDuration time.Duration
+	CsrfTokenDuration time.Duration
 
 	// session
-	sessionCookieDuration time.Duration
+	SessionCookieDuration time.Duration
 }
 
 // String implements [fmt.Stringer]
@@ -76,22 +140,22 @@ func (m middlewareOpts) String() string {
   csrfTokenDuration: %v
   sessionCookieDuration: %v
 }`,
-		m.domain,
-		m.httpsPort,
-		fmt.Sprintf("%s<REDACTED>", string(m.secretKey[0])),
-		m.strategy,
-		m.l,
-		m.rateShedSamplePercent,
-		m.rateLimit,
-		m.loadShedSamplingPeriod,
-		m.loadShedMinSampleSize,
-		m.loadShedBreachLatency,
-		m.allowedOrigins,
-		m.allowedMethods,
-		m.allowedHeaders,
-		m.corsCacheDuration,
-		m.csrfTokenDuration,
-		m.sessionCookieDuration,
+		m.Domain,
+		m.HttpsPort,
+		fmt.Sprintf("%s<REDACTED>", string(m.SecretKey[0])),
+		m.Strategy,
+		m.Logger,
+		m.RateShedSamplePercent,
+		m.RateLimit,
+		m.LoadShedSamplingPeriod,
+		m.LoadShedMinSampleSize,
+		m.LoadShedBreachLatency,
+		m.AllowedOrigins,
+		m.AllowedMethods,
+		m.AllowedHeaders,
+		m.CorsCacheDuration,
+		m.CsrfTokenDuration,
+		m.SessionCookieDuration,
 	)
 }
 
@@ -100,6 +164,8 @@ func (m middlewareOpts) GoString() string {
 	return m.String()
 }
 
+// TODO: un-export this.
+//
 // NewMiddlewareOpts returns a new Opts.
 // It panics on error.
 //
@@ -114,7 +180,7 @@ func (m middlewareOpts) GoString() string {
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
 // It is important to choose your strategy carefully, see the warning in [ClientIP].
 //
-// l is an [slog.Logger] that will be used for logging.
+// logger is an [slog.Logger] that will be used for logging.
 //
 // rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [config.DefaultRateShedSamplePercent] is used instead.
 //
@@ -145,7 +211,7 @@ func NewMiddlewareOpts(
 	httpsPort uint16,
 	secretKey string,
 	strategy ClientIPstrategy,
-	l *slog.Logger,
+	logger *slog.Logger,
 	rateShedSamplePercent int,
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
@@ -172,37 +238,39 @@ func NewMiddlewareOpts(
 	}
 
 	return middlewareOpts{
-		domain:    domain,
-		httpsPort: httpsPort,
-		secretKey: secretKey,
-		strategy:  strategy,
-		l:         l,
+		Domain:    domain,
+		HttpsPort: httpsPort,
+		SecretKey: secretKey,
+		Strategy:  strategy,
+		Logger:    logger,
 
 		// logger
-		rateShedSamplePercent: rateShedSamplePercent,
+		RateShedSamplePercent: rateShedSamplePercent,
 
 		// ratelimiter
-		rateLimit: rateLimit,
+		RateLimit: rateLimit,
 
 		// loadshed
-		loadShedSamplingPeriod: loadShedSamplingPeriod,
-		loadShedMinSampleSize:  loadShedMinSampleSize,
-		loadShedBreachLatency:  loadShedBreachLatency,
+		LoadShedSamplingPeriod: loadShedSamplingPeriod,
+		LoadShedMinSampleSize:  loadShedMinSampleSize,
+		LoadShedBreachLatency:  loadShedBreachLatency,
 
 		// cors
-		allowedOrigins:    allowedOrigins,
-		allowedMethods:    allowedMethods,
-		allowedHeaders:    allowedHeaders,
-		corsCacheDuration: corsCacheDuration,
+		AllowedOrigins:    allowedOrigins,
+		AllowedMethods:    allowedMethods,
+		AllowedHeaders:    allowedHeaders,
+		CorsCacheDuration: corsCacheDuration,
 
 		// csrf
-		csrfTokenDuration: csrfTokenDuration,
+		CsrfTokenDuration: csrfTokenDuration,
 
 		// session
-		sessionCookieDuration: sessionCookieDuration,
+		SessionCookieDuration: sessionCookieDuration,
 	}
 }
 
+// TODO: un-export this.
+//
 // WithMiddlewareOpts returns a new Opts that has sensible defaults.
 // It panics on error.
 //
@@ -212,14 +280,14 @@ func WithMiddlewareOpts(
 	httpsPort uint16,
 	secretKey string,
 	strategy ClientIPstrategy,
-	l *slog.Logger,
+	logger *slog.Logger,
 ) middlewareOpts {
 	return NewMiddlewareOpts(
 		domain,
 		httpsPort,
 		secretKey,
 		strategy,
-		l,
+		logger,
 		DefaultRateShedSamplePercent,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,

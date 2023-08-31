@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/middleware"
 )
 
@@ -29,7 +30,7 @@ const (
 // Muxer is a HTTP request multiplexer.
 type Muxer struct {
 	router *router
-	opt    middleware.Opts // needed by AddRoute
+	opt    config.Opts // needed by AddRoute
 }
 
 // String implements [fmt.Stringer]
@@ -49,7 +50,7 @@ func (m Muxer) GoString() string {
 }
 
 // New returns a HTTP request multiplexer that has the paths in routes.
-func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) (Muxer, error) {
+func New(opt config.Opts, notFoundHandler http.Handler, routes ...Route) (Muxer, error) {
 	m := Muxer{
 		router: newRouter(notFoundHandler),
 		opt:    opt,

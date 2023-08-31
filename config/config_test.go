@@ -1,12 +1,12 @@
 package config
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
-	"golang.org/x/exp/slog"
 )
 
 func TestNewMiddlewareOpts(t *testing.T) {

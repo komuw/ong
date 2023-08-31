@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 )
@@ -35,7 +36,7 @@ func Example_getCspNonce() {
 	l := log.New(context.Background(), os.Stdout, 100)
 	handler := middleware.Get(
 		loginHandler(),
-		middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
 	)
 	_ = handler // use handler
 
@@ -46,7 +47,7 @@ func Example_getCsrfToken() {
 	l := log.New(context.Background(), os.Stdout, 100)
 	handler := middleware.Get(
 		welcomeHandler(),
-		middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
 	)
 	_ = handler // use handler
 
@@ -55,7 +56,7 @@ func Example_getCsrfToken() {
 
 func ExampleNew() {
 	l := log.New(context.Background(), os.Stdout, 100)
-	opts := middleware.New(
+	opts := config.New(
 		// The domain where our application will be available on.
 		"example.com",
 		// The https port that our application will be listening on.
@@ -97,7 +98,7 @@ func ExampleNew() {
 
 func ExampleGet() {
 	l := log.New(context.Background(), os.Stdout, 100)
-	opts := middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l)
+	opts := config.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l)
 	handler := middleware.Get(loginHandler(), opts)
 	_ = handler // use handler
 
@@ -106,7 +107,7 @@ func ExampleGet() {
 
 func ExampleAll() {
 	l := log.New(context.Background(), os.Stdout, 100)
-	opts := middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l)
+	opts := config.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l)
 
 	myHandler := http.HandlerFunc(
 		func(w http.ResponseWriter, _ *http.Request) {
@@ -124,7 +125,7 @@ func ExampleAll() {
 
 func ExampleWithOpts() {
 	l := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	opts := middleware.WithOpts(
+	opts := config.WithOpts(
 		"example.com",
 		443,
 		"super-h@rd-Pa$1word",
