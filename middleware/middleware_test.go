@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/id"
@@ -499,6 +500,18 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		config.DefaultCorsCacheDuration,
 		config.DefaultCsrfCookieDuration,
 		config.DefaultSessionCookieDuration,
+		20*1024*1024,
+		slog.LevelDebug,
+		1*time.Second,
+		1*time.Second,
+		1*time.Second,
+		1*time.Second,
+		10*time.Second,
+		"",
+		"",
+		"acme@example.org",
+		"",
+		nil,
 	)
 
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)

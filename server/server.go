@@ -270,6 +270,8 @@ func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUr
 // Likewise, if the Opts include an acmeEmail address, the server will accept https traffic and automatically handle http->https redirect.
 //
 // The server shuts down cleanly after receiving any termination signal.
+//
+// TODO: Run should not take a logger since opts has one.
 func Run(h http.Handler, o config.Opts, l *slog.Logger) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
