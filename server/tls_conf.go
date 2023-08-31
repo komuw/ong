@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/acme"
@@ -21,7 +20,7 @@ import (
 // The tls config may either procure certificates from ACME, from disk or be nil(for non-tls traffic)
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
-func getTlsConfig(o config.Opts, l *slog.Logger) (c *tls.Config, e error) {
+func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
 	if err := acme.Validate(o.Tls.Domain); err != nil {
 		return nil, err
 	}
@@ -43,7 +42,7 @@ func getTlsConfig(o config.Opts, l *slog.Logger) (c *tls.Config, e error) {
 			o.Tls.Domain,
 			o.Tls.AcmeEmail,
 			o.Tls.AcmeDirectoryUrl,
-			l,
+			o.Logger,
 		)
 		// Support for acme certificate manager needs to be added in three places:
 		// (a) In http middlewares.

@@ -19,7 +19,7 @@ Instead, use the Go `net/http` package; and if you need some extra bits, may I s
 
 This library is made just for me, it might be unsafe & it does not generally accept code contributions.       
 
-TODO: check this example
+
 ```go
 package main
 
@@ -64,7 +64,7 @@ func main() {
 		),
 	)
 
-	err := server.Run(mux, opts, l)
+	err := server.Run(mux, opts)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

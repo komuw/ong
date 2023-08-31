@@ -96,7 +96,7 @@ func TestGetTlsConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, err := getTlsConfig(tt.opts(), l)
+			c, err := getTlsConfig(tt.opts())
 			tt.assert(c, err)
 		})
 	}

@@ -41,7 +41,7 @@ func ExampleRun() {
 		),
 	)
 
-	err := server.Run(mux, opts, l)
+	err := server.Run(mux, opts)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

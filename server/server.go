@@ -33,9 +33,7 @@ import (
 // Likewise, if the Opts include an acmeEmail address, the server will accept https traffic and automatically handle http->https redirect.
 //
 // The server shuts down cleanly after receiving any termination signal.
-//
-// TODO: Run should not take a logger since opts has one.
-func Run(h http.Handler, o config.Opts, l *slog.Logger) error {
+func Run(h http.Handler, o config.Opts) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
 
@@ -61,7 +59,7 @@ func Run(h http.Handler, o config.Opts, l *slog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tlsConf, errTc := getTlsConfig(o, l)
+	tlsConf, errTc := getTlsConfig(o)
 	if errTc != nil {
 		return errTc
 	}
@@ -83,7 +81,7 @@ func Run(h http.Handler, o config.Opts, l *slog.Logger) error {
 		ReadTimeout:       o.ReadTimeout,
 		WriteTimeout:      o.WriteTimeout,
 		IdleTimeout:       o.IdleTimeout,
-		ErrorLog:          slog.NewLogLogger(l.Handler(), o.ServerLogLevel),
+		ErrorLog:          slog.NewLogLogger(o.Logger.Handler(), o.ServerLogLevel),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 			tConn, ok := c.(*tls.Conn)
@@ -105,14 +103,9 @@ func Run(h http.Handler, o config.Opts, l *slog.Logger) error {
 		},
 	}
 
-	sigHandler(server, ctx, cancel, l, o.DrainTimeout)
+	sigHandler(server, ctx, cancel, o.Logger, o.DrainTimeout)
 
-	{
-		// TODO:
-		// startPprofServer(l, o)
-	}
-
-	err := serve(ctx, server, o, l)
+	err := serve(ctx, server, o)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
@@ -163,7 +156,7 @@ func sigHandler(
 	}()
 }
 
-func serve(ctx context.Context, srv *http.Server, o config.Opts, logger *slog.Logger) error {
+func serve(ctx context.Context, srv *http.Server, o config.Opts) error {
 	{
 		// HTTP(non-tls) LISTERNER:
 		redirectSrv := &http.Server{
@@ -173,22 +166,22 @@ func serve(ctx context.Context, srv *http.Server, o config.Opts, logger *slog.Lo
 			ReadTimeout:       o.ReadTimeout,
 			WriteTimeout:      o.WriteTimeout,
 			IdleTimeout:       o.IdleTimeout,
-			ErrorLog:          slog.NewLogLogger(logger.Handler(), o.ServerLogLevel),
+			ErrorLog:          slog.NewLogLogger(o.Logger.Handler(), o.ServerLogLevel),
 			BaseContext:       func(net.Listener) context.Context { return ctx },
 		}
 		go func() {
 			redirectSrvCfg := listenerConfig()
 			redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
 			if errL != nil {
-				logger.Error("redirect server, unable to create listener", "error", errL)
+				o.Logger.Error("redirect server, unable to create listener", "error", errL)
 				return
 			}
 
-			slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
+			slog.NewLogLogger(o.Logger.Handler(), log.LevelImmediate).
 				Printf("redirect server listening at %s", redirectSrv.Addr)
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
-				logger.Error("unable to start redirect server", "error", errRedirectSrv)
+				o.Logger.Error("unable to start redirect server", "error", errRedirectSrv)
 			}
 		}()
 	}
@@ -203,7 +196,7 @@ func serve(ctx context.Context, srv *http.Server, o config.Opts, logger *slog.Lo
 
 		l := &fingerListener{cl}
 
-		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.ServerAddress)
+		slog.NewLogLogger(o.Logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.ServerAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`

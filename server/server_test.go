@@ -82,14 +82,16 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			err := Run(mux,
+			err := Run(
+				mux,
 				config.WithOpts(
 					"localhost",
 					port,
 					tst.SecretKey(),
 					middleware.DirectIpStrategy,
 					l,
-				), l)
+				),
+			)
 			attest.Ok(t, err)
 		}()
 
@@ -211,14 +213,16 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			err := Run(mux,
+			err := Run(
+				mux,
 				config.WithOpts(
 					"localhost",
 					port,
 					tst.SecretKey(),
 					middleware.DirectIpStrategy,
 					l,
-				), l)
+				),
+			)
 			attest.Ok(t, err)
 		}()
 
@@ -283,14 +287,16 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			err := Run(mux,
+			err := Run(
+				mux,
 				config.WithOpts(
 					"localhost",
 					port,
 					tst.SecretKey(),
 					middleware.DirectIpStrategy,
 					l,
-				), l)
+				),
+			)
 			attest.Ok(t, err)
 		}()
 
@@ -341,14 +347,16 @@ func BenchmarkServer(b *testing.B) {
 
 	go func() {
 		time.Sleep(1 * time.Second)
-		err := Run(handler,
+		err := Run(
+			handler,
 			config.WithOpts(
 				"localhost",
 				port,
 				tst.SecretKey(),
 				middleware.DirectIpStrategy,
 				l,
-			), l)
+			),
+		)
 		attest.Ok(b, err)
 	}()
 
