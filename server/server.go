@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/automax"
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/finger"
 	"github.com/komuw/ong/internal/octx"
@@ -269,7 +270,7 @@ func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUr
 // Likewise, if the Opts include an acmeEmail address, the server will accept https traffic and automatically handle http->https redirect.
 //
 // The server shuts down cleanly after receiving any termination signal.
-func Run(h http.Handler, o Opts, l *slog.Logger) error {
+func Run(h http.Handler, o config.Opts, l *slog.Logger) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
 
@@ -300,27 +301,24 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		return errTc
 	}
 	server := &http.Server{
-		Addr:      o.serverPort,
+		Addr:      o.ServerPort,
 		TLSConfig: tlsConf,
 
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler: http.TimeoutHandler(
-			http.MaxBytesHandler(
-				h,
-				int64(o.maxBodyBytes), // limit in bytes.
-			),
-			o.handlerTimeout,
-			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
+		Handler: http.MaxBytesHandler(
+			h,
+			int64(o.MaxBodyBytes), // limit in bytes.
 		),
+		// http.TimeoutHandler does not implement [http.ResponseController] so we no longer use it.
 
-		ReadHeaderTimeout: o.readHeaderTimeout,
-		ReadTimeout:       o.readTimeout,
-		WriteTimeout:      o.writeTimeout,
-		IdleTimeout:       o.idleTimeout,
-		ErrorLog:          slog.NewLogLogger(l.Handler(), o.serverLogLevel),
+		ReadHeaderTimeout: o.ReadHeaderTimeout,
+		ReadTimeout:       o.ReadTimeout,
+		WriteTimeout:      o.WriteTimeout,
+		IdleTimeout:       o.IdleTimeout,
+		ErrorLog:          slog.NewLogLogger(l.Handler(), o.ServerLogLevel),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 			tConn, ok := c.(*tls.Conn)
@@ -342,10 +340,11 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		},
 	}
 
-	sigHandler(server, ctx, cancel, l, o.drainTimeout)
+	sigHandler(server, ctx, cancel, l, o.DrainTimeout)
 
 	{
-		startPprofServer(l, o)
+		// TODO:
+		// startPprofServer(l, o)
 	}
 
 	err := serve(ctx, server, o, l)
@@ -399,17 +398,17 @@ func sigHandler(
 	}()
 }
 
-func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) error {
+func serve(ctx context.Context, srv *http.Server, o config.Opts, logger *slog.Logger) error {
 	{
 		// HTTP(non-tls) LISTERNER:
 		redirectSrv := &http.Server{
-			Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
+			Addr:              fmt.Sprintf("%s%s", o.Host, o.HttpPort),
 			Handler:           srv.Handler,
-			ReadHeaderTimeout: o.readHeaderTimeout,
-			ReadTimeout:       o.readTimeout,
-			WriteTimeout:      o.writeTimeout,
-			IdleTimeout:       o.idleTimeout,
-			ErrorLog:          slog.NewLogLogger(logger.Handler(), o.serverLogLevel),
+			ReadHeaderTimeout: o.ReadHeaderTimeout,
+			ReadTimeout:       o.ReadTimeout,
+			WriteTimeout:      o.WriteTimeout,
+			IdleTimeout:       o.IdleTimeout,
+			ErrorLog:          slog.NewLogLogger(logger.Handler(), o.ServerLogLevel),
 			BaseContext:       func(net.Listener) context.Context { return ctx },
 		}
 		go func() {
@@ -432,14 +431,14 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 	{
 		// HTTPS(tls) LISTERNER:
 		cfg := listenerConfig()
-		cl, err := cfg.Listen(ctx, o.network, o.serverAddress)
+		cl, err := cfg.Listen(ctx, o.Network, o.ServerAddress)
 		if err != nil {
 			return err
 		}
 
 		l := &fingerListener{cl}
 
-		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.serverAddress)
+		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.ServerAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`

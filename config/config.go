@@ -375,36 +375,35 @@ func WithMiddlewareOpts(
 // Use either [NewOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts. // TODO:
 type serverOpts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
-	maxBodyBytes      uint64 // max size of request body allowed.
-	serverLogLevel    slog.Level
-	readHeaderTimeout time.Duration
-	readTimeout       time.Duration
-	writeTimeout      time.Duration
-	handlerTimeout    time.Duration
-	idleTimeout       time.Duration
-	drainTimeout      time.Duration
+	MaxBodyBytes      uint64 // max size of request body allowed.
+	ServerLogLevel    slog.Level
+	ReadHeaderTimeout time.Duration
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+	DrainTimeout      time.Duration
 
-	tls struct {
+	Tls struct {
 		// if certFile is present, tls will be served from certificates on disk.
-		certFile string
-		keyFile  string
+		CertFile string
+		KeyFile  string
 		// if acmeEmail is present, tls will be served from ACME certificates.
-		acmeEmail string
-		// domain can be a wildcard.
+		AcmeEmail string
+		// Domain can be a wildcard.
 		// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
 		// Instead, we'll get a certificate per subdomain.
 		// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-		domain string
+		Domain string
 		// URL of the ACME certificate authority's directory endpoint.
-		acmeDirectoryUrl      string
-		clientCertificatePool *x509.CertPool
+		AcmeDirectoryUrl      string
+		ClientCertificatePool *x509.CertPool
 	}
 
 	// the following ones are created automatically
-	host          string
-	serverPort    string
-	serverAddress string
-	network       string
-	httpPort      string
+	Host          string
+	ServerPort    string
+	ServerAddress string
+	Network       string
+	HttpPort      string
 	pprofPort     string // TODO: remove this
 }
