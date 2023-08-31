@@ -52,6 +52,7 @@ const (
 	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory" // TODO: remove
 )
 
+// TODO: rmeove this Opts.
 type tlsOpts struct {
 	// if certFile is present, tls will be served from certificates on disk.
 	certFile string

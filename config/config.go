@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -118,7 +119,21 @@ type Opts struct {
 	serverOpts
 }
 
-// TODO: string & go string for Opts.
+// String implements [fmt.Stringer]
+func (o Opts) String() string {
+	return fmt.Sprintf(`Opts{
+  middlewareOpts: %v
+  serverOpts: %v
+}`,
+		o.middlewareOpts,
+		o.serverOpts,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (o Opts) GoString() string {
+	return o.String()
+}
 
 // TODO: docs
 func New(
@@ -561,6 +576,46 @@ func WithMiddlewareOpts(
 	)
 }
 
+type tlsOpts struct {
+	// if certFile is present, tls will be served from certificates on disk.
+	CertFile string
+	KeyFile  string
+	// if acmeEmail is present, tls will be served from ACME certificates.
+	AcmeEmail string
+	// Domain can be a wildcard.
+	// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
+	// Instead, we'll get a certificate per subdomain.
+	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
+	Domain string
+	// URL of the ACME certificate authority's directory endpoint.
+	AcmeDirectoryUrl      string
+	ClientCertificatePool *x509.CertPool
+}
+
+// String implements [fmt.Stringer]
+func (t tlsOpts) String() string {
+	return fmt.Sprintf(`tlsOpts{
+  CertFile: %v
+  KeyFile: %v
+  AcmeEmail: %v
+  Domain: %v
+  AcmeDirectoryUrl: %v
+  ClientCertificatePool: %v
+}`,
+		t.CertFile,
+		t.KeyFile,
+		t.AcmeEmail,
+		t.Domain,
+		t.AcmeDirectoryUrl,
+		t.ClientCertificatePool,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (t tlsOpts) GoString() string {
+	return t.String()
+}
+
 // serverOpts are the various parameters(optionals) that can be used to configure a HTTP server.
 //
 // Use either [NewOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts. // TODO:
@@ -574,21 +629,7 @@ type serverOpts struct {
 	IdleTimeout       time.Duration
 	DrainTimeout      time.Duration
 
-	Tls struct {
-		// if certFile is present, tls will be served from certificates on disk.
-		CertFile string
-		KeyFile  string
-		// if acmeEmail is present, tls will be served from ACME certificates.
-		AcmeEmail string
-		// Domain can be a wildcard.
-		// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
-		// Instead, we'll get a certificate per subdomain.
-		// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-		Domain string
-		// URL of the ACME certificate authority's directory endpoint.
-		AcmeDirectoryUrl      string
-		ClientCertificatePool *x509.CertPool
-	}
+	Tls tlsOpts
 
 	// the following ones are created automatically
 	Host          string
@@ -684,14 +725,7 @@ func NewServerOpts(
 		IdleTimeout:       idleTimeout,
 		DrainTimeout:      drainTimeout,
 
-		Tls: struct {
-			CertFile              string
-			KeyFile               string
-			AcmeEmail             string
-			Domain                string
-			AcmeDirectoryUrl      string
-			ClientCertificatePool *x509.CertPool
-		}{
+		Tls: tlsOpts{
 			CertFile:              certFile,
 			KeyFile:               keyFile,
 			AcmeEmail:             acmeEmail,
@@ -736,4 +770,112 @@ func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirec
 		acmeDirectoryUrl,
 		nil,
 	)
+}
+
+// String implements [fmt.Stringer]
+func (s serverOpts) String() string {
+	return fmt.Sprintf(`serverOpts{
+  port: %v
+  MaxBodyBytes: %v
+  ServerLogLevel: %v
+  ReadHeaderTimeout: %v
+  ReadTimeout: %v
+  WriteTimeout: %v
+  IdleTimeout: %v
+  DrainTimeout: %v
+  Tls: %v
+  Host: %v
+  ServerPort: %v
+  ServerAddress: %v
+  Network: %v
+  HttpPort: %v
+}`,
+		s.port,
+		s.MaxBodyBytes,
+		s.ServerLogLevel,
+		s.ReadHeaderTimeout,
+		s.ReadTimeout,
+		s.WriteTimeout,
+		s.IdleTimeout,
+		s.DrainTimeout,
+		s.Tls,
+		s.Host,
+		s.ServerPort,
+		s.ServerAddress,
+		s.Network,
+		s.HttpPort,
+	)
+}
+
+// GoString implements [fmt.GoStringer]
+func (s serverOpts) GoString() string {
+	return s.String()
+}
+
+// Equal compares two Opts for equality.
+// It was added for testing purposes.
+func (o Opts) Equal(other Opts) bool {
+	{
+		if o.serverOpts != other.serverOpts {
+			return false
+		}
+	}
+
+	{
+		if o.Domain != other.Domain {
+			return false
+		}
+		if o.HttpsPort != other.HttpsPort {
+			return false
+		}
+		if o.SecretKey != other.SecretKey {
+			return false
+		}
+		if o.Strategy != other.Strategy {
+			return false
+		}
+		if o.Logger != other.Logger {
+			return false
+		}
+
+		if o.RateShedSamplePercent != other.RateShedSamplePercent {
+			return false
+		}
+		if o.RateLimit != other.RateLimit {
+			return false
+		}
+
+		if o.LoadShedSamplingPeriod != other.LoadShedSamplingPeriod {
+			return false
+		}
+		if o.LoadShedMinSampleSize != other.LoadShedMinSampleSize {
+			return false
+		}
+		if o.LoadShedBreachLatency != other.LoadShedBreachLatency {
+			return false
+		}
+
+		{
+			if !slices.Equal(o.middlewareOpts.AllowedOrigins, other.middlewareOpts.AllowedOrigins) {
+				return false
+			}
+			if !slices.Equal(o.middlewareOpts.AllowedMethods, other.middlewareOpts.AllowedMethods) {
+				return false
+			}
+			if !slices.Equal(o.middlewareOpts.AllowedHeaders, other.middlewareOpts.AllowedHeaders) {
+				return false
+			}
+			if o.CorsCacheDuration != other.CorsCacheDuration {
+				return false
+			}
+		}
+
+		if o.CsrfTokenDuration != other.CsrfTokenDuration {
+			return false
+		}
+		if o.SessionCookieDuration != other.SessionCookieDuration {
+			return false
+		}
+	}
+	return true
 }
