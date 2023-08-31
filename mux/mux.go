@@ -38,7 +38,7 @@ type Muxer = mx.Muxer
 // If it is nil, [http.NotFound] is used instead.
 //
 // All the paths of an application should be added as part of the routes slice argument.
-// Typically, an application should only have one mx.
+// Typically, an application should only have one mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
 func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
