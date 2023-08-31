@@ -213,7 +213,7 @@ However
   pattern: %s
   method: %s
   handler: %v
-already exists and would conflict.`,
+already exists and would conflict`,
 			pattern,
 			strings.ToUpper(method),
 			getfunc(originalHandler),
