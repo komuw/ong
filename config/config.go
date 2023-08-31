@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -78,6 +79,28 @@ const (
 	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
+const (
+	// defaultMaxBodyBytes the value used as the limit for incoming request bodies, if a custom value was not provided.
+	//
+	// [Nginx] uses a default value of 1MB, [Apache] uses default of 1GB whereas [Haproxy] does not have such a limit.
+	//
+	// The max size for http [forms] in Go is 10MB. The max size of the entire bible in text form is ~5MB.
+	// Thus here, we are going to use the 2 times the default size for forms.
+	// Note that; from the [code] and [docs], it looks like; if you set the maxBodyBytes, this also becomes the maxFormSize.
+	//
+	// [Nginx]: http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
+	// [Apache]: https://httpd.apache.org/docs/2.4/mod/core.html#limitrequestbody
+	// [Haproxy]: https://discourse.haproxy.org/t/how-can-you-configure-the-nginx-client-max-body-size-equivalent-in-haproxy/1690/2
+	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
+	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
+	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
+	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB
+	defaultServerLogLevel = slog.LevelInfo
+
+	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+)
+
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 type ClientIPstrategy = clientip.ClientIPstrategy
 
@@ -95,8 +118,9 @@ type Opts struct {
 
 // TODO: docs
 func New(
-	// middleware
+	// common
 	domain string,
+	// middleware
 	httpsPort uint16,
 	secretKey string,
 	strategy ClientIPstrategy,
@@ -113,6 +137,19 @@ func New(
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
 	// server
+	port uint16,
+	maxBodyBytes uint64,
+	serverLogLevel slog.Level,
+	readHeaderTimeout time.Duration,
+	readTimeout time.Duration,
+	writeTimeout time.Duration,
+	idleTimeout time.Duration,
+	drainTimeout time.Duration,
+	certFile string,
+	keyFile string,
+	acmeEmail string, // if present, tls will be served from acme certificates.
+	acmeDirectoryUrl string,
+	clientCertificatePool *x509.CertPool,
 ) Opts {
 	return Opts{
 		middlewareOpts: NewMiddlewareOpts(
@@ -132,6 +169,22 @@ func New(
 			corsCacheDuration,
 			csrfTokenDuration,
 			sessionCookieDuration,
+		),
+		serverOpts: NewServerOpts(
+			port,
+			maxBodyBytes,
+			serverLogLevel,
+			readHeaderTimeout,
+			readTimeout,
+			writeTimeout,
+			idleTimeout,
+			drainTimeout,
+			certFile,
+			keyFile,
+			acmeEmail,
+			domain,
+			acmeDirectoryUrl,
+			clientCertificatePool,
 		),
 	}
 }
@@ -406,4 +459,115 @@ type serverOpts struct {
 	Network       string
 	HttpPort      string
 	pprofPort     string // TODO: remove this
+}
+
+// TODO: un-export this.
+//
+// NewServerOpts returns a new Opts.
+//
+// port is the port at which the server should listen on.
+//
+// maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
+//
+// serverLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog]
+//
+// readHeaderTimeout is the amount of time a server will be allowed to read request headers.
+// readTimeout is the maximum duration a server will use for reading the entire request, including the body.
+// writeTimeout is the maximum duration before a server times out writes of the response.
+// idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
+// drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
+// This is important especially in applications running in places like kubernetes.
+//
+// certFile is a path to a tls certificate.
+// keyFile is a path to a tls key.
+//
+// acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
+// domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
+// acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
+//
+// clientCertificatePool is an [x509.CertPool], that will be used to verify client certificates.
+// Use this option if you would like to perform mutual TLS authentication.
+// The given pool will be used as is, without modification.
+//
+// If certFile is a non-empty string, this will enable tls using certificates found on disk.
+// If acmeEmail is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
+//
+// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
+// [letsencrypt]: https://letsencrypt.org/
+func NewServerOpts(
+	port uint16,
+	maxBodyBytes uint64,
+	serverLogLevel slog.Level,
+	readHeaderTimeout time.Duration,
+	readTimeout time.Duration,
+	writeTimeout time.Duration,
+	idleTimeout time.Duration,
+	drainTimeout time.Duration,
+	certFile string,
+	keyFile string,
+	acmeEmail string, // if present, tls will be served from acme certificates.
+	domain string,
+	acmeDirectoryUrl string,
+	clientCertificatePool *x509.CertPool,
+) serverOpts {
+	serverPort := fmt.Sprintf(":%d", port)
+	host := "127.0.0.1"
+	if port == 80 || port == 443 {
+		// bind to both tcp4 and tcp6
+		// https://github.com/golang/go/issues/48723
+		host = "0.0.0.0"
+	}
+	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
+
+	httpPort := uint16(80)
+	if port != 443 {
+		httpPort = port - 1
+	}
+	pprofPort := httpPort - 1
+
+	if maxBodyBytes <= 0 {
+		maxBodyBytes = defaultMaxBodyBytes
+	}
+
+	if acmeEmail != "" && acmeDirectoryUrl == "" {
+		acmeDirectoryUrl = letsEncryptProductionUrl
+		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
+			acmeDirectoryUrl = letsEncryptStagingUrl
+		}
+	}
+
+	return serverOpts{
+		port:              port,
+		MaxBodyBytes:      maxBodyBytes,
+		ServerLogLevel:    serverLogLevel,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+		DrainTimeout:      drainTimeout,
+
+		Tls: struct {
+			CertFile              string
+			KeyFile               string
+			AcmeEmail             string
+			Domain                string
+			AcmeDirectoryUrl      string
+			ClientCertificatePool *x509.CertPool
+		}{
+			CertFile:              certFile,
+			KeyFile:               keyFile,
+			AcmeEmail:             acmeEmail,
+			Domain:                domain,
+			AcmeDirectoryUrl:      acmeDirectoryUrl,
+			ClientCertificatePool: clientCertificatePool,
+		},
+
+		// this ones are created automatically
+		Host:          host,
+		ServerPort:    serverPort,
+		ServerAddress: serverAddress,
+		Network:       "tcp",
+		HttpPort:      fmt.Sprintf(":%d", httpPort),
+		pprofPort:     fmt.Sprintf("%d", pprofPort),
+	}
 }

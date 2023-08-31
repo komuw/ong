@@ -42,14 +42,14 @@ const (
 	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
-	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB
-	defaultServerLogLevel = slog.LevelInfo
+	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB  // TODO: remove
+	defaultServerLogLevel = slog.LevelInfo               // TODO: remove
 
 	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
 	defaultDrainDuration = 13 * time.Second
 
-	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
-	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"         // TODO: remove
+	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory" // TODO: remove
 )
 
 type tlsOpts struct {
