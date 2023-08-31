@@ -3,6 +3,7 @@ package mux
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -123,13 +124,18 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 
 // TODO:
 func (m Mux) AddRoute(rt Route) {
-	runtime.Caller(0)
-	m.addPattern(
-		rt.method,
-		rt.pattern,
-		rt.originalHandler,
-		middleware.All(rt.originalHandler, m.opt),
-	)
+	_, file, line, ok := runtime.Caller(1) // TODO:
+	fmt.Println("file,line, ok,", file, line, ok)
+	if strings.Contains(file, "/ong/server/") || strings.Contains(file, "/ong/mux/") {
+		// The m.AddRoute method should only be used internally by ong.
+
+		m.addPattern(
+			rt.method,
+			rt.pattern,
+			rt.originalHandler,
+			middleware.All(rt.originalHandler, m.opt),
+		)
+	}
 }
 
 func (m Mux) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {

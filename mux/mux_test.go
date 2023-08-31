@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -331,19 +332,19 @@ func TestMux(t *testing.T) {
 			),
 		)
 
-		// {
-		// 	const acmeChallengeURI = "/.well-known/acme-challenge/:token"
-		// 	acmeHandler := acme.Handler(mux)
-		// 	mux.AddRoute(
-		// 		NewRoute(
-		// 			acmeChallengeURI,
-		// 			MethodAll,
-		// 			acmeHandler,
-		// 		),
-		// 	)
+		{
+			const acmeChallengeURI = "/.well-known/acme-challenge/:token"
+			acmeHandler := acme.Handler(mux)
+			mux.AddRoute(
+				NewRoute(
+					acmeChallengeURI,
+					MethodAll,
+					acmeHandler,
+				),
+			)
 
-		// 	fmt.Println("mux: ", mux.router)
-		// }
+			fmt.Println("mux: ", mux.router)
+		}
 
 		ts, err := tst.TlsServer(mux, domain, httpsPort)
 		attest.Ok(t, err)
