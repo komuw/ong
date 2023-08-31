@@ -324,10 +324,9 @@ func TestConflicts(t *testing.T) {
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
 		r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
-		attest.Panics(t, func() {
-			// This one panics with a conflict message.
-			r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
-		})
+		// This one returns with a conflict message.
+		err := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, err)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/post/create", nil)
@@ -350,20 +349,17 @@ func TestConflicts(t *testing.T) {
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
 		r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
-		attest.Panics(t, func() {
-			// This one panics with a conflict message.
-			r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
-		})
+		// This one returns with a conflict message.
+		err := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, err)
 
-		attest.Panics(t, func() {
-			// This one panics with a conflict message.
-			r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
-		})
+		// This one returns with a conflict message.
+		errB := r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errB)
 
-		attest.Panics(t, func() {
-			// This one panics with a conflict message.
-			r.handle(http.MethodPut, "post", secondRoute(msg2), secondRoute(msg2))
-		})
+		// This one returns with a conflict message.
+		errC := r.handle(http.MethodPut, "post", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errC)
 	})
 
 	t.Run("no conflict", func(t *testing.T) {

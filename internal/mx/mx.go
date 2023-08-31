@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/middleware"
 )
 
@@ -75,35 +74,21 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 			mid = middleware.All
 		}
 
-		m.addPattern(
+		if err := m.addPattern(
 			rt.method,
 			rt.pattern,
 			rt.originalHandler,
 			mid(rt.originalHandler, opt),
-		)
-	}
-
-	// TODO: remove this.
-	{
-		// Support for acme certificate manager needs to be added in three places:
-		// (a) In http middlewares.
-		// (b) In http server.
-		// (c) In http multiplexer.
-		const acmeChallengeURI = "/.well-known/acme-challenge/:token"
-		acmeHandler := acme.Handler(m)
-		m.addPattern(
-			MethodAll,
-			acmeChallengeURI,
-			acmeHandler,
-			middleware.All(acmeHandler, opt),
-		)
+		); err != nil {
+			panic(err)
+		}
 	}
 
 	return m
 }
 
-func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
-	m.router.handle(method, pattern, originalHandler, wrappingHandler)
+func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) error {
+	return m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
 
 // ServeHTTP implements a http.Handler
@@ -139,9 +124,9 @@ func (m Muxer) Resolve(path string) Route {
 // Users of ong should not use this method. Instead, pass all your routes when calling [New]
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func (m Muxer) AddRoute(rt Route) {
+func (m Muxer) AddRoute(rt Route) error {
 	// AddRoute should only be used internally by ong.
-	m.addPattern(
+	return m.addPattern(
 		rt.method,
 		rt.pattern,
 		rt.originalHandler,

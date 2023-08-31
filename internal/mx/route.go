@@ -134,7 +134,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) {
+func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) error {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -147,7 +147,9 @@ func (r *router) handle(method, pattern string, originalHandler, wrappingHandler
 	}
 
 	// Try and detect conflict before adding a new route.
-	r.detectConflict(method, pattern, originalHandler)
+	if err := r.detectConflict(method, pattern, originalHandler); err != nil {
+		return err
+	}
 
 	rt := Route{
 		method:          strings.ToUpper(method),
@@ -157,6 +159,8 @@ func (r *router) handle(method, pattern string, originalHandler, wrappingHandler
 		wrappingHandler: wrappingHandler,
 	}
 	r.routes = append(r.routes, rt)
+
+	return nil
 }
 
 // serveHTTP routes the incoming http.Request based on method and path extracting path parameters as it goes.
@@ -172,9 +176,9 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	r.notFoundHandler.ServeHTTP(w, req)
 }
 
-// detectConflict panics with a diagnostic message when you try to add a route that would conflict with an already existing one.
+// detectConflict returns an error with a diagnostic message when you try to add a route that would conflict with an already existing one.
 //
-// The panic message looks like:
+// The error message looks like:
 //
 //	You are trying to add
 //	  pattern: /post/:id/
@@ -187,7 +191,7 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 //	already exists and would conflict.
 //
 // /
-func (r *router) detectConflict(method, pattern string, originalHandler http.Handler) {
+func (r *router) detectConflict(method, pattern string, originalHandler http.Handler) error {
 	// Conflicting routes are a bad thing.
 	// They can be a source of bugs and confusion.
 	// see: https://www.alexedwards.net/blog/which-go-router-should-i-use
@@ -201,7 +205,7 @@ func (r *router) detectConflict(method, pattern string, originalHandler http.Han
 			break
 		}
 
-		panicMsg := fmt.Sprintf(`
+		panicMsg := fmt.Errorf(`
 
 You are trying to add
   pattern: %s
@@ -221,17 +225,19 @@ already exists and would conflict.`,
 		)
 
 		if pattern == rt.pattern {
-			panic(panicMsg)
+			return panicMsg
 		}
 
 		if strings.Contains(pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-			panic(panicMsg)
+			return panicMsg
 		}
 
 		if strings.Contains(rt.pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-			panic(panicMsg)
+			return panicMsg
 		}
 	}
+
+	return nil
 }
 
 func getfunc(handler http.Handler) string {

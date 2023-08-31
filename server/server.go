@@ -274,6 +274,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	_ = automax.SetMem()
 
 	{
+		// TODO: write tests checking that acme is added.
 		if m, ok := h.(mux.Muxer); ok {
 			// Support for acme certificate manager needs to be added in three places:
 			// (a) In http middlewares.
