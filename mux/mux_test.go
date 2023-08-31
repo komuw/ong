@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -333,17 +332,20 @@ func TestMux(t *testing.T) {
 		)
 
 		{
-			const acmeChallengeURI = "/.well-known/acme-challenge/:token"
-			acmeHandler := acme.Handler(mux)
+			someOtherMuxHandler := func(msg string) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, msg)
+				}
+			}
+
+			msg := "someOtherMuxHandler"
 			mux.AddRoute(
 				NewRoute(
-					acmeChallengeURI,
+					"/someOtherMuxHandler",
 					MethodAll,
-					acmeHandler,
+					someOtherMuxHandler(msg),
 				),
 			)
-
-			fmt.Println("mux: ", mux.router)
 		}
 
 		ts, err := tst.TlsServer(mux, domain, httpsPort)
@@ -359,6 +361,18 @@ func TestMux(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), msg)
+
+		{
+			res, err := client.Get(ts.URL + "/someOtherMuxHandler")
+			attest.Ok(t, err)
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+			defer res.Body.Close()
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), "someOtherMuxHandler")
+		}
 	})
 }
 

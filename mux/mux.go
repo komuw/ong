@@ -3,7 +3,6 @@ package mux
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -122,10 +121,11 @@ func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux
 	return m
 }
 
-// TODO:
+// AddRoute adds a new [Route] to an existing Mux.
+// This is only expected to be used internally by ong.
+// Users of ong should not use this method. Instead, pass all your routes when calling [New]
 func (m Mux) AddRoute(rt Route) {
-	_, file, line, ok := runtime.Caller(1) // TODO:
-	fmt.Println("file,line, ok,", file, line, ok)
+	_, file, _, _ := runtime.Caller(1)
 	if strings.Contains(file, "/ong/server/") || strings.Contains(file, "/ong/mux/") {
 		// The m.AddRoute method should only be used internally by ong.
 
