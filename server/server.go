@@ -286,6 +286,10 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		}
 	}
 
+	{ // Add pprof route handler.
+		// TODO:
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -334,10 +338,6 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	}
 
 	sigHandler(server, ctx, cancel, l, o.drainTimeout)
-
-	{
-		startPprofServer(l, o)
-	}
 
 	err := serve(ctx, server, o, l)
 	if !errors.Is(err, http.ErrServerClosed) {
