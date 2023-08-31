@@ -145,32 +145,9 @@ func TestOpts(t *testing.T) {
 				Network:       "tcp",
 				HttpPort:      ":65080",
 			},
-
-			// port:              65081,
-			// maxBodyBytes:      defaultMaxBodyBytes,
-			// host:              "127.0.0.1",
-			// network:           "tcp",
-			// readHeaderTimeout: 1 * time.Second,
-			// readTimeout:       2 * time.Second,
-			// writeTimeout:      3 * time.Second,
-			// handlerTimeout:    13 * time.Second,
-			// idleTimeout:       113 * time.Second,
-			// drainTimeout:      defaultDrainDuration,
-			// serverPort:        ":65081",
-			// serverAddress:     "127.0.0.1:65081",
-			// httpPort:          ":65080",
-			// pprofPort:         "65079",
-			// tls: tlsOpts{
-			// 	certFile:         "/tmp/ong_dev_certificate.pem",
-			// 	keyFile:          "/tmp/ong_dev_key.pem",
-			// 	domain:           "localhost",
-			// 	acmeDirectoryUrl: "",
-			// },
 		}
-		attest.Equal(
-			t,
-			got,
-			want)
+
+		attest.Equal(t, got, want)
 	})
 
 	// t.Run("with opts", func(t *testing.T) {
