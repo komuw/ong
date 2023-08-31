@@ -281,7 +281,7 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 			// (c) In http multiplexer.
 			const acmeChallengeURI = "/.well-known/acme-challenge/:token"
 			acmeHandler := acme.Handler(m)
-			m.AddRoute(
+			m.Unwrap().AddRoute(
 				mux.NewRoute(
 					acmeChallengeURI,
 					mux.MethodAll,

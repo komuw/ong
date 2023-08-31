@@ -30,7 +30,9 @@ const (
 // It implements http.Handler
 //
 // Use [New] to get a valid Muxer.
-type Muxer = mx.Muxer
+type Muxer struct {
+	internalMux mx.Muxer
+}
 
 // New returns a HTTP request multiplexer that has the paths in routes.
 //
@@ -42,7 +44,32 @@ type Muxer = mx.Muxer
 //
 // It panics with a helpful error message if it detects conflicting routes.
 func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
-	return mx.New(opt, notFoundHandler, routes...)
+	return Muxer{internalMux: mx.New(opt, notFoundHandler, routes...)}
+}
+
+// ServeHTTP implements a http.Handler
+//
+// It routes incoming http requests based on method and path extracting path parameters as it goes.
+func (m Muxer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	m.internalMux.ServeHTTP(w, r)
+}
+
+// Resolve resolves a URL path to its corresponding [Route] and hence http handler.
+// If no corresponding route/handler is found, a zero value [Route] is returned.
+//
+// It is not intended for use in production settings, it is more of a dev/debugging tool.
+// It is inspired by django's [resolve] url utility.
+//
+// [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
+func (m Muxer) Resolve(path string) Route {
+	return m.internalMux.Resolve(path)
+}
+
+// TODO: test.
+// Unwrap returns the underlying muxer.
+// It is for internal use(ONLY) by ong. Users of ong should not need to call it.
+func (m Muxer) Unwrap() mx.Muxer {
+	return m.internalMux
 }
 
 // Param gets the path/url parameter from the specified Context.
