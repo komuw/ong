@@ -77,7 +77,6 @@ type Opts struct {
 	readHeaderTimeout time.Duration
 	readTimeout       time.Duration
 	writeTimeout      time.Duration
-	handlerTimeout    time.Duration
 	idleTimeout       time.Duration
 	drainTimeout      time.Duration
 	tls               tlsOpts
@@ -108,7 +107,6 @@ func (o Opts) Equal(other Opts) bool {
 // readHeaderTimeout is the amount of time a server will be allowed to read request headers.
 // readTimeout is the maximum duration a server will use for reading the entire request, including the body.
 // writeTimeout is the maximum duration before a server times out writes of the response.
-// handlerTimeout is the maximum duration that handlers on the server will serve a request before timing out.
 // idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
 // drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
 // This is important especially in applications running in places like kubernetes.
@@ -136,7 +134,6 @@ func NewOpts(
 	readHeaderTimeout time.Duration,
 	readTimeout time.Duration,
 	writeTimeout time.Duration,
-	handlerTimeout time.Duration,
 	idleTimeout time.Duration,
 	drainTimeout time.Duration,
 	certFile string,
@@ -179,7 +176,6 @@ func NewOpts(
 		readHeaderTimeout: readHeaderTimeout,
 		readTimeout:       readTimeout,
 		writeTimeout:      writeTimeout,
-		handlerTimeout:    handlerTimeout,
 		idleTimeout:       idleTimeout,
 		drainTimeout:      drainTimeout,
 		tls: tlsOpts{
@@ -231,13 +227,12 @@ func LetsEncryptOpts(acmeEmail, domain string) Opts {
 
 // withOpts returns a new Opts that has sensible defaults given port.
 func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUrl string) Opts {
-	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
+	// readHeaderTimeout < readTimeout < writeTimeout < idleTimeout
 
 	readHeaderTimeout := 1 * time.Second
 	readTimeout := readHeaderTimeout + (1 * time.Second)
 	writeTimeout := readTimeout + (1 * time.Second)
-	handlerTimeout := writeTimeout + (10 * time.Second)
-	idleTimeout := handlerTimeout + (100 * time.Second)
+	idleTimeout := writeTimeout + (3 * time.Minute) // Nginx has a default idleTimeout of 3minutes
 	drainTimeout := defaultDrainDuration
 
 	maxBodyBytes := defaultMaxBodyBytes
@@ -250,7 +245,6 @@ func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUr
 		readHeaderTimeout,
 		readTimeout,
 		writeTimeout,
-		handlerTimeout,
 		idleTimeout,
 		drainTimeout,
 		certFile,
@@ -307,14 +301,11 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler: http.TimeoutHandler(
-			http.MaxBytesHandler(
-				h,
-				int64(o.maxBodyBytes), // limit in bytes.
-			),
-			o.handlerTimeout,
-			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
+		Handler: http.MaxBytesHandler(
+			h,
+			int64(o.maxBodyBytes), // limit in bytes.
 		),
+		// http.TimeoutHandler does not implement [http.ResponseController] so we no longer use it.
 
 		ReadHeaderTimeout: o.readHeaderTimeout,
 		ReadTimeout:       o.readTimeout,
