@@ -17,9 +17,11 @@ import (
 	"time"
 
 	"github.com/komuw/ong/automax"
+	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/finger"
 	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/mux"
 
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
@@ -270,6 +272,25 @@ func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUr
 func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
+
+	{ // Add ACME route handler.
+		if m, ok := h.(mux.Muxer); ok {
+			// Support for acme certificate manager needs to be added in three places:
+			// (a) In http middlewares.
+			// (b) In http server.
+			// (c) In http multiplexer.
+			const acmeChallengeURI = "/.well-known/acme-challenge/:token"
+			if err := m.Unwrap().AddRoute(
+				mux.NewRoute(
+					acmeChallengeURI,
+					mux.MethodAll,
+					acme.Handler(m),
+				),
+			); err != nil {
+				return fmt.Errorf("ong/server: unable to add ACME handler: %w", err)
+			}
+		}
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

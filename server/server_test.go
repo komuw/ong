@@ -184,8 +184,7 @@ func TestServer(t *testing.T) {
 		// await for the server to start.
 		attest.Ok(t, tst.Ping(port))
 
-		{
-			// https server.
+		{ // https server.
 			res, err := client.Get(fmt.Sprintf(
 				// note: the https scheme.
 				"https://127.0.0.1:%d%s",
@@ -203,8 +202,32 @@ func TestServer(t *testing.T) {
 			attest.NotZero(t, res.Header.Get(tlsFingerPrintKey))
 		}
 
-		{
-			// redirect server
+		{ // acme requests succeds.
+			acmeUri := "/.well-known/acme-challenge/some-token"
+			url := fmt.Sprintf(
+				// note: acme request should be http(not https).
+				//       it should also be to a domain(not an IP address).
+				"http://localhost:%d%s",
+				port-1,
+				acmeUri,
+			)
+			res, err := client.Get(url)
+			attest.Ok(t, err)
+
+			defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t,
+				res.StatusCode,
+				// Fails because the `acme.Handler()` will get called with a host like `localhost:38355`
+				// and that host has no token configured for it.
+				http.StatusInternalServerError,
+			)
+			attest.Subsequence(t, string(rb), "no such file or directory")
+		}
+
+		{ // redirect server
 			res, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d%s", port-1, uri))
 			attest.Ok(t, err)
 
@@ -216,9 +239,7 @@ func TestServer(t *testing.T) {
 			attest.Equal(t, string(rb), msg)
 		}
 
-		{
-			// http2.
-
+		{ // http2.
 			tr2 := &http.Transport{
 				// since we are using self-signed certificates, we need to skip verification.
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},

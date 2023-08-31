@@ -5,49 +5,24 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
 
-	"github.com/komuw/ong/internal/acme"
+	"github.com/komuw/ong/internal/mx"
 	"github.com/komuw/ong/middleware"
 )
 
 // Common HTTP methods.
 const (
-	MethodAll     = "ALL"
-	MethodGet     = http.MethodGet
-	MethodHead    = http.MethodHead
-	MethodPost    = http.MethodPost
-	MethodPut     = http.MethodPut
-	MethodPatch   = http.MethodPatch
-	MethodDelete  = http.MethodDelete
-	MethodConnect = http.MethodConnect
-	MethodOptions = http.MethodOptions
-	MethodTrace   = http.MethodTrace
+	MethodAll     = mx.MethodAll
+	MethodGet     = mx.MethodGet
+	MethodHead    = mx.MethodHead
+	MethodPost    = mx.MethodPost
+	MethodPut     = mx.MethodPut
+	MethodPatch   = mx.MethodPatch
+	MethodDelete  = mx.MethodDelete
+	MethodConnect = mx.MethodConnect
+	MethodOptions = mx.MethodOptions
+	MethodTrace   = mx.MethodTrace
 )
-
-// NewRoute creates a new Route.
-//
-// It panics if handler has already been wrapped with ong/middleware
-func NewRoute(
-	pattern string,
-	method string,
-	handler http.Handler,
-) Route {
-	h := getfunc(handler)
-	if strings.Contains(h, "ong/middleware/") &&
-		!strings.Contains(h, "ong/middleware.BasicAuth") {
-		// BasicAuth is allowed.
-		panic("the handler should not be wrapped with ong middleware")
-	}
-
-	return Route{
-		method:          method,
-		pattern:         pattern,
-		segments:        pathSegments(pattern),
-		originalHandler: handler,
-	}
-}
 
 // Muxer is a HTTP request multiplexer.
 //
@@ -57,15 +32,15 @@ func NewRoute(
 //
 // Use [New] to get a valid Muxer.
 type Muxer struct {
-	router *router // some router
+	internalMux mx.Muxer
 }
 
 // String implements [fmt.Stringer]
 func (m Muxer) String() string {
-	return fmt.Sprintf(`Opts{
-  router: %v
+	return fmt.Sprintf(`Muxer{
+  internalMux: %v
 }`,
-		m.router,
+		m.internalMux,
 	)
 }
 
@@ -80,68 +55,22 @@ func (m Muxer) GoString() string {
 // If it is nil, [http.NotFound] is used instead.
 //
 // All the paths of an application should be added as part of the routes slice argument.
-// Typically, an application should only have one Mux.
+// Typically, an application should only have one mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
 func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
-	m := Muxer{
-		router: newRouter(notFoundHandler),
+	m, err := mx.New(opt, notFoundHandler, routes...)
+	if err != nil {
+		panic(err)
 	}
-
-	mid := middleware.All //nolint:ineffassign
-	for _, rt := range routes {
-		switch rt.method {
-		case MethodAll:
-			mid = middleware.All
-		case MethodGet:
-			mid = middleware.Get
-		case MethodPost:
-			mid = middleware.Post
-		case MethodHead:
-			mid = middleware.Head
-		case MethodPut:
-			mid = middleware.Put
-		case MethodDelete:
-			mid = middleware.Delete
-		default:
-			mid = middleware.All
-		}
-
-		m.addPattern(
-			rt.method,
-			rt.pattern,
-			rt.originalHandler,
-			mid(rt.originalHandler, opt),
-		)
-	}
-
-	{
-		// Support for acme certificate manager needs to be added in three places:
-		// (a) In http middlewares.
-		// (b) In http server.
-		// (c) In http multiplexer.
-		const acmeChallengeURI = "/.well-known/acme-challenge/:token"
-		acmeHandler := acme.Handler(m)
-		m.addPattern(
-			MethodAll,
-			acmeChallengeURI,
-			acmeHandler,
-			middleware.All(acmeHandler, opt),
-		)
-	}
-
-	return m
-}
-
-func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
-	m.router.handle(method, pattern, originalHandler, wrappingHandler)
+	return Muxer{internalMux: m}
 }
 
 // ServeHTTP implements a http.Handler
 //
 // It routes incoming http requests based on method and path extracting path parameters as it goes.
 func (m Muxer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	m.router.serveHTTP(w, r)
+	m.internalMux.ServeHTTP(w, r)
 }
 
 // Resolve resolves a URL path to its corresponding [Route] and hence http handler.
@@ -152,32 +81,17 @@ func (m Muxer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //
 // [resolve]: https://docs.djangoproject.com/en/4.2/ref/urlresolvers/#django.urls.resolve
 func (m Muxer) Resolve(path string) Route {
-	zero := Route{}
+	return m.internalMux.Resolve(path)
+}
 
-	u, err := url.Parse(path)
-	if err != nil {
-		return zero
-	}
-
-	{
-		// todo: unify this logic with that found in `router.serveHTTP`
-		segs := pathSegments(u.Path)
-		for _, rt := range m.router.routes {
-			if _, ok := rt.match(context.Background(), segs); ok {
-				return rt
-			}
-		}
-	}
-
-	return zero
+// Unwrap returns the underlying muxer.
+// It is for internal use(ONLY) by ong. Users of ong should not need to call it.
+func (m Muxer) Unwrap() mx.Muxer {
+	return m.internalMux
 }
 
 // Param gets the path/url parameter from the specified Context.
 // It returns an empty string if the parameter was not found.
 func Param(ctx context.Context, param string) string {
-	vStr, ok := ctx.Value(muxContextKey(param)).(string)
-	if !ok {
-		return ""
-	}
-	return vStr
+	return mx.Param(ctx, param)
 }

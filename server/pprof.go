@@ -12,6 +12,8 @@ import (
 	"github.com/komuw/ong/log"
 )
 
+// TODO: remove this file??
+
 /*
 example usage:
 
