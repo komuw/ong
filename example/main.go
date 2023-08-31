@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
@@ -16,7 +17,7 @@ func main() {
 
 	api := NewApp(myDB{map[string]string{}}, l)
 	mux := mux.New(
-		middleware.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
+		config.WithOpts("localhost", 65081, secretKey, middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"/health",
@@ -45,7 +46,7 @@ func main() {
 		),
 	)
 
-	err := server.Run(mux, server.DevOpts(l), l)
+	err := server.Run(mux, config.DevOpts(l, secretKey))
 	if err != nil {
 		l.Error("server.Run error", "error", err)
 		os.Exit(1)

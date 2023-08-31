@@ -247,10 +247,13 @@ func TestRouter(t *testing.T) {
 			r := newRouter(nil)
 			match := false
 			var ctx context.Context
-			r.handle(tt.RouteMethod, tt.RoutePattern, nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			err := r.handle(tt.RouteMethod, tt.RoutePattern, nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				match = true
 				ctx = r.Context()
 			}))
+			attest.Ok(t, err)
+
 			req, err := http.NewRequest(tt.Method, tt.Path, nil)
 			attest.Ok(t, err)
 			w := httptest.NewRecorder()
@@ -282,9 +285,10 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 
 	r := newRouter(nil)
 	var match string
-	r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		match = r.Method
 	}))
+	attest.Ok(t, err)
 
 	req, err := http.NewRequest(http.MethodGet, "/path", nil)
 	attest.Ok(t, err)
@@ -323,10 +327,12 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
+		err := r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
+		attest.Ok(t, err)
+
 		// This one returns with a conflict message.
-		err := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, err)
+		errH := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errH)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/post/create", nil)
@@ -348,10 +354,12 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+		attest.Ok(t, err)
+
 		// This one returns with a conflict message.
-		err := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, err)
+		errH := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errH)
 
 		// This one returns with a conflict message.
 		errB := r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
@@ -368,9 +376,12 @@ func TestConflicts(t *testing.T) {
 
 		msg1 := "firstRoute-one"
 		msg2 := "secondRoute-two"
-		r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
+		err := r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
+		attest.Ok(t, err)
+
 		// This one should not conflict.
-		r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
+		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
+		attest.Ok(t, errH)
 	})
 }
 
@@ -382,9 +393,10 @@ func TestNotFound(t *testing.T) {
 
 		r := newRouter(nil)
 		var match string
-		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
+		attest.Ok(t, err)
 
 		req, err := http.NewRequest(http.MethodGet, "/path", nil)
 		attest.Ok(t, err)
@@ -401,9 +413,10 @@ func TestNotFound(t *testing.T) {
 
 		r := newRouter(nil)
 		var match string
-		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
+		attest.Ok(t, err)
 
 		req, err := http.NewRequest(http.MethodGet, "/not-found-path", nil)
 		attest.Ok(t, err)
@@ -424,9 +437,10 @@ func TestNotFound(t *testing.T) {
 		})
 
 		r := newRouter(notFoundHandler)
-		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
+		attest.Ok(t, err)
 
 		req, err := http.NewRequest(http.MethodGet, "/not-found-path", nil)
 		attest.Ok(t, err)

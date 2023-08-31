@@ -12,7 +12,9 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
@@ -58,7 +60,7 @@ func TestAllMiddleware(t *testing.T) {
 	errMsg := "not allowed. only allows http"
 	tests := []struct {
 		name               string
-		middleware         func(wrappedHandler http.Handler, o Opts) http.HandlerFunc
+		middleware         func(wrappedHandler http.Handler, o config.Opts) http.HandlerFunc
 		httpMethod         string
 		expectedStatusCode int
 		expectedMsg        string
@@ -167,7 +169,7 @@ func TestAllMiddleware(t *testing.T) {
 		// so here we make a http GET so that we can have a csrf token.
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 		ts, err := tst.TlsServer(wrappedHandler, "localhost", httpsPort)
 		attest.Ok(t, err)
@@ -196,7 +198,7 @@ func TestAllMiddleware(t *testing.T) {
 
 			httpsPort := tst.GetPort()
 			domain := "localhost"
-			o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
 			ts, err := tst.TlsServer(wrappedHandler, "localhost", httpsPort)
@@ -245,7 +247,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
@@ -273,7 +275,7 @@ func TestMiddlewareServer(t *testing.T) {
 			// so here we make a http GET so that we can have a csrf token.
 			httpsPort := tst.GetPort()
 			domain := "localhost"
-			o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 			msg := "hey"
 			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
@@ -297,7 +299,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
@@ -324,7 +326,7 @@ func TestMiddlewareServer(t *testing.T) {
 
 		msg := "hello world"
 		domain := "localhost"
-		o := WithOpts(domain, 443, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, 443, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		// Should not be a `NewTLSServer` since acme requires HTTP(not HTTPS)
@@ -356,7 +358,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "*.localhost"
-		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts, err := tst.TlsServer(wrappedHandler, "localhost", httpsPort)
@@ -391,7 +393,7 @@ func TestMiddlewareServer(t *testing.T) {
 		code := http.StatusAccepted
 		httpsPort := tst.GetPort()
 		domain := "*.localhost"
-		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, getLogger(logOutput))
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, getLogger(logOutput))
 		doubleWrite := func(msg string, code int) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(code)
@@ -430,7 +432,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
@@ -481,23 +483,35 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	domain := "localhost"
 	// need to increase rateLimit for tests otherwise the benchmark fails with http.StatusTooManyRequests
 	rateLimit := 500.0
-	o := New(
+	o := config.New(
 		domain,
 		httpsPort,
 		tst.SecretKey(),
 		DirectIpStrategy,
 		l,
-		DefaultRateShedSamplePercent,
+		config.DefaultRateShedSamplePercent,
 		rateLimit,
-		DefaultLoadShedSamplingPeriod,
-		DefaultLoadShedMinSampleSize,
-		DefaultLoadShedBreachLatency,
+		config.DefaultLoadShedSamplingPeriod,
+		config.DefaultLoadShedMinSampleSize,
+		config.DefaultLoadShedBreachLatency,
 		nil,
 		nil,
 		nil,
-		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
-		DefaultSessionCookieDuration,
+		config.DefaultCorsCacheDuration,
+		config.DefaultCsrfCookieDuration,
+		config.DefaultSessionCookieDuration,
+		20*1024*1024,
+		slog.LevelDebug,
+		1*time.Second,
+		1*time.Second,
+		1*time.Second,
+		1*time.Second,
+		10*time.Second,
+		"",
+		"",
+		"acme@example.org",
+		"",
+		nil,
 	)
 
 	wrappedHandler := All(someBenchmarkAllMiddlewaresHandler(), o)
@@ -529,83 +543,4 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	// always store the result to a package level variable
 	// so the compiler cannot eliminate the Benchmark itself.
 	resultBenchmarkAllMiddlewares = r
-}
-
-func TestNew(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name        string
-		domain      string
-		expectPanic bool
-	}{
-		// Some of them are taken from; https://github.com/golang/go/blob/go1.20.5/src/net/dnsname_test.go#L19-L34
-		{
-			name:        "good domain",
-			domain:      "localhost",
-			expectPanic: false,
-		},
-		{
-			name:        "good domain B",
-			domain:      "foo.com",
-			expectPanic: false,
-		},
-		{
-			name:        "good domain C",
-			domain:      "bar.foo.com",
-			expectPanic: false,
-		},
-		{
-			name:        "bad domain",
-			domain:      "a.b-.com",
-			expectPanic: true,
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			if tt.expectPanic {
-				attest.Panics(t, func() {
-					New(
-						tt.domain,
-						443,
-						tst.SecretKey(),
-						DirectIpStrategy,
-						slog.Default(),
-						DefaultRateShedSamplePercent,
-						DefaultRateLimit,
-						DefaultLoadShedSamplingPeriod,
-						DefaultLoadShedMinSampleSize,
-						DefaultLoadShedBreachLatency,
-						nil,
-						nil,
-						nil,
-						DefaultCorsCacheDuration,
-						DefaultCsrfCookieDuration,
-						DefaultSessionCookieDuration,
-					)
-				})
-			} else {
-				New(
-					tt.domain,
-					443,
-					tst.SecretKey(),
-					DirectIpStrategy,
-					slog.Default(),
-					DefaultRateShedSamplePercent,
-					DefaultRateLimit,
-					DefaultLoadShedSamplingPeriod,
-					DefaultLoadShedMinSampleSize,
-					DefaultLoadShedBreachLatency,
-					nil,
-					nil,
-					nil,
-					DefaultCorsCacheDuration,
-					DefaultCsrfCookieDuration,
-					DefaultSessionCookieDuration,
-				)
-			}
-		})
-	}
 }

@@ -5,7 +5,6 @@ package server
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/automax"
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/finger"
 	"github.com/komuw/ong/internal/octx"
@@ -26,242 +26,6 @@ import (
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
-const (
-	// defaultMaxBodyBytes the value used as the limit for incoming request bodies, if a custom value was not provided.
-	//
-	// [Nginx] uses a default value of 1MB, [Apache] uses default of 1GB whereas [Haproxy] does not have such a limit.
-	//
-	// The max size for http [forms] in Go is 10MB. The max size of the entire bible in text form is ~5MB.
-	// Thus here, we are going to use the 2 times the default size for forms.
-	// Note that; from the [code] and [docs], it looks like; if you set the maxBodyBytes, this also becomes the maxFormSize.
-	//
-	// [Nginx]: http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
-	// [Apache]: https://httpd.apache.org/docs/2.4/mod/core.html#limitrequestbody
-	// [Haproxy]: https://discourse.haproxy.org/t/how-can-you-configure-the-nginx-client-max-body-size-equivalent-in-haproxy/1690/2
-	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
-	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
-	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
-	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB
-	defaultServerLogLevel = slog.LevelInfo
-
-	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
-	defaultDrainDuration = 13 * time.Second
-
-	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
-	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
-)
-
-type tlsOpts struct {
-	// if certFile is present, tls will be served from certificates on disk.
-	certFile string
-	keyFile  string
-	// if acmeEmail is present, tls will be served from ACME certificates.
-	acmeEmail string
-	// domain can be a wildcard.
-	// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
-	// Instead, we'll get a certificate per subdomain.
-	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-	domain string
-	// URL of the ACME certificate authority's directory endpoint.
-	acmeDirectoryUrl      string
-	clientCertificatePool *x509.CertPool
-}
-
-// Opts are the various parameters(optionals) that can be used to configure a HTTP server.
-//
-// Use either [NewOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts.
-type Opts struct {
-	port              uint16 // tcp port is a 16bit unsigned integer.
-	maxBodyBytes      uint64 // max size of request body allowed.
-	serverLogLevel    slog.Level
-	readHeaderTimeout time.Duration
-	readTimeout       time.Duration
-	writeTimeout      time.Duration
-	handlerTimeout    time.Duration
-	idleTimeout       time.Duration
-	drainTimeout      time.Duration
-	tls               tlsOpts
-
-	// the following ones are created automatically
-	host          string
-	serverPort    string
-	serverAddress string
-	network       string
-	httpPort      string
-	pprofPort     string
-}
-
-// Equal compares two Opts for equality.
-// It was added for testing purposes.
-func (o Opts) Equal(other Opts) bool {
-	return o == other
-}
-
-// NewOpts returns a new Opts.
-//
-// port is the port at which the server should listen on.
-//
-// maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
-//
-// serverLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog]
-//
-// readHeaderTimeout is the amount of time a server will be allowed to read request headers.
-// readTimeout is the maximum duration a server will use for reading the entire request, including the body.
-// writeTimeout is the maximum duration before a server times out writes of the response.
-// handlerTimeout is the maximum duration that handlers on the server will serve a request before timing out.
-// idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
-// drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
-// This is important especially in applications running in places like kubernetes.
-//
-// certFile is a path to a tls certificate.
-// keyFile is a path to a tls key.
-//
-// acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
-// domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
-// acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
-//
-// clientCertificatePool is an [x509.CertPool], that will be used to verify client certificates.
-// Use this option if you would like to perform mutual TLS authentication.
-// The given pool will be used as is, without modification.
-//
-// If certFile is a non-empty string, this will enable tls using certificates found on disk.
-// If acmeEmail is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
-//
-// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
-// [letsencrypt]: https://letsencrypt.org/
-func NewOpts(
-	port uint16,
-	maxBodyBytes uint64,
-	serverLogLevel slog.Level,
-	readHeaderTimeout time.Duration,
-	readTimeout time.Duration,
-	writeTimeout time.Duration,
-	handlerTimeout time.Duration,
-	idleTimeout time.Duration,
-	drainTimeout time.Duration,
-	certFile string,
-	keyFile string,
-	acmeEmail string, // if present, tls will be served from acme certificates.
-	domain string,
-	acmeDirectoryUrl string,
-	clientCertificatePool *x509.CertPool,
-) Opts {
-	serverPort := fmt.Sprintf(":%d", port)
-	host := "127.0.0.1"
-	if port == 80 || port == 443 {
-		// bind to both tcp4 and tcp6
-		// https://github.com/golang/go/issues/48723
-		host = "0.0.0.0"
-	}
-	serverAddress := fmt.Sprintf("%s%s", host, serverPort)
-
-	httpPort := uint16(80)
-	if port != 443 {
-		httpPort = port - 1
-	}
-	pprofPort := httpPort - 1
-
-	if maxBodyBytes <= 0 {
-		maxBodyBytes = defaultMaxBodyBytes
-	}
-
-	if acmeEmail != "" && acmeDirectoryUrl == "" {
-		acmeDirectoryUrl = letsEncryptProductionUrl
-		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			acmeDirectoryUrl = letsEncryptStagingUrl
-		}
-	}
-
-	return Opts{
-		port:              port,
-		maxBodyBytes:      maxBodyBytes,
-		serverLogLevel:    serverLogLevel,
-		readHeaderTimeout: readHeaderTimeout,
-		readTimeout:       readTimeout,
-		writeTimeout:      writeTimeout,
-		handlerTimeout:    handlerTimeout,
-		idleTimeout:       idleTimeout,
-		drainTimeout:      drainTimeout,
-		tls: tlsOpts{
-			certFile:              certFile,
-			keyFile:               keyFile,
-			acmeEmail:             acmeEmail,
-			domain:                domain,
-			acmeDirectoryUrl:      acmeDirectoryUrl,
-			clientCertificatePool: clientCertificatePool,
-		},
-		// this ones are created automatically
-		host:          host,
-		serverPort:    serverPort,
-		serverAddress: serverAddress,
-		network:       "tcp",
-		httpPort:      fmt.Sprintf(":%d", httpPort),
-		pprofPort:     fmt.Sprintf("%d", pprofPort),
-	}
-}
-
-// DevOpts returns a new Opts that has sensible defaults for tls, especially for dev environments.
-// It also automatically creates the dev certificates/key.
-func DevOpts(l *slog.Logger) Opts {
-	certFile, keyFile := createDevCertKey(l)
-
-	return withOpts(65081, certFile, keyFile, "", "localhost", "")
-}
-
-// CertOpts returns a new Opts that has sensible defaults given certFile & keyFile.
-func CertOpts(certFile, keyFile, domain string) Opts {
-	return withOpts(443, certFile, keyFile, "", domain, "")
-}
-
-// AcmeOpts returns a new Opts that procures certificates from an [ACME] certificate authority.
-// Also see [LetsEncryptOpts]
-//
-// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
-func AcmeOpts(acmeEmail, domain, acmeDirectoryUrl string) Opts {
-	return withOpts(443, "", "", acmeEmail, domain, acmeDirectoryUrl)
-}
-
-// LetsEncryptOpts returns a new Opts that procures certificates from [letsencrypt].
-// Also see [AcmeOpts]
-//
-// [letsencrypt]: https://letsencrypt.org/
-func LetsEncryptOpts(acmeEmail, domain string) Opts {
-	return withOpts(443, "", "", acmeEmail, domain, "")
-}
-
-// withOpts returns a new Opts that has sensible defaults given port.
-func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUrl string) Opts {
-	// readHeaderTimeout < readTimeout < writeTimeout < handlerTimeout < idleTimeout
-
-	readHeaderTimeout := 1 * time.Second
-	readTimeout := readHeaderTimeout + (1 * time.Second)
-	writeTimeout := readTimeout + (1 * time.Second)
-	handlerTimeout := writeTimeout + (10 * time.Second)
-	idleTimeout := handlerTimeout + (100 * time.Second)
-	drainTimeout := defaultDrainDuration
-
-	maxBodyBytes := defaultMaxBodyBytes
-	serverLogLevel := defaultServerLogLevel
-
-	return NewOpts(
-		port,
-		maxBodyBytes,
-		serverLogLevel,
-		readHeaderTimeout,
-		readTimeout,
-		writeTimeout,
-		handlerTimeout,
-		idleTimeout,
-		drainTimeout,
-		certFile,
-		keyFile,
-		acmeEmail,
-		domain,
-		acmeDirectoryUrl,
-		nil,
-	)
-}
-
 // Run creates a http server, starts the server on a network address and then calls Serve to handle requests on incoming connections.
 //
 // It sets up a server with the parameters provided by o.
@@ -269,7 +33,7 @@ func withOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUr
 // Likewise, if the Opts include an acmeEmail address, the server will accept https traffic and automatically handle http->https redirect.
 //
 // The server shuts down cleanly after receiving any termination signal.
-func Run(h http.Handler, o Opts, l *slog.Logger) error {
+func Run(h http.Handler, o config.Opts) error {
 	_ = automax.SetCpu()
 	_ = automax.SetMem()
 
@@ -295,32 +59,29 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tlsConf, errTc := getTlsConfig(o, l)
+	tlsConf, errTc := getTlsConfig(o)
 	if errTc != nil {
 		return errTc
 	}
 	server := &http.Server{
-		Addr:      o.serverPort,
+		Addr:      o.ServerPort,
 		TLSConfig: tlsConf,
 
 		// 1. https://blog.simon-frey.eu/go-as-in-golang-standard-net-http-config-will-break-your-production
 		// 2. https://blog.cloudflare.com/exposing-go-on-the-internet/
 		// 3. https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		// 4. https://github.com/golang/go/issues/27375
-		Handler: http.TimeoutHandler(
-			http.MaxBytesHandler(
-				h,
-				int64(o.maxBodyBytes), // limit in bytes.
-			),
-			o.handlerTimeout,
-			fmt.Sprintf("ong: Handler timeout exceeded: %s", o.handlerTimeout),
+		Handler: http.MaxBytesHandler(
+			h,
+			int64(o.MaxBodyBytes), // limit in bytes.
 		),
+		// http.TimeoutHandler does not implement [http.ResponseController] so we no longer use it.
 
-		ReadHeaderTimeout: o.readHeaderTimeout,
-		ReadTimeout:       o.readTimeout,
-		WriteTimeout:      o.writeTimeout,
-		IdleTimeout:       o.idleTimeout,
-		ErrorLog:          slog.NewLogLogger(l.Handler(), o.serverLogLevel),
+		ReadHeaderTimeout: o.ReadHeaderTimeout,
+		ReadTimeout:       o.ReadTimeout,
+		WriteTimeout:      o.WriteTimeout,
+		IdleTimeout:       o.IdleTimeout,
+		ErrorLog:          slog.NewLogLogger(o.Logger.Handler(), o.ServerLogLevel),
 		BaseContext:       func(net.Listener) context.Context { return ctx },
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
 			tConn, ok := c.(*tls.Conn)
@@ -342,13 +103,9 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 		},
 	}
 
-	sigHandler(server, ctx, cancel, l, o.drainTimeout)
+	sigHandler(server, ctx, cancel, o.Logger, o.DrainTimeout)
 
-	{
-		startPprofServer(l, o)
-	}
-
-	err := serve(ctx, server, o, l)
+	err := serve(ctx, server, o)
 	if !errors.Is(err, http.ErrServerClosed) {
 		// The docs for http.server.Shutdown() says:
 		//   When Shutdown is called, Serve/ListenAndServe/ListenAndServeTLS immediately return ErrServerClosed.
@@ -399,32 +156,32 @@ func sigHandler(
 	}()
 }
 
-func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) error {
+func serve(ctx context.Context, srv *http.Server, o config.Opts) error {
 	{
 		// HTTP(non-tls) LISTERNER:
 		redirectSrv := &http.Server{
-			Addr:              fmt.Sprintf("%s%s", o.host, o.httpPort),
+			Addr:              fmt.Sprintf("%s%s", o.Host, o.HttpPort),
 			Handler:           srv.Handler,
-			ReadHeaderTimeout: o.readHeaderTimeout,
-			ReadTimeout:       o.readTimeout,
-			WriteTimeout:      o.writeTimeout,
-			IdleTimeout:       o.idleTimeout,
-			ErrorLog:          slog.NewLogLogger(logger.Handler(), o.serverLogLevel),
+			ReadHeaderTimeout: o.ReadHeaderTimeout,
+			ReadTimeout:       o.ReadTimeout,
+			WriteTimeout:      o.WriteTimeout,
+			IdleTimeout:       o.IdleTimeout,
+			ErrorLog:          slog.NewLogLogger(o.Logger.Handler(), o.ServerLogLevel),
 			BaseContext:       func(net.Listener) context.Context { return ctx },
 		}
 		go func() {
 			redirectSrvCfg := listenerConfig()
 			redirectSrvListener, errL := redirectSrvCfg.Listen(ctx, "tcp", redirectSrv.Addr)
 			if errL != nil {
-				logger.Error("redirect server, unable to create listener", "error", errL)
+				o.Logger.Error("redirect server, unable to create listener", "error", errL)
 				return
 			}
 
-			slog.NewLogLogger(logger.Handler(), log.LevelImmediate).
+			slog.NewLogLogger(o.Logger.Handler(), log.LevelImmediate).
 				Printf("redirect server listening at %s", redirectSrv.Addr)
 			errRedirectSrv := redirectSrv.Serve(redirectSrvListener)
 			if errRedirectSrv != nil {
-				logger.Error("unable to start redirect server", "error", errRedirectSrv)
+				o.Logger.Error("unable to start redirect server", "error", errRedirectSrv)
 			}
 		}()
 	}
@@ -432,14 +189,14 @@ func serve(ctx context.Context, srv *http.Server, o Opts, logger *slog.Logger) e
 	{
 		// HTTPS(tls) LISTERNER:
 		cfg := listenerConfig()
-		cl, err := cfg.Listen(ctx, o.network, o.serverAddress)
+		cl, err := cfg.Listen(ctx, o.Network, o.ServerAddress)
 		if err != nil {
 			return err
 		}
 
 		l := &fingerListener{cl}
 
-		slog.NewLogLogger(logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.serverAddress)
+		slog.NewLogLogger(o.Logger.Handler(), log.LevelImmediate).Printf("https server listening at %s", o.ServerAddress)
 		if errS := srv.ServeTLS(
 			l,
 			// use empty cert & key. they will be picked from `srv.TLSConfig`

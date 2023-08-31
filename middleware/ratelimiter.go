@@ -6,24 +6,12 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/komuw/ong/config"
 )
 
 // Most of the code here is inspired by(or taken from):
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
-
-const (
-	// DefaultRateLimit is the maximum requests allowed (from one IP address) per second, by default.
-	//
-	// The figure chosen here is because;
-	// [github] uses a rate limit of 1 reqs/sec (5_000 reqs/hr).
-	// [twitter] uses 1 reqs/sec (900 reqs/15mins).
-	// [stripe] uses 100 reqs/sec.
-	//
-	// [github]: https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
-	// [twitter]: https://developer.twitter.com/en/docs/twitter-api/rate-limits
-	// [stripe]: https://stripe.com/docs/rate-limits
-	DefaultRateLimit = 100.00
-)
 
 // rateLimiter is a middleware that limits requests by IP address.
 func rateLimiter(
@@ -34,7 +22,7 @@ func rateLimiter(
 	const retryAfter = 15 * time.Minute
 
 	if rateLimit < 1.0 {
-		rateLimit = DefaultRateLimit
+		rateLimit = config.DefaultRateLimit
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +43,9 @@ func rateLimiter(
 			return
 		}
 
-		// todo: maybe also limit max body size using something like `http.MaxBytesHandler`
+		// Note: We also limit max body size using `http.MaxBytesHandler`
+		// See: ong/server
+
 		// todo: also maybe add another limiter for IP subnet.
 		//      see limitation: https://github.com/komuw/ong/issues/17#issuecomment-1114551281
 

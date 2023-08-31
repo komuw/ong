@@ -8,15 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/sess"
-)
-
-const (
-	// DefaultSessionCookieDuration is the duration that session cookie will be valid for by default.
-	// [django] uses a value of 2 weeks by default.
-	//
-	// [django]: https://docs.djangoproject.com/en/4.1/ref/settings/#session-cookie-age
-	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
 // session is a middleware that implements http sessions.
@@ -30,7 +23,7 @@ func session(
 	sessionCookieDuration time.Duration,
 ) http.HandlerFunc {
 	if sessionCookieDuration < 1*time.Second { // It is measured in seconds.
-		sessionCookieDuration = DefaultSessionCookieDuration
+		sessionCookieDuration = config.DefaultSessionCookieDuration
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/mx"
-	"github.com/komuw/ong/middleware"
 )
 
 // Common HTTP methods.
@@ -58,7 +58,7 @@ func (m Muxer) GoString() string {
 // Typically, an application should only have one mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
+func New(opt config.Opts, notFoundHandler http.Handler, routes ...Route) Muxer {
 	m, err := mx.New(opt, notFoundHandler, routes...)
 	if err != nil {
 		panic(err)

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/sess"
@@ -72,7 +73,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieDuration)
+		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, config.DefaultSessionCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -96,7 +97,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieDuration)
+		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, config.DefaultSessionCookieDuration)
 
 		ts := httptest.NewServer(
 			wrappedHandler,
@@ -143,7 +144,7 @@ func TestSession(t *testing.T) {
 		secretKey := tst.SecretKey()
 		domain := "localhost"
 		name := "John Doe"
-		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain, DefaultSessionCookieDuration)
+		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain, config.DefaultSessionCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -171,7 +172,7 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, DefaultSessionCookieDuration)
+		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, config.DefaultSessionCookieDuration)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

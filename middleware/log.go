@@ -10,12 +10,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
-)
-
-const (
-	// DefaultRateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
-	DefaultRateShedSamplePercent = 10
 )
 
 // logger is a middleware that logs http requests and responses using [log.Logger].
@@ -32,7 +28,7 @@ func logger(
 
 	// Note: a value of 0, disables logging of ratelimited and loadshed responses.
 	if rateShedSamplePercent < 0 {
-		rateShedSamplePercent = DefaultRateShedSamplePercent
+		rateShedSamplePercent = config.DefaultRateShedSamplePercent
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

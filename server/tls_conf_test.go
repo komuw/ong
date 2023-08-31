@@ -7,7 +7,10 @@ import (
 	"crypto/x509"
 	"testing"
 
+	"github.com/komuw/ong/config"
+	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
 	"go.akshayshah.org/attest"
 )
 
@@ -18,18 +21,12 @@ func TestGetTlsConfig(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		opts   Opts
+		opts   func() config.Opts
 		assert func(*tls.Config, error)
 	}{
 		{
 			name: "success",
-			opts: Opts{
-				tls: tlsOpts{
-					domain:           "example.com",
-					acmeEmail:        "xx@example.com",
-					acmeDirectoryUrl: letsEncryptStagingUrl,
-				},
-			},
+			opts: func() config.Opts { return config.DevOpts(l, tst.SecretKey()) },
 			assert: func(c *tls.Config, err error) {
 				attest.Ok(t, err)
 				attest.NotZero(t, c)
@@ -37,12 +34,13 @@ func TestGetTlsConfig(t *testing.T) {
 		},
 		{
 			name: "bad domain",
-			opts: Opts{
-				tls: tlsOpts{
-					domain:           "example.*org",
-					acmeEmail:        "xx@example.com",
-					acmeDirectoryUrl: letsEncryptStagingUrl,
-				},
+			opts: func() config.Opts {
+				o := config.WithOpts("example.org", 65081, tst.SecretKey(), middleware.DirectIpStrategy, l)
+				// If you pass a bad domain to `config.WithOpts`, it will panic since it validates domain.
+				// So we have to do it like this to get an opt with a bad domain.
+				o.Domain = "example.*org"
+				o.Tls.Domain = "example.*org"
+				return o
 			},
 			assert: func(c *tls.Config, err error) {
 				attest.Error(t, err)
@@ -51,13 +49,10 @@ func TestGetTlsConfig(t *testing.T) {
 		},
 		{
 			name: "non nil pool with no tls args",
-			opts: Opts{
-				tls: tlsOpts{
-					domain:                "example.com",
-					acmeEmail:             "",
-					acmeDirectoryUrl:      letsEncryptStagingUrl,
-					clientCertificatePool: &x509.CertPool{},
-				},
+			opts: func() config.Opts {
+				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "", config.LetsEncryptStagingUrl)
+				o.Tls.ClientCertificatePool = &x509.CertPool{}
+				return o
 			},
 			assert: func(c *tls.Config, err error) {
 				attest.Error(t, err)
@@ -66,13 +61,10 @@ func TestGetTlsConfig(t *testing.T) {
 		},
 		{
 			name: "cert pool success",
-			opts: Opts{
-				tls: tlsOpts{
-					domain:                "example.com",
-					acmeEmail:             "xx@example.com",
-					acmeDirectoryUrl:      letsEncryptStagingUrl,
-					clientCertificatePool: &x509.CertPool{},
-				},
+			opts: func() config.Opts {
+				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
+				o.Tls.ClientCertificatePool = &x509.CertPool{}
+				return o
 			},
 			assert: func(c *tls.Config, err error) {
 				attest.Ok(t, err)
@@ -82,17 +74,14 @@ func TestGetTlsConfig(t *testing.T) {
 		},
 		{
 			name: "cert pool from system success",
-			opts: Opts{
-				tls: tlsOpts{
-					domain:           "example.com",
-					acmeEmail:        "xx@example.com",
-					acmeDirectoryUrl: letsEncryptStagingUrl,
-					clientCertificatePool: func() *x509.CertPool {
-						p, err := x509.SystemCertPool()
-						attest.Ok(t, err)
-						return p
-					}(),
-				},
+			opts: func() config.Opts {
+				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
+				o.Tls.ClientCertificatePool = func() *x509.CertPool {
+					p, err := x509.SystemCertPool()
+					attest.Ok(t, err)
+					return p
+				}()
+				return o
 			},
 			assert: func(c *tls.Config, err error) {
 				attest.Ok(t, err)
@@ -107,7 +96,7 @@ func TestGetTlsConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			c, err := getTlsConfig(tt.opts, l)
+			c, err := getTlsConfig(tt.opts())
 			tt.assert(c, err)
 		})
 	}

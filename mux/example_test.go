@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
@@ -27,7 +28,7 @@ func BooksByAuthorHandler() http.HandlerFunc {
 func ExampleMuxer() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := mux.New(
-		middleware.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"login/",
@@ -54,7 +55,7 @@ func ExampleMuxer() {
 func ExampleMuxer_Resolve() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := mux.New(
-		middleware.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"login/",

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"go.akshayshah.org/attest"
 )
 
@@ -37,9 +38,9 @@ func TestLoadShedder(t *testing.T) {
 		msg := "hello"
 		wrappedHandler := loadShedder(
 			someLoadShedderHandler(msg),
-			DefaultLoadShedSamplingPeriod,
-			DefaultLoadShedMinSampleSize,
-			DefaultLoadShedBreachLatency,
+			config.DefaultLoadShedSamplingPeriod,
+			config.DefaultLoadShedMinSampleSize,
+			config.DefaultLoadShedBreachLatency,
 		)
 
 		rec := httptest.NewRecorder()
@@ -65,9 +66,9 @@ func TestLoadShedder(t *testing.T) {
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := loadShedder(
 			someLoadShedderHandler(msg),
-			DefaultLoadShedSamplingPeriod,
-			DefaultLoadShedMinSampleSize,
-			DefaultLoadShedBreachLatency,
+			config.DefaultLoadShedSamplingPeriod,
+			config.DefaultLoadShedMinSampleSize,
+			config.DefaultLoadShedBreachLatency,
 		)
 
 		runhandler := func() {
@@ -87,7 +88,7 @@ func TestLoadShedder(t *testing.T) {
 		}
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 50+DefaultLoadShedMinSampleSize; rN++ {
+		for rN := 0; rN <= 50+config.DefaultLoadShedMinSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -236,7 +237,7 @@ func TestLatencyQueue(t *testing.T) {
 		lq := newLatencyQueue()
 
 		wg := &sync.WaitGroup{}
-		for rN := 0; rN <= 50+DefaultLoadShedMinSampleSize; rN++ {
+		for rN := 0; rN <= 50+config.DefaultLoadShedMinSampleSize; rN++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -263,9 +264,9 @@ func BenchmarkLoadShedder(b *testing.B) {
 
 	wrappedHandler := loadShedder(
 		loadShedderBenchmarkHandler(),
-		DefaultLoadShedSamplingPeriod,
-		DefaultLoadShedMinSampleSize,
-		DefaultLoadShedBreachLatency,
+		config.DefaultLoadShedSamplingPeriod,
+		config.DefaultLoadShedMinSampleSize,
+		config.DefaultLoadShedBreachLatency,
 	)
 
 	rec := httptest.NewRecorder()

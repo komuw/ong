@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -69,7 +70,7 @@ func TestNewRoute(t *testing.T) {
 		MethodGet,
 		middleware.Get(
 			someMuxHandler("msg"),
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 		),
 	)
 	attest.Error(t, errB)
@@ -96,7 +97,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -126,7 +127,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -141,8 +142,8 @@ func TestMux(t *testing.T) {
 			// non-safe http methods(like POST) require a server-known csrf token;
 			// otherwise it fails with http 403
 			// so here we make a http GET so that we can have a csrf token.
-			res, err := client.Get(ts.URL + uri)
-			attest.Ok(t, err)
+			res, errG := client.Get(ts.URL + uri)
+			attest.Ok(t, errG)
 			defer res.Body.Close()
 
 			csrfToken = res.Header.Get(middleware.CsrfHeader)
@@ -174,7 +175,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -218,7 +219,7 @@ func TestMux(t *testing.T) {
 		attest.Ok(t, err)
 
 		_, errC := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt1,
 			rt2,
@@ -227,8 +228,8 @@ func TestMux(t *testing.T) {
 		rStr := errC.Error()
 		attest.Subsequence(t, rStr, uri2)
 		attest.Subsequence(t, rStr, method)
-		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:27") // location where `someMuxHandler` is declared.
-		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:33") // location where `thisIsAnotherMuxHandler` is declared.
+		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:28") // location where `someMuxHandler` is declared.
+		attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:34") // location where `thisIsAnotherMuxHandler` is declared.
 	})
 
 	t.Run("resolve url", func(t *testing.T) {
@@ -249,7 +250,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt1,
 			rt2,
@@ -268,28 +269,28 @@ func TestMux(t *testing.T) {
 				"api",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with prefix slash",
 				"/api",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with suffix slash",
 				"api/",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"success with all slashes",
 				"/api/",
 				"/api/",
 				MethodGet,
-				"ong/internal/mx/mx_test.go:27", // location where `someMuxHandler` is declared.
+				"ong/internal/mx/mx_test.go:28", // location where `someMuxHandler` is declared.
 			},
 			{
 				"bad",
@@ -303,14 +304,14 @@ func TestMux(t *testing.T) {
 				"check/2625",
 				"/check/:age/",
 				MethodAll,
-				"ong/internal/mx/mx_test.go:39", // location where `checkAgeHandler` is declared.
+				"ong/internal/mx/mx_test.go:40", // location where `checkAgeHandler` is declared.
 			},
 			{
 				"url with domain name",
 				"https://localhost/check/2625",
 				"/check/:age/",
 				MethodAll,
-				"ong/internal/mx/mx_test.go:39", // location where `checkAgeHandler` is declared.
+				"ong/internal/mx/mx_test.go:40", // location where `checkAgeHandler` is declared.
 			},
 		}
 
@@ -342,7 +343,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			middleware.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -355,24 +356,24 @@ func TestMux(t *testing.T) {
 				}
 			}
 
-			msg := "someOtherMuxHandler"
-			rt, err := NewRoute(
+			msg2 := "someOtherMuxHandler"
+			rt2, errN := NewRoute(
 				"/someOtherMuxHandler",
 				MethodAll,
-				someOtherMuxHandler(msg),
+				someOtherMuxHandler(msg2),
 			)
-			attest.Ok(t, err)
-			mux.AddRoute(rt)
+			attest.Ok(t, errN)
+			attest.Ok(t, mux.AddRoute(rt2))
 		}
 
 		{ // detects conflicts
-			rt, err := NewRoute(
+			rt3, errNr := NewRoute(
 				uri,
 				MethodGet,
 				someMuxHandler(msg),
 			)
-			attest.Ok(t, err)
-			errA := mux.AddRoute(rt)
+			attest.Ok(t, errNr)
+			errA := mux.AddRoute(rt3)
 			attest.Error(t, errA)
 		}
 
@@ -391,15 +392,15 @@ func TestMux(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 
 		{
-			res, err := client.Get(ts.URL + "/someOtherMuxHandler")
-			attest.Ok(t, err)
+			res2, errCg := client.Get(ts.URL + "/someOtherMuxHandler")
+			attest.Ok(t, errCg)
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
-			defer res.Body.Close()
+			rb2, errRa := io.ReadAll(res2.Body)
+			attest.Ok(t, errRa)
+			defer res2.Body.Close()
 
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), "someOtherMuxHandler")
+			attest.Equal(t, res2.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb2), "someOtherMuxHandler")
 		}
 	})
 }
@@ -437,7 +438,7 @@ func BenchmarkMuxNew(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		mux, err := New(
-			middleware.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			getManyRoutes(b)...,
 		)

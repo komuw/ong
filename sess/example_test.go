@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/sess"
@@ -31,7 +32,7 @@ func ExampleSetM() {
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	handler := middleware.Get(
 		loginHandler(),
-		middleware.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("example.com", 443, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
 	)
 	handler.ServeHTTP(rec, req)
 

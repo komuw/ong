@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/internal/tst"
@@ -126,7 +127,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -147,7 +148,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -178,7 +179,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -202,7 +203,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -224,7 +225,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -265,7 +266,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength * 2)
 		rec := httptest.NewRecorder()
@@ -294,11 +295,11 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		key := tst.SecretKey()
 		enc2 := cry.New(key)
-		expires := strconv.FormatInt(time.Now().UTC().Add(DefaultCsrfCookieDuration).Unix(), 10)
+		expires := strconv.FormatInt(time.Now().UTC().Add(config.DefaultCsrfCookieDuration).Unix(), 10)
 		reqCsrfTok := enc2.EncryptEncode(
 			fmt.Sprintf("%s%s%s", "msgToEncrypt", sep, expires),
 		)
@@ -367,7 +368,7 @@ func TestCsrf(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		postMsg := "my name is John"
@@ -396,11 +397,11 @@ func TestCsrf(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
 
 		key := tst.SecretKey()
 		enc2 := cry.New(key)
-		expires := strconv.FormatInt(time.Now().UTC().Add(DefaultCsrfCookieDuration).Unix(), 10)
+		expires := strconv.FormatInt(time.Now().UTC().Add(config.DefaultCsrfCookieDuration).Unix(), 10)
 		reqCsrfTok := enc2.EncryptEncode(
 			fmt.Sprintf("%s%s%s", "msgToEncrypt", sep, expires),
 		)

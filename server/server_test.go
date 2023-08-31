@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
@@ -30,101 +31,6 @@ import (
 // 	// call flag.Parse() here if TestMain uses flags
 // 	goleak.VerifyTestMain(m)
 // }
-
-func TestOpts(t *testing.T) {
-	t.Parallel()
-
-	t.Run("default opts", func(t *testing.T) {
-		t.Parallel()
-
-		l := log.New(context.Background(), &bytes.Buffer{}, 500)
-		got := DevOpts(l)
-		want := Opts{
-			port:              65081,
-			maxBodyBytes:      defaultMaxBodyBytes,
-			host:              "127.0.0.1",
-			network:           "tcp",
-			readHeaderTimeout: 1 * time.Second,
-			readTimeout:       2 * time.Second,
-			writeTimeout:      3 * time.Second,
-			handlerTimeout:    13 * time.Second,
-			idleTimeout:       113 * time.Second,
-			drainTimeout:      defaultDrainDuration,
-			serverPort:        ":65081",
-			serverAddress:     "127.0.0.1:65081",
-			httpPort:          ":65080",
-			pprofPort:         "65079",
-			tls: tlsOpts{
-				certFile:         "/tmp/ong_dev_certificate.pem",
-				keyFile:          "/tmp/ong_dev_key.pem",
-				domain:           "localhost",
-				acmeDirectoryUrl: "",
-			},
-		}
-		attest.Equal(t, got, want)
-	})
-
-	t.Run("with opts", func(t *testing.T) {
-		t.Parallel()
-
-		certFile, keyFile := certKeyPaths()
-		got := withOpts(80, certFile, keyFile, "", "*.example.com", "")
-
-		want := Opts{
-			port:              80,
-			maxBodyBytes:      defaultMaxBodyBytes,
-			host:              "0.0.0.0",
-			network:           "tcp",
-			readHeaderTimeout: 1 * time.Second,
-			readTimeout:       2 * time.Second,
-			writeTimeout:      3 * time.Second,
-			handlerTimeout:    13 * time.Second,
-			idleTimeout:       113 * time.Second,
-			drainTimeout:      defaultDrainDuration,
-			serverPort:        ":80",
-			serverAddress:     "0.0.0.0:80",
-			httpPort:          ":79",
-			pprofPort:         "78",
-			tls: tlsOpts{
-				certFile:         "/tmp/ong_dev_certificate.pem",
-				keyFile:          "/tmp/ong_dev_key.pem",
-				domain:           "*.example.com",
-				acmeDirectoryUrl: "",
-			},
-		}
-		attest.Equal(t, got, want)
-	})
-
-	t.Run("default tls opts", func(t *testing.T) {
-		t.Parallel()
-
-		l := log.New(context.Background(), &bytes.Buffer{}, 500)
-		got := DevOpts(l)
-		want := Opts{
-			port:              65081,
-			maxBodyBytes:      defaultMaxBodyBytes,
-			host:              "127.0.0.1",
-			network:           "tcp",
-			readHeaderTimeout: 1 * time.Second,
-			readTimeout:       2 * time.Second,
-			writeTimeout:      3 * time.Second,
-			handlerTimeout:    13 * time.Second,
-			idleTimeout:       113 * time.Second,
-			drainTimeout:      defaultDrainDuration,
-			tls: tlsOpts{
-				certFile:         "/tmp/ong_dev_certificate.pem",
-				keyFile:          "/tmp/ong_dev_key.pem",
-				domain:           "localhost",
-				acmeDirectoryUrl: "",
-			},
-			serverPort:    ":65081",
-			serverAddress: "127.0.0.1:65081",
-			httpPort:      ":65080",
-			pprofPort:     "65079",
-		}
-		attest.Equal(t, got, want)
-	})
-}
 
 const tlsFingerPrintKey = "TlsFingerPrintKey"
 
@@ -166,7 +72,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -176,8 +82,16 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+			err := Run(
+				mux,
+				config.WithOpts(
+					"localhost",
+					port,
+					tst.SecretKey(),
+					middleware.DirectIpStrategy,
+					l,
+				),
+			)
 			attest.Ok(t, err)
 		}()
 
@@ -289,7 +203,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -299,8 +213,16 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+			err := Run(
+				mux,
+				config.WithOpts(
+					"localhost",
+					port,
+					tst.SecretKey(),
+					middleware.DirectIpStrategy,
+					l,
+				),
+			)
 			attest.Ok(t, err)
 		}()
 
@@ -308,7 +230,7 @@ func TestServer(t *testing.T) {
 		attest.Ok(t, tst.Ping(port))
 
 		t.Run("smallSize", func(t *testing.T) {
-			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
+			postMsg := strings.Repeat("a", int(config.DefaultMaxBodyBytes/100))
 			body := strings.NewReader(postMsg)
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
 			res, err := clientReqBody.Post(url, "text/plain", body)
@@ -323,7 +245,7 @@ func TestServer(t *testing.T) {
 		})
 
 		t.Run("largeSize", func(t *testing.T) {
-			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*2))
+			postMsg := strings.Repeat("a", int(config.DefaultMaxBodyBytes*2))
 			body := strings.NewReader(postMsg)
 
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
@@ -355,7 +277,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			middleware.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -365,8 +287,16 @@ func TestServer(t *testing.T) {
 		)
 
 		go func() {
-			certFile, keyFile := createDevCertKey(l)
-			err := Run(mux, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+			err := Run(
+				mux,
+				config.WithOpts(
+					"localhost",
+					port,
+					tst.SecretKey(),
+					middleware.DirectIpStrategy,
+					l,
+				),
+			)
 			attest.Ok(t, err)
 		}()
 
@@ -416,9 +346,17 @@ func BenchmarkServer(b *testing.B) {
 	port := tst.GetPort()
 
 	go func() {
-		certFile, keyFile := createDevCertKey(l)
 		time.Sleep(1 * time.Second)
-		err := Run(handler, withOpts(port, certFile, keyFile, "", "localhost", ""), l)
+		err := Run(
+			handler,
+			config.WithOpts(
+				"localhost",
+				port,
+				tst.SecretKey(),
+				middleware.DirectIpStrategy,
+				l,
+			),
+		)
 		attest.Ok(b, err)
 	}()
 

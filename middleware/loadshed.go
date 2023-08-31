@@ -7,6 +7,8 @@ import (
 	"slices"
 	"sync"
 	"time"
+
+	"github.com/komuw/ong/config"
 )
 
 // Most of the code here is inspired by:
@@ -14,22 +16,6 @@ import (
 //   (b) https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/
 
 const (
-	// DefaultLoadShedSamplingPeriod is the duration over which we calculate response latencies by default.
-	DefaultLoadShedSamplingPeriod = 12 * time.Minute
-	// DefaultLoadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
-	// If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
-	DefaultLoadShedMinSampleSize = 50
-	// DefaultLoadShedBreachLatency is the p99 latency at which point we start dropping requests, by default.
-	//
-	// The value chosen here is because;
-	// The wikipedia [monitoring] dashboards are public.
-	// In there we can see that the p95 [response] times for http GET requests is ~700ms, & the p95 response times for http POST requests is ~900ms.
-	// Thus, we'll use a `loadShedBreachLatency` of ~700ms. We hope we can do better than wikipedia(chuckle emoji.)
-	//
-	// [monitoring]: https://grafana.wikimedia.org/?orgId=1
-	// [response]: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
-	DefaultLoadShedBreachLatency = 700 * time.Millisecond
-
 	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.
 	maxLatencyItems = 1_000
 
@@ -49,13 +35,13 @@ func loadShedder(
 	loadShedCheckStart := time.Now().UTC()
 
 	if loadShedSamplingPeriod < 1*time.Second {
-		loadShedSamplingPeriod = DefaultLoadShedSamplingPeriod
+		loadShedSamplingPeriod = config.DefaultLoadShedSamplingPeriod
 	}
 	if loadShedMinSampleSize < 1 {
-		loadShedMinSampleSize = DefaultLoadShedMinSampleSize
+		loadShedMinSampleSize = config.DefaultLoadShedMinSampleSize
 	}
 	if loadShedBreachLatency < 1*time.Nanosecond {
-		loadShedBreachLatency = DefaultLoadShedBreachLatency
+		loadShedBreachLatency = config.DefaultLoadShedBreachLatency
 	}
 	var (
 		// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.

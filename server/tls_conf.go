@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log/slog"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/acme"
 )
 
@@ -20,29 +20,29 @@ import (
 // The tls config may either procure certificates from ACME, from disk or be nil(for non-tls traffic)
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
-func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
-	if err := acme.Validate(o.tls.domain); err != nil {
+func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
+	if err := acme.Validate(o.Tls.Domain); err != nil {
 		return nil, err
 	}
 
-	if o.tls.acmeEmail == "" && o.tls.certFile == "" && o.tls.clientCertificatePool != nil {
+	if o.Tls.AcmeEmail == "" && o.Tls.CertFile == "" && o.Tls.ClientCertificatePool != nil {
 		return nil, errors.New("ong/server: clientCertificatePool cannot be specified if acmeEmail or certFile is unspecified")
 	}
 
-	if o.tls.acmeEmail != "" {
+	if o.Tls.AcmeEmail != "" {
 		// 1. use ACME.
 		//
-		if o.tls.acmeDirectoryUrl == "" {
+		if o.Tls.AcmeDirectoryUrl == "" {
 			return nil, errors.New("ong/server: acmeDirectoryUrl cannot be empty if acmeEmail is also specified")
 		}
 
 		// You need to call it once instead of per request.
 		// See: https://github.com/komuw/ong/issues/296
 		getCert := acme.GetCertificate(
-			o.tls.domain,
-			o.tls.acmeEmail,
-			o.tls.acmeDirectoryUrl,
-			l,
+			o.Tls.Domain,
+			o.Tls.AcmeEmail,
+			o.Tls.AcmeDirectoryUrl,
+			o.Logger,
 		)
 		// Support for acme certificate manager needs to be added in three places:
 		// (a) In http middlewares.
@@ -67,8 +67,8 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 					// This will be logged by `http.Server.ErrorLog`
 					ef := fmt.Errorf(
 						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, clientIP=%s, clientFingerPrint=%s, : %w",
-						o.tls.acmeDirectoryUrl,
-						o.tls.domain,
+						o.Tls.AcmeDirectoryUrl,
+						o.Tls.Domain,
 						info.ServerName,
 						info.Conn.RemoteAddr(),
 						p,
@@ -81,19 +81,19 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 			},
 		}
 
-		if o.tls.clientCertificatePool != nil {
+		if o.Tls.ClientCertificatePool != nil {
 			tlsConf.ClientAuth = tls.RequireAndVerifyClientCert
-			tlsConf.ClientCAs = o.tls.clientCertificatePool
+			tlsConf.ClientCAs = o.Tls.ClientCertificatePool
 		}
 		return tlsConf, nil
 	}
-	if o.tls.certFile != "" {
+	if o.Tls.CertFile != "" {
 		// 2. get from disk.
 		//
-		if len(o.tls.keyFile) < 1 {
+		if len(o.Tls.KeyFile) < 1 {
 			return nil, errors.New("ong/server: keyFile cannot be empty if certFile is also specified")
 		}
-		c, err := tls.LoadX509KeyPair(o.tls.certFile, o.tls.keyFile)
+		c, err := tls.LoadX509KeyPair(o.Tls.CertFile, o.Tls.KeyFile)
 		if err != nil {
 			return nil, err
 		}
@@ -114,9 +114,9 @@ func getTlsConfig(o Opts, l *slog.Logger) (c *tls.Config, e error) {
 			},
 		}
 
-		if o.tls.clientCertificatePool != nil {
+		if o.Tls.ClientCertificatePool != nil {
 			tlsConf.ClientAuth = tls.RequireAndVerifyClientCert
-			tlsConf.ClientCAs = o.tls.clientCertificatePool
+			tlsConf.ClientCAs = o.Tls.ClientCertificatePool
 		}
 		return tlsConf, nil
 	}

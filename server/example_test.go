@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
@@ -15,14 +16,18 @@ import (
 func ExampleRun() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	secretKey := "super-h@rd-Pa$1word"
+	opts := config.WithOpts(
+		"localhost",
+		65081,
+		secretKey,
+		middleware.DirectIpStrategy,
+		l,
+	) // dev options.
+	// alternatively for production:
+	//   opts := config.LetsEncryptOpts("example.com", "secretKey", middleware.DirectIpStrategy, l, "hey@example.com")
+
 	mux := mux.New(
-		middleware.WithOpts(
-			"localhost",
-			65081,
-			secretKey,
-			middleware.DirectIpStrategy,
-			l,
-		),
+		opts,
 		nil,
 		mux.NewRoute(
 			"hello/",
@@ -36,10 +41,7 @@ func ExampleRun() {
 		),
 	)
 
-	opts := server.DevOpts(l) // dev options.
-	// alternatively for production:
-	//   opts := server.LetsEncryptOpts("hey@example.com", "*.some-domain.com")
-	err := server.Run(mux, opts, l)
+	err := server.Run(mux, opts)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

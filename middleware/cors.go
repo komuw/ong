@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/komuw/ong/config"
 )
 
 // Most of the code here is inspired(or taken from) by:
@@ -24,11 +26,6 @@ import (
 // - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
 const (
-	// DefaultCorsCacheDuration is the length in time that preflight responses will be cached by default.
-	// 2hrs is chosen since that is the maximum for chromium based browsers.
-	// Firefox had a maximum of 24hrs as at the time of writing.
-	DefaultCorsCacheDuration = 2 * time.Hour
-
 	// header is used by browsers when issuing a preflight request.
 	acrmHeader = "Access-Control-Request-Method"
 	// used by browsers when issuing a preflight request to let the server know which HTTP headers the client might send when the actual request is made
@@ -73,7 +70,7 @@ func cors(
 	allowedHeaders = getHeaders(allowedHeaders)
 
 	if corsCacheDuration < 1*time.Second { // It is measured in seconds.
-		corsCacheDuration = DefaultCorsCacheDuration
+		corsCacheDuration = config.DefaultCorsCacheDuration
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
