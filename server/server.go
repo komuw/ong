@@ -280,12 +280,11 @@ func Run(h http.Handler, o Opts, l *slog.Logger) error {
 			// (b) In http server.
 			// (c) In http multiplexer.
 			const acmeChallengeURI = "/.well-known/acme-challenge/:token"
-			acmeHandler := acme.Handler(m)
 			if err := m.Unwrap().AddRoute(
 				mux.NewRoute(
 					acmeChallengeURI,
 					mux.MethodAll,
-					acmeHandler,
+					acme.Handler(m),
 				),
 			); err != nil {
 				return fmt.Errorf("ong/server: unable to add ACME handler: %w", err)
