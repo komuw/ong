@@ -4,7 +4,6 @@ package mux
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -58,7 +57,6 @@ func NewRoute(
 //
 // Use [New] to get a valid Mux.
 type Mux struct {
-	l      *slog.Logger
 	router *router // some router
 }
 
@@ -85,9 +83,8 @@ func (m Mux) GoString() string {
 // Typically, an application should only have one Mux.
 //
 // It panics with a helpful error message if it detects conflicting routes.
-func New(l *slog.Logger, opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux {
+func New(opt middleware.Opts, notFoundHandler http.Handler, routes ...Route) Mux {
 	m := Mux{
-		l:      l,
 		router: newRouter(notFoundHandler),
 	}
 
