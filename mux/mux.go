@@ -69,7 +69,6 @@ func (m Muxer) Resolve(path string) Route {
 	return m.internalMux.Resolve(path)
 }
 
-// TODO: test.
 // Unwrap returns the underlying muxer.
 // It is for internal use(ONLY) by ong. Users of ong should not need to call it.
 func (m Muxer) Unwrap() mx.Muxer {
