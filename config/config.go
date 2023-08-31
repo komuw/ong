@@ -138,7 +138,66 @@ func (o Opts) GoString() string {
 	return o.String()
 }
 
-// TODO: docs
+// New returns a new Opts.
+// It panics on error.
+//
+// domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
+// port is the TLS port where the server will listen on. Http requests will also redirected to that port.
+//
+// secretKey is used for securing signed data. It should be unique & kept secret.
+// If it becomes compromised, generate a new one and restart your application using the new one.
+//
+// strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
+// It is important to choose your strategy carefully, see the warning in [ClientIP].
+//
+// logger is an [slog.Logger] that will be used for logging.
+//
+// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [config.DefaultRateShedSamplePercent] is used instead.
+//
+// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [config.DefaultRateLimit] is used instead.
+//
+// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [config.DefaultLoadShedSamplingPeriod] is used instead.
+// loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
+// If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
+// If it is less than 1, [config.DefaultLoadShedMinSampleSize] is used instead.
+// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [config.DefaultLoadShedBreachLatency] is used instead.
+//
+// allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
+// If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
+// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
+// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [config.DefaultCorsCacheDuration] is used instead.
+//
+// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [config.DefaultCsrfCookieDuration] is used instead.
+//
+// sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [config.DefaultSessionCookieDuration] is used instead.
+//
+// maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
+//
+// serverLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog]
+//
+// readHeaderTimeout is the amount of time a server will be allowed to read request headers.
+// readTimeout is the maximum duration a server will use for reading the entire request, including the body.
+// writeTimeout is the maximum duration before a server times out writes of the response.
+// idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
+// drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
+// This is important especially in applications running in places like kubernetes.
+//
+// certFile is a path to a tls certificate.
+// keyFile is a path to a tls key.
+//
+// acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
+// acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
+//
+// If certFile is a non-empty string, this will enable tls using certificates found on disk.
+// If acmeEmail is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
+//
+// clientCertificatePool is an [x509.CertPool], that will be used to verify client certificates.
+// Use this option if you would like to perform mutual TLS authentication.
+// The given pool will be used as is, without modification.
+//
+// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
+// [letsencrypt]: https://letsencrypt.org/
 func New(
 	// common
 	domain string,
@@ -174,7 +233,7 @@ func New(
 	clientCertificatePool *x509.CertPool,
 ) Opts {
 	return Opts{
-		middlewareOpts: NewMiddlewareOpts(
+		middlewareOpts: newMiddlewareOpts(
 			domain,
 			port,
 			secretKey,
@@ -192,7 +251,7 @@ func New(
 			csrfTokenDuration,
 			sessionCookieDuration,
 		),
-		serverOpts: NewServerOpts(
+		serverOpts: newServerOpts(
 			port,
 			maxBodyBytes,
 			serverLogLevel,
@@ -224,7 +283,7 @@ func WithOpts(
 	certFile, keyFile := createDevCertKey(logger)
 
 	return Opts{
-		middlewareOpts: WithMiddlewareOpts(
+		middlewareOpts: withMiddlewareOpts(
 			domain,
 			httpsPort,
 			secretKey,
@@ -250,7 +309,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 	certFile, keyFile := createDevCertKey(logger)
 
 	return Opts{
-		middlewareOpts: WithMiddlewareOpts(
+		middlewareOpts: withMiddlewareOpts(
 			domain,
 			httpsPort,
 			secretKey,
@@ -281,7 +340,7 @@ func CertOpts(
 ) Opts {
 	httpsPort := uint16(443)
 	return Opts{
-		middlewareOpts: WithMiddlewareOpts(
+		middlewareOpts: withMiddlewareOpts(
 			domain,
 			httpsPort,
 			secretKey,
@@ -315,7 +374,7 @@ func AcmeOpts(
 ) Opts {
 	httpsPort := uint16(443)
 	return Opts{
-		middlewareOpts: WithMiddlewareOpts(
+		middlewareOpts: withMiddlewareOpts(
 			domain,
 			httpsPort,
 			secretKey,
@@ -348,7 +407,7 @@ func LetsEncryptOpts(
 ) Opts {
 	httpsPort := uint16(443)
 	return Opts{
-		middlewareOpts: WithMiddlewareOpts(
+		middlewareOpts: withMiddlewareOpts(
 			domain,
 			httpsPort,
 			secretKey,
@@ -442,49 +501,7 @@ func (m middlewareOpts) GoString() string {
 	return m.String()
 }
 
-// TODO: un-export this.
-//
-// NewMiddlewareOpts returns a new Opts.
-// It panics on error.
-//
-// domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
-//
-// httpsPort is the tls port where http requests will be redirected to.
-//
-// secretKey is used for securing signed data.
-// It should be unique & kept secret.
-// If it becomes compromised, generate a new one and restart your application using the new one.
-//
-// strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
-// It is important to choose your strategy carefully, see the warning in [ClientIP].
-//
-// logger is an [slog.Logger] that will be used for logging.
-//
-// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [config.DefaultRateShedSamplePercent] is used instead.
-//
-// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [config.DefaultRateLimit] is used instead.
-//
-// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [config.DefaultLoadShedSamplingPeriod] is used instead.
-// loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
-// If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
-// If it is less than 1, [config.DefaultLoadShedMinSampleSize] is used instead.
-// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [config.DefaultLoadShedBreachLatency] is used instead.
-//
-// allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
-// If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
-// If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
-// If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
-// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [config.DefaultCorsCacheDuration] is used instead.
-//
-// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [config.DefaultCsrfCookieDuration] is used instead.
-//
-// sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [config.DefaultSessionCookieDuration] is used instead.
-//
-// Also see [WithOpts].
-//
-// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
-// [letsencrypt]: https://letsencrypt.org/
-func NewMiddlewareOpts(
+func newMiddlewareOpts(
 	domain string,
 	httpsPort uint16,
 	secretKey string,
@@ -548,20 +565,18 @@ func NewMiddlewareOpts(
 	}
 }
 
-// TODO: un-export this.
-//
-// WithMiddlewareOpts returns a new Opts that has sensible defaults.
+// withMiddlewareOpts returns a new Opts that has sensible defaults.
 // It panics on error.
 //
 // See [New] for extra documentation.
-func WithMiddlewareOpts(
+func withMiddlewareOpts(
 	domain string,
 	httpsPort uint16,
 	secretKey string,
 	strategy ClientIPstrategy,
 	logger *slog.Logger,
 ) middlewareOpts {
-	return NewMiddlewareOpts(
+	return newMiddlewareOpts(
 		domain,
 		httpsPort,
 		secretKey,
@@ -640,43 +655,9 @@ type serverOpts struct {
 	ServerAddress string
 	Network       string
 	HttpPort      string
-	pprofPort     string // TODO: remove this
 }
 
-// TODO: un-export this.
-//
-// NewServerOpts returns a new Opts.
-//
-// port is the TLS port at which the server should listen on.
-//
-// maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
-//
-// serverLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog]
-//
-// readHeaderTimeout is the amount of time a server will be allowed to read request headers.
-// readTimeout is the maximum duration a server will use for reading the entire request, including the body.
-// writeTimeout is the maximum duration before a server times out writes of the response.
-// idleTimeout is the maximum amount of time to wait for the next request when keep-alives are enabled.
-// drainTimeout is the duration to wait for after receiving a shutdown signal and actually starting to shutdown the server.
-// This is important especially in applications running in places like kubernetes.
-//
-// certFile is a path to a tls certificate.
-// keyFile is a path to a tls key.
-//
-// acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
-// domain is the domain name of your website; it can be an exact domain, subdomain or wildcard.
-// acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
-//
-// clientCertificatePool is an [x509.CertPool], that will be used to verify client certificates.
-// Use this option if you would like to perform mutual TLS authentication.
-// The given pool will be used as is, without modification.
-//
-// If certFile is a non-empty string, this will enable tls using certificates found on disk.
-// If acmeEmail is a non-empty string, this will enable tls using certificates procured from an [ACME] certificate authority.
-//
-// [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
-// [letsencrypt]: https://letsencrypt.org/
-func NewServerOpts(
+func newServerOpts(
 	port uint16,
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
@@ -755,7 +736,7 @@ func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirec
 
 	maxBodyBytes := DefaultMaxBodyBytes
 	serverLogLevel := DefaultServerLogLevel
-	return NewServerOpts(
+	return newServerOpts(
 		port,
 		maxBodyBytes,
 		serverLogLevel,

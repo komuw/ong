@@ -55,7 +55,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 			t.Parallel()
 			if tt.expectPanic {
 				attest.Panics(t, func() {
-					NewMiddlewareOpts(
+					newMiddlewareOpts(
 						tt.domain,
 						443,
 						tst.SecretKey(),
@@ -75,7 +75,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 					)
 				})
 			} else {
-				NewMiddlewareOpts(
+				newMiddlewareOpts(
 					tt.domain,
 					443,
 					tst.SecretKey(),
