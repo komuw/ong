@@ -24,7 +24,7 @@ type Route struct {
 	method          string
 	pattern         string
 	segments        []string
-	originalHandler http.Handler // This is only needed to enhance the debug/panic message when conflicting routes are detected.
+	originalHandler http.Handler // This is only needed to enhance the debug/error message when conflicting routes are detected.
 	wrappingHandler http.Handler
 }
 
@@ -204,7 +204,7 @@ func (r *router) detectConflict(method, pattern string, originalHandler http.Han
 			break
 		}
 
-		panicMsg := fmt.Errorf(`
+		errMsg := fmt.Errorf(`
 You are trying to add
   pattern: %s
   method: %s
@@ -223,15 +223,15 @@ already exists and would conflict.`,
 		)
 
 		if pattern == rt.pattern {
-			return panicMsg
+			return errMsg
 		}
 
 		if strings.Contains(pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-			return panicMsg
+			return errMsg
 		}
 
 		if strings.Contains(rt.pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-			return panicMsg
+			return errMsg
 		}
 	}
 
