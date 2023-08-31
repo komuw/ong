@@ -247,10 +247,13 @@ func TestRouter(t *testing.T) {
 			r := newRouter(nil)
 			match := false
 			var ctx context.Context
-			r.handle(tt.RouteMethod, tt.RoutePattern, nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			err := r.handle(tt.RouteMethod, tt.RoutePattern, nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				match = true
 				ctx = r.Context()
 			}))
+			attest.Ok(t, err)
+
 			req, err := http.NewRequest(tt.Method, tt.Path, nil)
 			attest.Ok(t, err)
 			w := httptest.NewRecorder()
@@ -282,9 +285,10 @@ func TestMultipleRoutesDifferentMethods(t *testing.T) {
 
 	r := newRouter(nil)
 	var match string
-	r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		match = r.Method
 	}))
+	attest.Ok(t, err)
 
 	req, err := http.NewRequest(http.MethodGet, "/path", nil)
 	attest.Ok(t, err)
@@ -382,9 +386,10 @@ func TestNotFound(t *testing.T) {
 
 		r := newRouter(nil)
 		var match string
-		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
+		attest.Ok(t, err)
 
 		req, err := http.NewRequest(http.MethodGet, "/path", nil)
 		attest.Ok(t, err)
@@ -401,9 +406,10 @@ func TestNotFound(t *testing.T) {
 
 		r := newRouter(nil)
 		var match string
-		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
+		attest.Ok(t, err)
 
 		req, err := http.NewRequest(http.MethodGet, "/not-found-path", nil)
 		attest.Ok(t, err)
@@ -424,9 +430,10 @@ func TestNotFound(t *testing.T) {
 		})
 
 		r := newRouter(notFoundHandler)
-		r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.handle(MethodAll, "/path", nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			match = r.Method
 		}))
+		attest.Ok(t, err)
 
 		req, err := http.NewRequest(http.MethodGet, "/not-found-path", nil)
 		attest.Ok(t, err)

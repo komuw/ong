@@ -363,7 +363,7 @@ func TestMux(t *testing.T) {
 				someOtherMuxHandler(msg2),
 			)
 			attest.Ok(t, errN)
-			mux.AddRoute(rt2)
+			attest.Ok(t, mux.AddRoute(rt2))
 		}
 
 		{ // detects conflicts
