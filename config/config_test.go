@@ -129,13 +129,13 @@ func TestOpts(t *testing.T) {
 
 			serverOpts: serverOpts{
 				port:              65081,
-				MaxBodyBytes:      defaultMaxBodyBytes,
-				ServerLogLevel:    defaultServerLogLevel,
+				MaxBodyBytes:      DefaultMaxBodyBytes,
+				ServerLogLevel:    DefaultServerLogLevel,
 				ReadHeaderTimeout: 1 * time.Second,
 				ReadTimeout:       2 * time.Second,
 				WriteTimeout:      3 * time.Second,
 				IdleTimeout:       113 * time.Second,
-				DrainTimeout:      defaultDrainDuration,
+				DrainTimeout:      DefaultDrainDuration,
 				Tls: tlsOpts{
 					CertFile:              "/tmp/ong_dev_certificate.pem",
 					KeyFile:               "/tmp/ong_dev_key.pem",

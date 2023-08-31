@@ -26,32 +26,6 @@ import (
 	"golang.org/x/sys/unix" // syscall package is deprecated
 )
 
-// TODO: remove this.
-const (
-	// defaultMaxBodyBytes the value used as the limit for incoming request bodies, if a custom value was not provided.
-	//
-	// [Nginx] uses a default value of 1MB, [Apache] uses default of 1GB whereas [Haproxy] does not have such a limit.
-	//
-	// The max size for http [forms] in Go is 10MB. The max size of the entire bible in text form is ~5MB.
-	// Thus here, we are going to use the 2 times the default size for forms.
-	// Note that; from the [code] and [docs], it looks like; if you set the maxBodyBytes, this also becomes the maxFormSize.
-	//
-	// [Nginx]: http://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
-	// [Apache]: https://httpd.apache.org/docs/2.4/mod/core.html#limitrequestbody
-	// [Haproxy]: https://discourse.haproxy.org/t/how-can-you-configure-the-nginx-client-max-body-size-equivalent-in-haproxy/1690/2
-	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
-	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
-	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
-	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB  // TODO: remove
-	defaultServerLogLevel = slog.LevelInfo               // TODO: remove
-
-	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
-	defaultDrainDuration = 13 * time.Second
-
-	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"         // TODO: remove
-	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory" // TODO: remove
-)
-
 // Run creates a http server, starts the server on a network address and then calls Serve to handle requests on incoming connections.
 //
 // It sets up a server with the parameters provided by o.

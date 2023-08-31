@@ -50,7 +50,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "non nil pool with no tls args",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "", letsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "", config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = &x509.CertPool{}
 				return o
 			},
@@ -62,7 +62,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "cert pool success",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", letsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = &x509.CertPool{}
 				return o
 			},
@@ -75,7 +75,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "cert pool from system success",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", letsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = func() *x509.CertPool {
 					p, err := x509.SystemCertPool()
 					attest.Ok(t, err)

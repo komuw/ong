@@ -82,7 +82,7 @@ const (
 
 // TODO: export this??
 const (
-	// defaultMaxBodyBytes the value used as the limit for incoming request bodies, if a custom value was not provided.
+	// DefaultMaxBodyBytes is the value used as the limit for incoming request bodies, if a custom value was not provided.
 	//
 	// [Nginx] uses a default value of 1MB, [Apache] uses default of 1GB whereas [Haproxy] does not have such a limit.
 	//
@@ -96,14 +96,18 @@ const (
 	// [forms]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://github.com/golang/go/blob/go1.20.3/src/net/http/request.go#L1233-L1235
 	// [code]: https://pkg.go.dev/net/http#Request.ParseForm
-	defaultMaxBodyBytes   = uint64(2 * 10 * 1024 * 1024) // 20MB
-	defaultServerLogLevel = slog.LevelInfo
+	DefaultMaxBodyBytes = uint64(2 * 10 * 1024 * 1024) // 20MB
 
-	// defaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
-	defaultDrainDuration = 13 * time.Second
+	// DefaultServerLogLevel is the log level of the logger that will be passed into [http.Server.ErrorLog], if no custom value is provided.
+	DefaultServerLogLevel = slog.LevelInfo
 
-	letsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
-	letsEncryptStagingUrl    = "https://acme-staging-v02.api.letsencrypt.org/directory"
+	// DefaultDrainDuration is used to determine the shutdown duration if a custom one is not provided.
+	DefaultDrainDuration = 13 * time.Second
+
+	// LetsEncryptProductionUrl is the URL of [letsencrypt's] certificate authority directory endpoint for production.
+	LetsEncryptProductionUrl = "https://acme-v02.api.letsencrypt.org/directory"
+	// LetsEncryptStagingUrl is the URL of [letsencrypt's] certificate authority directory endpoint for staging.
+	LetsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 )
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
@@ -705,13 +709,13 @@ func NewServerOpts(
 	}
 
 	if maxBodyBytes <= 0 {
-		maxBodyBytes = defaultMaxBodyBytes
+		maxBodyBytes = DefaultMaxBodyBytes
 	}
 
 	if acmeEmail != "" && acmeDirectoryUrl == "" {
-		acmeDirectoryUrl = letsEncryptProductionUrl
+		acmeDirectoryUrl = LetsEncryptProductionUrl
 		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
-			acmeDirectoryUrl = letsEncryptStagingUrl
+			acmeDirectoryUrl = LetsEncryptStagingUrl
 		}
 	}
 
@@ -749,10 +753,10 @@ func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirec
 	writeTimeout := readTimeout + (1 * time.Second)
 	handlerTimeout := writeTimeout + (10 * time.Second)
 	idleTimeout := handlerTimeout + (100 * time.Second)
-	drainTimeout := defaultDrainDuration
+	drainTimeout := DefaultDrainDuration
 
-	maxBodyBytes := defaultMaxBodyBytes
-	serverLogLevel := defaultServerLogLevel
+	maxBodyBytes := DefaultMaxBodyBytes
+	serverLogLevel := DefaultServerLogLevel
 	return NewServerOpts(
 		port,
 		maxBodyBytes,

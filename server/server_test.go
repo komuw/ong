@@ -226,7 +226,7 @@ func TestServer(t *testing.T) {
 		attest.Ok(t, tst.Ping(port))
 
 		t.Run("smallSize", func(t *testing.T) {
-			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes/100))
+			postMsg := strings.Repeat("a", int(config.DefaultMaxBodyBytes/100))
 			body := strings.NewReader(postMsg)
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
 			res, err := clientReqBody.Post(url, "text/plain", body)
@@ -241,7 +241,7 @@ func TestServer(t *testing.T) {
 		})
 
 		t.Run("largeSize", func(t *testing.T) {
-			postMsg := strings.Repeat("a", int(defaultMaxBodyBytes*2))
+			postMsg := strings.Repeat("a", int(config.DefaultMaxBodyBytes*2))
 			body := strings.NewReader(postMsg)
 
 			url := fmt.Sprintf("https://127.0.0.1:%d%s", port, uri)
