@@ -142,8 +142,8 @@ func TestMux(t *testing.T) {
 			// non-safe http methods(like POST) require a server-known csrf token;
 			// otherwise it fails with http 403
 			// so here we make a http GET so that we can have a csrf token.
-			res, err := client.Get(ts.URL + uri)
-			attest.Ok(t, err)
+			res, errG := client.Get(ts.URL + uri)
+			attest.Ok(t, errG)
 			defer res.Body.Close()
 
 			csrfToken = res.Header.Get(middleware.CsrfHeader)
@@ -356,24 +356,24 @@ func TestMux(t *testing.T) {
 				}
 			}
 
-			msg := "someOtherMuxHandler"
-			rt, err := NewRoute(
+			msg2 := "someOtherMuxHandler"
+			rt2, errN := NewRoute(
 				"/someOtherMuxHandler",
 				MethodAll,
-				someOtherMuxHandler(msg),
+				someOtherMuxHandler(msg2),
 			)
-			attest.Ok(t, err)
-			mux.AddRoute(rt)
+			attest.Ok(t, errN)
+			mux.AddRoute(rt2)
 		}
 
 		{ // detects conflicts
-			rt, err := NewRoute(
+			rt3, errNr := NewRoute(
 				uri,
 				MethodGet,
 				someMuxHandler(msg),
 			)
-			attest.Ok(t, err)
-			errA := mux.AddRoute(rt)
+			attest.Ok(t, errNr)
+			errA := mux.AddRoute(rt3)
 			attest.Error(t, errA)
 		}
 
@@ -392,15 +392,15 @@ func TestMux(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 
 		{
-			res, err := client.Get(ts.URL + "/someOtherMuxHandler")
-			attest.Ok(t, err)
+			res2, errCg := client.Get(ts.URL + "/someOtherMuxHandler")
+			attest.Ok(t, errCg)
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
-			defer res.Body.Close()
+			rb2, errRa := io.ReadAll(res2.Body)
+			attest.Ok(t, errRa)
+			defer res2.Body.Close()
 
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), "someOtherMuxHandler")
+			attest.Equal(t, res2.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb2), "someOtherMuxHandler")
 		}
 	})
 }
