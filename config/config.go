@@ -122,8 +122,6 @@ type Opts struct {
 	serverOpts
 }
 
-// TODO: add test showing that secretKey is not logged as is(without masking)
-
 // String implements [fmt.Stringer]
 func (o Opts) String() string {
 	return fmt.Sprintf(`Opts{
