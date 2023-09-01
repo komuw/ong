@@ -58,8 +58,6 @@ func Run(h http.Handler, o config.Opts) error {
 			}
 
 			{ // 2. Add pprof route handler.
-				// TODO:
-
 				var errJ error
 
 				if err := m.Unwrap().AddRoute(
