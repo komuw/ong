@@ -10,9 +10,6 @@ import (
 	"github.com/komuw/ong/config"
 )
 
-// TODO: tests.
-// Add integration tests.
-
 // pprofHandler is used to handle requests to the pprof endpoints.
 // The endpoints are secured with Basic authentication. The username and password are [config.Opts.SecretKey]
 func pprofHandler(o config.Opts) http.HandlerFunc {
