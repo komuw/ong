@@ -21,7 +21,10 @@ import (
 // The current [httptest.ResponseRecorder] does not work well with [http.ResponseController]
 // Create one that does, until/unless issue is resolved upstream.
 //
-// See: https://github.com/golang/go/issues/60229
+// See:
+//
+//	https://github.com/golang/go/issues/60229
+//	https://github.com/komuw/ong/issues/377
 type responseControllerResponseRecorder struct {
 	*httptest.ResponseRecorder
 	// ReadDeadline is the last read deadline that has been set using [http.ResponseController]
