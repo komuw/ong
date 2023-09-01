@@ -131,6 +131,8 @@ func getCsp(domain, nonce string) string {
 	// - media is allowed from domain(and its subdomains)
 	// - executable scripts is only allowed from self(& subdomains).
 	// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
+	//
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 	return fmt.Sprintf(
 		// It does not work if they are not all in same line.
 		"default-src 'self' %s *.%s; img-src 'self' *; media-src 'self' %s *.%s; object-src 'none'; base-uri 'none'; require-trusted-types-for 'script'; script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';",
