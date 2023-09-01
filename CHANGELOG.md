@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.78
+- ong/middleware: Add 'self' to CSP policy: https://github.com/komuw/ong/pull/379
+
 # v0.0.77
 - ong/middleware: Add support for http.NewResponseController: https://github.com/komuw/ong/pull/368
 - ong/middleware: Improve formatting of some types: https://github.com/komuw/ong/pull/370
