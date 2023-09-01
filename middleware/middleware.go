@@ -134,13 +134,13 @@ func allDefaultMiddlewares(
 													reloadProtector(
 														session(
 															wrappedHandler,
-															secretKey,
+															string(secretKey),
 															domain,
 															sessionCookieDuration,
 														),
 														domain,
 													),
-													secretKey,
+													string(secretKey),
 													domain,
 													csrfTokenDuration,
 												),

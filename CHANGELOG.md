@@ -9,6 +9,7 @@ Most recent version is listed first.
 - ong/mux: Remove logger from mux: https://github.com/komuw/ong/pull/371
 - ong/mux: Add internal/mux: https://github.com/komuw/ong/pull/372
 - ong/config: Create common config options: https://github.com/komuw/ong/pull/374
+- ong/config: Add config.secureKey: https://github.com/komuw/ong/pull/376
 
 # v0.0.76
 - ong/middleware: Configure what percentage of ratelimited or loadshed responses should be logged: https://github.com/komuw/ong/pull/364
