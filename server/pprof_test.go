@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -51,33 +50,46 @@ func (r *responseControllerResponseRecorder) SetWriteDeadline(deadline time.Time
 func TestPprofHandler(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success", func(t *testing.T) {
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+	port := tst.GetPort()
+
+	o := config.WithOpts(
+		"localhost",
+		port,
+		tst.SecretKey(),
+		middleware.DirectIpStrategy,
+		l,
+	)
+	h := pprofHandler(o)
+
+	t.Run("homepage", func(t *testing.T) {
 		t.Parallel()
 
-		l := log.New(context.Background(), &bytes.Buffer{}, 500)
-		port := tst.GetPort()
-
-		o := config.WithOpts(
-			"localhost",
-			port,
-			tst.SecretKey(),
-			middleware.DirectIpStrategy,
-			l,
-		)
-
-		h := pprofHandler(o)
 		rec := &responseControllerResponseRecorder{ResponseRecorder: httptest.NewRecorder()}
-		req := httptest.NewRequest(http.MethodGet, "//debug/pprof", nil)
+		req := httptest.NewRequest(http.MethodGet, "/debug/pprof", nil)
+		h.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Subsequence(t, string(rb), "<html>")
+	})
+
+	t.Run("debug/pprof/profile", func(t *testing.T) {
+		t.Parallel()
+
+		rec := &responseControllerResponseRecorder{ResponseRecorder: httptest.NewRecorder()}
+		req := httptest.NewRequest(http.MethodGet, "/debug/pprof/profile?seconds=1", nil)
 		h.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
 
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
-
-		fmt.Println("body: ", string(rb)) // TODO:
 		attest.Equal(t, res.StatusCode, http.StatusOK)
-		// attest.Equal(t, string(rb), msg)
+		attest.Subsequence(t, res.Header.Get("Content-Disposition"), "attachment")
+		attest.Subsequence(t, res.Header.Get("Content-Disposition"), "attachment")
 	})
 }
