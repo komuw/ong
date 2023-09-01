@@ -442,11 +442,31 @@ func LetsEncryptOpts(
 	}
 }
 
+// secureKey is a custom string that does not reveal its content when printed.
+type secureKey string
+
+// String implements [fmt.Stringer]
+func (s secureKey) String() string {
+	if len(s) <= 0 {
+		return "secureKey(<EMPTY>)"
+	}
+	return fmt.Sprintf("secureKey(%s<REDACTED>)", string(s[0]))
+}
+
+// GoString implements [fmt.GoStringer]
+func (s secureKey) GoString() string {
+	return s.String()
+}
+
 // middlewareOpts are parameters that are used by middleware.
 type middlewareOpts struct {
 	Domain    string
 	HttpsPort uint16
-	SecretKey string
+	// When printing a struct, fmt does not invoke custom formatting methods on unexported fields.
+	// We thus need to make this field to be exported.
+	// - https://pkg.go.dev/fmt#:~:text=When%20printing%20a%20struct
+	// - https://go.dev/play/p/wL2gqumZ23b
+	SecretKey secureKey
 	Strategy  ClientIPstrategy
 	Logger    *slog.Logger
 
@@ -496,7 +516,7 @@ func (m middlewareOpts) String() string {
 }`,
 		m.Domain,
 		m.HttpsPort,
-		fmt.Sprintf("%s<REDACTED>", string(m.SecretKey[0])),
+		m.SecretKey,
 		m.Strategy,
 		m.Logger,
 		m.RateShedSamplePercent,
@@ -553,7 +573,7 @@ func newMiddlewareOpts(
 	return middlewareOpts{
 		Domain:    domain,
 		HttpsPort: httpsPort,
-		SecretKey: secretKey,
+		SecretKey: secureKey(secretKey),
 		Strategy:  strategy,
 		Logger:    logger,
 
