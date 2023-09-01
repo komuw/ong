@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-// TODO: tests
+// TODO: tests.
+// Add integration tests.
 
 // pprofHandler is used to handle requests to the pprof endpoints.
 // The endpoints are secured with Basic authentication. The username and password are [config.Opts.SecretKey]
