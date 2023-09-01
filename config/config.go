@@ -230,7 +230,7 @@ func New(
 	drainTimeout time.Duration,
 	certFile string,
 	keyFile string,
-	acmeEmail string, 
+	acmeEmail string,
 	acmeDirectoryUrl string,
 	clientCertificatePool *x509.CertPool,
 ) Opts {

@@ -56,6 +56,10 @@ func Run(h http.Handler, o config.Opts) error {
 		}
 	}
 
+	{ // Add pprof route handler.
+		// TODO:
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
