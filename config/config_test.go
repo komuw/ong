@@ -111,7 +111,7 @@ func TestOpts(t *testing.T) {
 			middlewareOpts: middlewareOpts{
 				Domain:                 "localhost",
 				HttpsPort:              65081,
-				SecretKey:              tst.SecretKey(),
+				SecretKey:              secureKey(tst.SecretKey()),
 				Strategy:               clientip.DirectIpStrategy,
 				Logger:                 l,
 				RateShedSamplePercent:  DefaultRateShedSamplePercent,
@@ -153,6 +153,10 @@ func TestOpts(t *testing.T) {
 		}
 
 		attest.Equal(t, got, want)
+
+		attest.Subsequence(t, got.SecretKey.String(), "REDACTED")
+		attest.Subsequence(t, got.String(), "REDACTED")
+		attest.Subsequence(t, got.GoString(), "REDACTED")
 	})
 
 	// t.Run("with opts", func(t *testing.T) {
