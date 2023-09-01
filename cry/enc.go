@@ -80,7 +80,7 @@ func New(secretKey string) Enc {
 		Another option would be to use argon2.
 		  import "golang.org/x/crypto/argon2"
 		  salt := rand(16, 16) // 16bytes are recommended
-		  key := argon2.Key( []byte("super-h@rd-Pa$1word"), salt, 3, 32 * 1024, 4, keyLen)
+		  key := argon2.Key( []byte("super-h@rd-Pas1word"), salt, 3, 32 * 1024, 4, keyLen)
 	*/
 
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.

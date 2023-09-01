@@ -77,7 +77,7 @@ func SecretKey() string {
 		panic("this func should only be called from tests")
 	}
 
-	return "super-h@rd-Pa$1word"
+	return "super-h@rd-Pas1word"
 }
 
 // Ping waits for port to be open, it fails after a number of given seconds.
