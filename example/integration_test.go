@@ -48,7 +48,7 @@ func TestIntegration(t *testing.T) {
 			t.Fatal("env var ONG_EXAMPLE_TESTS_BASIC_AUTH is not set")
 		}
 
-		{ // requires authentication
+		t.Run("requires authentication", func(t *testing.T) {
 			c := &http.Client{}
 			req, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:65081/debug/pprof", nil)
 			attest.Ok(t, err)
@@ -57,9 +57,9 @@ func TestIntegration(t *testing.T) {
 			attest.Ok(t, err)
 			defer res.Body.Close()
 			attest.Equal(t, res.StatusCode, http.StatusUnauthorized)
-		}
+		})
 
-		{ // homepage succeeds
+		t.Run("homepage succeeds", func(t *testing.T) {
 			c := &http.Client{}
 			req, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:65081/debug/pprof", nil)
 			attest.Ok(t, err)
@@ -69,9 +69,9 @@ func TestIntegration(t *testing.T) {
 			attest.Ok(t, err)
 			defer res.Body.Close()
 			attest.Equal(t, res.StatusCode, http.StatusOK)
-		}
+		})
 
-		{ // debug/pprof/profile succeeds
+		t.Run("debug/pprof/profile succeeds", func(t *testing.T) {
 			c := &http.Client{}
 			req, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:65081/debug/pprof/profile?seconds=3", nil)
 			attest.Ok(t, err)
@@ -83,7 +83,7 @@ func TestIntegration(t *testing.T) {
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Subsequence(t, res.Header.Get("Content-Disposition"), "attachment")
 			attest.Subsequence(t, res.Header.Get("Content-Disposition"), "profile")
-		}
+		})
 	})
 
 	t.Run("static_file_server", func(t *testing.T) {
