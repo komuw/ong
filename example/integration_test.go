@@ -111,7 +111,7 @@ func TestIntegration(t *testing.T) {
 			c := &http.Client{}
 			req, err := http.NewRequest(http.MethodGet, url, nil)
 			attest.Ok(t, err)
-			req.SetBasicAuth("user", "some-long-passwd")
+			req.SetBasicAuth("user", "some-long-1passwd")
 
 			res, err := c.Do(req)
 			attest.Ok(t, err)
