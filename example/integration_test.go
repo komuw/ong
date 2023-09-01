@@ -116,7 +116,10 @@ func TestIntegration(t *testing.T) {
 			res, err := c.Do(req)
 			attest.Ok(t, err)
 			defer res.Body.Close()
-			attest.Equal(t, res.StatusCode, http.StatusOK)
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK, attest.Sprintf("body=%s", string(rb)))
 		}
 	})
 
