@@ -57,7 +57,7 @@ func pprofHandler(o config.Opts) http.HandlerFunc {
 
 		{
 			now := time.Now()
-			rc := http.NewResponseController(w)
+			rc := http.NewResponseController(w) // nolint:bodyclose
 
 			if err := rc.SetReadDeadline(now.Add(readTimeout)); err != nil {
 				e := fmt.Errorf("ong/server/pprof: cannot set SetReadDeadline(%s): %w", readTimeout, err)
