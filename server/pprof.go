@@ -60,13 +60,13 @@ func pprofHandler(o config.Opts) http.HandlerFunc {
 			rc := http.NewResponseController(w)
 
 			if err := rc.SetReadDeadline(now.Add(readTimeout)); err != nil {
-				e := fmt.Errorf("ong/server: cannot set SetReadDeadline(%s): %w", readTimeout, err)
+				e := fmt.Errorf("ong/server/pprof: cannot set SetReadDeadline(%s): %w", readTimeout, err)
 				http.Error(w, e.Error(), http.StatusInternalServerError)
 				return
 			}
 
 			if err := rc.SetWriteDeadline(now.Add(writeTimeout)); err != nil {
-				e := fmt.Errorf("ong/server: cannot set SetWriteDeadline(%s): %w", writeTimeout, err)
+				e := fmt.Errorf("ong/server/pprof: cannot set SetWriteDeadline(%s): %w", writeTimeout, err)
 				http.Error(w, e.Error(), http.StatusInternalServerError)
 				return
 			}
