@@ -21,6 +21,7 @@ import (
 	"github.com/komuw/ong/internal/finger"
 	"github.com/komuw/ong/internal/octx"
 	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
 
 	"golang.org/x/sys/unix" // syscall package is deprecated
@@ -58,6 +59,20 @@ func Run(h http.Handler, o config.Opts) error {
 
 			{ // 2. Add pprof route handler.
 				// TODO:
+				if err := m.Unwrap().AddRoute(
+					mux.NewRoute(
+						"/debug/pprof/:part",
+						mux.MethodAll,
+						middleware.BasicAuth(
+							pprofHandler(),
+							string(o.SecretKey),
+							string(o.SecretKey),
+							"Use config.Opts.SecretKey",
+						),
+					),
+				); err != nil {
+					return fmt.Errorf("ong/server: unable to add pprof handler: %w", err)
+				}
 			}
 		}
 	}
