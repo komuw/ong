@@ -59,6 +59,24 @@ func Run(h http.Handler, o config.Opts) error {
 
 			{ // 2. Add pprof route handler.
 				// TODO:
+
+				var errJ error
+
+				if err := m.Unwrap().AddRoute(
+					mux.NewRoute(
+						"/debug/pprof",
+						mux.MethodAll,
+						middleware.BasicAuth(
+							pprofHandler(),
+							string(o.SecretKey),
+							string(o.SecretKey),
+							"Use config.Opts.SecretKey",
+						),
+					),
+				); err != nil {
+					errJ = errors.Join(errJ, err)
+				}
+
 				if err := m.Unwrap().AddRoute(
 					mux.NewRoute(
 						"/debug/pprof/:part",
@@ -71,7 +89,11 @@ func Run(h http.Handler, o config.Opts) error {
 						),
 					),
 				); err != nil {
-					return fmt.Errorf("ong/server: unable to add pprof handler: %w", err)
+					errJ = errors.Join(errJ, err)
+				}
+
+				if errJ != nil {
+					return fmt.Errorf("ong/server: unable to add pprof handler: %w", errJ)
 				}
 			}
 		}
