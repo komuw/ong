@@ -58,14 +58,17 @@ func Run(h http.Handler, o config.Opts) error {
 			}
 
 			{ // 2. Add pprof route handler.
-				var errJ error
+				var (
+					errJ        error
+					profHandler = pprofHandler(o)
+				)
 
 				if err := m.Unwrap().AddRoute(
 					mux.NewRoute(
 						"/debug/pprof",
 						mux.MethodAll,
 						middleware.BasicAuth(
-							pprofHandler(),
+							profHandler,
 							string(o.SecretKey),
 							string(o.SecretKey),
 							"Use config.Opts.SecretKey",
@@ -80,7 +83,7 @@ func Run(h http.Handler, o config.Opts) error {
 						"/debug/pprof/:part",
 						mux.MethodAll,
 						middleware.BasicAuth(
-							pprofHandler(),
+							profHandler,
 							string(o.SecretKey),
 							string(o.SecretKey),
 							"Use config.Opts.SecretKey",

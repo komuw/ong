@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"time"
+
+	"github.com/komuw/ong/config"
 )
 
 // TODO: tests.
@@ -13,8 +15,8 @@ import (
 
 // pprofHandler is used to handle requests to the pprof endpoints.
 // The endpoints are secured with Basic authentication. The username and password are [config.Opts.SecretKey]
-func pprofHandler() http.HandlerFunc {
-	const (
+func pprofHandler(o config.Opts) http.HandlerFunc {
+	var (
 		/*
 			The pprof tool supports fetching profles by duration.
 			eg; fetch cpu profile for the last 5mins(300sec):
@@ -23,8 +25,8 @@ func pprofHandler() http.HandlerFunc {
 				http://localhost:65079/debug/pprof/profile?seconds=300: server response: 400 Bad Request - profile duration exceeds server's WriteTimeout
 			So we need to be generous with our timeouts. Which is okay since pprof runs in a mux that is not exposed to the internet(localhost)
 		*/
-		readTimeout  = 5 * time.Minute
-		writeTimeout = 30 * time.Minute
+		readTimeout  = (o.ReadTimeout + 5*time.Minute)
+		writeTimeout = (o.WriteTimeout + 30*time.Minute)
 	)
 
 	// Unfortunately the pprof endpoints do not interact well with [http.ResponseController]
@@ -71,9 +73,6 @@ func pprofHandler() http.HandlerFunc {
 		}
 
 		path := r.URL.Path
-		// TODO:
-		fmt.Println("\n\t pprofTT called. path: ", path)
-
 		switch path {
 		default:
 			pprof.Index(w, r)
