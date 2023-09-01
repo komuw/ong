@@ -13,7 +13,7 @@ import (
 
 func main() {
 	l := log.New(context.Background(), os.Stdout, 100).With("pid", os.Getpid())
-	const secretKey = "super-h@rd-Pa$1word"
+	const secretKey = "super-h@rd-Pas1word"
 
 	api := NewApp(myDB{map[string]string{}}, l)
 	mux := mux.New(
@@ -27,7 +27,7 @@ func main() {
 		mux.NewRoute(
 			"staticAssets/:file",
 			mux.MethodAll,
-			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-p1sswd"),
+			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-1passwd", "passwd used when registering"),
 		),
 		mux.NewRoute(
 			"check/:age/",

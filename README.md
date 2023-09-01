@@ -38,7 +38,7 @@ import (
 
 func main() {
 	l := log.New(context.Background(), os.Stdout, 1000)
-	secretKey := "super-h@rd-Pa$1word"
+	secretKey := "super-h@rd-Pas1word"
 	opts := config.WithOpts(
 		"localhost",
 		65081,

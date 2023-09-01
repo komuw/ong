@@ -8,15 +8,15 @@ import (
 )
 
 // BasicAuth is a middleware that protects wrappedHandler using basic authentication.
-func BasicAuth(wrappedHandler http.Handler, user, passwd string) http.HandlerFunc {
-	const realm = "enter username and password"
-
+func BasicAuth(wrappedHandler http.Handler, user, passwd, hint string) http.HandlerFunc {
 	if err := key.IsSecure(passwd); err != nil {
 		panic(err)
 	}
 
+	// See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
+	realm := `enter username and password: ` + hint
 	e := func(w http.ResponseWriter) {
-		errMsg := `Basic realm="` + realm + `"`
+		errMsg := `Basic realm=` + realm
 		w.Header().Set("WWW-Authenticate", errMsg)
 		w.Header().Set(ongMiddlewareErrorHeader, errMsg)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)

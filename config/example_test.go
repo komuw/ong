@@ -30,7 +30,7 @@ func ExampleNew() {
 		// The https port that our application will be listening on.
 		443,
 		// The security key to use for securing signed data.
-		"super-h@rd-Pa$1word",
+		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
 		middleware.SingleIpStrategy("CF-Connecting-IP"),
 		// Logger.

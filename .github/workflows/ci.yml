@@ -258,6 +258,7 @@ jobs:
           go tool covdata percent -i=coverage
         env:
           ONG_RUNNING_IN_TESTS: 'YES'
+          ONG_EXAMPLE_TESTS_BASIC_AUTH: "super-h@rd-Pas1word" # Ought to be same value as used in /example/main.go
 
   # run_stress_test:
   #   name: run_stress_test

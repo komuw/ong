@@ -102,9 +102,8 @@ func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
 		AddSource: true,
 		Level:     slog.LevelDebug,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			v := a.Value
-			if a.Key == "source" {
-				if t, ok := v.Any().(*slog.Source); ok {
+			if a.Key == slog.SourceKey {
+				if t, ok := a.Value.Any().(*slog.Source); ok {
 					// log the source in one line.
 					return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
 				}

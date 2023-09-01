@@ -28,7 +28,7 @@ func BooksByAuthorHandler() http.HandlerFunc {
 func ExampleMuxer() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := mux.New(
-		config.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("localhost", 8080, "super-h@rd-Pas1word", middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"login/",
@@ -55,7 +55,7 @@ func ExampleMuxer() {
 func ExampleMuxer_Resolve() {
 	l := log.New(context.Background(), os.Stdout, 1000)
 	mux := mux.New(
-		config.WithOpts("localhost", 8080, "super-h@rd-Pa$1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("localhost", 8080, "super-h@rd-Pas1word", middleware.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
 			"login/",
