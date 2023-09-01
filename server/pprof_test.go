@@ -90,6 +90,6 @@ func TestPprofHandler(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Subsequence(t, res.Header.Get("Content-Disposition"), "attachment")
-		attest.Subsequence(t, res.Header.Get("Content-Disposition"), "attachment")
+		attest.Subsequence(t, res.Header.Get("Content-Disposition"), "profile")
 	})
 }
