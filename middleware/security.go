@@ -133,7 +133,7 @@ func getCsp(domain, nonce string) string {
 	// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
 	return fmt.Sprintf(
 		// It does not work if they are not all in same line.
-		"default-src 'self' %s *.%s; img-src *; media-src %s *.%s; object-src 'none'; base-uri 'none'; require-trusted-types-for 'script'; script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';",
+		"default-src 'self' %s *.%s; img-src 'self' *; media-src 'self' %s *.%s; object-src 'none'; base-uri 'none'; require-trusted-types-for 'script'; script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';",
 		domain, domain,
 		domain, domain,
 		domain, domain, nonce,
