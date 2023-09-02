@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -17,14 +16,6 @@ const logIDKey = string(octx.LogCtxKey)
 func trace(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-
-		// TODO: integration tests
-		{
-			// This tries to prevent path traversal attacks.
-			r.URL = r.URL.JoinPath()
-			fmt.Println("\t trace: r.URL.Path: ", r.Method, r.URL.Path)         // TODO:
-			fmt.Println("\t trace: r.URL.String(): ", r.Method, r.URL.String()) // TODO:
-		}
 
 		// set cookie/headers/ctx for logID.
 		logID := getLogId(r)
