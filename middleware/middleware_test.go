@@ -512,8 +512,8 @@ func TestPathCleanup(t *testing.T) {
 	tests := []struct {
 		path string
 	}{
-		// {path: "/"},
-		// {path: "/someUri"},
+		{path: "/"},
+		{path: "/someUri"},
 		{path: "../../etc"},
 		{path: "../../hashSlashAtEnd/"},
 	}

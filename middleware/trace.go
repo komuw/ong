@@ -13,35 +13,14 @@ import (
 
 const logIDKey = string(octx.LogCtxKey)
 
-// // TODO:
-// //
-// // cleanUrl a new url path cleaned of any ./ or ../ elements.
-// // This func is fashioned after [url.URL.JoinPath]
-// func cleanUrl(url string) string {
-// 	var p string
-
-// 	if !strings.HasPrefix(url, "/") {
-// 		// Return a relative path if u is relative,
-// 		// but ensure that it contains no ../ elements.
-// 		url = "/" + url
-// 	}
-// 	p = path.Clean(url)
-
-// 	// path.Clean may remove any trailing slashes.
-// 	// Preserve at least one.
-// 	if strings.HasSuffix(url, "/") && !strings.HasSuffix(p, "/") {
-// 		p += "/"
-// 	}
-
-// 	return p
-// }
-
 // trace is a middleware that adds logID to request and response.
 func trace(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// r.URL.Path = cleanUrl(r.URL.Path)
-		r.URL = r.URL.JoinPath()
 		// TODO: integration tests
+		{
+			// This tries to prevent path traversal attacks.
+			r.URL = r.URL.JoinPath()
+		}
 
 		fmt.Println("\t trace: r.URL.Path: ", r.Method, r.URL.Path)         // TODO:
 		fmt.Println("\t trace: r.URL.String(): ", r.Method, r.URL.String()) // TODO:
