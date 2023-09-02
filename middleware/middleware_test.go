@@ -468,6 +468,8 @@ func TestMiddlewareServer(t *testing.T) {
 
 func somePathCleanupTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// r.URL.Path = cleanUrl(r.URL.Path)
+
 		fmt.Println("\t somePathCleanupTestHandler: r.URL.Path: ", r.Method, r.URL.Path) // TODO:
 
 		if r.Method == http.MethodPost {
@@ -514,6 +516,7 @@ func TestPathCleanup(t *testing.T) {
 		// {path: "/"},
 		// {path: "/someUri"},
 		{path: "../../etc"},
+		{path: "../../hashSlashAtEnd/"},
 	}
 
 	for _, tt := range tests {
