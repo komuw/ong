@@ -487,7 +487,7 @@ func somePathCleanupTestHandler(msg string) http.HandlerFunc {
 	}
 }
 
-func TestPathCleanup(t *testing.T) {
+func TestPathTraversalCleanup(t *testing.T) {
 	t.Parallel()
 
 	tr := &http.Transport{
