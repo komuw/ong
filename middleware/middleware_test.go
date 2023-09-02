@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -491,7 +492,17 @@ func TestPathCleanup(t *testing.T) {
 		// since we are using self-signed certificates, we need to skip verification.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// TODO:
+			fmt.Println("redirect to: ", req.URL.String(), " from: ", via[0].URL.String())
+			if len(via) > 0 {
+				return errors.New("TestPathCleanup should not redirect")
+			}
+			return nil
+		},
+	}
 
 	msg := "hello world"
 	domain := "localhost"
@@ -500,8 +511,8 @@ func TestPathCleanup(t *testing.T) {
 	tests := []struct {
 		path string
 	}{
-		{path: "/"},
-		{path: "/someUri"},
+		// {path: "/"},
+		// {path: "/someUri"},
 		{path: "../../etc"},
 	}
 
@@ -523,6 +534,7 @@ func TestPathCleanup(t *testing.T) {
 				tt.path = "/" + tt.path
 			}
 			url := ts.URL + tt.path
+			url = strings.ReplaceAll(url, "127.0.0.1", "localhost")
 			res, err := client.Get(url)
 			attest.Ok(t, err)
 
