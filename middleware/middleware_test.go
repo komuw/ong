@@ -171,7 +171,7 @@ func TestAllMiddleware(t *testing.T) {
 		domain := "localhost"
 		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
-		ts, err := tst.TlsServer(wrappedHandler, "localhost", httpsPort)
+		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
 		attest.Ok(t, err)
 		defer ts.Close()
 
@@ -463,6 +463,79 @@ func TestMiddlewareServer(t *testing.T) {
 		}
 		wg.Wait()
 	})
+}
+
+func somePathCleanupTestHandler(msg string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("\t r.URL.Path: ", r.Method, r.URL.Path) // TODO:
+
+		if r.Method == http.MethodPost {
+			b, e := io.ReadAll(r.Body)
+			if e != nil {
+				panic(e)
+			}
+			if len(b) > 1 {
+				_, _ = w.Write(b)
+				return
+			}
+		}
+
+		fmt.Fprint(w, msg)
+	}
+}
+
+func TestPathCleanup(t *testing.T) {
+	t.Parallel()
+
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	msg := "hello world"
+	domain := "localhost"
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
+	tests := []struct {
+		path string
+	}{
+		{path: "/"},
+		{path: "/someUri"},
+		{path: "../../etc"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(fmt.Sprintf("url=%s", tt.path), func(t *testing.T) {
+			t.Parallel()
+
+			httpsPort := tst.GetPort()
+			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+			wrappedHandler := All(somePathCleanupTestHandler(msg), o)
+			ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
+			attest.Ok(t, err)
+			defer ts.Close()
+
+			if !strings.HasPrefix(tt.path, "/") {
+				// dont use url.JoinPath(), since it cleans urls for you.
+				tt.path = "/" + tt.path
+			}
+			url := ts.URL + tt.path
+			res, err := client.Get(url)
+			attest.Ok(t, err)
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+			defer res.Body.Close()
+
+			fmt.Println("\t string(rb): ", url, string(rb))
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		})
+	}
 }
 
 func someBenchmarkAllMiddlewaresHandler() http.HandlerFunc {
