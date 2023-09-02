@@ -9,15 +9,16 @@
 //  3. Add client TLS fingerprint to the request context.
 //  4. Recover from panics in the wrappedHandler.
 //  5. Log http requests and responses.
-//  6. Rate limit requests by IP address.
-//  7. Shed load based on http response latencies.
-//  8. Handle automatic procurement/renewal of ACME tls certificates.
-//  9. Redirect http requests to https.
-//  10. Add some important HTTP security headers and assign them sensible default values.
-//  11. Implement Cross-Origin Resource Sharing support(CORS).
-//  12. Provide protection against Cross Site Request Forgeries(CSRF).
-//  13. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
-//  14. Implement http sessions.
+//  6. Try and prevent path traversal attack.
+//  7. Rate limit requests by IP address.
+//  8. Shed load based on http response latencies.
+//  9. Handle automatic procurement/renewal of ACME tls certificates.
+//  10. Redirect http requests to https.
+//  11. Add some important HTTP security headers and assign them sensible default values.
+//  12. Implement Cross-Origin Resource Sharing support(CORS).
+//  13. Provide protection against Cross Site Request Forgeries(CSRF).
+//  14. Attempt to provide protection against form re-submission when a user reloads an already submitted web form.
+//  15. Implement http sessions.
 package middleware
 
 import (
@@ -84,16 +85,17 @@ func allDefaultMiddlewares(
 	// 3.  fingerprint because it is needed by recoverer & logger.
 	// 4.  recoverer on the outer since we want it to watch all other middlewares.
 	// 5.  logger since we would like to get logs as early in the lifecycle as possible.
-	// 6.  rateLimiter since we want bad traffic to be filtered early.
-	// 7.  loadShedder for the same reason.
-	// 8.  acme needs to come before httpsRedirector because ACME challenge requests need to be handled under http(not https).
-	// 9.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
-	// 10. securityHeaders since we want some minimum level of security.
-	// 11. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 12. csrf since this one is a bit more involved perf-wise.
-	// 13. Gzip since it is very involved perf-wise.
-	// 14. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
-	// 15. session since we want sessions to saved as soon as possible.
+	// 6.  traversal comes after logger since we would want to log the actual initial path requested.
+	// 7.  rateLimiter since we want bad traffic to be filtered early.
+	// 8.  loadShedder for the same reason.
+	// 9.  acme needs to come before httpsRedirector because ACME challenge requests need to be handled under http(not https).
+	// 10.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
+	// 11. securityHeaders since we want some minimum level of security.
+	// 12. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 13. csrf since this one is a bit more involved perf-wise.
+	// 14. Gzip since it is very involved perf-wise.
+	// 15. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
+	// 16. session since we want sessions to saved as soon as possible.
 	//
 	// user ->
 	//  trace ->
@@ -101,17 +103,18 @@ func allDefaultMiddlewares(
 	//    fingerprint ->
 	//     recoverer ->
 	//      logger ->
-	//       rateLimiter ->
-	//        loadShedder ->
-	//         acme ->
-	//          httpsRedirector ->
-	//           securityHeaders ->
-	//            cors ->
-	//             csrf ->
-	//              Gzip ->
-	//               reloadProtector ->
-	//                session ->
-	//                 actual-handler
+	//       traversal ->
+	//        rateLimiter ->
+	//         loadShedder ->
+	//          acme ->
+	//           httpsRedirector ->
+	//            securityHeaders ->
+	//             cors ->
+	//              csrf ->
+	//               Gzip ->
+	//                reloadProtector ->
+	//                 session ->
+	//                  actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
@@ -124,42 +127,44 @@ func allDefaultMiddlewares(
 			fingerprint(
 				recoverer(
 					logger(
-						rateLimiter(
-							loadShedder(
-								acme.Handler(
-									httpsRedirector(
-										securityHeaders(
-											cors(
-												csrf(
-													reloadProtector(
-														session(
-															wrappedHandler,
-															string(secretKey),
+						traversal(
+							rateLimiter(
+								loadShedder(
+									acme.Handler(
+										httpsRedirector(
+											securityHeaders(
+												cors(
+													csrf(
+														reloadProtector(
+															session(
+																wrappedHandler,
+																string(secretKey),
+																domain,
+																sessionCookieDuration,
+															),
 															domain,
-															sessionCookieDuration,
 														),
+														string(secretKey),
 														domain,
+														csrfTokenDuration,
 													),
-													string(secretKey),
-													domain,
-													csrfTokenDuration,
+													allowedOrigins,
+													allowedMethods,
+													allowedHeaders,
+													corsCacheDuration,
 												),
-												allowedOrigins,
-												allowedMethods,
-												allowedHeaders,
-												corsCacheDuration,
+												domain,
 											),
+											httpsPort,
 											domain,
 										),
-										httpsPort,
-										domain,
 									),
+									loadShedSamplingPeriod,
+									loadShedMinSampleSize,
+									loadShedBreachLatency,
 								),
-								loadShedSamplingPeriod,
-								loadShedMinSampleSize,
-								loadShedBreachLatency,
+								rateLimit,
 							),
-							rateLimit,
 						),
 						l,
 						rateShedSamplePercent,
