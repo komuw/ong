@@ -171,7 +171,7 @@ func TestAllMiddleware(t *testing.T) {
 		domain := "localhost"
 		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
-		ts, err := tst.TlsServer(wrappedHandler, "localhost", httpsPort)
+		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
 		attest.Ok(t, err)
 		defer ts.Close()
 

@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.79
+- ong/middleware: Try and prevent path traversal attacks: https://github.com/komuw/ong/pull/382
+
 # v0.0.78
 - ong/middleware: Add 'self' to CSP policy: https://github.com/komuw/ong/pull/379
 
