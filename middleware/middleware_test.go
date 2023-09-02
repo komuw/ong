@@ -467,7 +467,7 @@ func TestMiddlewareServer(t *testing.T) {
 
 func somePathCleanupTestHandler(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("\t r.URL.Path: ", r.Method, r.URL.Path) // TODO:
+		fmt.Println("\t somePathCleanupTestHandler: r.URL.Path: ", r.Method, r.URL.Path) // TODO:
 
 		if r.Method == http.MethodPost {
 			b, e := io.ReadAll(r.Body)

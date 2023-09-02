@@ -16,7 +16,7 @@ const logIDKey = string(octx.LogCtxKey)
 // trace is a middleware that adds logID to request and response.
 func trace(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("\t r.URL.Path: ", r.Method, r.URL.Path) // TODO:
+		fmt.Println("\t trace: r.URL.Path: ", r.Method, r.URL.Path) // TODO:
 
 		ctx := r.Context()
 
