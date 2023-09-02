@@ -498,8 +498,7 @@ func TestPathCleanup(t *testing.T) {
 		Transport: tr,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			// TODO:
-			fmt.Println("redirect to: ", req.URL.String(), " from: ", via[0].URL.String())
-			if len(via) > 0 {
+			if len(via) >= 1 {
 				return errors.New("TestPathCleanup should not redirect")
 			}
 			return nil
