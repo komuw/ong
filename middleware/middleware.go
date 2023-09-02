@@ -127,7 +127,7 @@ func allDefaultMiddlewares(
 			fingerprint(
 				recoverer(
 					logger(
-						traversal(
+						pathTraversal(
 							rateLimiter(
 								loadShedder(
 									acme.Handler(

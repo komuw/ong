@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-// traversal is a middleware that tries to prevent path traversal attacks.
-func traversal(wrappedHandler http.Handler) http.HandlerFunc {
+// pathTraversal is a middleware that tries to prevent path pathTraversal attacks.
+func pathTraversal(wrappedHandler http.Handler) http.HandlerFunc {
 	/*
 		- https://github.com/komuw/ong/issues/381
 		- https://github.com/golang/go/issues/54385
