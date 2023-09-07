@@ -42,7 +42,7 @@ func TestCheckSecretKey(t *testing.T) {
 		},
 		{
 			name:         "repeated key",
-			key:          "4$aaaaaaaaaaaaa",
+			key:          "4$7kBaaaaaaaaaaaaa",
 			shouldSucced: false,
 		},
 	}
