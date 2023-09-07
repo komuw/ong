@@ -24,7 +24,7 @@ func IsSecure(secretKey string) error {
 		minLen       = 16
 		maxLen       = 256
 		minUniqueLen = 10
-		minEntropy   = 74
+		minEntropy   = 64
 		expected     = 1
 	)
 

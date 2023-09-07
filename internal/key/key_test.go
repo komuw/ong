@@ -3,6 +3,7 @@ package key
 import (
 	"testing"
 
+	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
 )
@@ -27,14 +28,14 @@ func TestCheckSecretKey(t *testing.T) {
 		},
 		{
 			name:         "ong/id.New()",
-			key:          "Jk8RWWChnaqsdH84",
-			shouldSucced: false,
+			key:          id.New(),
+			shouldSucced: true,
 		},
-		// {
-		// 	name:         "small secure key is ok",
-		// 	key:          "4$aBCdEfGhIjKlMn",
-		// 	shouldSucced: true,
-		// },
+		{
+			name:         "small secure key is ok",
+			key:          "4$aBCdEfGhIjKlMn",
+			shouldSucced: true,
+		},
 		{
 			name:         "bad key",
 			key:          "super-h@rd-password",
