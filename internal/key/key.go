@@ -38,20 +38,6 @@ func IsSecure(secretKey string) error {
 		return fmt.Errorf("ong: secretKey entropy is less than minimum required of %d", minEntropy)
 	}
 
-	uniqueSecret := ""
-	set := map[rune]struct{}{}
-	for _, c := range secretKey {
-		if _, ok := set[c]; ok {
-			continue
-		}
-		set[c] = struct{}{}
-		uniqueSecret = uniqueSecret + string(c)
-	}
-
-	if len(uniqueSecret) < minUniqueLen {
-		return fmt.Errorf("ong: secretKey length of non-recurring characters is less than minimum required of %d", minUniqueLen)
-	}
-
 	hasDigit := 0
 	hasSymbol := 0
 	hasUpper := 0
