@@ -21,11 +21,12 @@ func IsSecure(secretKey string) error {
 		// see:
 		//   - https://www.passwordmonster.com/
 		//   - https://thesecurityfactory.be/password-cracking-speed/
-		minLen       = 16
-		maxLen       = 256
-		minUniqueLen = 10
-		minEntropy   = 64
-		expected     = 1
+		minLen          = 16
+		maxLen          = 256
+		minUniqueLen    = 10
+		minEntropy      = 64
+		minCombinations = 3
+		expected        = 1
 	)
 
 	if len(secretKey) < minLen {
@@ -73,7 +74,7 @@ func IsSecure(secretKey string) error {
 		combinations = combinations + 1
 	}
 
-	if combinations < 3 {
+	if combinations < minCombinations {
 		return errors.New("ong: secretKey should be a combination of digits, letters, symbols")
 	}
 
