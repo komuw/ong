@@ -11,44 +11,39 @@ func TestCheckSecretKey(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name  string
-		key   string
-		check func(error)
+		name         string
+		key          string
+		shouldSucced bool
 	}{
 		{
-			name: "good key",
-			key:  tst.SecretKey(),
-			check: func(err error) {
-				attest.Ok(t, err)
-			},
+			name:         "good key",
+			key:          tst.SecretKey(),
+			shouldSucced: true,
 		},
 		{
-			name: "uuid accepted",
-			key:  "663acecd-af38-4e02-9529-1498bd7bd96e",
-			check: func(err error) {
-				attest.Ok(t, err)
-			},
+			name:         "uuid accepted",
+			key:          "663acecd-af38-4e02-9529-1498bd7bd96e",
+			shouldSucced: true,
 		},
 		{
-			name: "small secure key is ok",
-			key:  "4$kplejewjdsnv",
-			check: func(err error) {
-				attest.Ok(t, err)
-			},
+			name:         "ong/id.New()",
+			key:          "Jk8RWWChnaqsdH84",
+			shouldSucced: false,
 		},
 		{
-			name: "bad key",
-			key:  "super-h@rd-password",
-			check: func(err error) {
-				attest.Error(t, err)
-			},
+			name:         "small secure key is ok",
+			key:          "4$kplejewjdsnv",
+			shouldSucced: true,
 		},
 		{
-			name: "repeated key",
-			key:  "4$aaaaaaaaaaaaa",
-			check: func(err error) {
-				attest.Error(t, err)
-			},
+			name:         "bad key",
+			key:          "super-h@rd-password",
+			shouldSucced: false,
+		},
+		{
+			name:         "repeated key",
+			key:          "4$aaaaaaaaaaaaa",
+			shouldSucced: false,
 		},
 	}
 	for _, tt := range tests {
@@ -58,7 +53,11 @@ func TestCheckSecretKey(t *testing.T) {
 			t.Parallel()
 
 			err := IsSecure(tt.key)
-			tt.check(err)
+			if tt.shouldSucced {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+			}
 		})
 	}
 }

@@ -18,9 +18,10 @@ func IsSecure(secretKey string) error {
 		// see:
 		//   - https://www.passwordmonster.com/
 		//   - https://thesecurityfactory.be/password-cracking-speed/
-		minLen   = 14
-		maxLen   = 256
-		expected = 1
+		minLen       = 14
+		minUniqueLen = 8
+		maxLen       = 256
+		expected     = 1
 	)
 
 	if len(secretKey) < minLen {
@@ -28,6 +29,20 @@ func IsSecure(secretKey string) error {
 	}
 	if len(secretKey) > maxLen {
 		return fmt.Errorf("ong: secretKey size is more than maximum required of %d", maxLen)
+	}
+
+	uniqueSecret := ""
+	set := map[rune]struct{}{}
+	for _, c := range secretKey {
+		if _, ok := set[c]; ok {
+			continue
+		}
+		set[c] = struct{}{}
+		uniqueSecret = uniqueSecret + string(c)
+	}
+
+	if len(uniqueSecret) < minUniqueLen {
+		return fmt.Errorf("ong: secretKey length of non-recurring characters is less than minimum required of %d", minUniqueLen)
 	}
 
 	hasDigit := 0
