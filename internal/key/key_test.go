@@ -43,6 +43,13 @@ func TestCheckSecretKey(t *testing.T) {
 				attest.Error(t, err)
 			},
 		},
+		{
+			name: "repeated key",
+			key:  "4$aaaaaaaaaaaaa",
+			check: func(err error) {
+				attest.Error(t, err)
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

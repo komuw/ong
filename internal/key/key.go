@@ -6,6 +6,10 @@ import (
 	"unicode"
 )
 
+// Some of the code here is inspired by(or taken from):
+//   (a) https://github.com/wagslane/go-password-validator whose license(MIT) can be found here: https://github.com/wagslane/go-password-validator/blob/v0.3.0/LICENSE
+//
+
 // IsSecure checks that secretKey has at least some minimum desirable security properties.
 func IsSecure(secretKey string) error {
 	const (

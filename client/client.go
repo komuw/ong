@@ -26,7 +26,7 @@ const (
 	defaultTimeout = 3 * 2 * time.Second
 )
 
-// Most of the code here is inspired by(or taken from):
+// Some of the code here is inspired by(or taken from):
 //   (a) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang whose license(CC0 Public Domain) can be found here: https://creativecommons.org/publicdomain/zero/1.0
 //   (b) https://www.agwa.name/blog/post/preventing_server_side_request_forgery_in_golang/media/ipaddress.go
 //   (c) https://dropbox.tech/security/bug-bounty-program-ssrf-attack

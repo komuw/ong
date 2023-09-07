@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Most of the code here is inspired(or taken from) by:
+// Some of the code here is inspired(or taken from) by:
 //   (a) https://github.com/golang/go/tree/go1.21.0/src/testing/slogtest whose license(BSD 3-Clause) can be found here: https://github.com/golang/go/blob/go1.21.0/LICENSE
 //
 
