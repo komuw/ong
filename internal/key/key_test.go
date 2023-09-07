@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/komuw/ong/internal/tst"
+
 	"go.akshayshah.org/attest"
 )
 
