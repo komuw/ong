@@ -82,8 +82,8 @@ func TestCommon10kPasswords(t *testing.T) {
 	for scanner.Scan() {
 		count = count + 1
 		key := scanner.Text()
-		err := IsSecure(key)
-		attest.Error(t, err, attest.Sprintf("key(`%s`), count=%d from common password list.", key, count))
+		errI := IsSecure(key)
+		attest.Error(t, errI, attest.Sprintf("key(`%s`), count=%d from common password list.", key, count))
 	}
 
 	errS := scanner.Err()
