@@ -9,8 +9,9 @@ import (
 )
 
 // Some of the code here is inspired by(or taken from):
-//   (a) https://github.com/wagslane/go-password-validator whose license(MIT) can be found here: https://github.com/wagslane/go-password-validator/blob/v0.3.0/LICENSE
+//   (a) https://github.com/wagslane/go-password-validator whose license(MIT) can be found here:                                       https://github.com/wagslane/go-password-validator/blob/v0.3.0/LICENSE
 //   (b) https://github.com/Xe/x/blob/v1.7.0/entropy/shannon.go whose license(Creative Commons Zero v1.0 Universal) can be found here: https://github.com/Xe/x/blob/v1.7.0/LICENSE
+//   (c) https://github.com/danielmiessler/SecLists whose license(MIT) can be found here:                                              https://github.com/danielmiessler/SecLists/blob/2023.3/LICENSE
 //
 
 // IsSecure checks that secretKey has at least some minimum desirable security properties.

@@ -1,6 +1,8 @@
 package key
 
 import (
+	"bufio"
+	"os"
 	"testing"
 
 	"github.com/komuw/ong/internal/tst"
@@ -61,4 +63,30 @@ func TestCheckSecretKey(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCommon10kPasswords(t *testing.T) {
+	t.Parallel()
+
+	f, err := os.Open(
+		// From https://github.com/danielmiessler/SecLists/blob/2023.3/Passwords/Common-Credentials/10-million-password-list-top-10000.txt
+		// Although we remove the password `PolniyPizdec0211` from the list.
+		"testdata/10k-most-common-passwords.txt",
+	)
+	attest.Ok(t, err)
+	defer f.Close()
+
+	count := 0
+	scanner := bufio.NewScanner(f)
+	// optionally, resize scanner's capacity for lines over 64K, see next example
+	for scanner.Scan() {
+		count = count + 1
+		key := scanner.Text()
+		err := IsSecure(key)
+		attest.Error(t, err, attest.Sprintf("key(`%s`), count=%d from common password list.", key, count))
+	}
+
+	errS := scanner.Err()
+	attest.Ok(t, errS)
+	attest.True(t, count > 9_000)
 }
