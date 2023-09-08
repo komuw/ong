@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Most of the code here is inspired(or taken from) by:
+// Some of the code here is inspired(or taken from) by:
 // (a) https://github.com/komuw/yuyuid whose license(MIT) can be found here: https://github.com/komuw/yuyuid/blob/v0.1.1/LICENSE.txt
 // (b) https://github.com/gofrs/uuid whose license(MIT) can be found here:   https://github.com/gofrs/uuid/blob/v5.0.0/LICENSE
 //

@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.80
+- ong/middleware: Validate secretKeys a bit more: https://github.com/komuw/ong/pull/384
+
 # v0.0.79
 - ong/middleware: Try and prevent path traversal attacks: https://github.com/komuw/ong/pull/382
 

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Most of the code here is inspired by(or taken from):
+// Some of the code here is inspired by(or taken from):
 //
 //	(a) https://github.com/realclientip/realclientip-go whose license(BSD Zero Clause License) can be found here: https://github.com/realclientip/realclientip-go/blob/v1.0.0/LICENSE
 //

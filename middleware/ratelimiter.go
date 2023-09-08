@@ -10,7 +10,7 @@ import (
 	"github.com/komuw/ong/config"
 )
 
-// Most of the code here is inspired by(or taken from):
+// Some of the code here is inspired by(or taken from):
 //   (a) https://github.com/komuw/naz/blob/v0.8.1/naz/ratelimiter.py whose license(MIT) can be found here: https://github.com/komuw/naz/blob/v0.8.1/LICENSE.txt
 
 // rateLimiter is a middleware that limits requests by IP address.

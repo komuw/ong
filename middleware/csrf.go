@@ -17,7 +17,7 @@ import (
 	"github.com/komuw/ong/id"
 )
 
-// Most of the code here is inspired by(or taken from):
+// Some of the code here is inspired by(or taken from):
 //   (a) https://github.com/gofiber/fiber whose license(MIT) can be found here:            https://github.com/gofiber/fiber/blob/v2.34.1/LICENSE
 //   (b) https://github.com/django/django   whose license(BSD 3-Clause) can be found here: https://github.com/django/django/blob/4.0.5/LICENSE
 
