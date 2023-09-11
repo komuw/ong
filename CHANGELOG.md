@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.81
+- ong/middleware: Add support for CORS allowCredentials: https://github.com/komuw/ong/pull/385
+
 # v0.0.80
 - ong/middleware: Validate secretKeys a bit more: https://github.com/komuw/ong/pull/384
 

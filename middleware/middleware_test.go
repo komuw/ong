@@ -497,6 +497,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		nil,
 		nil,
 		nil,
+		false,
 		config.DefaultCorsCacheDuration,
 		config.DefaultCsrfCookieDuration,
 		config.DefaultSessionCookieDuration,

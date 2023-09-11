@@ -71,6 +71,7 @@ func allDefaultMiddlewares(
 	allowedOrigins := o.AllowedOrigins
 	allowedMethods := o.AllowedOrigins
 	allowedHeaders := o.AllowedHeaders
+	allowCredentials := o.AllowCredentials
 	corsCacheDuration := o.CorsCacheDuration
 
 	// csrf
@@ -151,6 +152,7 @@ func allDefaultMiddlewares(
 													allowedOrigins,
 													allowedMethods,
 													allowedHeaders,
+													allowCredentials,
 													corsCacheDuration,
 												),
 												domain,

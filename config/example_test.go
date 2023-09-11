@@ -51,6 +51,8 @@ func ExampleNew() {
 		[]string{"GET", "POST"},
 		// Allow all http headers for CORs.
 		[]string{"*"},
+		// Do not allow requests to include user credentials like cookies, HTTP authentication or client side SSL certificates
+		false,
 		// Cache CORs preflight requests for 1day.
 		24*time.Hour,
 		// Expire csrf cookie after 3days.

@@ -162,10 +162,11 @@ func (o Opts) GoString() string {
 // If it is less than 1, [config.DefaultLoadShedMinSampleSize] is used instead.
 // loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [config.DefaultLoadShedBreachLatency] is used instead.
 //
-// allowedOrigins, allowedMethods, allowedHeaders & corsCacheDuration are used by the CORS middleware.
+// allowedOrigins, allowedMethods, allowedHeaders, allowCredentials & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
+// allowCredentials indicates whether the request can include user credentials like cookies, HTTP authentication or client side SSL certificates.
 // corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [config.DefaultCorsCacheDuration] is used instead.
 //
 // csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [config.DefaultCsrfCookieDuration] is used instead.
@@ -215,6 +216,7 @@ func New(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
+	allowCredentials bool,
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
@@ -247,6 +249,7 @@ func New(
 			allowedOrigins,
 			allowedMethods,
 			allowedHeaders,
+			allowCredentials,
 			corsCacheDuration,
 			csrfTokenDuration,
 			sessionCookieDuration,
@@ -483,6 +486,7 @@ type middlewareOpts struct {
 	AllowedOrigins    []string
 	AllowedMethods    []string
 	AllowedHeaders    []string
+	AllowCredentials  bool
 	CorsCacheDuration time.Duration
 
 	// csrf
@@ -508,6 +512,7 @@ func (m middlewareOpts) String() string {
   AllowedOrigins: %v,
   AllowedMethods: %v,
   AllowedHeaders: %v,
+  AllowCredentials: %v,
   CorsCacheDuration: %v,
   CsrfTokenDuration: %v,
   SessionCookieDuration: %v,
@@ -525,6 +530,7 @@ func (m middlewareOpts) String() string {
 		m.AllowedOrigins,
 		m.AllowedMethods,
 		m.AllowedHeaders,
+		m.AllowCredentials,
 		m.CorsCacheDuration,
 		m.CsrfTokenDuration,
 		m.SessionCookieDuration,
@@ -550,6 +556,7 @@ func newMiddlewareOpts(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
+	allowCredentials bool,
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
@@ -590,6 +597,7 @@ func newMiddlewareOpts(
 		AllowedOrigins:    allowedOrigins,
 		AllowedMethods:    allowedMethods,
 		AllowedHeaders:    allowedHeaders,
+		AllowCredentials:  allowCredentials,
 		CorsCacheDuration: corsCacheDuration,
 
 		// csrf
@@ -625,6 +633,7 @@ func withMiddlewareOpts(
 		nil,
 		nil,
 		nil,
+		false,
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
@@ -880,6 +889,9 @@ func (o Opts) Equal(other Opts) bool {
 				return false
 			}
 			if !slices.Equal(o.middlewareOpts.AllowedHeaders, other.middlewareOpts.AllowedHeaders) {
+				return false
+			}
+			if o.middlewareOpts.AllowCredentials != other.middlewareOpts.AllowCredentials {
 				return false
 			}
 			if o.CorsCacheDuration != other.CorsCacheDuration {
