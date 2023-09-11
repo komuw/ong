@@ -38,7 +38,6 @@ const (
 	// credentials are cookies, authorization headers, or tls client certificates
 	// The only valid value of this header is `true`(`false` is not valid, omit the header entirely instead.)
 	acacHeader = "Access-Control-Allow-Credentials"
-	_          = acacHeader
 	// header to allow CORS to resources in a private network(eg behind a VPN)
 	// you can set this header to `true` when you receive a preflight request if you want to allow access.
 	// Otherwise omit it entirely(as we will in this library)
@@ -63,6 +62,7 @@ func cors(
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
+	allowCredentials bool,
 	corsCacheDuration time.Duration,
 ) http.HandlerFunc {
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
@@ -76,14 +76,14 @@ func cors(
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
 			// handle preflight request
-			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders, corsCacheDuration)
+			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders, allowCredentials, corsCacheDuration)
 			// Preflight requests are standalone and should stop the chain as some other
 			// middleware may not handle OPTIONS requests correctly. One typical example
 			// is authentication middleware ; OPTIONS requests won't carry authentication headers.
 			w.WriteHeader(http.StatusNoContent)
 		} else {
 			// handle actual request
-			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods)
+			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowCredentials)
 			wrappedHandler.ServeHTTP(w, r)
 		}
 	}
@@ -96,6 +96,7 @@ func handlePreflight(
 	allowedWildcardOrigins []wildcard,
 	allowedMethods []string,
 	allowedHeaders []string,
+	allowCredentials bool,
 	corsCacheDuration time.Duration,
 ) {
 	headers := w.Header()
@@ -160,6 +161,11 @@ func handlePreflight(
 
 	// (d)
 	headers.Set(acmaHeader, fmt.Sprintf("%d", int(corsCacheDuration.Seconds())))
+
+	// (e)
+	if allowCredentials {
+		headers.Set(acacHeader, "true")
+	}
 }
 
 func handleActualRequest(
@@ -168,6 +174,7 @@ func handleActualRequest(
 	allowedOrigins []string,
 	allowedWildcardOrigins []wildcard,
 	allowedMethods []string,
+	allowCredentials bool,
 ) {
 	headers := w.Header()
 	origin := r.Header.Get(originHeader)
@@ -195,6 +202,11 @@ func handleActualRequest(
 		headers.Set(acaoHeader, "*")
 	} else {
 		headers.Set(acaoHeader, origin)
+	}
+
+	// (b)
+	if allowCredentials {
+		headers.Set(acacHeader, "true")
 	}
 }
 
