@@ -90,6 +90,7 @@ const (
 // [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
 type ClientIPstrategy = clientip.ClientIPstrategy
 
+// clientip middleware.
 const (
 	// DirectIpStrategy derives the client IP from [http.Request.RemoteAddr].
 	// It should be used if the server accepts direct connections, rather than through a proxy.
