@@ -38,33 +38,40 @@ Algorithm:
 */
 
 // ClientIPstrategy is an option that describes the strategy to use when fetching the client's IP address.
+//
+// Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
+// Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
+// You should especially heed this warning if you intend to use the IP addresses for security related activities.
+// Proceed at your own risk.
+//
+// [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
 type ClientIPstrategy string
 
 const (
 	// DirectIpStrategy derives the client IP from [http.Request.RemoteAddr].
 	// It should be used if the server accepts direct connections, rather than through a proxy.
-	//
-	// See the warning in [ClientIP]
 	DirectIpStrategy = ClientIPstrategy("DirectIpStrategy")
 
 	// LeftIpStrategy derives the client IP from the leftmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
-	//
-	// See the warning in [ClientIP]
 	LeftIpStrategy = ClientIPstrategy("LeftIpStrategy")
 
 	// RightIpStrategy derives the client IP from the rightmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
-	//
-	// See the warning in [ClientIP]
 	RightIpStrategy = ClientIPstrategy("RightIpStrategy")
 
 	// ProxyStrategy derives the client IP from the [PROXY protocol v1].
 	// This should be used when your application is behind a TCP proxy that uses the v1 PROXY protocol.
 	//
-	// 	See the warning in [ClientIP]
-	//
 	// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
 	ProxyStrategy = ClientIPstrategy("ProxyStrategy")
 )
+
+// SingleIpStrategy derives the client IP from http header headerName.
+//
+// headerName MUST NOT be either `X-Forwarded-For` or `Forwarded`.
+// It can be something like `CF-Connecting-IP`, `Fastly-Client-IP`, `Fly-Client-IP`, etc; depending on your usecase.
+func SingleIpStrategy(headerName string) ClientIPstrategy {
+	return ClientIPstrategy(headerName)
+}
 
 type clientIPcontextKeyType string
 

@@ -81,29 +81,28 @@ const (
 )
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
+//
+// Warning: This should be used with caution. Clients CAN easily spoof IP addresses.
+// Fetching the "real" client is done in a best-effort basis and can be [grossly inaccurate & precarious].
+// You should especially heed this warning if you intend to use the IP addresses for security related activities.
+// Proceed at your own risk.
+//
+// [grossly inaccurate & precarious]: https://adam-p.ca/blog/2022/03/x-forwarded-for/
 type ClientIPstrategy = clientip.ClientIPstrategy
 
 const (
 	// DirectIpStrategy derives the client IP from [http.Request.RemoteAddr].
 	// It should be used if the server accepts direct connections, rather than through a proxy.
-	//
-	// See the warning in [ClientIP]
 	DirectIpStrategy = clientip.DirectIpStrategy
 
 	// LeftIpStrategy derives the client IP from the leftmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
-	//
-	// See the warning in [ClientIP]
 	LeftIpStrategy = clientip.LeftIpStrategy
 
 	// RightIpStrategy derives the client IP from the rightmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
-	//
-	// See the warning in [ClientIP]
 	RightIpStrategy = clientip.RightIpStrategy
 
 	// ProxyStrategy derives the client IP from the [PROXY protocol v1].
 	// This should be used when your application is behind a TCP proxy that uses the v1 PROXY protocol.
-	//
-	// 	See the warning in [ClientIP]
 	//
 	// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
 	ProxyStrategy = clientip.ProxyStrategy
@@ -113,10 +112,8 @@ const (
 //
 // headerName MUST NOT be either `X-Forwarded-For` or `Forwarded`.
 // It can be something like `CF-Connecting-IP`, `Fastly-Client-IP`, `Fly-Client-IP`, etc; depending on your usecase.
-//
-// See the warning in [ClientIP]
 func SingleIpStrategy(headerName string) ClientIPstrategy {
-	return ClientIPstrategy(headerName)
+	return clientip.SingleIpStrategy(headerName)
 }
 
 const (
@@ -184,7 +181,7 @@ func (o Opts) GoString() string {
 // If it becomes compromised, generate a new one and restart your application using the new one.
 //
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
-// It is important to choose your strategy carefully, see the warning in [ClientIP].
+// It is important to choose your strategy carefully, see the warning in [ClientIPstrategy].
 //
 // logger is an [slog.Logger] that will be used for logging.
 //
