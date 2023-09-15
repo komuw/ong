@@ -35,7 +35,7 @@ func Example_getCspNonce() {
 	l := log.New(context.Background(), os.Stdout, 100)
 	handler := middleware.Get(
 		loginHandler(),
-		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l),
 	)
 	_ = handler // use handler
 
@@ -46,7 +46,7 @@ func Example_getCsrfToken() {
 	l := log.New(context.Background(), os.Stdout, 100)
 	handler := middleware.Get(
 		welcomeHandler(),
-		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l),
 	)
 	_ = handler // use handler
 
@@ -55,7 +55,7 @@ func Example_getCsrfToken() {
 
 func ExampleGet() {
 	l := log.New(context.Background(), os.Stdout, 100)
-	opts := config.WithOpts("example.com", 443, "super-h@rd-Pas1word", middleware.DirectIpStrategy, l)
+	opts := config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l)
 	handler := middleware.Get(loginHandler(), opts)
 	_ = handler // use handler
 
@@ -64,7 +64,7 @@ func ExampleGet() {
 
 func ExampleAll() {
 	l := log.New(context.Background(), os.Stdout, 100)
-	opts := config.WithOpts("example.com", 443, "super-h@rd-Pas1word", middleware.DirectIpStrategy, l)
+	opts := config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l)
 
 	myHandler := http.HandlerFunc(
 		func(w http.ResponseWriter, _ *http.Request) {
@@ -87,7 +87,7 @@ func ExampleWithOpts() {
 		443,
 		"super-h@rd-Pas1word",
 		// assuming your application is deployed behind cloudflare.
-		middleware.SingleIpStrategy("CF-Connecting-IP"),
+		config.SingleIpStrategy("CF-Connecting-IP"),
 		l,
 	)
 	_ = opts

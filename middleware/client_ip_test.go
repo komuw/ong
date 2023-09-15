@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/config"
 	"go.akshayshah.org/attest"
 )
 
@@ -35,7 +36,7 @@ func TestClientIP(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := clientIP(someClientIpHandler(msg), DirectIpStrategy)
+		wrappedHandler := clientIP(someClientIpHandler(msg), config.DirectIpStrategy)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -55,18 +56,18 @@ func TestClientIP(t *testing.T) {
 
 		tests := []struct {
 			name     string
-			strategy ClientIPstrategy
+			strategy config.ClientIPstrategy
 			req      func() *http.Request
 			expected string
 		}{
 			{
 				name:     "DirectIpStrategy",
-				strategy: DirectIpStrategy,
+				strategy: config.DirectIpStrategy,
 				req:      func() *http.Request { return httptest.NewRequest(http.MethodGet, "/someUri", nil) },
 			},
 			{
 				name:     "SingleIpStrategy",
-				strategy: SingleIpStrategy("Fly-Client-IP"),
+				strategy: config.SingleIpStrategy("Fly-Client-IP"),
 				req: func() *http.Request {
 					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 					r.Header.Add("Fly-Client-IP", publicIP)
@@ -76,7 +77,7 @@ func TestClientIP(t *testing.T) {
 			},
 			{
 				name:     "LeftIpStrategy",
-				strategy: LeftIpStrategy,
+				strategy: config.LeftIpStrategy,
 				req: func() *http.Request {
 					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 					r.Header.Add(xForwardedForHeader, publicIP)
@@ -86,7 +87,7 @@ func TestClientIP(t *testing.T) {
 			},
 			{
 				name:     "RightIpStrategy",
-				strategy: RightIpStrategy,
+				strategy: config.RightIpStrategy,
 				req: func() *http.Request {
 					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 					r.Header.Add(xForwardedForHeader, publicIP)
@@ -96,7 +97,7 @@ func TestClientIP(t *testing.T) {
 			},
 			{
 				name:     "ProxyStrategy",
-				strategy: ProxyStrategy,
+				strategy: config.ProxyStrategy,
 				req: func() *http.Request {
 					r := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 					r.Header.Add(proxyHeader,
@@ -138,7 +139,7 @@ func TestClientIP(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := clientIP(someClientIpHandler(msg), DirectIpStrategy)
+		wrappedHandler := clientIP(someClientIpHandler(msg), config.DirectIpStrategy)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

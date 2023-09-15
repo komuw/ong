@@ -80,6 +80,45 @@ const (
 	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
+// ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
+type ClientIPstrategy = clientip.ClientIPstrategy
+
+const (
+	// DirectIpStrategy derives the client IP from [http.Request.RemoteAddr].
+	// It should be used if the server accepts direct connections, rather than through a proxy.
+	//
+	// See the warning in [ClientIP]
+	DirectIpStrategy = clientip.DirectIpStrategy
+
+	// LeftIpStrategy derives the client IP from the leftmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	//
+	// See the warning in [ClientIP]
+	LeftIpStrategy = clientip.LeftIpStrategy
+
+	// RightIpStrategy derives the client IP from the rightmost valid & non-private IP address in the `X-Fowarded-For` or `Forwarded` header.
+	//
+	// See the warning in [ClientIP]
+	RightIpStrategy = clientip.RightIpStrategy
+
+	// ProxyStrategy derives the client IP from the [PROXY protocol v1].
+	// This should be used when your application is behind a TCP proxy that uses the v1 PROXY protocol.
+	//
+	// 	See the warning in [ClientIP]
+	//
+	// [PROXY protocol v1]: https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt
+	ProxyStrategy = clientip.ProxyStrategy
+)
+
+// SingleIpStrategy derives the client IP from http header headerName.
+//
+// headerName MUST NOT be either `X-Forwarded-For` or `Forwarded`.
+// It can be something like `CF-Connecting-IP`, `Fastly-Client-IP`, `Fly-Client-IP`, etc; depending on your usecase.
+//
+// See the warning in [ClientIP]
+func SingleIpStrategy(headerName string) ClientIPstrategy {
+	return ClientIPstrategy(headerName)
+}
+
 const (
 	// DefaultMaxBodyBytes is the value used as the limit for incoming request bodies, if a custom value was not provided.
 	//
@@ -108,9 +147,6 @@ const (
 	// LetsEncryptStagingUrl is the URL of [letsencrypt's] certificate authority directory endpoint for staging.
 	LetsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 )
-
-// ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
-type ClientIPstrategy = clientip.ClientIPstrategy
 
 // Opts are the various parameters(optionals) that can be used to configure ong.
 //

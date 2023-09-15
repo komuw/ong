@@ -10,7 +10,6 @@ import (
 	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/middleware"
 	"go.akshayshah.org/attest"
 )
 
@@ -35,7 +34,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "bad domain",
 			opts: func() config.Opts {
-				o := config.WithOpts("example.org", 65081, tst.SecretKey(), middleware.DirectIpStrategy, l)
+				o := config.WithOpts("example.org", 65081, tst.SecretKey(), config.DirectIpStrategy, l)
 				// If you pass a bad domain to `config.WithOpts`, it will panic since it validates domain.
 				// So we have to do it like this to get an opt with a bad domain.
 				o.Domain = "example.*org"
@@ -50,7 +49,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "non nil pool with no tls args",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "", config.LetsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "", config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = &x509.CertPool{}
 				return o
 			},
@@ -62,7 +61,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "cert pool success",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = &x509.CertPool{}
 				return o
 			},
@@ -75,7 +74,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "cert pool from system success",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), middleware.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = func() *x509.CertPool {
 					p, err := x509.SystemCertPool()
 					attest.Ok(t, err)

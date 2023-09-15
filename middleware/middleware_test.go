@@ -169,7 +169,7 @@ func TestAllMiddleware(t *testing.T) {
 		// so here we make a http GET so that we can have a csrf token.
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
 		attest.Ok(t, err)
@@ -198,7 +198,7 @@ func TestAllMiddleware(t *testing.T) {
 
 			httpsPort := tst.GetPort()
 			domain := "localhost"
-			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
 			wrappedHandler := tt.middleware(someMiddlewareTestHandler(msg), o)
 
 			ts, err := tst.TlsServer(wrappedHandler, "localhost", httpsPort)
@@ -247,7 +247,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
@@ -275,7 +275,7 @@ func TestMiddlewareServer(t *testing.T) {
 			// so here we make a http GET so that we can have a csrf token.
 			httpsPort := tst.GetPort()
 			domain := "localhost"
-			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
 			msg := "hey"
 			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
@@ -299,7 +299,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
@@ -326,7 +326,7 @@ func TestMiddlewareServer(t *testing.T) {
 
 		msg := "hello world"
 		domain := "localhost"
-		o := config.WithOpts(domain, 443, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, 443, tst.SecretKey(), config.DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		// Should not be a `NewTLSServer` since acme requires HTTP(not HTTPS)
@@ -358,7 +358,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "*.localhost"
-		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
 		ts, err := tst.TlsServer(wrappedHandler, "localhost", httpsPort)
@@ -393,7 +393,7 @@ func TestMiddlewareServer(t *testing.T) {
 		code := http.StatusAccepted
 		httpsPort := tst.GetPort()
 		domain := "*.localhost"
-		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, getLogger(logOutput))
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, getLogger(logOutput))
 		doubleWrite := func(msg string, code int) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(code)
@@ -432,7 +432,7 @@ func TestMiddlewareServer(t *testing.T) {
 		msg := "hello world"
 		httpsPort := tst.GetPort()
 		domain := "localhost"
-		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), DirectIpStrategy, l)
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
 		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
@@ -487,7 +487,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		domain,
 		httpsPort,
 		tst.SecretKey(),
-		DirectIpStrategy,
+		config.DirectIpStrategy,
 		l,
 		config.DefaultRateShedSamplePercent,
 		rateLimit,
