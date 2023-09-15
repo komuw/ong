@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.82
+- ong/config: Move middleware.ClientIPstrategy to config.ClientIPstrategy: https://github.com/komuw/ong/pull/386
+
 # v0.0.81
 - ong/middleware: Add support for CORS allowCredentials: https://github.com/komuw/ong/pull/385
 
