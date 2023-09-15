@@ -43,11 +43,11 @@ func main() {
 		"localhost",
 		65081,
 		secretKey,
-		middleware.DirectIpStrategy,
+		config.DirectIpStrategy,
 		l,
 	) // dev options.
 	// alternatively for production:
-	//   opts := config.LetsEncryptOpts("example.com", "secretKey", middleware.DirectIpStrategy, l, "hey@example.com")
+	//   opts := config.LetsEncryptOpts("example.com", "secretKey", config.DirectIpStrategy, l, "hey@example.com")
 
 	mux := mux.New(
 		opts,

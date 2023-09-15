@@ -12,7 +12,6 @@ import (
 	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/internal/tst"
 	"github.com/komuw/ong/log"
-	"github.com/komuw/ong/middleware"
 
 	"go.akshayshah.org/attest"
 )
@@ -57,7 +56,7 @@ func TestPprofHandler(t *testing.T) {
 		"localhost",
 		port,
 		tst.SecretKey(),
-		middleware.DirectIpStrategy,
+		config.DirectIpStrategy,
 		l,
 	)
 	h := pprofHandler(o)

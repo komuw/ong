@@ -15,9 +15,6 @@ import (
 
 func loginHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cspNonce := middleware.GetCspNonce(r.Context())
-		_ = cspNonce // use CSP nonce
-
 		_, _ = fmt.Fprint(w, "welcome to your favorite website.")
 	}
 }
@@ -32,7 +29,7 @@ func ExampleNew() {
 		// The security key to use for securing signed data.
 		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
-		middleware.SingleIpStrategy("CF-Connecting-IP"),
+		config.SingleIpStrategy("CF-Connecting-IP"),
 		// Logger.
 		l,
 		// log 90% of all responses that are either rate-limited or loadshed.

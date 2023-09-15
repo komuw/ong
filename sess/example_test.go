@@ -32,7 +32,7 @@ func ExampleSetM() {
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	handler := middleware.Get(
 		loginHandler(),
-		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", middleware.DirectIpStrategy, l),
+		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l),
 	)
 	handler.ServeHTTP(rec, req)
 

@@ -70,7 +70,7 @@ func TestNewRoute(t *testing.T) {
 		MethodGet,
 		middleware.Get(
 			someMuxHandler("msg"),
-			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
 		),
 	)
 	attest.Error(t, errB)
@@ -97,7 +97,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -127,7 +127,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -175,7 +175,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -219,7 +219,7 @@ func TestMux(t *testing.T) {
 		attest.Ok(t, err)
 
 		_, errC := New(
-			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			rt1,
 			rt2,
@@ -250,7 +250,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			rt1,
 			rt2,
@@ -343,7 +343,7 @@ func TestMux(t *testing.T) {
 		)
 		attest.Ok(t, err)
 		mux, err := New(
-			config.WithOpts(domain, httpsPort, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			rt,
 		)
@@ -438,7 +438,7 @@ func BenchmarkMuxNew(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		mux, err := New(
-			config.WithOpts("localhost", 443, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			getManyRoutes(b)...,
 		)

@@ -72,7 +72,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -88,7 +88,7 @@ func TestServer(t *testing.T) {
 					"localhost",
 					port,
 					tst.SecretKey(),
-					middleware.DirectIpStrategy,
+					config.DirectIpStrategy,
 					l,
 				),
 			)
@@ -203,7 +203,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -219,7 +219,7 @@ func TestServer(t *testing.T) {
 					"localhost",
 					port,
 					tst.SecretKey(),
-					middleware.DirectIpStrategy,
+					config.DirectIpStrategy,
 					l,
 				),
 			)
@@ -277,7 +277,7 @@ func TestServer(t *testing.T) {
 		uri := "/api"
 		msg := "hello world"
 		mux := mux.New(
-			config.WithOpts("localhost", port, tst.SecretKey(), middleware.DirectIpStrategy, l),
+			config.WithOpts("localhost", port, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
 				uri,
@@ -293,7 +293,7 @@ func TestServer(t *testing.T) {
 					"localhost",
 					port,
 					tst.SecretKey(),
-					middleware.DirectIpStrategy,
+					config.DirectIpStrategy,
 					l,
 				),
 			)
@@ -353,7 +353,7 @@ func BenchmarkServer(b *testing.B) {
 				"localhost",
 				port,
 				tst.SecretKey(),
-				middleware.DirectIpStrategy,
+				config.DirectIpStrategy,
 				l,
 			),
 		)
