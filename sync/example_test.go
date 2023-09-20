@@ -38,15 +38,23 @@ func ExampleWaitGroup_justErrors() {
 				}
 				resp, err := http.DefaultClient.Do(req)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "url: %v. resp: %v", url, err)
+					fmt.Fprintf(os.Stderr, "\n url: %v. resp: %v", url, err)
 					return err
 				}
 				defer resp.Body.Close()
-				fmt.Fprintf(os.Stderr, "url: %v. resp: %v", url, resp.StatusCode)
+				fmt.Fprintf(os.Stderr, "\n url: %v. resp: %v", url, resp.StatusCode)
 				return err
 			},
 		)
 	}
+
+	funcs = append(
+		funcs,
+		func() error {
+			fmt.Fprintf(os.Stderr, "\n metrics collector. called: %v urls", len(urls))
+			return nil
+		},
+	)
 
 	err := wg.Go(funcs...)
 	fmt.Printf("\n\t err: %v. cause: %v\n\n", err, context.Cause(ctx))
