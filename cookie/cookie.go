@@ -125,16 +125,23 @@ var (
 
 // TODO: should the antiReplay funcs be in the session package?
 
-// TODO:
-func setAntiReplay(r *http.Request, data string) *http.Request {
+// SetAntiReplay uses antiReplay to try and mitigate against [replay attacks].
+// It is not foolproof though.
+//
+// Also see [UseClientAntiReplay]
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func SetAntiReplay(r *http.Request, antiReplay string) *http.Request {
 	ctx := r.Context()
-	ctx = context.WithValue(ctx, octx.AntiReplayCtxKey, data)
+	ctx = context.WithValue(ctx, octx.AntiReplayCtxKey, antiReplay)
 	r = r.WithContext(ctx)
 	return r
 }
 
-// TODO:
-func setClientAntiReplay(r *http.Request) *http.Request {
+// UseClientAntiReplay uses the client IP address and client TLS fingerprint to try and mitigate against [replay attacks].
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func UseClientAntiReplay(r *http.Request) *http.Request {
 	ip := clientip.Get(
 		// Note:
 		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
@@ -146,7 +153,7 @@ func setClientAntiReplay(r *http.Request) *http.Request {
 		r,
 	)
 
-	return setAntiReplay(r, fmt.Sprintf("%s:%s", ip, fingerprint))
+	return SetAntiReplay(r, fmt.Sprintf("%s:%s", ip, fingerprint))
 }
 
 // TODO:

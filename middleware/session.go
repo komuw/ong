@@ -29,7 +29,7 @@ func session(
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Read from cookies and check for session cookie.
 		// 2. Get that cookie and save it to r.context
-		r = sess.Initialise(r, secretKey)
+		r = sess.Initialise(r, secretKey, "TODO:")
 
 		srw := newSessRW(w, r, domain, secretKey, sessionCookieDuration)
 

@@ -25,10 +25,15 @@ const (
 )
 
 // Initialise returns a new http.Request (based on r) that has sessions properly setup.
+// If uses antiReplay to try and mitigate against [replay attacks]. It is not foolproof though.
 //
 // You do not need to call this function, if you are also using the ong [github.com/komuw/ong/middleware] middleware.
 // Those middleware do so automatically for you.
-func Initialise(r *http.Request, secretKey string) *http.Request {
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func Initialise(r *http.Request, secretKey, antiReplay string) *http.Request {
+	r = cookie.SetAntiReplay(r, antiReplay)
+
 	ctx := r.Context()
 	var sessVal M // should be per request.
 
