@@ -142,6 +142,8 @@ func allDefaultMiddlewares(
 																string(secretKey),
 																domain,
 																sessionCookieDuration,
+																// TODO: use proper variable.
+																func(r *http.Request) string { return r.RemoteAddr },
 															),
 															domain,
 														),

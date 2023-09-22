@@ -73,7 +73,13 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, config.DefaultSessionCookieDuration)
+		wrappedHandler := session(
+			someSessionHandler(msg, key, value),
+			secretKey,
+			domain,
+			config.DefaultSessionCookieDuration,
+			func(r *http.Request) string { return r.RemoteAddr },
+		)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -97,7 +103,13 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, config.DefaultSessionCookieDuration)
+		wrappedHandler := session(
+			someSessionHandler(msg, key, value),
+			secretKey,
+			domain,
+			config.DefaultSessionCookieDuration,
+			func(r *http.Request) string { return r.RemoteAddr },
+		)
 
 		ts := httptest.NewServer(
 			wrappedHandler,
@@ -144,7 +156,13 @@ func TestSession(t *testing.T) {
 		secretKey := tst.SecretKey()
 		domain := "localhost"
 		name := "John Doe"
-		wrappedHandler := session(templateVarsHandler(t, name), secretKey, domain, config.DefaultSessionCookieDuration)
+		wrappedHandler := session(
+			templateVarsHandler(t, name),
+			secretKey,
+			domain,
+			config.DefaultSessionCookieDuration,
+			func(r *http.Request) string { return r.RemoteAddr },
+		)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -164,6 +182,72 @@ func TestSession(t *testing.T) {
 		attest.NotZero(t, res.Cookies()[0].Value)
 	})
 
+	t.Run("anti replay", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		secretKey := tst.SecretKey()
+		domain := "localhost"
+		key := "name"
+		value := "John Doe"
+
+		antiReplayFunc := func(r *http.Request) string { return r.RemoteAddr }
+		wrappedHandler := session(
+			someSessionHandler(msg, key, value),
+			secretKey,
+			domain,
+			config.DefaultSessionCookieDuration,
+			antiReplayFunc,
+		)
+
+		ip1 := "128.45.2.3"
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.RemoteAddr = ip1
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), msg)
+
+		{ // Success.
+			req2 := httptest.NewRequest(http.MethodGet, "/hey-uri", nil)
+			// very important to do this assignment, since `antiReplayFunc` checks for IP mismatch.
+			req2.RemoteAddr = ip1
+			req2 = cookie.SetAntiReplay(req2, antiReplayFunc(req2))
+			req2.AddCookie(&http.Cookie{
+				Name:  res.Cookies()[0].Name,
+				Value: res.Cookies()[0].Value,
+			})
+
+			c, err := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
+			attest.Ok(t, err)
+			attest.Subsequence(t, c.Value, key)
+			attest.Subsequence(t, c.Value, value)
+		}
+
+		{ // Failure.
+			req3 := httptest.NewRequest(http.MethodGet, "/hey-uri", nil)
+			ip2 := "148.65.4.3"
+			req3.RemoteAddr = ip2
+			req3 = cookie.SetAntiReplay(req3, antiReplayFunc(req3))
+			req3.AddCookie(&http.Cookie{
+				Name:  res.Cookies()[0].Name,
+				Value: res.Cookies()[0].Value,
+			})
+
+			c, err := cookie.GetEncrypted(req3, sess.CookieName, secretKey)
+			attest.Error(t, err)
+			attest.Zero(t, c)
+			attest.Subsequence(t, err.Error(), "mismatched anti replay value")
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
@@ -172,7 +256,13 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
-		wrappedHandler := session(someSessionHandler(msg, key, value), secretKey, domain, config.DefaultSessionCookieDuration)
+		wrappedHandler := session(
+			someSessionHandler(msg, key, value),
+			secretKey,
+			domain,
+			config.DefaultSessionCookieDuration,
+			func(r *http.Request) string { return r.RemoteAddr },
+		)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
