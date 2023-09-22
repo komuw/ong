@@ -258,7 +258,7 @@ func GetEncrypted(
 		// This does not completely stop them, but it is better than nothing.
 		incomingAntiReplay := getAntiReplay(r)
 		if antiReplay != incomingAntiReplay {
-			return nil, errors.New("ong/cookie: mismatched AntiReplay value")
+			return nil, errors.New("ong/cookie: mismatched anti replay value")
 		}
 
 		expires, errP := strconv.ParseInt(expiresStr, 10, 64)
