@@ -24,7 +24,7 @@ func TestSess(t *testing.T) {
 
 		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
-		req = Initialise(req, tst.SecretKey(), "")
+		req = Initialise(req, tst.SecretKey())
 
 		res := req.Context().Value(ctxKey).(map[string]string)
 		attest.Equal(t, res, map[string]string{})
@@ -38,7 +38,7 @@ func TestSess(t *testing.T) {
 
 		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
-		req = Initialise(req, tst.SecretKey(), "")
+		req = Initialise(req, tst.SecretKey())
 
 		Set(req, k, v)
 		res := req.Context().Value(ctxKey).(map[string]string)
@@ -52,7 +52,7 @@ func TestSess(t *testing.T) {
 
 		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
-		req = Initialise(req, tst.SecretKey(), "")
+		req = Initialise(req, tst.SecretKey())
 
 		SetM(req, m)
 		res := req.Context().Value(ctxKey).(map[string]string)
@@ -66,7 +66,7 @@ func TestSess(t *testing.T) {
 		v := "John Keypoole"
 		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
-		req = Initialise(req, tst.SecretKey(), "")
+		req = Initialise(req, tst.SecretKey())
 
 		{
 			one := Get(req, k)
@@ -89,7 +89,7 @@ func TestSess(t *testing.T) {
 		m := M{"name": "John Doe", "age": "99"}
 		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
-		req = Initialise(req, tst.SecretKey(), "")
+		req = Initialise(req, tst.SecretKey())
 
 		{
 			one := GetM(req)
@@ -122,7 +122,7 @@ func TestSess(t *testing.T) {
 		req, err := http.NewRequest(http.MethodGet, "/someUri", nil)
 		attest.Ok(t, err)
 		rec := httptest.NewRecorder()
-		req = Initialise(req, tst.SecretKey(), "")
+		req = Initialise(req, tst.SecretKey())
 
 		{
 			SetM(req, m)
