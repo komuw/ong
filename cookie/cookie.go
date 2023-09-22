@@ -14,6 +14,7 @@ import (
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/internal/finger"
+	"github.com/komuw/ong/internal/octx"
 )
 
 const (
@@ -125,15 +126,9 @@ var (
 // TODO: should the antiReplay funcs be in the session package?
 
 // TODO:
-type antiReplayContextKeyType string
-
-// TODO:
-const antiReplayCtxKey = antiReplayContextKeyType("antiReplayContextKeyType")
-
-// TODO:
 func setAntiReplay(r *http.Request, data string) *http.Request {
 	ctx := r.Context()
-	ctx = context.WithValue(ctx, antiReplayCtxKey, data)
+	ctx = context.WithValue(ctx, octx.AntiReplayCtxKey, data)
 	r = r.WithContext(ctx)
 	return r
 }
@@ -157,7 +152,7 @@ func setClientAntiReplay(r *http.Request) *http.Request {
 // TODO:
 func getAntiReplay(r *http.Request) string {
 	ctx := r.Context()
-	if vCtx := ctx.Value(antiReplayCtxKey); vCtx != nil {
+	if vCtx := ctx.Value(octx.AntiReplayCtxKey); vCtx != nil {
 		if s, ok := vCtx.(string); ok {
 			return s
 		}

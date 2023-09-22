@@ -12,6 +12,8 @@ import (
 	"go.uber.org/goleak"
 )
 
+// TODO: add tests.
+
 func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		Set(w, name, value, domain, mAge, jsAccess)
