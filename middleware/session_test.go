@@ -103,12 +103,17 @@ func TestSession(t *testing.T) {
 		domain := "localhost"
 		key := "name"
 		value := "John Doe"
+
+		header := "Anti-Replay"
+		antiReplayFunc := func(r *http.Request) string {
+			return r.Header.Get(header)
+		}
 		wrappedHandler := session(
 			someSessionHandler(msg, key, value),
 			secretKey,
 			domain,
 			config.DefaultSessionCookieDuration,
-			func(r *http.Request) string { return r.RemoteAddr },
+			antiReplayFunc,
 		)
 
 		ts := httptest.NewServer(
@@ -118,7 +123,12 @@ func TestSession(t *testing.T) {
 			ts.Close()
 		})
 
-		res, err := ts.Client().Get(ts.URL)
+		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+		attest.Ok(t, err)
+		headerVal := "some-unique-val-1326"
+		req.Header.Add(header, headerVal)
+
+		res, err := ts.Client().Do(req)
 		attest.Ok(t, err)
 		t.Cleanup(func() {
 			res.Body.Close()
@@ -135,16 +145,20 @@ func TestSession(t *testing.T) {
 		attest.NotZero(t, res.Cookies()[0].Value)
 
 		{
-			req2 := httptest.NewRequest(http.MethodGet, "/hey-uri", nil)
-			// very important to do this assignment, since `cookie.GetEncrypted()` checks for IP mismatch.
-			req2.RemoteAddr = ts.Listener.Addr().String()
+			req2, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+			attest.Ok(t, err)
+
+			// very important to do this assignment, since `antiReplayFunc` checks for IP mismatch.
+			req2.Header.Add(header, headerVal)
+			req2 = cookie.SetAntiReplay(req2, antiReplayFunc(req2))
+			attest.Ok(t, err)
 			req2.AddCookie(&http.Cookie{
 				Name:  res.Cookies()[0].Name,
 				Value: res.Cookies()[0].Value,
 			})
 
-			c, errG := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
-			attest.Ok(t, errG)
+			c, err := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
+			attest.Ok(t, err)
 			attest.Subsequence(t, c.Value, key)
 			attest.Subsequence(t, c.Value, value)
 		}
