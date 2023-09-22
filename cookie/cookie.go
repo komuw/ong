@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/komuw/ong/cry"
+	"github.com/komuw/ong/internal/clientip"
+	"github.com/komuw/ong/internal/finger"
 )
 
 const (
@@ -120,6 +122,8 @@ var (
 	once sync.Once //nolint:gochecknoglobals
 )
 
+// TODO: should the antiReplay funcs be in the session package?
+
 // TODO:
 type antiReplayContextKeyType string
 
@@ -132,6 +136,22 @@ func setAntiReplay(r *http.Request, data string) *http.Request {
 	ctx = context.WithValue(ctx, antiReplayCtxKey, data)
 	r = r.WithContext(ctx)
 	return r
+}
+
+// TODO:
+func setClientAntiReplay(r *http.Request) *http.Request {
+	ip := clientip.Get(
+		// Note:
+		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
+		//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
+		r,
+	)
+	fingerprint := finger.Get(
+		// might also be spoofed??
+		r,
+	)
+
+	return setAntiReplay(r, fmt.Sprintf("%s:%s", ip, fingerprint))
 }
 
 // TODO:
@@ -168,25 +188,11 @@ func SetEncrypted(
 		enc = cry.New(secretKey)
 	})
 
-	// TODO:
-	// ip := clientip.Get(
-	// 	// Note:
-	// 	//   - client IP can be spoofed easily and this could lead to issues with their cookies.
-	// 	//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
-	// 	r,
-	// )
-	// fingerprint := finger.Get(
-	// 	// might also be spoofed??
-	// 	r,
-	// )
-
 	antiReplay := getAntiReplay(r)
 	expires := strconv.FormatInt(
 		time.Now().UTC().Add(mAge).Unix(),
 		10,
 	)
-	// TODO:
-	// combined := ip + fingerprint + expires + value
 	combined := antiReplay + expires + value
 
 	encryptedEncodedVal := fmt.Sprintf(
@@ -224,7 +230,6 @@ func GetEncrypted(
 	}
 
 	subs := strings.Split(c.Value, sep)
-	fmt.Println("\t subs: ", subs)
 	if len(subs) != 3 {
 		return nil, errors.New("ong/cookie: invalid cookie")
 	}
@@ -248,29 +253,9 @@ func GetEncrypted(
 		decryptedVal[lenOfAntiReplay:lenOfAntiReplay+lenOfExpires],
 		decryptedVal[lenOfAntiReplay+lenOfExpires:]
 
-	fmt.Printf("\n\t antiReplay:%v, expiresStr:%v, val:%v \n", antiReplay, expiresStr, val)
-
 	{
-		// // Try and prevent replay attacks & session hijacking(https://twitter.com/4A4133/status/1615103474739429377)
-		// // This does not completely stop them, but it is better than nothing.
-		// incomingIP := clientip.Get(
-		// 	// Note:
-		// 	//   - client IP can be spoofed easily and this could lead to issues with their cookies.
-		// 	//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
-		// 	r,
-		// )
-		// if ip != incomingIP {
-		// 	return nil, errors.New("ong/cookie: mismatched IP addresses")
-		// }
-
-		// incomingFingerprint := finger.Get(
-		// 	// might also be spoofed??
-		// 	r,
-		// )
-		// if fingerprint != incomingFingerprint {
-		// 	return nil, errors.New("ong/cookie: mismatched TLS fingerprints")
-		// }
-
+		// Try and prevent replay attacks & session hijacking(https://twitter.com/4A4133/status/1615103474739429377)
+		// This does not completely stop them, but it is better than nothing.
 		incomingAntiReplay := getAntiReplay(r)
 		if antiReplay != incomingAntiReplay {
 			return nil, errors.New("ong/cookie: mismatched AntiReplay value")
