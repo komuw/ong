@@ -23,6 +23,7 @@ import (
 	"github.com/komuw/ong/middleware"
 	"github.com/komuw/ong/mux"
 	"github.com/komuw/ong/sess"
+	ongSync "github.com/komuw/ong/sync"
 )
 
 // db is a dummy database.
@@ -306,9 +307,18 @@ func (a app) handleFileServer() http.HandlerFunc {
 
 // panic handler showcases the use of:
 // - recoverer middleware.
+// - ong/sync
 func (a app) panic() http.HandlerFunc {
+	wg, _ := ongSync.New(context.Background(), 5)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		names := []string{"John", "Jane", "Kamau"}
+
+		_ = wg.Go(func() error {
+			names = append(names, "Leon")
+			return nil
+		})
+
 		_ = 93
 		msg := "hey"
 		n := names[934]

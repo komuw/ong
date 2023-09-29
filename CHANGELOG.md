@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.83
 - ong/cookies: Do not use IP address and TLS fingerprint to validate cookies by default: https://github.com/komuw/ong/pull/388
+- ong/sync: Add new package that has a more intuitive WaitGroup: https://github.com/komuw/ong/pull/387
 
 # v0.0.82
 - ong/config: Move middleware.ClientIPstrategy to config.ClientIPstrategy: https://github.com/komuw/ong/pull/386
