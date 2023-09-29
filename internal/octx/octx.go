@@ -2,8 +2,9 @@
 package octx
 
 type (
-	logContextKeyType  string
-	fingerPrintKeyType string
+	logContextKeyType        string
+	fingerPrintKeyType       string
+	antiReplayContextKeyType string
 )
 
 const (
@@ -13,4 +14,9 @@ const (
 
 	// FingerPrintCtxKey is the name of the context key used to store the TLS fingerprint.
 	FingerPrintCtxKey = fingerPrintKeyType("fingerPrintKeyType")
+
+	// AntiReplayCtxKey is the name of the context key used to store cookie anti [replay attacks] data.
+	//
+	// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+	AntiReplayCtxKey = antiReplayContextKeyType("antiReplayContextKeyType")
 )
