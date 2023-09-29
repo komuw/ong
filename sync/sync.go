@@ -34,7 +34,7 @@ type WaitGroup struct {
 // The derived Context is canceled the first time a function passed to Go
 // returns an error or the first time Go returns, whichever occurs first.
 //
-// If n is negative, it indicates no limit on number of active goroutines.
+// If n is <=0, it indicates no limit on number of active goroutines.
 func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 	ctx, cancel := context.WithCancelCause(ctx)
 
