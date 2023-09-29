@@ -28,13 +28,14 @@ type WaitGroup struct {
 	err     error
 }
 
-// New returns a valid waitGroup and a context(derived from ctx).
-// The waitGroup limits the number of active goroutines to at most n.
+// New returns a valid WaitGroup and a context(derived from ctx).
+// The WaitGroup limits the number of active goroutines to at most n.
 //
 // The derived Context is canceled the first time a function passed to Go
 // returns an error or the first time Go returns, whichever occurs first.
 //
-// If n is <=0, it indicates no limit on number of active goroutines.
+// n limits the number of active goroutines in this group.
+// If n is <=0, it indicates no limit.
 func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 	ctx, cancel := context.WithCancelCause(ctx)
 
@@ -60,7 +61,7 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		return nil
 	}
 
-	{ // 1. User didn't set a limit when creating a [waitGroup]
+	{ // 1. User didn't set a limit when creating a [WaitGroup]
 		if w.sem == nil {
 			w.wg.Add(countFuncs)
 			for _, f := range funcs {
@@ -86,7 +87,7 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		}
 	}
 
-	{ // 2. User did set a limit when creating a [waitGroup]
+	{ // 2. User did set a limit when creating a [WaitGroup]
 		count := 0
 		for {
 			count = count + 1
