@@ -2,7 +2,6 @@
 package cookie
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,8 +11,6 @@ import (
 	"time"
 
 	"github.com/komuw/ong/cry"
-	"github.com/komuw/ong/internal/clientip"
-	"github.com/komuw/ong/internal/finger"
 	"github.com/komuw/ong/internal/octx"
 )
 
@@ -123,41 +120,7 @@ var (
 	once sync.Once //nolint:gochecknoglobals
 )
 
-// TODO: should the antiReplay funcs be in the session package?
-
-// SetAntiReplay uses antiReplay to try and mitigate against [replay attacks].
-// It is not foolproof though.
-//
-// Also see [UseClientAntiReplay]
-//
-// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
-func SetAntiReplay(r *http.Request, antiReplay string) *http.Request {
-	ctx := r.Context()
-	ctx = context.WithValue(ctx, octx.AntiReplayCtxKey, antiReplay)
-	r = r.WithContext(ctx)
-
-	return r
-}
-
-// UseClientAntiReplay uses the client IP address and client TLS fingerprint to try and mitigate against [replay attacks].
-//
-// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
-func UseClientAntiReplay(r *http.Request) *http.Request {
-	ip := clientip.Get(
-		// Note:
-		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
-		//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
-		r,
-	)
-	fingerprint := finger.Get(
-		// might also be spoofed??
-		r,
-	)
-
-	return SetAntiReplay(r, fmt.Sprintf("%s:%s", ip, fingerprint))
-}
-
-// TODO:
+// getAntiReplay fetched any antiReplay data from [http.Request].
 func getAntiReplay(r *http.Request) string {
 	ctx := r.Context()
 	if vCtx := ctx.Value(octx.AntiReplayCtxKey); vCtx != nil {

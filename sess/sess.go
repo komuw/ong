@@ -5,11 +5,15 @@ package sess
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"maps"
 	"net/http"
 	"time"
 
 	"github.com/komuw/ong/cookie"
+	"github.com/komuw/ong/internal/clientip"
+	"github.com/komuw/ong/internal/finger"
+	"github.com/komuw/ong/internal/octx"
 )
 
 type (
@@ -33,7 +37,7 @@ const (
 // [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
 // [ong middleware]: github.com/komuw/ong/middleware
 func Initialise(r *http.Request, secretKey, antiReplay string) *http.Request {
-	r = cookie.SetAntiReplay(r, antiReplay)
+	r = SetAntiReplay(r, antiReplay)
 
 	ctx := r.Context()
 	var sessVal M // should be per request.
@@ -144,4 +148,34 @@ func Save(
 		mAge,
 		secretKey,
 	)
+}
+
+// SetAntiReplay uses antiReplay to try and mitigate against [replay attacks].
+// It is not foolproof though.
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func SetAntiReplay(r *http.Request, antiReplay string) *http.Request {
+	ctx := r.Context()
+	ctx = context.WithValue(ctx, octx.AntiReplayCtxKey, antiReplay)
+	r = r.WithContext(ctx)
+
+	return r
+}
+
+// UseClientAntiReplay uses the client IP address and client TLS fingerprint to try and mitigate against [replay attacks].
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func UseClientAntiReplay(r *http.Request) *http.Request {
+	ip := clientip.Get(
+		// Note:
+		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
+		//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
+		r,
+	)
+	fingerprint := finger.Get(
+		// might also be spoofed??
+		r,
+	)
+
+	return SetAntiReplay(r, fmt.Sprintf("%s:%s", ip, fingerprint))
 }
