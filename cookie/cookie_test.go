@@ -12,8 +12,6 @@ import (
 	"go.uber.org/goleak"
 )
 
-// TODO: add tests.
-
 func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		Set(w, name, value, domain, mAge, jsAccess)
@@ -185,6 +183,23 @@ func TestCookies(t *testing.T) {
 
 		attest.Zero(t, val)
 		attest.Error(t, err)
+	})
+
+	t.Run("anti-replay", func(t *testing.T) {
+		t.Parallel()
+
+		header := "Anti-Replay"
+		antiReplayFunc := func(r *http.Request) string {
+			return r.Header.Get(header)
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		headerVal := "some-unique-val-1326"
+		req.Header.Add(header, headerVal)
+		req = SetAntiReplay(req, antiReplayFunc(req))
+
+		res := getAntiReplay(req)
+		attest.Equal(t, res, headerVal)
 	})
 }
 

@@ -123,17 +123,6 @@ var (
 	once sync.Once //nolint:gochecknoglobals
 )
 
-// getAntiReplay fetched any antiReplay data from [http.Request].
-func getAntiReplay(r *http.Request) string {
-	ctx := r.Context()
-	if vCtx := ctx.Value(octx.AntiReplayCtxKey); vCtx != nil {
-		if s, ok := vCtx.(string); ok {
-			return s
-		}
-	}
-	return ""
-}
-
 // SetEncrypted creates a cookie on the HTTP response.
 // The cookie value(but not the name) is encrypted and authenticated using [cry.Enc].
 //
@@ -270,6 +259,17 @@ func Delete(w http.ResponseWriter, name, domain string) {
 		Expires: time.Unix(0, 0),
 	}
 	http.SetCookie(w, c)
+}
+
+// getAntiReplay fetched any antiReplay data from [http.Request].
+func getAntiReplay(r *http.Request) string {
+	ctx := r.Context()
+	if vCtx := ctx.Value(octx.AntiReplayCtxKey); vCtx != nil {
+		if s, ok := vCtx.(string); ok {
+			return s
+		}
+	}
+	return ""
 }
 
 // SetAntiReplay uses antiReplay to try and mitigate against [replay attacks].
