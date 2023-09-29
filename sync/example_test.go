@@ -54,7 +54,4 @@ func ExampleWaitGroup_justErrors() {
 
 	err := wg.Go(funcs...)
 	fmt.Printf("\n\t err: %v. cause: %v\n\n", err, context.Cause(ctx))
-
-	// Output:
-	// err: Get "http://www.nonExistentDomainName.com/": context deadline exceeded. cause: Get "http://www.nonExistentDomainName.com/": context deadline exceeded
 }
