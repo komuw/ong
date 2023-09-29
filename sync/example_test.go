@@ -28,10 +28,10 @@ func ExampleWaitGroup_justErrors() {
 			funcs,
 			func() error {
 				// Fetch the URL.
-				ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+				ct, cancel := context.WithTimeout(ctx, 4*time.Second)
 				defer cancel()
 
-				req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+				req, err := http.NewRequestWithContext(ct, http.MethodGet, url, nil)
 				if err != nil {
 					return err
 				}
