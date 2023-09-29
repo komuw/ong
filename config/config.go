@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -79,6 +80,12 @@ const (
 	// [django]: https://docs.djangoproject.com/en/4.1/ref/settings/#session-cookie-age
 	DefaultSessionCookieDuration = 14 * time.Hour
 )
+
+// DefaultSessionAntiReplyFunc is the function used, by default, to try and mitigate against [replay attacks].
+// It is a no-op.
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func DefaultSessionAntiReplyFunc(r *http.Request) string { return "" }
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 //
@@ -186,26 +193,28 @@ func (o Opts) GoString() string {
 //
 // logger is an [slog.Logger] that will be used for logging.
 //
-// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [config.DefaultRateShedSamplePercent] is used instead.
+// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [DefaultRateShedSamplePercent] is used instead.
 //
-// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [config.DefaultRateLimit] is used instead.
+// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
-// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [config.DefaultLoadShedSamplingPeriod] is used instead.
+// loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
 // loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
 // If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
-// If it is less than 1, [config.DefaultLoadShedMinSampleSize] is used instead.
-// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [config.DefaultLoadShedBreachLatency] is used instead.
+// If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
+// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
 //
 // allowedOrigins, allowedMethods, allowedHeaders, allowCredentials & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
 // allowCredentials indicates whether the request can include user credentials like cookies, HTTP authentication or client side SSL certificates.
-// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [config.DefaultCorsCacheDuration] is used instead.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
 //
-// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [config.DefaultCsrfCookieDuration] is used instead.
+// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
 //
-// sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [config.DefaultSessionCookieDuration] is used instead.
+// sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
+// sessionAntiReplyFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
+// If it is nil, [DefaultSessionAntiReplyFunc] is used instead.
 //
 // maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
 //
@@ -231,6 +240,7 @@ func (o Opts) GoString() string {
 // Use this option if you would like to perform mutual TLS authentication.
 // The given pool will be used as is, without modification.
 //
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
 // [ACME]: https://en.wikipedia.org/wiki/Automatic_Certificate_Management_Environment
 // [letsencrypt]: https://letsencrypt.org/
 func New(
@@ -254,6 +264,7 @@ func New(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
+	sessionAntiReplyFunc func(r *http.Request) string,
 	// server
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
@@ -287,6 +298,7 @@ func New(
 			corsCacheDuration,
 			csrfTokenDuration,
 			sessionCookieDuration,
+			sessionAntiReplyFunc,
 		),
 		serverOpts: newServerOpts(
 			port,
@@ -528,6 +540,7 @@ type middlewareOpts struct {
 
 	// session
 	SessionCookieDuration time.Duration
+	SessionAntiReplyFunc  func(r *http.Request) string
 }
 
 // String implements [fmt.Stringer]
@@ -550,6 +563,7 @@ func (m middlewareOpts) String() string {
   CorsCacheDuration: %v,
   CsrfTokenDuration: %v,
   SessionCookieDuration: %v,
+  SessionAntiReplyFunc: %T,
 }`,
 		m.Domain,
 		m.HttpsPort,
@@ -568,6 +582,7 @@ func (m middlewareOpts) String() string {
 		m.CorsCacheDuration,
 		m.CsrfTokenDuration,
 		m.SessionCookieDuration,
+		m.SessionAntiReplyFunc,
 	)
 }
 
@@ -594,6 +609,7 @@ func newMiddlewareOpts(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
+	sessionAntiReplyFunc func(r *http.Request) string,
 ) middlewareOpts {
 	// todo: return error instead of panic. Only [New] should panic.
 	if err := acme.Validate(domain); err != nil {
@@ -639,6 +655,7 @@ func newMiddlewareOpts(
 
 		// session
 		SessionCookieDuration: sessionCookieDuration,
+		SessionAntiReplyFunc:  sessionAntiReplyFunc,
 	}
 }
 
@@ -671,6 +688,7 @@ func withMiddlewareOpts(
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
+		DefaultSessionAntiReplyFunc,
 	)
 }
 
@@ -937,6 +955,9 @@ func (o Opts) Equal(other Opts) bool {
 			return false
 		}
 		if o.SessionCookieDuration != other.SessionCookieDuration {
+			return false
+		}
+		if o.SessionAntiReplyFunc(&http.Request{}) != other.SessionAntiReplyFunc(&http.Request{}) {
 			return false
 		}
 	}

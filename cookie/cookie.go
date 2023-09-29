@@ -2,6 +2,7 @@
 package cookie
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/internal/finger"
+	"github.com/komuw/ong/internal/octx"
 )
 
 const (
@@ -144,26 +146,16 @@ func SetEncrypted(
 		enc = cry.New(secretKey)
 	})
 
-	ip := clientip.Get(
-		// Note:
-		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
-		//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
-		r,
-	)
-	fingerprint := finger.Get(
-		// might also be spoofed??
-		r,
-	)
+	antiReplay := getAntiReplay(r)
 	expires := strconv.FormatInt(
 		time.Now().UTC().Add(mAge).Unix(),
 		10,
 	)
-	combined := ip + fingerprint + expires + value
+	combined := antiReplay + expires + value
+
 	encryptedEncodedVal := fmt.Sprintf(
-		"%d%s%d%s%d%s%s",
-		len(ip),
-		sep,
-		len(fingerprint),
+		"%d%s%d%s%s",
+		len(antiReplay),
 		sep,
 		len(expires),
 		sep,
@@ -196,54 +188,35 @@ func GetEncrypted(
 	}
 
 	subs := strings.Split(c.Value, sep)
-	if len(subs) != 4 {
+	if len(subs) != 3 {
 		return nil, errors.New("ong/cookie: invalid cookie")
 	}
 
-	lenOfIp, err := strconv.Atoi(subs[0])
+	lenOfAntiReplay, err := strconv.Atoi(subs[0])
 	if err != nil {
 		return nil, err
 	}
 
-	lenOfFingerprint, err := strconv.Atoi(subs[1])
+	lenOfExpires, err := strconv.Atoi(subs[1])
 	if err != nil {
 		return nil, err
 	}
 
-	lenOfExpires, err := strconv.Atoi(subs[2])
+	decryptedVal, err := enc.DecryptDecode(subs[2])
 	if err != nil {
 		return nil, err
 	}
 
-	decryptedVal, err := enc.DecryptDecode(subs[3])
-	if err != nil {
-		return nil, err
-	}
-
-	ip, fingerprint, expiresStr, val := decryptedVal[:lenOfIp],
-		decryptedVal[lenOfIp:lenOfIp+lenOfFingerprint],
-		decryptedVal[lenOfIp+lenOfFingerprint:lenOfIp+lenOfFingerprint+lenOfExpires],
-		decryptedVal[lenOfIp+lenOfFingerprint+lenOfExpires:]
+	antiReplay, expiresStr, val := decryptedVal[:lenOfAntiReplay],
+		decryptedVal[lenOfAntiReplay:lenOfAntiReplay+lenOfExpires],
+		decryptedVal[lenOfAntiReplay+lenOfExpires:]
 
 	{
 		// Try and prevent replay attacks & session hijacking(https://twitter.com/4A4133/status/1615103474739429377)
 		// This does not completely stop them, but it is better than nothing.
-		incomingIP := clientip.Get(
-			// Note:
-			//   - client IP can be spoofed easily and this could lead to issues with their cookies.
-			//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
-			r,
-		)
-		if ip != incomingIP {
-			return nil, errors.New("ong/cookie: mismatched IP addresses")
-		}
-
-		incomingFingerprint := finger.Get(
-			// might also be spoofed??
-			r,
-		)
-		if fingerprint != incomingFingerprint {
-			return nil, errors.New("ong/cookie: mismatched TLS fingerprints")
+		incomingAntiReplay := getAntiReplay(r)
+		if antiReplay != incomingAntiReplay {
+			return nil, errors.New("ong/cookie: mismatched anti replay value")
 		}
 
 		expires, errP := strconv.ParseInt(expiresStr, 10, 64)
@@ -286,4 +259,45 @@ func Delete(w http.ResponseWriter, name, domain string) {
 		Expires: time.Unix(0, 0),
 	}
 	http.SetCookie(w, c)
+}
+
+// getAntiReplay fetched any antiReplay data from [http.Request].
+func getAntiReplay(r *http.Request) string {
+	ctx := r.Context()
+	if vCtx := ctx.Value(octx.AntiReplayCtxKey); vCtx != nil {
+		if s, ok := vCtx.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+// SetAntiReplay uses antiReplay to try and mitigate against [replay attacks].
+// This mitigation not foolproof.
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func SetAntiReplay(r *http.Request, antiReplay string) *http.Request {
+	ctx := r.Context()
+	ctx = context.WithValue(ctx, octx.AntiReplayCtxKey, antiReplay)
+	r = r.WithContext(ctx)
+
+	return r
+}
+
+// UseClientAntiReplay uses the client IP address and client TLS fingerprint to try and mitigate against [replay attacks].
+//
+// [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
+func UseClientAntiReplay(r *http.Request) *http.Request {
+	ip := clientip.Get(
+		// Note:
+		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
+		//   - also it means that if someone moves from wifi internet to phone internet, their IP changes and cookie/session will be invalid.
+		r,
+	)
+	fingerprint := finger.Get(
+		// might also be spoofed??
+		r,
+	)
+
+	return SetAntiReplay(r, fmt.Sprintf("%s-%s", ip, fingerprint))
 }

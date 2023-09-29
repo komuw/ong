@@ -21,15 +21,17 @@ func session(
 	secretKey string,
 	domain string,
 	sessionCookieDuration time.Duration,
+	antiReplay func(r *http.Request) string,
 ) http.HandlerFunc {
 	if sessionCookieDuration < 1*time.Second { // It is measured in seconds.
 		sessionCookieDuration = config.DefaultSessionCookieDuration
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. Read from cookies and check for session cookie.
-		// 2. Get that cookie and save it to r.context
-		r = sess.Initialise(r, secretKey)
+		// 1. Set anti replay data.
+		// 2. Read from cookies and check for session cookie.
+		// 3. Get that cookie and save it to r.context
+		r = sess.Initialise(r, secretKey, antiReplay(r))
 
 		srw := newSessRW(w, r, domain, secretKey, sessionCookieDuration)
 
