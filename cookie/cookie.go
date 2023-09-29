@@ -284,10 +284,10 @@ func SetAntiReplay(r *http.Request, antiReplay string) *http.Request {
 	return r
 }
 
-// UseClientAntiReplay uses the client IP address and client TLS fingerprint to try and mitigate against [replay attacks].
+// UseClientForAntiReplay uses the client IP address and client TLS fingerprint to try and mitigate against [replay attacks].
 //
 // [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
-func UseClientAntiReplay(r *http.Request) *http.Request {
+func UseClientForAntiReplay(r *http.Request) string {
 	ip := clientip.Get(
 		// Note:
 		//   - client IP can be spoofed easily and this could lead to issues with their cookies.
@@ -299,5 +299,5 @@ func UseClientAntiReplay(r *http.Request) *http.Request {
 		r,
 	)
 
-	return SetAntiReplay(r, fmt.Sprintf("%s-%s", ip, fingerprint))
+	return fmt.Sprintf("%s-%s", ip, fingerprint)
 }
