@@ -177,6 +177,8 @@ func BenchmarkGo(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		g.Go(func() error { fn(); return nil })
+		if err := g.Go(func() error { fn(); return nil }); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
