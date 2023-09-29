@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/komuw/ong/sync"
@@ -38,11 +37,9 @@ func ExampleWaitGroup_justErrors() {
 				}
 				resp, err := http.DefaultClient.Do(req)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "\n url: %v. resp: %v", url, err)
 					return err
 				}
 				defer resp.Body.Close()
-				fmt.Fprintf(os.Stderr, "\n url: %v. resp: %v", url, resp.StatusCode)
 				return err
 			},
 		)
@@ -51,7 +48,6 @@ func ExampleWaitGroup_justErrors() {
 	funcs = append(
 		funcs,
 		func() error {
-			fmt.Fprintf(os.Stderr, "\n metrics collector. called: %v urls", len(urls))
 			return nil
 		},
 	)
