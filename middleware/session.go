@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/komuw/ong/config"
-	"github.com/komuw/ong/cookie"
 	"github.com/komuw/ong/sess"
 )
 
@@ -30,14 +29,9 @@ func session(
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// 1. Set anti replay data.
-		{
-			antiReplay := antiReplay(r)
-			r = cookie.SetAntiReplay(r, antiReplay)
-		}
-
 		// 2. Read from cookies and check for session cookie.
 		// 3. Get that cookie and save it to r.context
-		r = sess.Initialise(r, secretKey)
+		r = sess.Initialise(r, secretKey, antiReplay(r))
 
 		srw := newSessRW(w, r, domain, secretKey, sessionCookieDuration)
 
