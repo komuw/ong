@@ -145,8 +145,8 @@ func TestSession(t *testing.T) {
 		attest.NotZero(t, res.Cookies()[0].Value)
 
 		{
-			req2, err := http.NewRequest(http.MethodGet, ts.URL, nil)
-			attest.Ok(t, err)
+			req2, errN := http.NewRequest(http.MethodGet, ts.URL, nil)
+			attest.Ok(t, errN)
 
 			// very important to do this assignment, since `antiReplayFunc` checks for IP mismatch.
 			req2.Header.Add(header, headerVal)
@@ -157,8 +157,8 @@ func TestSession(t *testing.T) {
 				Value: res.Cookies()[0].Value,
 			})
 
-			c, err := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
-			attest.Ok(t, err)
+			c, errG := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
+			attest.Ok(t, errG)
 			attest.Subsequence(t, c.Value, key)
 			attest.Subsequence(t, c.Value, value)
 		}
@@ -239,8 +239,8 @@ func TestSession(t *testing.T) {
 				Value: res.Cookies()[0].Value,
 			})
 
-			c, err := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
-			attest.Ok(t, err)
+			c, errG := cookie.GetEncrypted(req2, sess.CookieName, secretKey)
+			attest.Ok(t, errG)
 			attest.Subsequence(t, c.Value, key)
 			attest.Subsequence(t, c.Value, value)
 		}
@@ -255,10 +255,10 @@ func TestSession(t *testing.T) {
 				Value: res.Cookies()[0].Value,
 			})
 
-			c, err := cookie.GetEncrypted(req3, sess.CookieName, secretKey)
-			attest.Error(t, err)
+			c, errG := cookie.GetEncrypted(req3, sess.CookieName, secretKey)
+			attest.Error(t, errG)
 			attest.Zero(t, c)
-			attest.Subsequence(t, err.Error(), "mismatched anti replay value")
+			attest.Subsequence(t, errG.Error(), "mismatched anti replay value")
 		}
 	})
 
