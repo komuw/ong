@@ -268,7 +268,7 @@ func TestSession(t *testing.T) {
 		msg := "hello"
 		secretKey := tst.SecretKey()
 		domain := "localhost"
-		key := "name"
+		key := "bothNames"
 		value := "John Doe"
 		wrappedHandler := session(
 			someSessionHandler(msg, key, value),
