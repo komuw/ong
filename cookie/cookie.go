@@ -273,7 +273,7 @@ func getAntiReplay(r *http.Request) string {
 }
 
 // SetAntiReplay uses antiReplay to try and mitigate against [replay attacks].
-// It is not foolproof though.
+// This mitigation not foolproof.
 //
 // [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
 func SetAntiReplay(r *http.Request, antiReplay string) *http.Request {

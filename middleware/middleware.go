@@ -79,6 +79,7 @@ func allDefaultMiddlewares(
 
 	// session
 	sessionCookieDuration := o.SessionCookieDuration
+	SessionAntiReplyFunc := o.SessionAntiReplyFunc
 
 	// The way the middlewares are layered is:
 	// 1.  trace on outer most since we need to add logID's earliest for use by inner middlewares.
@@ -142,8 +143,7 @@ func allDefaultMiddlewares(
 																string(secretKey),
 																domain,
 																sessionCookieDuration,
-																// TODO: use proper variable.
-																func(r *http.Request) string { return r.RemoteAddr },
+																SessionAntiReplyFunc,
 															),
 															domain,
 														),

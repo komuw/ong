@@ -73,6 +73,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 						DefaultCorsCacheDuration,
 						DefaultCsrfCookieDuration,
 						DefaultSessionCookieDuration,
+						DefaultSessionAntiReplyFunc,
 					)
 				})
 			} else {
@@ -94,6 +95,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 					DefaultCorsCacheDuration,
 					DefaultCsrfCookieDuration,
 					DefaultSessionCookieDuration,
+					DefaultSessionAntiReplyFunc,
 				)
 			}
 		})
@@ -127,6 +129,7 @@ func TestOpts(t *testing.T) {
 				CorsCacheDuration:      DefaultCorsCacheDuration,
 				CsrfTokenDuration:      DefaultCsrfCookieDuration,
 				SessionCookieDuration:  DefaultSessionCookieDuration,
+				SessionAntiReplyFunc:   DefaultSessionAntiReplyFunc,
 			},
 
 			serverOpts: serverOpts{
