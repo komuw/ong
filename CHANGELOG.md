@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.85
+- Do not loadshed based on latency from pprof endpoints: https://github.com/komuw/ong/pull/392
+
 # v0.0.84
 - ong/cookies: Fix name of antiReplay mechanism that uses client fingerprint: https://github.com/komuw/ong/pull/390
 
