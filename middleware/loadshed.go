@@ -5,6 +5,7 @@ import (
 	mathRand "math/rand"
 	"net/http"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,9 +21,12 @@ const (
 	maxLatencyItems = 1_000
 
 	retryAfterHeader = "Retry-After"
+
+	pprofEndpoints = "/debug/pprof"
 )
 
 // loadShedder is a middleware that sheds load based on http response latencies.
+// It does not take into account latencies for requests to the pprof endpoints.
 func loadShedder(
 	wrappedHandler http.Handler,
 	loadShedSamplingPeriod time.Duration,
@@ -57,7 +61,10 @@ func loadShedder(
 		defer func() {
 			endReq := time.Now().UTC()
 			durReq := endReq.Sub(startReq)
-			lq.add(durReq)
+			if !strings.HasPrefix(r.URL.Path, pprofEndpoints) {
+				// Ignore latencies of pprof endpoints.
+				lq.add(durReq)
+			}
 
 			// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getP99()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > resizePeriod {
