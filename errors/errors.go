@@ -2,7 +2,7 @@
 package errors
 
 import (
-	"errors"
+	// "errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -16,16 +16,12 @@ import (
 // stackError is an implementation of error that adds stack trace support and error wrapping.
 type stackError struct {
 	stack []uintptr
-	err   error
+	// err   error
+	text string
 }
 
 func (e *stackError) Error() string {
-	return e.err.Error() // ignore the stack
-}
-
-// Unwrap unpacks wrapped errors.
-func (e *stackError) Unwrap() error {
-	return e.err
+	return e.text // ignore the stack
 }
 
 // New returns an error with the supplied message.
@@ -37,7 +33,13 @@ func (e *stackError) Unwrap() error {
 //	%v   see %s
 //	%+v  print the error and stacktrace.
 func New(text string) error {
-	return wrap(errors.New(text), 3)
+	stack := [64]uintptr{}
+	n := runtime.Callers(3, stack[:])
+
+	return &stackError{
+		stack: stack[:n],
+		text:  text,
+	}
 }
 
 // Wrap returns err, capturing a stack trace.
@@ -68,7 +70,7 @@ func wrap(err error, skip int) error {
 	n := runtime.Callers(skip, stack[:])
 
 	return &stackError{
-		err:   err,
+		// err:   err,
 		stack: stack[:n],
 	}
 }

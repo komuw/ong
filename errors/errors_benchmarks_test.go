@@ -1,11 +1,10 @@
-package errors_test
+package errors
 
 import (
 	stdErrors "errors"
 	"testing"
 
 	"braces.dev/errtrace"
-	ongErrors "github.com/komuw/ong/errors"
 	pkgErrors "github.com/pkg/errors"
 )
 
@@ -34,7 +33,7 @@ func BenchmarkOtherWrappers(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			err = ongErrors.New("error")
+			err = New("error")
 		}
 		globalOng = err
 	})

@@ -3,6 +3,8 @@ module github.com/komuw/ong
 go 1.21
 
 require (
+	braces.dev/errtrace v0.1.1
+	github.com/pkg/errors v0.9.1
 	golang.org/x/crypto v0.16.0
 	golang.org/x/net v0.19.0
 	golang.org/x/sys v0.15.0
@@ -24,10 +26,8 @@ require (
 )
 
 require (
-	braces.dev/errtrace v0.1.1 // test
 	github.com/NYTimes/gziphandler v1.1.1 // test
 	github.com/klauspost/compress v1.17.3 // test
-	github.com/pkg/errors v0.9.1 // test
 	github.com/rs/zerolog v1.31.0 // test
 	github.com/sirupsen/logrus v1.9.3 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
