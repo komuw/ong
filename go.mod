@@ -24,8 +24,10 @@ require (
 )
 
 require (
+	braces.dev/errtrace v0.1.1 // test
 	github.com/NYTimes/gziphandler v1.1.1 // test
 	github.com/klauspost/compress v1.16.7 // test
+	github.com/pkg/errors v0.9.1 // test
 	github.com/rs/zerolog v1.30.0 // test
 	github.com/sirupsen/logrus v1.9.3 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
