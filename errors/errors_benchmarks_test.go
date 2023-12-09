@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	globalStd   error
-	globalOng   error
-	globalPkg   error
-	globalTrace error
+	globalStd   error //nolint:gochecknoglobals
+	globalOng   error //nolint:gochecknoglobals
+	globalPkg   error //nolint:gochecknoglobals
+	globalTrace error //nolint:gochecknoglobals
 )
 
 func BenchmarkOtherWrappers(b *testing.B) {
