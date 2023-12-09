@@ -18,14 +18,15 @@ require (
 	github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230807204917-050eac23e9de // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
 
 require (
+	braces.dev/errtrace v0.2.0 // test
 	github.com/NYTimes/gziphandler v1.1.1 // test
 	github.com/klauspost/compress v1.17.4 // test
+	github.com/pkg/errors v0.9.1 // test
 	github.com/rs/zerolog v1.31.0 // test
 	github.com/sirupsen/logrus v1.9.3 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
