@@ -3,10 +3,8 @@ module github.com/komuw/ong
 go 1.21
 
 require (
-	github.com/sourcegraph/conc v0.3.0
 	golang.org/x/crypto v0.17.0
 	golang.org/x/net v0.19.0
-	golang.org/x/sync v0.5.0
 	golang.org/x/sys v0.15.0
 )
 
@@ -20,6 +18,7 @@ require (
 	github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
 
