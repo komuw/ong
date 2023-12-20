@@ -17,6 +17,7 @@ import (
 //
 // Use [New] to get a valid Waitgroup
 type WaitGroup struct {
+	mu     sync.Mutex
 	wg     sync.WaitGroup
 	cancel context.CancelCauseFunc
 
@@ -121,7 +122,10 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 					}
 				}(f)
 			}
+
+			w.mu.Lock()
 			w.wg.Wait()
+			w.mu.Unlock()
 		}
 
 		if w.cancel != nil {

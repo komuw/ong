@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/sourcegraph/conc"
 	"golang.org/x/sync/errgroup"
 
 	"go.akshayshah.org/attest"
@@ -109,42 +110,25 @@ func TestErrGroup(t *testing.T) {
 	t.Run("concurrency", func(t *testing.T) {
 		t.Parallel()
 
-		// wgLimited, _ := errgroup.WithContext(context.Background())
-		// wgLimited.SetLimit(1)
-		wgUnlimited, _ := errgroup.WithContext(context.Background())
+		{
+			wgLimited, _ := errgroup.WithContext(context.Background())
+			wgLimited.SetLimit(1)
 
-		// {
-		// 	funcs := []func() error{}
-		// 	for i := 0; i <= 4; i++ {
-		// 		funcs = append(funcs,
-		// 			func() error {
-		// 				return nil
-		// 			},
-		// 		)
-		// 	}
+			go func() {
+				wgLimited.Go(func() error {
+					return nil
+				})
+			}()
+			wgLimited.Go(func() error {
+				return nil
+			})
 
-		// 	go func() {
-		// 		wgLimited.Go(func() error {
-		// 			return nil
-		// 		})
-		// 	}()
-		// 	wgLimited.Go(func() error {
-		// 		return nil
-		// 	})
-
-		// 	err := wgLimited.Wait()
-		// 	attest.Ok(t, err)
-		// }
+			err := wgLimited.Wait()
+			attest.Ok(t, err)
+		}
 
 		{
-			funcs := []func() error{}
-			for i := 0; i <= 4; i++ {
-				funcs = append(funcs,
-					func() error {
-						return nil
-					},
-				)
-			}
+			wgUnlimited, _ := errgroup.WithContext(context.Background())
 
 			go func() {
 				wgUnlimited.Go(func() error {
@@ -157,6 +141,30 @@ func TestErrGroup(t *testing.T) {
 
 			err := wgUnlimited.Wait()
 			attest.Ok(t, err)
+		}
+	})
+}
+
+func TestConc(t *testing.T) {
+	t.Parallel()
+
+	t.Run("concurrency", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			wgLimited := conc.NewWaitGroup()
+
+			go func() {
+				wgLimited.Go(func() {
+					return
+				})
+				wgLimited.Wait()
+			}()
+			wgLimited.Go(func() {
+				return
+			})
+
+			wgLimited.Wait()
 		}
 	})
 }
