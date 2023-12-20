@@ -65,8 +65,10 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		return nil
 	}
 
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	{
+		w.mu.Lock()
+		defer w.mu.Unlock()
+	}
 
 	{ // 1. User didn't set a limit when creating a [WaitGroup]
 		if w.sem == nil {
