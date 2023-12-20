@@ -17,7 +17,7 @@ import (
 //
 // Use [New] to get a valid Waitgroup
 type WaitGroup struct {
-	mu sync.Mutex // protects wg when WaitGroup.Go is called concurrently & goroutines have been limited.
+	mu sync.Mutex // protects wg when WaitGroup.Go is called concurrently.
 	wg sync.WaitGroup
 
 	cancel context.CancelCauseFunc
@@ -65,6 +65,9 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		return nil
 	}
 
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	{ // 1. User didn't set a limit when creating a [WaitGroup]
 		if w.sem == nil {
 			w.wg.Add(countFuncs)
@@ -92,8 +95,6 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 	}
 
 	{ // 2. User did set a limit when creating a [WaitGroup]
-		w.mu.Lock()
-		defer w.mu.Unlock()
 
 		count := 0
 		for {
