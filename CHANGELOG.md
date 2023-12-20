@@ -3,6 +3,12 @@
 Most recent version is listed first.  
 
 
+# v0.0.87
+- Fix bug in sync Waitgroup: https://github.com/komuw/ong/pull/399
+
+# v0.0.86
+- Update dependencies: https://github.com/komuw/ong/pull/397
+
 # v0.0.85
 - Do not loadshed based on latency from pprof endpoints: https://github.com/komuw/ong/pull/392
 
