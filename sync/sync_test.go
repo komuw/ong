@@ -55,46 +55,46 @@ func TestSync(t *testing.T) {
 		}
 	})
 
-	// go func() {
-	// 	{
-	// 		err := wg.Go(func() error {
-	// 			count = count + 1
-	// 			fmt.Println("\n\t count1: ", count)
-	// 			return nil
-	// 		})
+	t.Run("concurrency", func(t *testing.T) {
+		t.Parallel()
 
-	// 		attest.Ok(t, err)
-	// 	}
+		wgLimited, _ := New(context.Background(), 1)
+		wgUnlimited, _ := New(context.Background(), -1)
 
-	// 	{
-	// 		err := wg.Go(func() error {
-	// 			count = count + 1
-	// 			fmt.Println("\n\t count1: ", count)
-	// 			return nil
-	// 		})
+		{
+			funcs := []func() error{}
+			for i := 0; i <= 4; i++ {
+				funcs = append(funcs,
+					func() error {
+						return nil
+					},
+				)
+			}
 
-	// 		attest.Ok(t, err)
-	// 	}
-	// }()
+			go func() {
+				err := wgLimited.Go(funcs...)
+				attest.Ok(t, err)
+			}()
+			err := wgLimited.Go(funcs...)
+			attest.Ok(t, err)
+		}
 
-	// var active int32
-	// funcs := []func() error{}
-	// for i := 0; i <= 1<<10; i++ {
-	// 	funcs = append(
-	// 		funcs,
-	// 		func() error {
-	// 			n := atomic.AddInt32(&active, 1)
-	// 			if n > limit {
-	// 				return fmt.Errorf("saw %d active goroutines; want ≤ %d", n, limit)
-	// 			}
-	// 			time.Sleep(1 * time.Microsecond) // Give other goroutines a chance to increment active.
-	// 			atomic.AddInt32(&active, -1)
-	// 			return nil
-	// 		},
-	// 	)
-	// }
+		{
+			funcs := []func() error{}
+			for i := 0; i <= 4; i++ {
+				funcs = append(funcs,
+					func() error {
+						return nil
+					},
+				)
+			}
 
-	// if err := g.Go(funcs...); err != nil {
-	// 	t.Fatal(err)
-	// }
+			go func() {
+				err := wgUnlimited.Go(funcs...)
+				attest.Ok(t, err)
+			}()
+			err := wgUnlimited.Go(funcs...)
+			attest.Ok(t, err)
+		}
+	})
 }
