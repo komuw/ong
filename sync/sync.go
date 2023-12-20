@@ -34,7 +34,7 @@ type WaitGroup struct {
 // The derived Context is canceled the first time a function passed to Go
 // returns an error or the first time Go returns, whichever occurs first.
 //
-// n limits the number of active goroutines in this group.
+// n limits the number of active goroutines in this WaitGroup.
 // If n is <=0, it indicates no limit.
 func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 	ctx, cancel := context.WithCancelCause(ctx)
@@ -48,10 +48,10 @@ func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 
 // Go calls each of the given functions in a new goroutine.
 // It blocks until the new goroutine can be added without the number of
-// active goroutines in the group exceeding the configured limit.
+// active goroutines in the WaitGroup exceeding the configured limit.
 //
 // It also blocks until all function calls from the Go method have returned, then returns the first non-nil error (if any) from them.
-// The first call to return an error cancels the group's context.
+// The first call to return an error cancels the WaitGroup's context.
 func (w *WaitGroup) Go(funcs ...func() error) error {
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
@@ -90,10 +90,10 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 	{ // 2. User did set a limit when creating a [WaitGroup]
 		count := 0
 		for {
-			count = count + 1
 			if count == countFuncs {
 				break
 			}
+			count = count + 1
 
 			if count > countFuncs {
 				panic("unreachable")
