@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/sourcegraph/conc"
-	"golang.org/x/sync/errgroup"
 
 	"go.akshayshah.org/attest"
 )
@@ -99,47 +98,6 @@ func TestSync(t *testing.T) {
 				attest.Ok(t, err)
 			}()
 			err := wgUnlimited.Go(funcs...)
-			attest.Ok(t, err)
-		}
-	})
-}
-
-func TestErrGroup(t *testing.T) {
-	t.Parallel()
-
-	t.Run("concurrency", func(t *testing.T) {
-		t.Parallel()
-
-		{
-			wgLimited, _ := errgroup.WithContext(context.Background())
-			wgLimited.SetLimit(1)
-
-			go func() {
-				wgLimited.Go(func() error {
-					return nil
-				})
-			}()
-			wgLimited.Go(func() error {
-				return nil
-			})
-
-			err := wgLimited.Wait()
-			attest.Ok(t, err)
-		}
-
-		{
-			wgUnlimited, _ := errgroup.WithContext(context.Background())
-
-			go func() {
-				wgUnlimited.Go(func() error {
-					return nil
-				})
-			}()
-			wgUnlimited.Go(func() error {
-				return nil
-			})
-
-			err := wgUnlimited.Wait()
 			attest.Ok(t, err)
 		}
 	})
