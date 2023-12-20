@@ -17,8 +17,9 @@ import (
 //
 // Use [New] to get a valid Waitgroup
 type WaitGroup struct {
-	mu     sync.Mutex
-	wg     sync.WaitGroup
+	mu sync.Mutex
+	wg sync.WaitGroup
+
 	cancel context.CancelCauseFunc
 
 	// For limiting work.
@@ -61,6 +62,9 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		}
 		return nil
 	}
+
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
 	{ // 1. User didn't set a limit when creating a [WaitGroup]
 		if w.sem == nil {
@@ -123,9 +127,8 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 				}(f)
 			}
 
-			w.mu.Lock()
 			w.wg.Wait()
-			w.mu.Unlock()
+
 		}
 
 		if w.cancel != nil {
