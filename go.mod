@@ -3,6 +3,7 @@ module github.com/komuw/ong
 go 1.21
 
 require (
+	github.com/sourcegraph/conc v0.3.0
 	golang.org/x/crypto v0.17.0
 	golang.org/x/net v0.19.0
 	golang.org/x/sync v0.5.0
@@ -29,7 +30,6 @@ require (
 	github.com/pkg/errors v0.9.1 // test
 	github.com/rs/zerolog v1.31.0 // test
 	github.com/sirupsen/logrus v1.9.3 // test
-	github.com/sourcegraph/conc v0.3.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
 	github.com/tsenart/vegeta/v12 v12.11.1 // test
 	go.akshayshah.org/attest v1.0.2 // test

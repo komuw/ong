@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/sourcegraph/conc"
-
 	"go.akshayshah.org/attest"
 )
 
@@ -125,30 +123,6 @@ func TestSync(t *testing.T) {
 			}()
 			err := wgUnlimited.Go(funcs...)
 			attest.Ok(t, err)
-		}
-	})
-}
-
-func TestConc(t *testing.T) {
-	t.Parallel()
-
-	t.Run("concurrency", func(t *testing.T) {
-		t.Parallel()
-
-		{
-			wgLimited := conc.NewWaitGroup()
-
-			go func() {
-				wgLimited.Go(func() {
-					return
-				})
-				wgLimited.Wait()
-			}()
-			wgLimited.Go(func() {
-				return
-			})
-
-			wgLimited.Wait()
 		}
 	})
 }
