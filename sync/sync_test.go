@@ -12,6 +12,32 @@ import (
 func TestSync(t *testing.T) {
 	t.Parallel()
 
+	t.Run("zero value WaitGroup is valid", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			wg := WaitGroup{}
+			count := 0
+			err := wg.Go(func() error {
+				count = count + 3
+				return nil
+			})
+			attest.Ok(t, err)
+			attest.Equal(t, count, 3)
+		}
+
+		{
+			wg := &WaitGroup{}
+			count := 0
+			err := wg.Go(func() error {
+				count = count + 7
+				return nil
+			})
+			attest.Ok(t, err)
+			attest.Equal(t, count, 7)
+		}
+	})
+
 	t.Run("zero funcs", func(t *testing.T) {
 		t.Parallel()
 
