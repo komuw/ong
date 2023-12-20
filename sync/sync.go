@@ -17,7 +17,7 @@ import (
 //
 // Use [New] to get a valid Waitgroup
 type WaitGroup struct {
-	mu sync.Mutex
+	mu sync.Mutex // protects wg when WaitGroup.Go is called concurrently & goroutines have been limited.
 	wg sync.WaitGroup
 
 	cancel context.CancelCauseFunc
