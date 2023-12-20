@@ -54,47 +54,4 @@ func TestSync(t *testing.T) {
 			attest.Equal(t, count, 1)
 		}
 	})
-
-	// go func() {
-	// 	{
-	// 		err := wg.Go(func() error {
-	// 			count = count + 1
-	// 			fmt.Println("\n\t count1: ", count)
-	// 			return nil
-	// 		})
-
-	// 		attest.Ok(t, err)
-	// 	}
-
-	// 	{
-	// 		err := wg.Go(func() error {
-	// 			count = count + 1
-	// 			fmt.Println("\n\t count1: ", count)
-	// 			return nil
-	// 		})
-
-	// 		attest.Ok(t, err)
-	// 	}
-	// }()
-
-	// var active int32
-	// funcs := []func() error{}
-	// for i := 0; i <= 1<<10; i++ {
-	// 	funcs = append(
-	// 		funcs,
-	// 		func() error {
-	// 			n := atomic.AddInt32(&active, 1)
-	// 			if n > limit {
-	// 				return fmt.Errorf("saw %d active goroutines; want ≤ %d", n, limit)
-	// 			}
-	// 			time.Sleep(1 * time.Microsecond) // Give other goroutines a chance to increment active.
-	// 			atomic.AddInt32(&active, -1)
-	// 			return nil
-	// 		},
-	// 	)
-	// }
-
-	// if err := g.Go(funcs...); err != nil {
-	// 	t.Fatal(err)
-	// }
 }
