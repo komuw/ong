@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/sourcegraph/conc"
 	"go.akshayshah.org/attest"
 	"golang.org/x/sync/errgroup"
 )
@@ -197,35 +198,36 @@ func BenchmarkSync(b *testing.B) {
 		}
 	})
 
-	// b.Run("errgroup WaitGroup unlimited", func(b *testing.B) {
-	// 	count := 0
-	// 	eWg, _ := errgroup.WithContext(context.Background())
-	// 	b.ReportAllocs()
-	// 	b.ResetTimer()
-	// 	for n := 0; n < b.N; n++ {
-	// 		eWg.Go(
-	// 			func() error {
-	// 				count = count + 1
-	// 				return nil
-	// 			},
-	// 		)
-	// 	}
-	// 	err := eWg.Wait()
-	// 	attest.Ok(b, err)
-	// })
+	b.Run("errgroup WaitGroup unlimited", func(b *testing.B) {
+		count := 0
+		eWg, _ := errgroup.WithContext(context.Background())
+		b.ReportAllocs()
+		b.ResetTimer()
 
-	// b.Run("conc WaitGroup", func(b *testing.B) {
-	// 	count := 0
-	// 	cWg := conc.NewWaitGroup()
-	// 	b.ReportAllocs()
-	// 	b.ResetTimer()
-	// 	for n := 0; n < b.N; n++ {
-	// 		cWg.Go(
-	// 			func() {
-	// 				count = count + 1
-	// 			},
-	// 		)
-	// 	}
-	// 	cWg.Wait()
-	// })
+		for n := 0; n < b.N; n++ {
+			eWg.Go(
+				func() error {
+					count = count + 1
+					return nil
+				},
+			)
+			_ = eWg.Wait()
+		}
+	})
+
+	b.Run("conc WaitGroup", func(b *testing.B) {
+		count := 0
+		cWg := conc.NewWaitGroup()
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for n := 0; n < b.N; n++ {
+			cWg.Go(
+				func() {
+					count = count + 1
+				},
+			)
+			cWg.Wait()
+		}
+	})
 }
