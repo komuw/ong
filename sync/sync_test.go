@@ -160,7 +160,6 @@ func BenchmarkSync(b *testing.B) {
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
 			_ = wgUnlimited.Go(funcs...)
-			// attest.Ok(b, err)
 		}
 	})
 

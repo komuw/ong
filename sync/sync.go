@@ -97,7 +97,6 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 	}
 
 	{ // 2. User did set a limit when creating a [WaitGroup]
-
 		count := 0
 		for {
 			if count == countFuncs {
