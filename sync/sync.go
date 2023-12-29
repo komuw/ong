@@ -55,7 +55,7 @@ func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 // It also blocks until all function calls from the Go method have returned, then returns the first non-nil error (if any) from them.
 // The first call to return an error cancels the WaitGroup's context.
 //
-// If called concurrently, each call will block until the previous call returns.
+// If called concurrently, it will block until the previous call returns.
 func (w *WaitGroup) Go(funcs ...func() error) error {
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
