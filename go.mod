@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	braces.dev/errtrace v0.2.0 // test
+	braces.dev/errtrace v0.3.0 // test
 	github.com/NYTimes/gziphandler v1.1.1 // test
 	github.com/klauspost/compress v1.17.4 // test
 	github.com/pkg/errors v0.9.1 // test
