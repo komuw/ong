@@ -381,7 +381,7 @@ func customHostWhitelist(domain string) hostPolicy {
 			}
 		}
 
-		return fmt.Errorf("ong/server: host %q not configured in HostWhitelist", host)
+		return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
 	}
 }
 
