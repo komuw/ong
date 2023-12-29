@@ -4,7 +4,8 @@ Most recent version is listed first.
 
 
 # v0.0.87
-- Fix bug in sync Waitgroup: https://github.com/komuw/ong/pull/399
+- ong/sync: Fix bug in sync Waitgroup: https://github.com/komuw/ong/pull/399
+- ong/sync: Make it possible to call Waitgroup concurrently: https://github.com/komuw/ong/pull/398
 
 # v0.0.86
 - Update dependencies: https://github.com/komuw/ong/pull/397

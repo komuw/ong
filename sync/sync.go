@@ -17,7 +17,9 @@ import (
 //
 // Use [New] to get a valid Waitgroup
 type WaitGroup struct {
-	wg     sync.WaitGroup
+	mu sync.Mutex // protects wg when WaitGroup.Go is called concurrently.
+	wg sync.WaitGroup
+
 	cancel context.CancelCauseFunc
 
 	// For limiting work.
@@ -52,6 +54,8 @@ func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 //
 // It also blocks until all function calls from the Go method have returned, then returns the first non-nil error (if any) from them.
 // The first call to return an error cancels the WaitGroup's context.
+//
+// If called concurrently, it will block until the previous call returns.
 func (w *WaitGroup) Go(funcs ...func() error) error {
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
@@ -59,6 +63,11 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 			w.cancel(w.err)
 		}
 		return nil
+	}
+
+	{
+		w.mu.Lock()
+		defer w.mu.Unlock()
 	}
 
 	{ // 1. User didn't set a limit when creating a [WaitGroup]
@@ -121,7 +130,9 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 					}
 				}(f)
 			}
+
 			w.wg.Wait()
+
 		}
 
 		if w.cancel != nil {
