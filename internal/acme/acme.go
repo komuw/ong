@@ -63,7 +63,9 @@ func Validate(domain string) error {
 		toCheck = domain[2:]
 	}
 
-	if _, err := idna.Registration.ToASCII(toCheck); err != nil {
+	if _, err := idna.Lookup.ToASCII(toCheck); err != nil {
+		// We use `idna.Lookup` instead of `idna.Registration` because `ong` is only
+		// involved with domain lookups. `ong` is not a domain registrar.
 		return fmt.Errorf("ong: domain is invalid: %w", err)
 	}
 

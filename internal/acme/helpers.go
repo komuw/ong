@@ -340,7 +340,10 @@ func certIsValid(cert *tls.Certificate) bool {
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
 // Invalid domain will be silently ignored.
 func wildcardHostWhitelist(domain string) (hostPolicy, error) {
-	// wildcard validation has already happened in `validateDomain`
+	if err := Validate(domain); err != nil {
+		return nil, err
+	}
+
 	exactMatch := ""
 	wildcard := ""
 	if !strings.Contains(domain, "*") {
