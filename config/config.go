@@ -231,7 +231,7 @@ func (o Opts) GoString() string {
 // keyFile is a path to a tls key.
 //
 // acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
-// tlsHosts is the hosts which are allowed to procure TLS certificates for. Wildcards are also accepted.
+// tlsHosts is the list of hosts for which we are allowed to fetch TLS certificates for. Wildcards are also accepted.
 // If tlsHosts is nil, [domain] is used instead.
 // acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
 //
