@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.0.88
 - Update dependencies: https://github.com/komuw/ong/pull/401
+- ong/server: Add ability to specify the exact domains to use for TLS as well as wildcards: https://github.com/komuw/ong/pull/402
 
 # v0.0.87
 - ong/sync: Fix bug in sync Waitgroup: https://github.com/komuw/ong/pull/399
