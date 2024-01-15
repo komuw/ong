@@ -426,6 +426,14 @@ func hostWhitelist(hosts ...string) hostPolicy {
 			whitelist[h] = true
 		}
 	}
+
+	// As a special case, add `www`
+	for h := range whitelist {
+		if !strings.HasPrefix(h, "www") && strings.Count(h, ".") == 1 {
+			whitelist["www."+h] = true
+		}
+	}
+
 	return func(host string) error {
 		host = strings.ToLower(host) // `autocert` does not do this, should we?
 		if !whitelist[host] {

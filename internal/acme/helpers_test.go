@@ -306,7 +306,9 @@ func TestHostWhitelist(t *testing.T) {
 			allow bool
 		}{
 			{"example.com", true},
+			{"www.example.com", true},
 			{"example.org", false},
+			{"www.example.org", false},
 			{"xn--9caa.com", false}, // éé.com
 			{"one.example.com", false},
 			{"two.example.org", false},
@@ -338,6 +340,7 @@ func TestHostWhitelist(t *testing.T) {
 			{"API.EXAMPLE.COM", true},
 			//
 			{"example.com", false},
+			{"www.example.com", false},
 			{"one.example.com", false},
 			{"one.abcd.example.com", false},
 			//
@@ -412,43 +415,40 @@ func TestHostWhitelist(t *testing.T) {
 		}
 	})
 
-	// t.Run("wildcard lowercase", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("multiple domains", func(t *testing.T) {
+		t.Parallel()
 
-	// 	policy := hostWhitelist("*.example.com")
-	// 	tt := []struct {
-	// 		host  string
-	// 		allow bool
-	// 	}{
-	// 		{"example.com", true},
-	// 		{"EXAMPLE.COM", true},
-	// 		{"www.example.com", true},
-	// 		{"WWW.EXAMPLE.COM", true},
-	// 		{"WWW.example.COM", true},
-	// 		//
-	// 		{"example.org", false},
-	// 		{"xn--9caa.com", false}, // éé.com
-	// 		//
-	// 		{"one.example.com", true},
-	// 		{"alas.example.com", true},
-	// 		{"alas.EXAMPLE.com", true},
-	// 		{"ALAS.EXAMPLE.COM", true},
-	// 		{"abc.def.example.com", false},
-	// 		//
-	// 		{"two.example.org", false},
-	// 		{"three.example.net", false},
-	// 		{"dummy", false},
-	// 	}
-	// 	for i, test := range tt {
-	// 		err := policy(test.host)
-	// 		if err != nil && test.allow {
-	// 			t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
-	// 		}
-	// 		if err == nil && !test.allow {
-	// 			t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
-	// 		}
-	// 	}
-	// })
+		policy := hostWhitelist("example.com", "api.example.com", "login.example.com", "hey.example.com")
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"api.example.com", true},
+			{"login.EXAMPLE.COM", true},
+			{"www.example.com", true},
+			{"WWW.EXAMPLE.COM", true},
+			{"WWW.example.COM", true},
+			//
+			{"example.org", false},
+			{"xn--9caa.com", false}, // éé.com
+			//
+			{"hey.example.com", true},
+			{"abc.hey.example.com", false},
+			//
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
 
 	// t.Run("wildcard uppercase", func(t *testing.T) {
 	// 	t.Parallel()
