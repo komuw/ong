@@ -12,7 +12,7 @@ import (
 // Some of the code here is inspired(or taken from) by:
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here:                                   https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 //   (b) https://github.com/FiloSottile/mkcert   whose license(BSD 3-Clause ) can be found here:                               https://github.com/FiloSottile/mkcert/blob/v1.4.4/LICENSE
-//   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/LICENSE
+//   (c) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/v0.18.0/LICENSE
 //   (d) https://github.com/caddyserver/certmagic/blob/master/handshake.go whose license(Apache 2.0) can be found here:        https://github.com/caddyserver/certmagic/blob/v0.16.1/LICENSE.txt
 //
 
@@ -21,10 +21,6 @@ import (
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
 func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
-	if err := acme.Validate(o.Tls.Domain); err != nil {
-		return nil, err
-	}
-
 	if o.Tls.AcmeEmail == "" && o.Tls.CertFile == "" && o.Tls.ClientCertificatePool != nil {
 		return nil, errors.New("ong/server: clientCertificatePool cannot be specified if acmeEmail or certFile is unspecified")
 	}
@@ -39,7 +35,7 @@ func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
 		// You need to call it once instead of per request.
 		// See: https://github.com/komuw/ong/issues/296
 		getCert := acme.GetCertificate(
-			o.Tls.Domain,
+			o.Tls.Hosts,
 			o.Tls.AcmeEmail,
 			o.Tls.AcmeDirectoryUrl,
 			o.Logger,
@@ -66,9 +62,9 @@ func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					ef := fmt.Errorf(
-						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, clientIP=%s, clientFingerPrint=%s, : %w",
+						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, tlsHosts=%v, tls.ClientHelloInfo.ServerName=%s, clientIP=%s, clientFingerPrint=%s, : %w",
 						o.Tls.AcmeDirectoryUrl,
-						o.Tls.Domain,
+						o.Tls.Hosts,
 						info.ServerName,
 						info.Conn.RemoteAddr(),
 						p,

@@ -151,7 +151,7 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, errB)
 		}
 
-		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -165,7 +165,8 @@ func TestManager(t *testing.T) {
 
 		domain := getDomain()
 		testDiskCache := t.TempDir()
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager([]string{domain}, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 		attest.NotZero(t, m.cache)
 		attest.NotZero(t, m.email)
@@ -187,7 +188,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, err)
 		}
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager([]string{domain}, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 		attest.Equal(t, len(m.cache.certs), 1)
 	})
@@ -204,7 +206,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, err)
 		}
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager([]string{domain}, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		cert, err := m.getCert(context.Background(), domain)
@@ -226,7 +229,8 @@ func TestManager(t *testing.T) {
 		acmeDirUrl, errA := url.JoinPath(ts.URL, "/directory")
 		attest.Ok(t, errA)
 
-		m := initManager(domain, email, acmeDirUrl, l, testDiskCache)
+		m, err := initManager([]string{domain}, email, acmeDirUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		cert, err := m.getCert(context.Background(), "cloudflare.com")
@@ -247,7 +251,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, err)
 		}
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager([]string{domain}, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		cert := m.getCertFastPath(domain)
@@ -277,7 +282,7 @@ func TestGetCertificate(t *testing.T) {
 			attest.Ok(t, errB)
 		}
 
-		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -290,7 +295,7 @@ func TestGetCertificate(t *testing.T) {
 		t.Parallel()
 
 		domain := "127.0.0.1"
-		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -344,7 +349,7 @@ func TestAcmeHandler(t *testing.T) {
 		attest.Ok(t, errA)
 
 		{ // initialize manager.
-			getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+			getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
 			attest.NotZero(t, getCrt)
 			cert, errB := getCrt(&tls.ClientHelloInfo{
 				ServerName: domain,
@@ -389,7 +394,8 @@ func TestAcmeHandler(t *testing.T) {
 		attest.Ok(t, errA)
 		testDiskCache := t.TempDir()
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager([]string{domain}, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		{ // Flush the cache.
@@ -569,7 +575,7 @@ func BenchmarkGetCertificate(b *testing.B) {
 			errB := certToDisk(cert, certPath)
 			attest.Ok(b, errB)
 		}
-		getCrt := GetCertificate(domain, email, acmeDirectoryUrl, l)
+		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
 
 		b.ReportAllocs()
 		b.ResetTimer()

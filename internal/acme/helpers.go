@@ -329,18 +329,73 @@ func certIsValid(cert *tls.Certificate) bool {
 	return true
 }
 
-// customHostWhitelist is modeled after `autocert.HostWhitelist` except that it allows wildcards.
+// hostWhitelist returns a policy where the specified host names are allowed.
+//
+// It is modeled after `autocert.HostWhitelist` except that it allows wildcards.
 // However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
 // Instead, we'll get a certificate per subdomain.
 // see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 //
-// HostWhitelist returns a policy where only the specified domain names are allowed.
-//
-// Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
-// Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
-// Invalid domain will be silently ignored.
-func customHostWhitelist(domain string) hostPolicy {
-	// wildcard validation has already happened in `validateDomain`
+// Note that all hosts will be converted to Punycode via idna.Lookup.ToASCII so that
+// Manager.GetCertificate can handle the Unicode IDN and mixedcase hosts correctly.
+// Invalid hosts will be silently ignored.
+func hostWhitelist(hosts ...string) (hostPolicy, error) {
+	// see: https://github.com/golang/crypto/blob/v0.18.0/acme/autocert/autocert.go#L68-L88
+
+	lenHosts := len(hosts)
+	hasWildCard := false
+	whitelist := make(map[string]bool, lenHosts)
+
+	if lenHosts < 1 {
+		return nil, errors.New("ong/acme: zero domain/s specified")
+	}
+
+	for _, hst := range hosts {
+		if err := Validate(hst); err != nil {
+			return nil, err
+		}
+
+		if strings.Count(hst, "*") >= 1 {
+			hasWildCard = true
+		}
+
+		hst = strings.ToLower(hst) // `autocert` does not do this, should we?
+		if h, err := idna.Lookup.ToASCII(hst); err == nil {
+			whitelist[h] = true
+		}
+	}
+
+	if hasWildCard && lenHosts > 1 {
+		return nil, errors.New("ong/acme: wildcard domains should not be mixed with others")
+	}
+
+	if hasWildCard {
+		whitelist = nil
+		return wildcardHostWhitelist(hosts[0])
+	}
+
+	// As a special case, add `www`
+	for h := range whitelist {
+		if !strings.HasPrefix(h, "www") && strings.Count(h, ".") == 1 {
+			whitelist["www."+h] = true
+		}
+	}
+
+	return func(host string) error {
+		host = strings.ToLower(host) // `autocert` does not do this, should we?
+		if !whitelist[host] {
+			return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
+		}
+		return nil
+	}, nil
+}
+
+// See [hostWhitelist]
+func wildcardHostWhitelist(domain string) (hostPolicy, error) {
+	if err := Validate(domain); err != nil {
+		return nil, err
+	}
+
 	exactMatch := ""
 	wildcard := ""
 	if !strings.Contains(domain, "*") {
@@ -382,7 +437,7 @@ func customHostWhitelist(domain string) hostPolicy {
 		}
 
 		return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
-	}
+	}, nil
 }
 
 func cleanDomain(domain string) string {

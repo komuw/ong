@@ -10,13 +10,15 @@ import (
 )
 
 // taken from  https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert_test.go#L672
-func TestCustomHostWhitelist(t *testing.T) {
+func TestWildcardHostWhitelist(t *testing.T) {
 	t.Parallel()
 
 	t.Run("one domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy := customHostWhitelist("example.com")
+		policy, errW := wildcardHostWhitelist("example.com")
+		attest.Ok(t, errW)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -44,7 +46,9 @@ func TestCustomHostWhitelist(t *testing.T) {
 	t.Run("sub-domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy := customHostWhitelist("api.example.com")
+		policy, errW := wildcardHostWhitelist("api.example.com")
+		attest.Ok(t, errW)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -77,7 +81,9 @@ func TestCustomHostWhitelist(t *testing.T) {
 	t.Run("Punycode", func(t *testing.T) {
 		t.Parallel()
 
-		policy := customHostWhitelist("éÉ.com")
+		policy, errW := wildcardHostWhitelist("éÉ.com")
+		attest.Ok(t, errW)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -104,7 +110,9 @@ func TestCustomHostWhitelist(t *testing.T) {
 	t.Run("case insensitive", func(t *testing.T) {
 		t.Parallel()
 
-		policy := customHostWhitelist("EXAMPLE.ORG")
+		policy, errW := wildcardHostWhitelist("EXAMPLE.ORG")
+		attest.Ok(t, errW)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -131,7 +139,9 @@ func TestCustomHostWhitelist(t *testing.T) {
 	t.Run("wildcard lowercase", func(t *testing.T) {
 		t.Parallel()
 
-		policy := customHostWhitelist("*.example.com")
+		policy, errW := wildcardHostWhitelist("*.example.com")
+		attest.Ok(t, errW)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -169,7 +179,9 @@ func TestCustomHostWhitelist(t *testing.T) {
 	t.Run("wildcard uppercase", func(t *testing.T) {
 		t.Parallel()
 
-		policy := customHostWhitelist("*.EXAMPLE.COM")
+		policy, errW := wildcardHostWhitelist("*.EXAMPLE.COM")
+		attest.Ok(t, errW)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -292,4 +304,206 @@ func TestCertIsValid(t *testing.T) {
 			attest.Equal(t, got, tt.want)
 		})
 	}
+}
+
+func TestHostWhitelist(t *testing.T) {
+	t.Parallel()
+
+	t.Run("one domain", func(t *testing.T) {
+		t.Parallel()
+
+		policy, errW := hostWhitelist("example.com")
+		attest.Ok(t, errW)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"example.com", true},
+			{"www.example.com", true},
+			{"example.org", false},
+			{"www.example.org", false},
+			{"xn--9caa.com", false}, // éé.com
+			{"one.example.com", false},
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
+
+	t.Run("sub-domain", func(t *testing.T) {
+		t.Parallel()
+
+		policy, errW := hostWhitelist("api.example.com")
+		attest.Ok(t, errW)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"api.example.com", true},
+			{"api.EXAMPLE.com", true},
+			{"API.EXAMPLE.COM", true},
+			//
+			{"example.com", false},
+			{"www.example.com", false},
+			{"one.example.com", false},
+			{"one.abcd.example.com", false},
+			//
+			{"example.org", false},
+			{"xn--9caa.com", false}, // éé.com
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
+
+	t.Run("Punycode", func(t *testing.T) {
+		t.Parallel()
+
+		policy, errW := hostWhitelist("éÉ.com")
+		attest.Ok(t, errW)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"example.com", false},
+			{"example.org", false},
+			{"xn--9caa.com", true}, // éé.com
+			{"one.example.com", false},
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
+
+	t.Run("case insensitive", func(t *testing.T) {
+		t.Parallel()
+
+		policy, errW := hostWhitelist("EXAMPLE.ORG")
+		attest.Ok(t, errW)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"example.com", false},
+			{"example.org", true},
+			{"xn--9caa.com", false}, // éé.com
+			{"one.example.com", false},
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
+
+	t.Run("multiple domains", func(t *testing.T) {
+		t.Parallel()
+
+		policy, errW := hostWhitelist("example.com", "api.example.com", "login.example.com", "hey.example.com")
+		attest.Ok(t, errW)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"api.example.com", true},
+			{"login.EXAMPLE.COM", true},
+			{"www.example.com", true},
+			{"WWW.EXAMPLE.COM", true},
+			{"WWW.example.COM", true},
+			//
+			{"example.org", false},
+			{"xn--9caa.com", false}, // éé.com
+			//
+			{"hey.example.com", true},
+			{"abc.hey.example.com", false},
+			//
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
+
+	t.Run("wild card is supported", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			_, err := hostWhitelist("*.example.com", "api.example.com")
+			attest.Error(t, err)
+		}
+
+		policy, errW := hostWhitelist("*.example.com")
+		attest.Ok(t, errW)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"example.com", true},
+			{"example.org", false},
+			{"xn--9caa.com", false}, // éé.com
+			{"one.example.com", true},
+			{"one.two.example.com", false},
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
 }

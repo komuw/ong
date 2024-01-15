@@ -22,7 +22,7 @@ import (
 )
 
 // Some of the code here is inspired(or taken from) by:
-//   (a) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/v0.10.0/LICENSE
+//   (a) https://github.com/golang/crypto/blob/master/acme/autocert/autocert.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/crypto/blob/v0.18.0/LICENSE
 //   (b) https://github.com/komuw/sewer whose license(MIT) can be found here:                                                  https://github.com/komuw/sewer/blob/0.8.0/LICENSE.txt
 //
 
@@ -63,7 +63,9 @@ func Validate(domain string) error {
 		toCheck = domain[2:]
 	}
 
-	if _, err := idna.Registration.ToASCII(toCheck); err != nil {
+	if _, err := idna.Lookup.ToASCII(toCheck); err != nil {
+		// We use `idna.Lookup` instead of `idna.Registration` because `ong` is only
+		// involved with domain lookups. `ong` is not a domain registrar.
 		return fmt.Errorf("ong: domain is invalid: %w", err)
 	}
 
@@ -75,11 +77,11 @@ func Validate(domain string) error {
 // It should be called once and then the returned function can be called per request.
 //
 // GetCertificate panics on error, however the returned function handles errors normally.
-func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	if err := Validate(domain); err != nil {
+func GetCertificate(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.Logger) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	man, err := initManager(tlsHosts, email, acmeDirectoryUrl, l)
+	if err != nil {
 		panic(err)
 	}
-	man := initManager(domain, email, acmeDirectoryUrl, l)
 
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		name := hello.ServerName
@@ -241,7 +243,6 @@ type manager struct {
 	// See: [certIsValid]
 	// +checklocks:mu
 	cache            *certCache
-	websiteDomain    string
 	email            string
 	acmeDirectoryUrl string
 	diskCacheDir     string
@@ -263,13 +264,11 @@ type manager struct {
 
 // initManager is only used in tests. Use [GetCertificate] instead.
 // The optional argument testDiskCache is only used for internal test purposes.
-//
-// It panics on error.
-func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) *manager {
+func initManager(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) (*manager, error) {
 	diskCacheDir := ""
 
 	if len(testDiskCache) > 0 && !testing.Testing() {
-		panic("optional argument testDiskCache should only be used for internal test purposes")
+		return nil, errors.New("ong/acme: optional argument testDiskCache should only be used for internal test purposes")
 	}
 
 	if len(testDiskCache) > 0 && testing.Testing() {
@@ -277,7 +276,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 	} else {
 		d, errA := diskCachedir()
 		if errA != nil {
-			panic(errA)
+			return nil, errA
 		}
 		diskCacheDir = d
 	}
@@ -304,15 +303,19 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 		}
 	}
 
+	hp, err := hostWhitelist(tlsHosts...)
+	if err != nil {
+		return nil, err
+	}
+
 	return &manager{
 		cache:            c,
-		websiteDomain:    domain,
 		email:            email,
 		acmeDirectoryUrl: acmeDirectoryUrl,
 		diskCacheDir:     diskCacheDir,
-		hp:               customHostWhitelist(domain),
+		hp:               hp,
 		l:                l,
-	}
+	}, nil
 }
 
 // getCertFastPath fetches a tls certificate for domain from memory only.

@@ -75,6 +75,8 @@ func ExampleNew() {
 		"",
 		// Email address to use when procuring TLS certificates from an ACME authority.
 		"my-acme@example.com",
+		// The hosts that we will allow to fetch certificates for.
+		[]string{"api.example.com", "example.com"},
 		// The ACME certificate authority to use.
 		"https://acme-staging-v02.api.letsencrypt.org/directory",
 		// [x509.CertPool], that will be used to verify client certificates

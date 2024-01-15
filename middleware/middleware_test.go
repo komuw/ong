@@ -512,6 +512,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		"",
 		"",
 		"acme@example.org",
+		[]string{domain},
 		"",
 		nil,
 	)

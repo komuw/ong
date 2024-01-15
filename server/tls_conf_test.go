@@ -32,24 +32,9 @@ func TestGetTlsConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "bad domain",
-			opts: func() config.Opts {
-				o := config.WithOpts("example.org", 65081, tst.SecretKey(), config.DirectIpStrategy, l)
-				// If you pass a bad domain to `config.WithOpts`, it will panic since it validates domain.
-				// So we have to do it like this to get an opt with a bad domain.
-				o.Domain = "example.*org"
-				o.Tls.Domain = "example.*org"
-				return o
-			},
-			assert: func(c *tls.Config, err error) {
-				attest.Error(t, err)
-				attest.Zero(t, c)
-			},
-		},
-		{
 			name: "non nil pool with no tls args",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "", config.LetsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "", []string{"example.com"}, config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = &x509.CertPool{}
 				return o
 			},
@@ -61,7 +46,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "cert pool success",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "xx@example.com", []string{"example.com"}, config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = &x509.CertPool{}
 				return o
 			},
@@ -74,7 +59,7 @@ func TestGetTlsConfig(t *testing.T) {
 		{
 			name: "cert pool from system success",
 			opts: func() config.Opts {
-				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "xx@example.com", config.LetsEncryptStagingUrl)
+				o := config.AcmeOpts("example.com", tst.SecretKey(), config.DirectIpStrategy, l, "xx@example.com", []string{"example.com"}, config.LetsEncryptStagingUrl)
 				o.Tls.ClientCertificatePool = func() *x509.CertPool {
 					p, err := x509.SystemCertPool()
 					attest.Ok(t, err)

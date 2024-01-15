@@ -145,7 +145,7 @@ func TestOpts(t *testing.T) {
 					CertFile:              "/tmp/ong_dev_certificate.pem",
 					KeyFile:               "/tmp/ong_dev_key.pem",
 					AcmeEmail:             "",
-					Domain:                "localhost",
+					Hosts:                 []string{"localhost"},
 					AcmeDirectoryUrl:      "",
 					ClientCertificatePool: nil,
 				},
