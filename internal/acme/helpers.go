@@ -345,6 +345,11 @@ func hostWhitelist(hosts ...string) (hostPolicy, error) {
 	lenHosts := len(hosts)
 	hasWildCard := false
 	whitelist := make(map[string]bool, lenHosts)
+
+	if lenHosts < 1 {
+		return nil, errors.New("ong/acme: zero domain/s specified")
+	}
+
 	for _, h := range hosts {
 		if err := Validate(h); err != nil {
 			return nil, err

@@ -306,7 +306,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 		}
 	}
 
-	hp, err := wildcardHostWhitelist(domain)
+	hp, err := hostWhitelist(domain)
 	if err != nil {
 		return nil, err
 	}
