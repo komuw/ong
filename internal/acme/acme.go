@@ -79,7 +79,10 @@ func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func
 	if err := Validate(domain); err != nil {
 		panic(err)
 	}
-	man := initManager(domain, email, acmeDirectoryUrl, l)
+	man, err := initManager(domain, email, acmeDirectoryUrl, l)
+	if err != nil {
+		panic(err)
+	}
 
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		name := hello.ServerName
@@ -262,13 +265,11 @@ type manager struct {
 
 // initManager is only used in tests. Use [GetCertificate] instead.
 // The optional argument testDiskCache is only used for internal test purposes.
-//
-// It panics on error.
-func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) *manager {
+func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) (*manager, error) {
 	diskCacheDir := ""
 
 	if len(testDiskCache) > 0 && !testing.Testing() {
-		panic("optional argument testDiskCache should only be used for internal test purposes")
+		return nil, errors.New("ong/acme: optional argument testDiskCache should only be used for internal test purposes")
 	}
 
 	if len(testDiskCache) > 0 && testing.Testing() {
@@ -276,7 +277,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 	} else {
 		d, errA := diskCachedir()
 		if errA != nil {
-			panic(errA)
+			return nil, errA
 		}
 		diskCacheDir = d
 	}
@@ -310,7 +311,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 		diskCacheDir:     diskCacheDir,
 		hp:               wildcardHostWhitelist(domain),
 		l:                l,
-	}
+	}, nil
 }
 
 // getCertFastPath fetches a tls certificate for domain from memory only.

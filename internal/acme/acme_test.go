@@ -165,7 +165,8 @@ func TestManager(t *testing.T) {
 
 		domain := getDomain()
 		testDiskCache := t.TempDir()
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 		attest.NotZero(t, m.cache)
 		attest.NotZero(t, m.email)
@@ -187,7 +188,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, err)
 		}
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 		attest.Equal(t, len(m.cache.certs), 1)
 	})
@@ -204,7 +206,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, err)
 		}
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		cert, err := m.getCert(context.Background(), domain)
@@ -226,7 +229,8 @@ func TestManager(t *testing.T) {
 		acmeDirUrl, errA := url.JoinPath(ts.URL, "/directory")
 		attest.Ok(t, errA)
 
-		m := initManager(domain, email, acmeDirUrl, l, testDiskCache)
+		m, err := initManager(domain, email, acmeDirUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		cert, err := m.getCert(context.Background(), "cloudflare.com")
@@ -247,7 +251,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, err)
 		}
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		cert := m.getCertFastPath(domain)
@@ -389,7 +394,8 @@ func TestAcmeHandler(t *testing.T) {
 		attest.Ok(t, errA)
 		testDiskCache := t.TempDir()
 
-		m := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		m, err := initManager(domain, email, acmeDirectoryUrl, l, testDiskCache)
+		attest.Ok(t, err)
 		attest.NotZero(t, m)
 
 		{ // Flush the cache.
