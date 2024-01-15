@@ -385,6 +385,7 @@ func wildcardHostWhitelist(domain string) hostPolicy {
 	}
 }
 
+// TODO: remove.
 func cleanDomain(domain string) string {
 	d := strings.ReplaceAll(domain, "*", "")
 	d = strings.TrimLeft(d, ".")
@@ -414,15 +415,19 @@ func retryAfter(v string, fallback time.Duration) time.Duration {
 // Invalid hosts will be silently ignored.
 func hostWhitelist(hosts ...string) hostPolicy {
 	// see: https://github.com/golang/crypto/blob/v0.18.0/acme/autocert/autocert.go#L68-L88
+
+	// TODO:
+	// validation has already happened in `validateDomain`
+
 	whitelist := make(map[string]bool, len(hosts))
 	for _, h := range hosts {
-		h = strings.ToLower(strings.TrimSpace(h)) // `autocert` does not do this, should we?
+		h = strings.ToLower(h) // `autocert` does not do this, should we?
 		if h, err := idna.Lookup.ToASCII(h); err == nil {
 			whitelist[h] = true
 		}
 	}
 	return func(host string) error {
-		host = strings.ToLower(strings.TrimSpace(host)) // `autocert` does not do this, should we?
+		host = strings.ToLower(host) // `autocert` does not do this, should we?
 		if !whitelist[host] {
 			return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
 		}
