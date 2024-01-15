@@ -329,85 +329,6 @@ func certIsValid(cert *tls.Certificate) bool {
 	return true
 }
 
-// wildcardHostWhitelist returns a policy where the domain name is allowed.
-//
-// It is modeled after `autocert.HostWhitelist` except that it allows wildcards.
-// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
-// Instead, we'll get a certificate per subdomain.
-// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-//
-// Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
-// Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
-// Invalid domain will be silently ignored.
-func wildcardHostWhitelist(domain string) (hostPolicy, error) {
-	if err := Validate(domain); err != nil {
-		return nil, err
-	}
-
-	exactMatch := ""
-	wildcard := ""
-	if !strings.Contains(domain, "*") {
-		// not wildcard
-		if h, err := idna.Lookup.ToASCII(domain); err == nil {
-			exactMatch = h
-		}
-	} else {
-		// wildcard
-		wildcard = domain
-		wildcard = strings.ToLower(strings.TrimSpace(wildcard))
-		{
-			// if wildcard is `*.example.com` we should also match `example.com`
-			exactMatch = cleanDomain(domain)
-			if h, err := idna.Lookup.ToASCII(exactMatch); err == nil {
-				exactMatch = h
-			}
-		}
-	}
-
-	return func(host string) error {
-		host = strings.ToLower(strings.TrimSpace(host))
-
-		if exactMatch != "" && exactMatch == host {
-			// good match
-			return nil
-		}
-
-		// try replacing labels in the name with
-		// wildcards until we get a match
-		labels := strings.Split(host, ".")
-		for i := range labels {
-			labels[i] = "*"
-			candidate := strings.Join(labels, ".")
-			if wildcard == candidate {
-				// good match
-				return nil
-			}
-		}
-
-		return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
-	}, nil
-}
-
-// TODO: remove.
-func cleanDomain(domain string) string {
-	d := strings.ReplaceAll(domain, "*", "")
-	d = strings.TrimLeft(d, ".")
-	return d
-}
-
-// retryAfter parses a Retry-After HTTP header value,
-// trying to convert v into an int (seconds) or use http.ParseTime otherwise.
-// It returns zero value if v cannot be parsed.
-func retryAfter(v string, fallback time.Duration) time.Duration {
-	if i, err := strconv.Atoi(v); err == nil {
-		return time.Duration(i) * time.Second
-	}
-	if t, err := http.ParseTime(v); err == nil {
-		return t.Sub(time.Now().UTC())
-	}
-	return fallback
-}
-
 // hostWhitelist returns a policy where the specified host names are allowed.
 //
 // It is modeled after `autocert.HostWhitelist` except that it allows wildcards.
@@ -462,4 +383,73 @@ func hostWhitelist(hosts ...string) (hostPolicy, error) {
 		}
 		return nil
 	}, nil
+}
+
+// See [hostWhitelist]
+func wildcardHostWhitelist(domain string) (hostPolicy, error) {
+	if err := Validate(domain); err != nil {
+		return nil, err
+	}
+
+	exactMatch := ""
+	wildcard := ""
+	if !strings.Contains(domain, "*") {
+		// not wildcard
+		if h, err := idna.Lookup.ToASCII(domain); err == nil {
+			exactMatch = h
+		}
+	} else {
+		// wildcard
+		wildcard = domain
+		wildcard = strings.ToLower(strings.TrimSpace(wildcard))
+		{
+			// if wildcard is `*.example.com` we should also match `example.com`
+			exactMatch = cleanDomain(domain)
+			if h, err := idna.Lookup.ToASCII(exactMatch); err == nil {
+				exactMatch = h
+			}
+		}
+	}
+
+	return func(host string) error {
+		host = strings.ToLower(strings.TrimSpace(host))
+
+		if exactMatch != "" && exactMatch == host {
+			// good match
+			return nil
+		}
+
+		// try replacing labels in the name with
+		// wildcards until we get a match
+		labels := strings.Split(host, ".")
+		for i := range labels {
+			labels[i] = "*"
+			candidate := strings.Join(labels, ".")
+			if wildcard == candidate {
+				// good match
+				return nil
+			}
+		}
+
+		return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
+	}, nil
+}
+
+func cleanDomain(domain string) string {
+	d := strings.ReplaceAll(domain, "*", "")
+	d = strings.TrimLeft(d, ".")
+	return d
+}
+
+// retryAfter parses a Retry-After HTTP header value,
+// trying to convert v into an int (seconds) or use http.ParseTime otherwise.
+// It returns zero value if v cannot be parsed.
+func retryAfter(v string, fallback time.Duration) time.Duration {
+	if i, err := strconv.Atoi(v); err == nil {
+		return time.Duration(i) * time.Second
+	}
+	if t, err := http.ParseTime(v); err == nil {
+		return t.Sub(time.Now().UTC())
+	}
+	return fallback
 }
