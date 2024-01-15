@@ -16,7 +16,9 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("one domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy := wildcardHostWhitelist("example.com")
+		policy, err := wildcardHostWhitelist("example.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -44,7 +46,9 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("sub-domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy := wildcardHostWhitelist("api.example.com")
+		policy, err := wildcardHostWhitelist("api.example.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -77,7 +81,9 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("Punycode", func(t *testing.T) {
 		t.Parallel()
 
-		policy := wildcardHostWhitelist("éÉ.com")
+		policy, err := wildcardHostWhitelist("éÉ.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -104,7 +110,9 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("case insensitive", func(t *testing.T) {
 		t.Parallel()
 
-		policy := wildcardHostWhitelist("EXAMPLE.ORG")
+		policy, err := wildcardHostWhitelist("EXAMPLE.ORG")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -131,7 +139,9 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("wildcard lowercase", func(t *testing.T) {
 		t.Parallel()
 
-		policy := wildcardHostWhitelist("*.example.com")
+		policy, err := wildcardHostWhitelist("*.example.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -169,7 +179,9 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("wildcard uppercase", func(t *testing.T) {
 		t.Parallel()
 
-		policy := wildcardHostWhitelist("*.EXAMPLE.COM")
+		policy, err := wildcardHostWhitelist("*.EXAMPLE.COM")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool

@@ -304,12 +304,17 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 		}
 	}
 
+	hp, err := wildcardHostWhitelist(domain)
+	if err != nil {
+		return nil, err
+	}
+
 	return &manager{
 		cache:            c,
 		email:            email,
 		acmeDirectoryUrl: acmeDirectoryUrl,
 		diskCacheDir:     diskCacheDir,
-		hp:               wildcardHostWhitelist(domain),
+		hp:               hp,
 		l:                l,
 	}, nil
 }

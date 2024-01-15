@@ -339,7 +339,7 @@ func certIsValid(cert *tls.Certificate) bool {
 // Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
 // Invalid domain will be silently ignored.
-func wildcardHostWhitelist(domain string) hostPolicy {
+func wildcardHostWhitelist(domain string) (hostPolicy, error) {
 	// wildcard validation has already happened in `validateDomain`
 	exactMatch := ""
 	wildcard := ""
@@ -382,7 +382,7 @@ func wildcardHostWhitelist(domain string) hostPolicy {
 		}
 
 		return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
-	}
+	}, nil
 }
 
 // TODO: remove.
