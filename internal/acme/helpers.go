@@ -419,11 +419,12 @@ func retryAfter(v string, fallback time.Duration) time.Duration {
 func hostWhitelist(hosts ...string) (hostPolicy, error) {
 	// see: https://github.com/golang/crypto/blob/v0.18.0/acme/autocert/autocert.go#L68-L88
 
-	// TODO:
-	// validation has already happened in `validateDomain`
-
 	whitelist := make(map[string]bool, len(hosts))
 	for _, h := range hosts {
+		if err := Validate(h); err != nil {
+			return nil, err
+		}
+
 		h = strings.ToLower(h) // `autocert` does not do this, should we?
 		if h, err := idna.Lookup.ToASCII(h); err == nil {
 			whitelist[h] = true
