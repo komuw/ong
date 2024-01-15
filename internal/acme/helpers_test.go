@@ -10,7 +10,7 @@ import (
 )
 
 // taken from  https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert_test.go#L672
-func TestCustomHostWhitelist(t *testing.T) {
+func TestWildcardHostWhitelist(t *testing.T) {
 	t.Parallel()
 
 	t.Run("one domain", func(t *testing.T) {
