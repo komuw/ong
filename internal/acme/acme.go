@@ -241,7 +241,6 @@ type manager struct {
 	// See: [certIsValid]
 	// +checklocks:mu
 	cache            *certCache
-	websiteDomain    string
 	email            string
 	acmeDirectoryUrl string
 	diskCacheDir     string
@@ -306,7 +305,6 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 
 	return &manager{
 		cache:            c,
-		websiteDomain:    domain,
 		email:            email,
 		acmeDirectoryUrl: acmeDirectoryUrl,
 		diskCacheDir:     diskCacheDir,
