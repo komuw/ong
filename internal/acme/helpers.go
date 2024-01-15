@@ -421,16 +421,31 @@ func retryAfter(v string, fallback time.Duration) time.Duration {
 func hostWhitelist(hosts ...string) (hostPolicy, error) {
 	// see: https://github.com/golang/crypto/blob/v0.18.0/acme/autocert/autocert.go#L68-L88
 
-	whitelist := make(map[string]bool, len(hosts))
+	lenHosts := len(hosts)
+	hasWildCard := false
+	whitelist := make(map[string]bool, lenHosts)
 	for _, h := range hosts {
 		if err := Validate(h); err != nil {
 			return nil, err
+		}
+
+		if strings.Count(h, "*") >= 1 {
+			hasWildCard = true
 		}
 
 		h = strings.ToLower(h) // `autocert` does not do this, should we?
 		if h, err := idna.Lookup.ToASCII(h); err == nil {
 			whitelist[h] = true
 		}
+	}
+
+	if hasWildCard && lenHosts > 1 {
+		return nil, errors.New("ong/acme: wildcard domains should not be mixed with others")
+	}
+
+	if hasWildCard {
+		whitelist = nil
+		return wildcardHostWhitelist(hosts[0])
 	}
 
 	// As a special case, add `www`

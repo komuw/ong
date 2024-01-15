@@ -471,4 +471,39 @@ func TestHostWhitelist(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("wild card is supported", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			_, err := hostWhitelist("*.example.com", "api.example.com")
+			attest.Error(t, err)
+		}
+
+		policy, err := hostWhitelist("*.example.com")
+		attest.Ok(t, err)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"example.com", true},
+			{"example.org", false},
+			{"xn--9caa.com", false}, // éé.com
+			{"one.example.com", true},
+			{"one.two.example.com", false},
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
 }
