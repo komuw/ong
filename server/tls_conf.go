@@ -21,10 +21,6 @@ import (
 //
 // h is the fallback is the http handler that will be delegated to for non ACME requests.
 func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
-	if err := acme.Validate(o.Tls.Domain); err != nil {
-		return nil, err
-	}
-
 	if o.Tls.AcmeEmail == "" && o.Tls.CertFile == "" && o.Tls.ClientCertificatePool != nil {
 		return nil, errors.New("ong/server: clientCertificatePool cannot be specified if acmeEmail or certFile is unspecified")
 	}
@@ -39,7 +35,7 @@ func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
 		// You need to call it once instead of per request.
 		// See: https://github.com/komuw/ong/issues/296
 		getCert := acme.GetCertificate(
-			o.Tls.Domain,
+			o.Tls.Hosts,
 			o.Tls.AcmeEmail,
 			o.Tls.AcmeDirectoryUrl,
 			o.Logger,
@@ -66,9 +62,9 @@ func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
 				if err != nil {
 					// This will be logged by `http.Server.ErrorLog`
 					ef := fmt.Errorf(
-						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, domain=%s, tls.ClientHelloInfo.ServerName=%s, clientIP=%s, clientFingerPrint=%s, : %w",
+						"ong/server: failed to get certificate from ACME. acmeDirectoryUrl=%s, tlsHosts=%v, tls.ClientHelloInfo.ServerName=%s, clientIP=%s, clientFingerPrint=%s, : %w",
 						o.Tls.AcmeDirectoryUrl,
-						o.Tls.Domain,
+						o.Tls.Hosts,
 						info.ServerName,
 						info.Conn.RemoteAddr(),
 						p,

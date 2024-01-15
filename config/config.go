@@ -231,6 +231,8 @@ func (o Opts) GoString() string {
 // keyFile is a path to a tls key.
 //
 // acmeEmail is the e-address that will be used if/when procuring certificates from an [ACME] certificate authority, eg [letsencrypt].
+// tlsHosts is the hosts which are allowed to procure TLS certificates for. Wildcards are also accepted.
+// If tlsHosts is nil, [domain] is used instead.
 // acmeDirectoryUrl is the URL of the [ACME] certificate authority's directory endpoint.
 //
 // If certFile is a non-empty string, this will enable tls using certificates found on disk.
@@ -276,6 +278,7 @@ func New(
 	certFile string,
 	keyFile string,
 	acmeEmail string,
+	tlsHosts []string,
 	acmeDirectoryUrl string,
 	clientCertificatePool *x509.CertPool,
 ) Opts {
@@ -301,6 +304,7 @@ func New(
 			sessionAntiReplyFunc,
 		),
 		serverOpts: newServerOpts(
+			domain,
 			port,
 			maxBodyBytes,
 			serverLogLevel,
@@ -312,7 +316,7 @@ func New(
 			certFile,
 			keyFile,
 			acmeEmail,
-			domain,
+			tlsHosts,
 			acmeDirectoryUrl,
 			clientCertificatePool,
 		),
@@ -343,11 +347,12 @@ func WithOpts(
 			logger,
 		),
 		serverOpts: withServerOpts(
+			domain,
 			httpsPort,
 			certFile,
 			keyFile,
 			"",
-			domain,
+			[]string{domain},
 			"",
 		),
 	}
@@ -372,11 +377,12 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 			logger,
 		),
 		serverOpts: withServerOpts(
+			domain,
 			httpsPort,
 			certFile,
 			keyFile,
 			"",
-			domain,
+			[]string{domain},
 			"",
 		),
 	}
@@ -395,6 +401,7 @@ func CertOpts(
 	// server
 	certFile string,
 	keyFile string,
+	tlsHosts []string,
 ) Opts {
 	httpsPort := uint16(443)
 	return Opts{
@@ -406,11 +413,12 @@ func CertOpts(
 			logger,
 		),
 		serverOpts: withServerOpts(
+			domain,
 			httpsPort,
 			certFile,
 			keyFile,
 			"",
-			domain,
+			tlsHosts,
 			"",
 		),
 	}
@@ -431,6 +439,7 @@ func AcmeOpts(
 	logger *slog.Logger,
 	// server
 	acmeEmail string,
+	tlsHosts []string,
 	acmeDirectoryUrl string,
 ) Opts {
 	httpsPort := uint16(443)
@@ -443,11 +452,12 @@ func AcmeOpts(
 			logger,
 		),
 		serverOpts: withServerOpts(
+			domain,
 			httpsPort,
 			"",
 			"",
 			acmeEmail,
-			domain,
+			tlsHosts,
 			acmeDirectoryUrl,
 		),
 	}
@@ -468,6 +478,7 @@ func LetsEncryptOpts(
 	logger *slog.Logger,
 	// server
 	acmeEmail string,
+	tlsHosts []string,
 ) Opts {
 	httpsPort := uint16(443)
 	return Opts{
@@ -479,11 +490,12 @@ func LetsEncryptOpts(
 			logger,
 		),
 		serverOpts: withServerOpts(
+			domain,
 			httpsPort,
 			"",
 			"",
 			acmeEmail,
-			domain,
+			tlsHosts,
 			"",
 		),
 	}
@@ -698,11 +710,11 @@ type tlsOpts struct {
 	KeyFile  string
 	// if acmeEmail is present, tls will be served from ACME certificates.
 	AcmeEmail string
-	// Domain can be a wildcard.
+	// Hosts can contain a wildcard.
 	// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
 	// Instead, we'll get a certificate per subdomain.
 	// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-	Domain string
+	Hosts []string
 	// URL of the ACME certificate authority's directory endpoint.
 	AcmeDirectoryUrl      string
 	ClientCertificatePool *x509.CertPool
@@ -714,14 +726,14 @@ func (t tlsOpts) String() string {
   CertFile: %v,
   KeyFile: %v,
   AcmeEmail: %v,
-  Domain: %v,
+  Hosts: %v,
   AcmeDirectoryUrl: %v,
   ClientCertificatePool: %v,
 }`,
 		t.CertFile,
 		t.KeyFile,
 		t.AcmeEmail,
-		t.Domain,
+		t.Hosts,
 		t.AcmeDirectoryUrl,
 		t.ClientCertificatePool,
 	)
@@ -754,6 +766,7 @@ type serverOpts struct {
 }
 
 func newServerOpts(
+	domain string,
 	port uint16,
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
@@ -765,7 +778,7 @@ func newServerOpts(
 	certFile string,
 	keyFile string,
 	acmeEmail string, // if present, tls will be served from acme certificates.
-	domain string,
+	tlsHosts []string,
 	acmeDirectoryUrl string,
 	clientCertificatePool *x509.CertPool,
 ) serverOpts {
@@ -794,6 +807,10 @@ func newServerOpts(
 		}
 	}
 
+	if len(tlsHosts) < 1 {
+		tlsHosts = []string{domain}
+	}
+
 	return serverOpts{
 		port:              port,
 		MaxBodyBytes:      maxBodyBytes,
@@ -808,7 +825,7 @@ func newServerOpts(
 			CertFile:              certFile,
 			KeyFile:               keyFile,
 			AcmeEmail:             acmeEmail,
-			Domain:                domain,
+			Hosts:                 tlsHosts,
 			AcmeDirectoryUrl:      acmeDirectoryUrl,
 			ClientCertificatePool: clientCertificatePool,
 		},
@@ -822,7 +839,7 @@ func newServerOpts(
 	}
 }
 
-func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirectoryUrl string) serverOpts {
+func withServerOpts(domain string, port uint16, certFile, keyFile, acmeEmail string, tlsHosts []string, acmeDirectoryUrl string) serverOpts {
 	readHeaderTimeout := 1 * time.Second
 	readTimeout := readHeaderTimeout + (1 * time.Second)
 	writeTimeout := readTimeout + (1 * time.Second)
@@ -833,6 +850,7 @@ func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirec
 	maxBodyBytes := DefaultMaxBodyBytes
 	serverLogLevel := DefaultServerLogLevel
 	return newServerOpts(
+		domain,
 		port,
 		maxBodyBytes,
 		serverLogLevel,
@@ -844,7 +862,7 @@ func withServerOpts(port uint16, certFile, keyFile, acmeEmail, domain, acmeDirec
 		certFile,
 		keyFile,
 		acmeEmail,
-		domain,
+		tlsHosts,
 		acmeDirectoryUrl,
 		nil,
 	)
@@ -894,7 +912,59 @@ func (s serverOpts) GoString() string {
 // It was added for testing purposes.
 func (o Opts) Equal(other Opts) bool {
 	{
-		if o.serverOpts != other.serverOpts {
+		if o.serverOpts.port != other.serverOpts.port {
+			return false
+		}
+		if o.serverOpts.MaxBodyBytes != other.serverOpts.MaxBodyBytes {
+			return false
+		}
+		if o.serverOpts.ServerLogLevel != other.serverOpts.ServerLogLevel {
+			return false
+		}
+		if o.serverOpts.ReadHeaderTimeout != other.serverOpts.ReadHeaderTimeout {
+			return false
+		}
+		if o.serverOpts.WriteTimeout != other.serverOpts.WriteTimeout {
+			return false
+		}
+		if o.serverOpts.IdleTimeout != other.serverOpts.IdleTimeout {
+			return false
+		}
+		if o.serverOpts.DrainTimeout != other.serverOpts.DrainTimeout {
+			return false
+		}
+		if o.serverOpts.Host != other.serverOpts.Host {
+			return false
+		}
+		if o.serverOpts.ServerPort != other.serverOpts.ServerPort {
+			return false
+		}
+		if o.serverOpts.ServerAddress != other.serverOpts.ServerAddress {
+			return false
+		}
+		if o.serverOpts.Network != other.serverOpts.Network {
+			return false
+		}
+		if o.serverOpts.HttpPort != other.serverOpts.HttpPort {
+			return false
+		}
+
+		if o.serverOpts.Tls.CertFile != other.serverOpts.Tls.CertFile {
+			return false
+		}
+		if o.serverOpts.Tls.KeyFile != other.serverOpts.Tls.KeyFile {
+			return false
+		}
+		if o.serverOpts.Tls.AcmeEmail != other.serverOpts.Tls.AcmeEmail {
+			return false
+		}
+		if !slices.Equal(o.serverOpts.Tls.Hosts, other.serverOpts.Tls.Hosts) {
+			return false
+		}
+		if o.serverOpts.Tls.AcmeDirectoryUrl != other.serverOpts.Tls.AcmeDirectoryUrl {
+			return false
+		}
+		if o.serverOpts.Tls.ClientCertificatePool != other.serverOpts.Tls.ClientCertificatePool {
 			return false
 		}
 	}
