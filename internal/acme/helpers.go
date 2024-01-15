@@ -350,17 +350,17 @@ func hostWhitelist(hosts ...string) (hostPolicy, error) {
 		return nil, errors.New("ong/acme: zero domain/s specified")
 	}
 
-	for _, h := range hosts {
-		if err := Validate(h); err != nil {
+	for _, hst := range hosts {
+		if err := Validate(hst); err != nil {
 			return nil, err
 		}
 
-		if strings.Count(h, "*") >= 1 {
+		if strings.Count(hst, "*") >= 1 {
 			hasWildCard = true
 		}
 
-		h = strings.ToLower(h) // `autocert` does not do this, should we?
-		if h, err := idna.Lookup.ToASCII(h); err == nil {
+		hst = strings.ToLower(hst) // `autocert` does not do this, should we?
+		if h, err := idna.Lookup.ToASCII(hst); err == nil {
 			whitelist[h] = true
 		}
 	}

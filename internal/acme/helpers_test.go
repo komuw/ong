@@ -16,8 +16,8 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("one domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := wildcardHostWhitelist("example.com")
-		attest.Ok(t, err)
+		policy, errW := wildcardHostWhitelist("example.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -46,8 +46,8 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("sub-domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := wildcardHostWhitelist("api.example.com")
-		attest.Ok(t, err)
+		policy, errW := wildcardHostWhitelist("api.example.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -81,8 +81,8 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("Punycode", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := wildcardHostWhitelist("éÉ.com")
-		attest.Ok(t, err)
+		policy, errW := wildcardHostWhitelist("éÉ.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -110,8 +110,8 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("case insensitive", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := wildcardHostWhitelist("EXAMPLE.ORG")
-		attest.Ok(t, err)
+		policy, errW := wildcardHostWhitelist("EXAMPLE.ORG")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -139,8 +139,8 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("wildcard lowercase", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := wildcardHostWhitelist("*.example.com")
-		attest.Ok(t, err)
+		policy, errW := wildcardHostWhitelist("*.example.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -179,8 +179,8 @@ func TestWildcardHostWhitelist(t *testing.T) {
 	t.Run("wildcard uppercase", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := wildcardHostWhitelist("*.EXAMPLE.COM")
-		attest.Ok(t, err)
+		policy, errW := wildcardHostWhitelist("*.EXAMPLE.COM")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -312,8 +312,8 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("one domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := hostWhitelist("example.com")
-		attest.Ok(t, err)
+		policy, errW := hostWhitelist("example.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -344,8 +344,8 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("sub-domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := hostWhitelist("api.example.com")
-		attest.Ok(t, err)
+		policy, errW := hostWhitelist("api.example.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -380,8 +380,8 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("Punycode", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := hostWhitelist("éÉ.com")
-		attest.Ok(t, err)
+		policy, errW := hostWhitelist("éÉ.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -409,8 +409,8 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("case insensitive", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := hostWhitelist("EXAMPLE.ORG")
-		attest.Ok(t, err)
+		policy, errW := hostWhitelist("EXAMPLE.ORG")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -438,8 +438,8 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("multiple domains", func(t *testing.T) {
 		t.Parallel()
 
-		policy, err := hostWhitelist("example.com", "api.example.com", "login.example.com", "hey.example.com")
-		attest.Ok(t, err)
+		policy, errW := hostWhitelist("example.com", "api.example.com", "login.example.com", "hey.example.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
@@ -480,8 +480,8 @@ func TestHostWhitelist(t *testing.T) {
 			attest.Error(t, err)
 		}
 
-		policy, err := hostWhitelist("*.example.com")
-		attest.Ok(t, err)
+		policy, errW := hostWhitelist("*.example.com")
+		attest.Ok(t, errW)
 
 		tt := []struct {
 			host  string
