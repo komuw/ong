@@ -352,7 +352,7 @@ func WithOpts(
 			certFile,
 			keyFile,
 			"",
-			[]string{domain},
+			nil,
 			"",
 		),
 	}
@@ -382,7 +382,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 			certFile,
 			keyFile,
 			"",
-			[]string{domain},
+			nil,
 			"",
 		),
 	}
