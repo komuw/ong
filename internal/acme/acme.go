@@ -77,11 +77,8 @@ func Validate(domain string) error {
 // It should be called once and then the returned function can be called per request.
 //
 // GetCertificate panics on error, however the returned function handles errors normally.
-func GetCertificate(domain, email, acmeDirectoryUrl string, l *slog.Logger) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	if err := Validate(domain); err != nil {
-		panic(err)
-	}
-	man, err := initManager(domain, email, acmeDirectoryUrl, l)
+func GetCertificate(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.Logger) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	man, err := initManager(tlsHosts, email, acmeDirectoryUrl, l)
 	if err != nil {
 		panic(err)
 	}
@@ -267,7 +264,7 @@ type manager struct {
 
 // initManager is only used in tests. Use [GetCertificate] instead.
 // The optional argument testDiskCache is only used for internal test purposes.
-func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) (*manager, error) {
+func initManager(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.Logger, testDiskCache ...string) (*manager, error) {
 	diskCacheDir := ""
 
 	if len(testDiskCache) > 0 && !testing.Testing() {
@@ -306,7 +303,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 		}
 	}
 
-	hp, err := hostWhitelist(domain)
+	hp, err := hostWhitelist(tlsHosts...)
 	if err != nil {
 		return nil, err
 	}
