@@ -329,12 +329,12 @@ func certIsValid(cert *tls.Certificate) bool {
 	return true
 }
 
-// wildcardHostWhitelist is modeled after `autocert.HostWhitelist` except that it allows wildcards.
+// wildcardHostWhitelist returns a policy where the domain name is allowed.
+//
+// It is modeled after `autocert.HostWhitelist` except that it allows wildcards.
 // However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
 // Instead, we'll get a certificate per subdomain.
 // see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
-//
-// HostWhitelist returns a policy where only the specified domain names are allowed.
 //
 // Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
@@ -408,10 +408,12 @@ func retryAfter(v string, fallback time.Duration) time.Duration {
 	return fallback
 }
 
-// hostWhitelist returns a policy where only the specified host names are allowed.
-// Only exact matches are currently supported.
-// Fo Subdomains, regexp or wildcard
-// see https://github.com/komuw/ong/pull/402 where a wildcard implementation was removed.
+// hostWhitelist returns a policy where the specified host names are allowed.
+//
+// It is modeled after `autocert.HostWhitelist` except that it allows wildcards.
+// However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
+// Instead, we'll get a certificate per subdomain.
+// see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
 //
 // Note that all hosts will be converted to Punycode via idna.Lookup.ToASCII so that
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase hosts correctly.
