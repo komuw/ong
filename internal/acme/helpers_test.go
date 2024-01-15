@@ -358,32 +358,32 @@ func TestHostWhitelist(t *testing.T) {
 		}
 	})
 
-	// t.Run("Punycode", func(t *testing.T) {
-	// 	t.Parallel()
+	t.Run("Punycode", func(t *testing.T) {
+		t.Parallel()
 
-	// 	policy := hostWhitelist("éÉ.com")
-	// 	tt := []struct {
-	// 		host  string
-	// 		allow bool
-	// 	}{
-	// 		{"example.com", false},
-	// 		{"example.org", false},
-	// 		{"xn--9caa.com", true}, // éé.com
-	// 		{"one.example.com", false},
-	// 		{"two.example.org", false},
-	// 		{"three.example.net", false},
-	// 		{"dummy", false},
-	// 	}
-	// 	for i, test := range tt {
-	// 		err := policy(test.host)
-	// 		if err != nil && test.allow {
-	// 			t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
-	// 		}
-	// 		if err == nil && !test.allow {
-	// 			t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
-	// 		}
-	// 	}
-	// })
+		policy := hostWhitelist("éÉ.com")
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"example.com", false},
+			{"example.org", false},
+			{"xn--9caa.com", true}, // éé.com
+			{"one.example.com", false},
+			{"two.example.org", false},
+			{"three.example.net", false},
+			{"dummy", false},
+		}
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
 
 	// t.Run("case insensitive", func(t *testing.T) {
 	// 	t.Parallel()
