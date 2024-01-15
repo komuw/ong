@@ -413,7 +413,7 @@ func retryAfter(v string, fallback time.Duration) time.Duration {
 // Note that all hosts will be converted to Punycode via idna.Lookup.ToASCII so that
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase hosts correctly.
 // Invalid hosts will be silently ignored.
-func hostWhitelist(hosts ...string) hostPolicy {
+func hostWhitelist(hosts ...string) (hostPolicy, error) {
 	// see: https://github.com/golang/crypto/blob/v0.18.0/acme/autocert/autocert.go#L68-L88
 
 	// TODO:
@@ -440,5 +440,5 @@ func hostWhitelist(hosts ...string) hostPolicy {
 			return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
 		}
 		return nil
-	}
+	}, nil
 }

@@ -312,7 +312,9 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("one domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy := hostWhitelist("example.com")
+		policy, err := hostWhitelist("example.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -342,7 +344,9 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("sub-domain", func(t *testing.T) {
 		t.Parallel()
 
-		policy := hostWhitelist("api.example.com")
+		policy, err := hostWhitelist("api.example.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -376,7 +380,9 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("Punycode", func(t *testing.T) {
 		t.Parallel()
 
-		policy := hostWhitelist("éÉ.com")
+		policy, err := hostWhitelist("éÉ.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -403,7 +409,9 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("case insensitive", func(t *testing.T) {
 		t.Parallel()
 
-		policy := hostWhitelist("EXAMPLE.ORG")
+		policy, err := hostWhitelist("EXAMPLE.ORG")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
@@ -430,7 +438,9 @@ func TestHostWhitelist(t *testing.T) {
 	t.Run("multiple domains", func(t *testing.T) {
 		t.Parallel()
 
-		policy := hostWhitelist("example.com", "api.example.com", "login.example.com", "hey.example.com")
+		policy, err := hostWhitelist("example.com", "api.example.com", "login.example.com", "hey.example.com")
+		attest.Ok(t, err)
+
 		tt := []struct {
 			host  string
 			allow bool
