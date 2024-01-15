@@ -329,7 +329,7 @@ func certIsValid(cert *tls.Certificate) bool {
 	return true
 }
 
-// customHostWhitelist is modeled after `autocert.HostWhitelist` except that it allows wildcards.
+// wildcardHostWhitelist is modeled after `autocert.HostWhitelist` except that it allows wildcards.
 // However, the certificate issued will NOT be wildcard certs; since letsencrypt only issues wildcard certs via DNS-01 challenge
 // Instead, we'll get a certificate per subdomain.
 // see; https://letsencrypt.org/docs/faq/#does-let-s-encrypt-issue-wildcard-certificates
@@ -339,7 +339,7 @@ func certIsValid(cert *tls.Certificate) bool {
 // Note that all domain will be converted to Punycode via idna.Lookup.ToASCII so that
 // Manager.GetCertificate can handle the Unicode IDN and mixedcase domain correctly.
 // Invalid domain will be silently ignored.
-func customHostWhitelist(domain string) hostPolicy {
+func wildcardHostWhitelist(domain string) hostPolicy {
 	// wildcard validation has already happened in `validateDomain`
 	exactMatch := ""
 	wildcard := ""
@@ -402,4 +402,28 @@ func retryAfter(v string, fallback time.Duration) time.Duration {
 		return t.Sub(time.Now().UTC())
 	}
 	return fallback
+}
+
+// hostWhitelist returns a policy where only the specified host names are allowed.
+// Only exact matches are currently supported.
+// Fo Subdomains, regexp or wildcard
+// see https://github.com/komuw/ong/pull/402 where a wildcard implementation was removed.
+//
+// Note that all hosts will be converted to Punycode via idna.Lookup.ToASCII so that
+// Manager.GetCertificate can handle the Unicode IDN and mixedcase hosts correctly.
+// Invalid hosts will be silently ignored.
+func hostWhitelist(hosts ...string) hostPolicy {
+	// see: https://github.com/golang/crypto/blob/v0.18.0/acme/autocert/autocert.go#L68-L88
+	whitelist := make(map[string]bool, len(hosts))
+	for _, h := range hosts {
+		if h, err := idna.Lookup.ToASCII(h); err == nil {
+			whitelist[h] = true
+		}
+	}
+	return func(host string) error {
+		if !whitelist[host] {
+			return fmt.Errorf("ong/server: host(%s) is not configured in HostWhitelist", host)
+		}
+		return nil
+	}
 }

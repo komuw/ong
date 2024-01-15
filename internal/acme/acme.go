@@ -310,7 +310,7 @@ func initManager(domain, email, acmeDirectoryUrl string, l *slog.Logger, testDis
 		email:            email,
 		acmeDirectoryUrl: acmeDirectoryUrl,
 		diskCacheDir:     diskCacheDir,
-		hp:               customHostWhitelist(domain),
+		hp:               wildcardHostWhitelist(domain),
 		l:                l,
 	}
 }
