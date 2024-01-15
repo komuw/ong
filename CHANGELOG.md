@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.89
+- ong/server: Do not create certificate directory unless certificate fetch succeeded: https://github.com/komuw/ong/pull/404
+
 # v0.0.88
 - Update dependencies: https://github.com/komuw/ong/pull/401
 - ong/server: Add ability to specify the exact domains to use for TLS as well as wildcards: https://github.com/komuw/ong/pull/402

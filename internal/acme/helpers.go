@@ -202,11 +202,18 @@ func getLeaf(der [][]byte) (leaf *x509.Certificate, err error) {
 	return leaf, nil
 }
 
-func certFromDisk(certPath string) (*tls.Certificate, error) {
-	if err := os.MkdirAll(filepath.Dir(certPath), 0o755); err != nil {
-		// If directory already exists, MkdirAll does nothing.
-		return nil, err
-	}
+func certFromDisk(certPath string) (c *tls.Certificate, errRet error) {
+	defer func() {
+		if errRet == nil {
+			// Only create directory if getting cert succeded.
+			if err := os.MkdirAll(filepath.Dir(certPath), 0o755); err != nil {
+				// If directory already exists, MkdirAll does nothing.
+				errRet = err
+				c = nil
+				return
+			}
+		}
+	}()
 
 	f, err := os.Open(certPath)
 	if err != nil {
