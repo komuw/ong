@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.90
+- ong/middleware: a http subdomain should be redirected to the same subdomain at https: https://github.com/komuw/ong/pull/406
+
 # v0.0.89
 - ong/server: Do not create certificate directory unless certificate fetch succeeded: https://github.com/komuw/ong/pull/404
 
