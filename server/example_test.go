@@ -24,7 +24,7 @@ func ExampleRun() {
 		l,
 	) // dev options.
 	// alternatively for production:
-	//   opts := config.LetsEncryptOpts("example.com", "secretKey", config.DirectIpStrategy, l, "hey@example.com", []string{"api.example.com", "example.com"})
+	//   opts := config.LetsEncryptOpts(...)
 
 	mx := mux.New(
 		opts,

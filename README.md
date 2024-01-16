@@ -47,7 +47,7 @@ func main() {
 		l,
 	) // dev options.
 	// alternatively for production:
-	//   opts := config.LetsEncryptOpts("example.com", "secretKey", config.DirectIpStrategy, l, "hey@example.com", []string{"api.example.com", "example.com"})
+	//   opts := config.LetsEncryptOpts(...)
 
 	mx := mux.New(
 		opts,
@@ -122,7 +122,8 @@ func main() {
     domain := "example.com"
     secretKey := "super-h@rd-Pas1word"
     email := "hey@example.com"
-    opts := config.LetsEncryptOpts(domain, secretKey, config.DirectIpStrategy, logger, email, []string{domain})
+    opts := config.LetsEncryptOpts(
+		domain, secretKey, config.DirectIpStrategy, logger, email, []string{domain})
 
     mx := mux.New(opts, nil, mux.NewRoute("hello/", mux.MethodGet, hello()))
     _ = server.Run(mx, opts)
