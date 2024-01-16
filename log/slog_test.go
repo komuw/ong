@@ -96,7 +96,7 @@ func TestSlogtest(t *testing.T) {
 				return ms
 			}
 
-			err := TestHandler(handler, results)
+			err := testHandler(handler, results)
 			if err != nil {
 				t.Fatal(err)
 			}
