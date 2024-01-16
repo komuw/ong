@@ -74,8 +74,8 @@ func ExampleAll() {
 
 	handler := middleware.All(myHandler, opts)
 
-	mux := http.NewServeMux()
-	mux.Handle("/", handler)
+	mx := http.NewServeMux()
+	mx.Handle("/", handler)
 
 	// Output:
 }

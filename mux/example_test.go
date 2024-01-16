@@ -26,7 +26,7 @@ func BooksByAuthorHandler() http.HandlerFunc {
 
 func ExampleMuxer() {
 	l := log.New(context.Background(), os.Stdout, 1000)
-	mux := mux.New(
+	mx := mux.New(
 		config.WithOpts("localhost", 8080, "super-h@rd-Pas1word", config.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
@@ -42,7 +42,7 @@ func ExampleMuxer() {
 	)
 
 	server := &http.Server{
-		Handler: mux,
+		Handler: mx,
 		Addr:    ":8080",
 	}
 	err := server.ListenAndServe()
@@ -53,7 +53,7 @@ func ExampleMuxer() {
 
 func ExampleMuxer_Resolve() {
 	l := log.New(context.Background(), os.Stdout, 1000)
-	mux := mux.New(
+	mx := mux.New(
 		config.WithOpts("localhost", 8080, "super-h@rd-Pas1word", config.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
@@ -68,7 +68,7 @@ func ExampleMuxer_Resolve() {
 		),
 	)
 
-	fmt.Println(mux.Resolve("nonExistentPath"))
-	fmt.Println(mux.Resolve("login/"))
-	fmt.Println(mux.Resolve("https://localhost/books/SidneySheldon"))
+	fmt.Println(mx.Resolve("nonExistentPath"))
+	fmt.Println(mx.Resolve("login/"))
+	fmt.Println(mx.Resolve("https://localhost/books/SidneySheldon"))
 }

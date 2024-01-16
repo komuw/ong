@@ -71,7 +71,7 @@ func TestServer(t *testing.T) {
 		port := tst.GetPort()
 		uri := "/api"
 		msg := "hello world"
-		mux := mux.New(
+		mx := mux.New(
 			config.WithOpts("localhost", port, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
@@ -83,7 +83,7 @@ func TestServer(t *testing.T) {
 
 		go func() {
 			err := Run(
-				mux,
+				mx,
 				config.WithOpts(
 					"localhost",
 					port,
@@ -202,7 +202,7 @@ func TestServer(t *testing.T) {
 		port := tst.GetPort()
 		uri := "/api"
 		msg := "hello world"
-		mux := mux.New(
+		mx := mux.New(
 			config.WithOpts("localhost", port, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
@@ -214,7 +214,7 @@ func TestServer(t *testing.T) {
 
 		go func() {
 			err := Run(
-				mux,
+				mx,
 				config.WithOpts(
 					"localhost",
 					port,
@@ -276,7 +276,7 @@ func TestServer(t *testing.T) {
 		port := tst.GetPort()
 		uri := "/api"
 		msg := "hello world"
-		mux := mux.New(
+		mx := mux.New(
 			config.WithOpts("localhost", port, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,
 			mux.NewRoute(
@@ -288,7 +288,7 @@ func TestServer(t *testing.T) {
 
 		go func() {
 			err := Run(
-				mux,
+				mx,
 				config.WithOpts(
 					"localhost",
 					port,

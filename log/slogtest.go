@@ -29,14 +29,14 @@ type testCase struct {
 	checks []check
 }
 
-// The `TestHandler` in the stdlib does not use t.Parallel,
+// The `testHandler` in the stdlib does not use t.Parallel,
 // hence this one doesn't also.
 
-// TestHandler tests a [slog.Handler].
-// If TestHandler finds any misbehaviors, it returns an error for each,
+// testHandler tests a [slog.Handler].
+// If testHandler finds any misbehaviors, it returns an error for each,
 // combined into a single error with errors.Join.
 //
-// TestHandler installs the given Handler in a [slog.Logger] and
+// testHandler installs the given Handler in a [slog.Logger] and
 // makes several calls to the Logger's output methods.
 //
 // The results function is invoked after all such calls.
@@ -55,7 +55,7 @@ type testCase struct {
 // The only change we make is to change the log method from `.Info()` to `.Error()`
 // We should try and update this code with every release of Go.
 // See issue; https://github.com/golang/go/issues/61706#issuecomment-1674413648
-func TestHandler(h slog.Handler, results func() []map[string]any) error {
+func testHandler(h slog.Handler, results func() []map[string]any) error {
 	cases := []testCase{
 		{
 			explanation: withSource("this test expects slog.TimeKey, slog.LevelKey and slog.MessageKey"),
