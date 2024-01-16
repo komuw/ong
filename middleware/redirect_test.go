@@ -61,6 +61,26 @@ func TestHttpsRedirector(t *testing.T) {
 		attest.Equal(t, res.Header.Get(locationHeader), "https://localhost"+"/someUri")
 	})
 
+	t.Run("subdomain works", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		port := uint16(443)
+		wrappedHandler := httpsRedirector(someHttpsRedirectorHandler(msg), port, "localhost")
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Host = "api.localhost" // subdomain
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
+		attest.NotZero(t, res.Header.Get(locationHeader))
+		attest.Equal(t, res.Header.Get(locationHeader), "https://api.localhost"+"/someUri")
+	})
+
 	t.Run("post is redirected to https", func(t *testing.T) {
 		t.Parallel()
 

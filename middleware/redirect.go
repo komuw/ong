@@ -82,7 +82,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			if !isTls {
 				url := r.URL
 				url.Scheme = "https"
-				url.Host = joinHostPort(domain, fmt.Sprint(httpsPort))
+				url.Host = joinHostPort(host, fmt.Sprint(httpsPort))
 				path := url.String()
 
 				http.Redirect(w, r, path, http.StatusPermanentRedirect)
