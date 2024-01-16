@@ -135,7 +135,7 @@ func hello() http.HandlerFunc {
 }
 ```
 If you do that, these are the features you would enjoy automatically without doing any extra configuration;
-1. Http server. You get a server that automatically;
+1. Http server. You get a server that automatically;     
    - sets GOMEMLIMIT & GOMAXPROCS to match linux container memory & cpu quotas.  
    - fetches and auto renews TLS certificates from [letsencrypt](https://letsencrypt.org/) or any other compatible ACME authority.
    - serves pprof endpoints that are secured by basic authentication. The `secretKey` is the username and password.
@@ -155,10 +155,11 @@ If you do that, these are the features you would enjoy automatically without doi
 10. Automatically sets appropriate secure headers(`X-Content-Type-Options`, `Content-Security-Policy`, `X-Frame-Options`, `Cross-Origin-Resource-Policy`, `Cross-Origin-Opener-Policy`, `Referrer-Policy`, `Strict-Transport-Security`)
 11. Automatic addition of TLS fingerprint to request context. 
 12. Set's up secure authenticated encrypted http sessions.
-13. Uses a http request multiplexer that; 
-   - panics(during application startup) if there are any conflicting routes.
-   - has a debugging tool where if given a url, it will return the corresponding http handler for that url.
-   - can capture path parameters
+13. Uses a http request multiplexer that;     
+    - panics(during application startup) if there are any conflicting routes.
+    - has a debugging tool where if given a url, it will return the corresponding http handler for that url.
+    - can capture path parameters
+
 
 Those are the automatic ones. There are a few additional features that you can opt into;
 1. A [http client](https://pkg.go.dev/github.com/komuw/ong/client) that properly handles [server-side request forgery](https://en.wikipedia.org/wiki/Server-side_request_forgery) attacks. 
