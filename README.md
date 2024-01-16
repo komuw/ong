@@ -145,7 +145,7 @@ If you do that, these are the features you would enjoy automatically without doi
    - shutsdown cleanly after receiving termination signals. If running in kubernetes, the shutdown is [well co-ordinated](https://twitter.com/thockin/status/1560398974929973248) to prevent errors.
 2. Automatic ratelimiting.
 3. Automatic loadshedding.
-4. Automatic proper handling for [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
+4. Automatic proper handling of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
 5. Automatic [CSRF](https://developer.mozilla.org/en-US/docs/Glossary/CSRF) protection.
 6. Automatic logging of erroring requests with correlation IDs included.
    The logging is lightweight so it only logs when an error occurs. Importantly, when the error occurs, it also includes all the log statements including the non-error ones.
