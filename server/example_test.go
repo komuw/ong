@@ -26,7 +26,7 @@ func ExampleRun() {
 	// alternatively for production:
 	//   opts := config.LetsEncryptOpts("example.com", "secretKey", config.DirectIpStrategy, l, "hey@example.com", []string{"api.example.com", "example.com"})
 
-	mux := mux.New(
+	mx := mux.New(
 		opts,
 		nil,
 		mux.NewRoute(
@@ -41,7 +41,7 @@ func ExampleRun() {
 		),
 	)
 
-	err := server.Run(mux, opts)
+	err := server.Run(mx, opts)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

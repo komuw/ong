@@ -16,7 +16,7 @@ func main() {
 	const secretKey = "super-h@rd-Pas1word"
 
 	api := NewApp(myDB{map[string]string{}}, l)
-	mux := mux.New(
+	mx := mux.New(
 		config.WithOpts("localhost", 65081, secretKey, config.DirectIpStrategy, l),
 		nil,
 		mux.NewRoute(
@@ -46,7 +46,7 @@ func main() {
 		),
 	)
 
-	err := server.Run(mux, config.DevOpts(l, secretKey))
+	err := server.Run(mx, config.DevOpts(l, secretKey))
 	if err != nil {
 		l.Error("server.Run error", "error", err)
 		os.Exit(1)
