@@ -148,7 +148,8 @@ If you do that, these are the features you would enjoy automatically without doi
 4. Automatic proper handling of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
 5. Automatic [CSRF](https://developer.mozilla.org/en-US/docs/Glossary/CSRF) protection.
 6. Automatic logging of erroring requests with correlation IDs included.
-   The logging is lightweight so it only logs when an error occurs. Importantly, when the error occurs, it also includes all the log statements including the non-error ones.
+   The logging is lightweight so it only logs when an error occurs. Importantly, when the error occurs, it also includes all the log statements that occured before(**including** the non-error ones).
+   This is possible because [ong/log](https://pkg.go.dev/github.com/komuw/ong/log) uses a [circular buffer](https://www.komu.engineer/blogs/09/log-without-losing-context#Solution)
 7. Automatic recovery of panics in http handlers and logging of the same including stack traces.
 8. Automatic addition of the [real client IP](https://adam-p.ca/blog/2022/03/x-forwarded-for/) to request context.
 9. Protection against inadvertent form re-submission.
