@@ -138,7 +138,7 @@ If you do that, these are the features you would enjoy automatically without doi
 1. Http server. You get a server that automatically;     
    - sets GOMEMLIMIT & GOMAXPROCS to match linux container memory & cpu quotas.  
    - fetches and auto renews TLS certificates from [letsencrypt](https://letsencrypt.org/) or any other compatible ACME authority.
-   - serves pprof endpoints that are secured by basic authentication. The `secretKey` is the username and password.
+   - serves pprof endpoints that are secured by basic authentication. The `secretKey` is used as the username and password.
    - handles automatic http->https redirection.
    - implements robust http timeouts to prevent attacks.
    - limits size of request bodies to prevent attacks.
