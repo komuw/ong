@@ -107,32 +107,33 @@ The simplest production ready program using `ong` http toolkit would be somethin
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "os"
+	"context"
+	"fmt"
+	"net/http"
+	"os"
 
-    "github.com/komuw/ong/config"
-    "github.com/komuw/ong/log"
-    "github.com/komuw/ong/mux"
-    "github.com/komuw/ong/server"
+	"github.com/komuw/ong/config"
+	"github.com/komuw/ong/log"
+	"github.com/komuw/ong/mux"
+	"github.com/komuw/ong/server"
 )
 
 func main() {
-    logger := log.New(context.Background(), os.Stdout, 1000)
-    domain := "example.com"
-    secretKey := "super-h@rd-Pas1word"
-    email := "hey@example.com"
-    opts := config.LetsEncryptOpts(
+	logger := log.New(context.Background(), os.Stdout, 1000)
+	domain := "example.com"
+	secretKey := "super-h@rd-Pas1word"
+	email := "hey@example.com"
+	opts := config.LetsEncryptOpts(
 		domain, secretKey, config.DirectIpStrategy, logger, email, []string{domain})
 
-    mx := mux.New(opts, nil, mux.NewRoute("hello/", mux.MethodGet, hello()))
-    _ = server.Run(mx, opts)
+	mx := mux.New(opts, nil, mux.NewRoute("hello/", mux.MethodGet, hello()))
+	_ = server.Run(mx, opts)
 }
 
 func hello() http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprint(w, "hello")
-    }
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "hello")
+	}
 }
 ```
 If you do that, these are the features you would enjoy automatically without doing any extra configuration;
