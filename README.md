@@ -145,6 +145,7 @@ If you do that, these are the features you would enjoy automatically without doi
    - implements robust http timeouts to prevent attacks.
    - limits size of request bodies to prevent attacks.
    - shutsdown cleanly after receiving termination signals. If running in kubernetes, the shutdown is [well co-ordinated](https://twitter.com/thockin/status/1560398974929973248) to prevent errors.
+   - Reuses port(`SO_REUSEPORT`) and reuses address(`SO_REUSEADDR`). This makes it possible to do zero downtime deploys. 
 2. Automatic ratelimiting.
 3. Automatic loadshedding.
 4. Automatic proper handling of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
