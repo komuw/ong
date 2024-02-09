@@ -1,11 +1,11 @@
 module github.com/komuw/ong
 
-go 1.21
+go 1.22
 
 require (
-	golang.org/x/crypto v0.18.0
-	golang.org/x/net v0.20.0
-	golang.org/x/sys v0.16.0
+	golang.org/x/crypto v0.19.0
+	golang.org/x/net v0.21.0
+	golang.org/x/sys v0.17.0
 )
 
 require (
@@ -24,9 +24,9 @@ require (
 require (
 	braces.dev/errtrace v0.3.0 // test
 	github.com/NYTimes/gziphandler v1.1.1 // test
-	github.com/klauspost/compress v1.17.4 // test
+	github.com/klauspost/compress v1.17.6 // test
 	github.com/pkg/errors v0.9.1 // test
-	github.com/rs/zerolog v1.31.0 // test
+	github.com/rs/zerolog v1.32.0 // test
 	github.com/sirupsen/logrus v1.9.3 // test
 	github.com/sourcegraph/conc v0.3.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test

@@ -579,7 +579,7 @@ func BenchmarkGetCertificate(b *testing.B) {
 
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			cert, errC := getCrt(&tls.ClientHelloInfo{
 				ServerName: domain,
 			})
@@ -611,7 +611,7 @@ func BenchmarkHandler(b *testing.B) {
 	b.Run("success", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, challengeURI, nil)
 			req.Host = domain

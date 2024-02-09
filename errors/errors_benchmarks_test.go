@@ -22,7 +22,7 @@ func BenchmarkOtherWrappers(b *testing.B) {
 		var err error
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			err = stdErrors.New("error")
 		}
 		globalStd = err
@@ -32,7 +32,7 @@ func BenchmarkOtherWrappers(b *testing.B) {
 		var err error
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			err = New("error")
 		}
 		globalOng = err
@@ -42,7 +42,7 @@ func BenchmarkOtherWrappers(b *testing.B) {
 		var err error
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			err = pkgErrors.New("error")
 		}
 		globalPkg = err
@@ -52,7 +52,7 @@ func BenchmarkOtherWrappers(b *testing.B) {
 		var err error
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			err = errtrace.New("error")
 		}
 		globalTrace = err

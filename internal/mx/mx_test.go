@@ -436,7 +436,7 @@ func BenchmarkMuxNew(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		mux, err := New(
 			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
 			nil,

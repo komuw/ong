@@ -143,7 +143,7 @@ func BenchmarkSync(b *testing.B) {
 
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			_ = wgLimited.Go(funcs...)
 		}
 	})
@@ -158,7 +158,7 @@ func BenchmarkSync(b *testing.B) {
 
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			_ = wgUnlimited.Go(funcs...)
 		}
 	})
@@ -169,7 +169,7 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			stdWg.Add(1)
 			go func() {
 				count = count + 1
@@ -186,7 +186,7 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			eWg.Go(
 				func() error {
 					count = count + 1
@@ -203,7 +203,7 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			eWg.Go(
 				func() error {
 					count = count + 1
@@ -220,7 +220,7 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			cWg.Go(
 				func() {
 					count = count + 1
