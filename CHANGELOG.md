@@ -6,6 +6,7 @@ Most recent version is listed first.
 # v0.0.91
 - Upgrade to Go v1.22: https://github.com/komuw/ong/pull/408
                        https://github.com/komuw/ong/pull/409
+- Replace math/rand with math/rand/v2: https://github.com/komuw/ong/pull/411
 
 # v0.0.90
 - ong/middleware: a http subdomain should be redirected to the same subdomain at https: https://github.com/komuw/ong/pull/406
