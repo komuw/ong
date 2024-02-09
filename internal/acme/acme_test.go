@@ -13,7 +13,7 @@ import (
 	"io"
 	"log/slog"
 	"math/big"
-	mathRand "math/rand"
+	mathRand "math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -27,7 +27,7 @@ import (
 
 // getDomain returns a valid unique domain.
 func getDomain() string {
-	r := mathRand.Intn(100_000) + 1
+	r := mathRand.IntN(100_000) + 1
 	return fmt.Sprintf("some-sample-%d-domain.com", r)
 }
 

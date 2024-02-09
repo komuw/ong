@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 	"time"
 
@@ -179,7 +179,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info(str)
-			if rand.Intn(100) >= 99 {
+			if rand.IntN(100) >= 99 {
 				l.Error(logErr.Error())
 			}
 		}
@@ -191,7 +191,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info(str)
-			if rand.Intn(100) >= 99 {
+			if rand.IntN(100) >= 99 {
 				l.Error(logErr.Error())
 			}
 		}
@@ -203,7 +203,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info().Msg(str)
-			if rand.Intn(100) >= 99 {
+			if rand.IntN(100) >= 99 {
 				l.Error().Msg(logErr.Error())
 			}
 		}
@@ -215,7 +215,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info(sl[0], slAny...)
-			if rand.Intn(100) >= 99 {
+			if rand.IntN(100) >= 99 {
 				l.Error("some-error", logErr)
 			}
 		}
@@ -227,7 +227,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info(sl[0], slAny...)
-			if rand.Intn(100) >= 99 {
+			if rand.IntN(100) >= 99 {
 				l.Error("some-error", logErr)
 			}
 		}

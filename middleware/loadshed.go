@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"fmt"
-	mathRand "math/rand"
+	mathRand "math/rand/v2"
 	"net/http"
 	"slices"
 	"strings"
@@ -79,7 +79,7 @@ func loadShedder(
 			// Even if the server is overloaded, we want to send a percentage of the requests through.
 			// These requests act as a probe. If the server eventually recovers,
 			// these requests will re-populate latencyQueue(`lq`) with lower latencies and thus end the load-shed.
-			sendProbe = mathRand.Intn(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
+			sendProbe = mathRand.IntN(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
 		}
 
 		p99 := lq.getP99(loadShedMinSampleSize)

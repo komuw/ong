@@ -3,7 +3,7 @@ package middleware
 import (
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -253,7 +253,7 @@ func TestLatencyQueue(t *testing.T) {
 
 func loadShedderBenchmarkHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		latency := time.Duration(rand.Intn(100)+1) * time.Millisecond
+		latency := time.Duration(rand.IntN(100)+1) * time.Millisecond
 		time.Sleep(latency)
 		fmt.Fprint(w, "hey")
 	}

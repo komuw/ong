@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	mathRand "math/rand"
+	mathRand "math/rand/v2"
 	"net"
 	"net/http"
 	"time"
@@ -67,7 +67,7 @@ func logger(
 			if (lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
 				// We are either in load shedding or rate-limiting.
 				// Only log (rateShedSamplePercent)% of the errors.
-				shouldLog := mathRand.Intn(100) <= rateShedSamplePercent
+				shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
 				if shouldLog {
 					reqL.Error(msg, flds...)
 				}
