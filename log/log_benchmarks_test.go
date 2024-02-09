@@ -116,7 +116,7 @@ func BenchmarkBestCase(b *testing.B) {
 		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(str)
 		}
 	})
@@ -125,7 +125,7 @@ func BenchmarkBestCase(b *testing.B) {
 		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(str)
 		}
 	})
@@ -134,7 +134,7 @@ func BenchmarkBestCase(b *testing.B) {
 		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info().Msg(str)
 		}
 	})
@@ -143,7 +143,7 @@ func BenchmarkBestCase(b *testing.B) {
 		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(sl[0], slAny...)
 		}
 	})
@@ -152,7 +152,7 @@ func BenchmarkBestCase(b *testing.B) {
 		l := newSlogLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(sl[0], slAny...)
 		}
 	})
@@ -160,7 +160,7 @@ func BenchmarkBestCase(b *testing.B) {
 	b.Run("no logger", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			noOpFunc("")
 		}
 	})
@@ -177,7 +177,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(str)
 			if rand.Intn(100) >= 99 {
 				l.Error(logErr.Error())
@@ -189,7 +189,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(str)
 			if rand.Intn(100) >= 99 {
 				l.Error(logErr.Error())
@@ -201,7 +201,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info().Msg(str)
 			if rand.Intn(100) >= 99 {
 				l.Error().Msg(logErr.Error())
@@ -213,7 +213,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(sl[0], slAny...)
 			if rand.Intn(100) >= 99 {
 				l.Error("some-error", logErr)
@@ -225,7 +225,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		l := newSlogLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(sl[0], slAny...)
 			if rand.Intn(100) >= 99 {
 				l.Error("some-error", logErr)
@@ -236,7 +236,7 @@ func BenchmarkAverageCase(b *testing.B) {
 	b.Run("no logger", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			noOpFunc("")
 		}
 	})
@@ -253,7 +253,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		l := newZapLogger(zap.DebugLevel)
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(str)
 			l.Error(logErr.Error())
 		}
@@ -263,7 +263,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		l := newLogrus()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(str)
 			l.Error(logErr.Error())
 		}
@@ -273,7 +273,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		l := newZerolog()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info().Msg(str)
 			l.Error().Msg(logErr.Error())
 		}
@@ -283,7 +283,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		l := newOngLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(sl[0], slAny...)
 			l.Error("some-error", logErr)
 		}
@@ -293,7 +293,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		l := newSlogLogger()
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			l.Info(sl[0], slAny...)
 			l.Error("some-error", logErr)
 		}
@@ -302,7 +302,7 @@ func BenchmarkWorstCase(b *testing.B) {
 	b.Run("no logger", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
-		for n := 0; n < b.N; n++ {
+		for range b.N {
 			noOpFunc("")
 		}
 	})

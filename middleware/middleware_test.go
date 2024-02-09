@@ -531,7 +531,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
 		attest.Ok(b, err)
 		req.Header.Set(acceptEncodingHeader, "br;q=1.0, gzip;q=0.8, *;q=0.1")

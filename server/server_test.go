@@ -384,7 +384,7 @@ func BenchmarkServer(b *testing.B) {
 			var r int
 
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				// The loop body is executed b.N times total across all goroutines.
 				res, err := c.Get(url)
 				attest.Ok(b, err)

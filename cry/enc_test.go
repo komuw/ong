@@ -145,7 +145,7 @@ func BenchmarkEnc(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		encryptedMsg := enc.Encrypt(msgToEncrypt)
 		decryptedMsg, err := enc.Decrypt(encryptedMsg)
 		r = decryptedMsg

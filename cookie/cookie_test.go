@@ -246,7 +246,7 @@ func BenchmarkSetEncrypted(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		r = testSetEncrypted(req, res)
 	}
 
