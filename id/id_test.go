@@ -83,7 +83,7 @@ func TestNew(t *testing.T) {
 			attest.Equal(t, _len, 16, attest.Sprintf("input(%d), got len(%d) ", i, _len))
 
 			if slices.Contains(seen, got) {
-				t.Fatal("Random produced duplicates")
+				t.Fatal("New produced duplicates")
 			} else {
 				seen = append(seen, got)
 			}

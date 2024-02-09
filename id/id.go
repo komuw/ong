@@ -3,20 +3,23 @@ package id
 
 import (
 	"crypto/rand"
-	"encoding/base64"
+	"encoding/base32"
 )
 
-// encodeURL is like [base64.EncodeURL] except we replace:
-// (a) `-_` with `HQ`
-// (b) `0,O,o` with `3,A,q`
-// (c) `U,V,u,v` with `K,X,k,x`
-// (d) `I,i,L,l,1` with `G,g,R,r,8`
-// (e) `b,6` with `m,7`
-const encodeURL = "ABCDEFGHGJKRMNAPQRSTKXWXYZamcdefghgjkrmnqpqrstkxwxyz3823457789HQ"
+// encodeAlphabet is like the alphabet used in [base32.StdEncoding] except we replace:
+// (a) `O` with `q`
+// (b) `U` with `a`
+// (c) `V` with `r`
+// (d) `I` with `m`
+// (e) `L` with `e`
+// (f) `K` with `d`
+// (g) `6` with `h`
+// This is done to try and reduce ambiguity.
+const encodeAlphabet = "ABCDEFGHmJdeMNqPQRSTarWXYZ2345h7"
 
-// encoding returns a [base64.Encoding] that is similar to [base64.RawURLEncoding] except that it uses [encodeURL]
-func encoding() *base64.Encoding {
-	return base64.NewEncoding(encodeURL).WithPadding(base64.NoPadding)
+// encoding returns a [base32.Encoding] that is similar to [base32.StdPadding] except that it uses [encodeAlphabet]
+func encoding() *base32.Encoding {
+	return base32.NewEncoding(encodeAlphabet).WithPadding(base32.NoPadding)
 }
 
 var enc = encoding() //nolint:gochecknoglobals
@@ -48,7 +51,7 @@ func Random(n int) string {
 		n = 100_000
 	}
 
-	// This formula is from [base64.Encoding.EncodedLen]
+	// This formula is from [base32.Encoding.EncodedLen]
 	byteSize := ((((n * 6) - 5) / 8) + 1)
 	b := make([]byte, byteSize)
 
