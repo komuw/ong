@@ -10,12 +10,13 @@ import (
 // (a) `O` with `q`
 // (b) `U` with `a`
 // (c) `V` with `r`
-// (d) `I` with `m`
+// (d) `I` with `g`
 // (e) `L` with `e`
 // (f) `K` with `d`
 // (g) `6` with `h`
+// (h) `J` with `t`
 // This is done to try and reduce ambiguity.
-const encodeAlphabet = "ABCDEFGHmJdeMNqPQRSTarWXYZ2345h7"
+const encodeAlphabet = "ABCDEFGHgtdeMNqPQRSTarWXYZ2345h7"
 
 // encoding returns a [base32.Encoding] that is similar to [base32.StdPadding] except that it uses [encodeAlphabet]
 func encoding() *base32.Encoding {
