@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	mathRand "math/rand"
+	mathRand "math/rand/v2"
 	"strings"
 	"sync"
 	"testing"
@@ -532,7 +532,7 @@ func TestLogger(t *testing.T) {
 				l.Info("four" + t)
 				xl.Info("okay-" + t)
 
-				if mathRand.Intn(100) > 75 { // log errors 25% of the time.
+				if mathRand.IntN(100) > 75 { // log errors 25% of the time.
 					l.Error("hey", "err", errors.New("some-err-"+t))
 					xl.Error("some-xl-error", "err", errors.New("other-err-"+t))
 				}

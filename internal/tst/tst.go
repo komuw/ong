@@ -4,7 +4,7 @@ package tst
 import (
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -65,7 +65,7 @@ func GetPort() uint16 {
 
 fallback:
 	{
-		r := rand.Intn(10_000) + 1
+		r := rand.IntN(10_000) + 1
 		p := math.MaxUint16 - uint16(r)
 		return p
 	}
