@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
+	"testing/slogtest"
 )
 
 // Check that our handler is conformant with log/slog expectations.
@@ -29,22 +31,22 @@ func TestSlogtest(t *testing.T) {
 		t.Log("hey::: ", buf.String())
 	}
 
-	parseLines := func(src []byte, parse func([]byte) (map[string]any, error)) ([]map[string]any, error) {
-		t.Helper()
+	// parseLines := func(src []byte, parse func([]byte) (map[string]any, error)) ([]map[string]any, error) {
+	// 	t.Helper()
 
-		var records []map[string]any
-		for _, line := range bytes.Split(src, []byte{'\n'}) {
-			if len(line) == 0 {
-				continue
-			}
-			m, err := parse(line)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", string(line), err)
-			}
-			records = append(records, m)
-		}
-		return records, nil
-	}
+	// 	var records []map[string]any
+	// 	for _, line := range bytes.Split(src, []byte{'\n'}) {
+	// 		if len(line) == 0 {
+	// 			continue
+	// 		}
+	// 		m, err := parse(line)
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("%s: %w", string(line), err)
+	// 		}
+	// 		records = append(records, m)
+	// 	}
+	// 	return records, nil
+	// }
 
 	parseJSON := func(bs []byte) (map[string]any, error) {
 		t.Helper()
@@ -85,21 +87,42 @@ func TestSlogtest(t *testing.T) {
 			t.Parallel()
 
 			var buf bytes.Buffer
-			l := New(context.Background(), &buf, tt.maxSize)
-			handler := l.Handler()
 
-			results := func() []map[string]any {
-				ms, err := parseLines(buf.Bytes(), tt.parseFunc)
-				if err != nil {
+			// results := func(t *testing.T) []map[string]any {
+			// 	ms, err := parseLines(buf.Bytes(), tt.parseFunc)
+			// 	if err != nil {
+			// 		t.Fatal(err)
+			// 	}
+			// 	return ms
+			// }
+
+			results := func(t *testing.T) map[string]any {
+				fmt.Println("\n\t buf: ", buf.String())
+				m := map[string]any{}
+				if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
 					t.Fatal(err)
 				}
-				return ms
+				return m
 			}
 
-			err := testHandler(handler, results)
-			if err != nil {
-				t.Fatal(err)
-			}
+			// // err := testHandler(handler, results)
+			// fmt.Println("\n\t results: ", results())
+			// err := slogtest.TestHandler(handler, results)
+			// if err != nil {
+			// 	t.Fatal(err)
+			// }
+
+			slogtest.Run(
+				t,
+				func(*testing.T) slog.Handler {
+					buf.Reset()
+
+					l := New(context.Background(), &buf, tt.maxSize)
+					handler := l.Handler()
+					return handler
+				},
+				results,
+			)
 		})
 	}
 }
