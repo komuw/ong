@@ -8,6 +8,7 @@ Most recent version is listed first.
                        https://github.com/komuw/ong/pull/409
 - Replace math/rand with math/rand/v2: https://github.com/komuw/ong/pull/411
 - ong/id: Improve id generation: https://github.com/komuw/ong/pull/415
+                                 https://github.com/komuw/ong/pull/416
 
 # v0.0.90
 - ong/middleware: a http subdomain should be redirected to the same subdomain at https: https://github.com/komuw/ong/pull/406
