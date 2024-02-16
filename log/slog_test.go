@@ -75,9 +75,9 @@ func TestSlogtest(t *testing.T) {
 
 			results := func(t *testing.T) map[string]any {
 				m := map[string]any{}
-				if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
-					t.Fatal(err)
-				}
+				err := json.Unmarshal(buf.Bytes(), &m)
+				attest.Ok(t, err)
+
 				return m
 			}
 
@@ -91,7 +91,7 @@ func TestSlogtest(t *testing.T) {
 					{
 						underlyingHandler, ok := h.(*handler)
 						attest.Equal(t, ok, true)
-						underlyingHandler.forceFlush = struct{}{}
+						underlyingHandler.forceFlush = true
 					}
 
 					return h
