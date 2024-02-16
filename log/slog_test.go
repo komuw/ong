@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"testing/slogtest"
+
+	"go.akshayshah.org/attest"
 )
 
 // Check that our handler is conformant with log/slog expectations.
@@ -118,8 +120,14 @@ func TestSlogtest(t *testing.T) {
 					buf.Reset()
 
 					l := New(context.Background(), &buf, tt.maxSize)
-					handler := l.Handler()
-					return handler
+					h := l.Handler()
+					{
+						underlyingHandler, ok := h.(*handler)
+						attest.Equal(t, ok, true)
+						underlyingHandler.forceFlush = struct{}{}
+					}
+
+					return h
 				},
 				results,
 			)

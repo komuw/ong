@@ -95,6 +95,11 @@ type handler struct {
 	cBuf *circleBuf
 	// +checklocks:mu
 	logID string
+
+	// forceFlush is only used for test purposes.
+	// Specifically, it is for use with `testing/slogtest`
+	// See: https://github.com/golang/go/issues/61706#issuecomment-1674413648
+	forceFlush struct{}
 }
 
 func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
@@ -222,6 +227,10 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 			}
 			return err
 		} else if r.Level == LevelImmediate {
+			return h.wrappedHandler.Handle(ctx, r)
+		} else if h.forceFlush == struct{}{} {
+			// For `testing/slogtest`
+			// See: https://github.com/golang/go/issues/61706#issuecomment-1674413648
 			return h.wrappedHandler.Handle(ctx, r)
 		}
 	}
