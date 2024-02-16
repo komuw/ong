@@ -90,3 +90,19 @@ func TestNew(t *testing.T) {
 		}
 	})
 }
+
+var id string
+
+func BenchmarkRandom(b *testing.B) {
+	b.Logf("BenchmarkRandom")
+
+	b.Run("Random", func(b *testing.B) {
+		var i string
+		b.ReportAllocs()
+		b.ResetTimer()
+		for range b.N {
+			i = Random(22)
+		}
+		id = i
+	})
+}
