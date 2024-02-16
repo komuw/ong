@@ -1,7 +1,6 @@
 package id
 
 import (
-	"fmt"
 	"sort"
 	"testing"
 
