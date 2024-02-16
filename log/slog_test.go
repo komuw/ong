@@ -5,12 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
+	"testing/slogtest"
+
+	"go.akshayshah.org/attest"
 )
 
 // Check that our handler is conformant with log/slog expectations.
-// Taken from https://github.com/golang/go/blob/go1.21.0/src/log/slog/slogtest_test.go#L18-L26
+// Taken from https://github.com/golang/go/blob/go1.22.0/src/log/slog/slogtest_test.go#L18-L26
 //
 // We test this handler even though acording to Jonathan Amsterdam(jba):
 // `I think wrapping handlers like those that don't actually affect the format don't need testing/slogtest`
@@ -27,23 +31,6 @@ func TestSlogtest(t *testing.T) {
 			t.Fatal("expected it to log")
 		}
 		t.Log("hey::: ", buf.String())
-	}
-
-	parseLines := func(src []byte, parse func([]byte) (map[string]any, error)) ([]map[string]any, error) {
-		t.Helper()
-
-		var records []map[string]any
-		for _, line := range bytes.Split(src, []byte{'\n'}) {
-			if len(line) == 0 {
-				continue
-			}
-			m, err := parse(line)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", string(line), err)
-			}
-			records = append(records, m)
-		}
-		return records, nil
 	}
 
 	parseJSON := func(bs []byte) (map[string]any, error) {
@@ -85,21 +72,32 @@ func TestSlogtest(t *testing.T) {
 			t.Parallel()
 
 			var buf bytes.Buffer
-			l := New(context.Background(), &buf, tt.maxSize)
-			handler := l.Handler()
 
-			results := func() []map[string]any {
-				ms, err := parseLines(buf.Bytes(), tt.parseFunc)
-				if err != nil {
-					t.Fatal(err)
-				}
-				return ms
+			results := func(t *testing.T) map[string]any {
+				m := map[string]any{}
+				err := json.Unmarshal(buf.Bytes(), &m)
+				attest.Ok(t, err)
+
+				return m
 			}
 
-			err := testHandler(handler, results)
-			if err != nil {
-				t.Fatal(err)
-			}
+			slogtest.Run(
+				t,
+				func(*testing.T) slog.Handler {
+					buf.Reset()
+
+					l := New(context.Background(), &buf, tt.maxSize)
+					h := l.Handler()
+					{
+						underlyingHandler, ok := h.(*handler)
+						attest.Equal(t, ok, true)
+						underlyingHandler.forceFlush = true
+					}
+
+					return h
+				},
+				results,
+			)
 		})
 	}
 }

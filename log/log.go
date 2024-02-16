@@ -95,6 +95,11 @@ type handler struct {
 	cBuf *circleBuf
 	// +checklocks:mu
 	logID string
+
+	// forceFlush is only used for test purposes.
+	// Specifically, it is for use with `testing/slogtest`
+	// See: https://github.com/golang/go/issues/61706#issuecomment-1674413648
+	forceFlush bool
 }
 
 func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
@@ -104,8 +109,17 @@ func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.SourceKey {
 				if t, ok := a.Value.Any().(*slog.Source); ok {
-					// log the source in one line.
-					return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
+					// t.Line is zero if `slog.Record.PC` is zero.
+					// And the slog docs says the source attribute should be ignored in such cases.
+					// Additionally `testing/slogtest` enforces that behaviour.
+					//
+					// todo: There must be a better way of checking if `slog.Record.PC` is zero
+					//       rather than doing it in ReplaceAttr, I think it should be done in `handler.Handler()`
+					//       Research how stdlib does it and implement it that way.
+					if t.Line != 0 {
+						// log the source in one line.
+						return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
+					}
 				}
 			}
 			return a
@@ -134,16 +148,18 @@ func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	h.mu.Lock()
 	cBuf := h.cBuf
 	id := h.logID
+	forceFlush := h.forceFlush
 	h.mu.Unlock()
-	return &handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), mu: h.mu, cBuf: cBuf, logID: id}
+	return &handler{wrappedHandler: h.wrappedHandler.WithAttrs(attrs), mu: h.mu, cBuf: cBuf, logID: id, forceFlush: forceFlush}
 }
 
 func (h *handler) WithGroup(name string) slog.Handler {
 	h.mu.Lock()
 	cBuf := h.cBuf
 	id := h.logID
+	forceFlush := h.forceFlush
 	h.mu.Unlock()
-	return &handler{wrappedHandler: h.wrappedHandler.WithGroup(name), mu: h.mu, cBuf: cBuf, logID: id}
+	return &handler{wrappedHandler: h.wrappedHandler.WithGroup(name), mu: h.mu, cBuf: cBuf, logID: id, forceFlush: forceFlush}
 }
 
 func (h *handler) Handle(ctx context.Context, r slog.Record) error {
@@ -222,6 +238,10 @@ func (h *handler) Handle(ctx context.Context, r slog.Record) error {
 			}
 			return err
 		} else if r.Level == LevelImmediate {
+			return h.wrappedHandler.Handle(ctx, r)
+		} else if h.forceFlush {
+			// For `testing/slogtest`
+			// See: https://github.com/golang/go/issues/61706#issuecomment-1674413648
 			return h.wrappedHandler.Handle(ctx, r)
 		}
 	}

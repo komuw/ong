@@ -9,6 +9,7 @@ Most recent version is listed first.
 - Replace math/rand with math/rand/v2: https://github.com/komuw/ong/pull/411
 - ong/id: Improve id generation: https://github.com/komuw/ong/pull/415
                                  https://github.com/komuw/ong/pull/416
+- ong/log: Improve conformance with slog.Handler interface: https://github.com/komuw/ong/pull/417
 
 # v0.0.90
 - ong/middleware: a http subdomain should be redirected to the same subdomain at https: https://github.com/komuw/ong/pull/406
