@@ -14,7 +14,7 @@ import (
 )
 
 // Check that our handler is conformant with log/slog expectations.
-// Taken from https://github.com/golang/go/blob/go1.21.0/src/log/slog/slogtest_test.go#L18-L26
+// Taken from https://github.com/golang/go/blob/go1.22.0/src/log/slog/slogtest_test.go#L18-L26
 //
 // We test this handler even though acording to Jonathan Amsterdam(jba):
 // `I think wrapping handlers like those that don't actually affect the format don't need testing/slogtest`
@@ -32,23 +32,6 @@ func TestSlogtest(t *testing.T) {
 		}
 		t.Log("hey::: ", buf.String())
 	}
-
-	// parseLines := func(src []byte, parse func([]byte) (map[string]any, error)) ([]map[string]any, error) {
-	// 	t.Helper()
-
-	// 	var records []map[string]any
-	// 	for _, line := range bytes.Split(src, []byte{'\n'}) {
-	// 		if len(line) == 0 {
-	// 			continue
-	// 		}
-	// 		m, err := parse(line)
-	// 		if err != nil {
-	// 			return nil, fmt.Errorf("%s: %w", string(line), err)
-	// 		}
-	// 		records = append(records, m)
-	// 	}
-	// 	return records, nil
-	// }
 
 	parseJSON := func(bs []byte) (map[string]any, error) {
 		t.Helper()
@@ -95,8 +78,6 @@ func TestSlogtest(t *testing.T) {
 				if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
 					t.Fatal(err)
 				}
-				fmt.Println("\t buf: ", buf.String())
-				fmt.Println("\t m: ", m)
 				return m
 			}
 
