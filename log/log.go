@@ -109,9 +109,13 @@ func newHandler(ctx context.Context, w io.Writer, maxSize int) slog.Handler {
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.SourceKey {
 				if t, ok := a.Value.Any().(*slog.Source); ok {
-					// t.Line is zero if slog.Record.PC is zero.
+					// t.Line is zero if `slog.Record.PC` is zero.
 					// And the slog docs says the source attribute should be ignored in such cases.
 					// Additionally `testing/slogtest` enforces that behaviour.
+					//
+					// todo: There must be a better way of checking if `slog.Record.PC` is zero
+					//       rather than doing it in ReplaceAttr, I think it should be done in `handler.Handler()`
+					//       Research how stdlib does it and implement it that way.
 					if t.Line != 0 {
 						// log the source in one line.
 						return slog.String(a.Key, fmt.Sprintf("%s:%d", t.File, t.Line))
