@@ -2,46 +2,43 @@
 package id
 
 import (
-	"crypto/rand"
-	"encoding/base32"
+	"math/rand/v2"
 )
 
-// encodeAlphabet is like the alphabet used in [base32.StdEncoding] except we replace:
-// (a) `O` with `q`
-// (b) `U` with `a`
-// (c) `V` with `r`
-// (d) `I` with `g`
-// (e) `L` with `e`
-// (f) `K` with `d`
-// (g) `6` with `h`
-// (h) `J` with `t`
-// This is done to try and reduce ambiguity.
-const encodeAlphabet = "ABCDEFGHgtdeMNqPQRSTarWXYZ2345h7"
+/*
+alphabet is similar to the alphabet used in [base64.URLEncoding] except we remove:
+-_            : They are not pronounceable.
+C, c          : They both look similar to each other.
+D, 0, O, o    : They both look similar to each other.
+F, f          : They both look similar to each other.
+I, i, 1, L, l : They both look similar to each other.
+J, j          : They both look similar to each other.
+K, k          : They both look similar to each other.
+M, m          : They both look similar to each other.
+P, p          : They both look similar to each other.
+S, s          : They both look similar to each other.
+U, u, V, v    : They both look similar to each other.
+W,w           : They both look similar to each other.
+X,x           : They both look similar to each other.
+Y,y           : They both look similar to each other.
+Z,z           : They both look similar to each other.
+6, b          : They both look similar to each other.
 
-// encoding returns a [base32.Encoding] that is similar to [base32.StdPadding] except that it uses [encodeAlphabet]
-func encoding() *base32.Encoding {
-	return base32.NewEncoding(encodeAlphabet).WithPadding(base32.NoPadding)
-}
-
-var enc = encoding() //nolint:gochecknoglobals
+This is done to try and reduce ambiguity.
+*/
+const alphabet = "ABEGHNQRTadeghnqrt2345789"
 
 // New returns a new random string consisting of a legible character set.
-// It uses [rand]
 //
 // Also see [UUID4] and [UUID8]
-//
-// It panics on error.
 func New() string {
 	return Random(16)
 }
 
 // Random generates a random string of size n consisting of a legible character set.
 // If n < 1 or significantly large, it is set to reasonable bounds.
-// It uses [rand]
 //
 // Also see [UUID4] and [UUID8]
-//
-// It panics on error.
 func Random(n int) string {
 	if n < 1 {
 		n = 1
@@ -52,13 +49,13 @@ func Random(n int) string {
 		n = 100_000
 	}
 
-	// This formula is from [base32.Encoding.EncodedLen]
-	byteSize := ((((n * 6) - 5) / 8) + 1)
-	b := make([]byte, byteSize)
+	length := len(alphabet)
+	b := make([]byte, n)
 
-	if _, err := rand.Read(b); err != nil {
-		panic(err)
+	for i := range b {
+		j := rand.N(length)
+		b[i] = alphabet[j]
 	}
 
-	return enc.EncodeToString(b)[:n]
+	return string(b)
 }
