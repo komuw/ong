@@ -61,7 +61,6 @@ func TestUuid(t *testing.T) {
 			attest.NotZero(t, v8)
 			attest.NotZero(t, v8.Bytes())
 
-			fmt.Println("\t v8: ", v8)
 			s = append(s, v8.String())
 			if i == 0 {
 				first = v8.String()
