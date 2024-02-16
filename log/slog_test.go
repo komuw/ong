@@ -90,29 +90,15 @@ func TestSlogtest(t *testing.T) {
 
 			var buf bytes.Buffer
 
-			// results := func(t *testing.T) []map[string]any {
-			// 	ms, err := parseLines(buf.Bytes(), tt.parseFunc)
-			// 	if err != nil {
-			// 		t.Fatal(err)
-			// 	}
-			// 	return ms
-			// }
-
 			results := func(t *testing.T) map[string]any {
-				fmt.Println("\n\t buf: ", buf.String())
 				m := map[string]any{}
 				if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
 					t.Fatal(err)
 				}
+				fmt.Println("\t buf: ", buf.String())
+				fmt.Println("\t m: ", m)
 				return m
 			}
-
-			// // err := testHandler(handler, results)
-			// fmt.Println("\n\t results: ", results())
-			// err := slogtest.TestHandler(handler, results)
-			// if err != nil {
-			// 	t.Fatal(err)
-			// }
 
 			slogtest.Run(
 				t,
