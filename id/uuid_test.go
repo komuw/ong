@@ -1,6 +1,8 @@
 package id
 
 import (
+	"fmt"
+	"sort"
 	"testing"
 
 	"go.akshayshah.org/attest"
@@ -47,5 +49,30 @@ func TestUuid(t *testing.T) {
 			}
 		}
 		attest.True(t, set)
+	})
+
+	t.Run("uuid8 is sortable", func(t *testing.T) {
+		t.Parallel()
+
+		first, last := "", ""
+		s := []string{}
+		for i := range 10 {
+			v8 := UUID8()
+			attest.NotZero(t, v8)
+			attest.NotZero(t, v8.Bytes())
+
+			fmt.Println("\t v8: ", v8)
+			s = append(s, v8.String())
+			if i == 0 {
+				first = v8.String()
+			}
+			if i == 9 {
+				last = v8.String()
+			}
+		}
+
+		sort.Strings(s)
+		attest.Equal(t, first, s[0])
+		attest.Equal(t, last, s[9])
 	})
 }
