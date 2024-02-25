@@ -89,4 +89,29 @@ func TestNew(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("permutation of new", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			n := 5
+			k := 2
+			nPk := factorial(n) / factorial((n - k))
+			attest.Equal(t, nPk, 20)
+		}
+
+		{
+			n := len(alphabet)
+			k := len(New())
+			permutation := factorial(n) / factorial((n - k))
+			attest.Equal(t, permutation, 19_385_293_423_649) // ~19 trillion
+		}
+	})
+}
+
+func factorial(num int) int {
+	if num == 1 || num == 0 {
+		return num
+	}
+	return num * factorial(num-1)
 }

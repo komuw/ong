@@ -25,8 +25,19 @@ Z,z           : They both look similar to each other.
 6, b          : They both look similar to each other.
 
 This is done to try and reduce ambiguity.
+
+# Collisions:
+If there are n objects available from which to select, and permutations (P) are to be formed using k of the objects at a time,
+the number of different permutations possible is denoted by the symbol nPk. A formula for its evaluation is;
+nPk = n!/(n − k)!. Note ! is factorial.
+If you have 5 objects(A, B, C, D, E) and we select 2 objects, the number of permutations(NOT combinations) is;
+nPk = 5!/(5-2)! == 120/6 = 20
+
+Permutations allows repetitions whereas combinations do not. In permutation, AB & BA are distinct.
 */
 const alphabet = "ABEGHNQRTadeghnqrt2345789"
+
+// https://www.britannica.com/science/permutation
 
 // New returns a new random string consisting of a legible character set.
 //
