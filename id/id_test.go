@@ -4,6 +4,7 @@ import (
 	"math"
 	"slices"
 	"testing"
+	"unsafe"
 
 	"go.akshayshah.org/attest"
 	"go.uber.org/goleak"
@@ -105,6 +106,19 @@ func TestNew(t *testing.T) {
 			k := len(New())
 			permutation := factorial(n) / factorial((n - k))
 			attest.Equal(t, permutation, 19_385_293_423_649) // ~19 trillion
+		}
+
+		{
+			// The birthday-paradox places an upper bound on collision resistance;
+			// If a hash function produces N bits of output, an attacker who computes √2^N hash operations on random input is likely to find two matching outputs.
+			// https://algo.komu.engineer/6_hashmaps
+			sizeBytes := unsafe.Sizeof(New())
+			sizeBits := int(sizeBytes * 8)
+			pow := math.Exp2(float64(sizeBits))
+			numOpsB4Collision := math.Sqrt(pow)
+			attest.True(t, numOpsB4Collision > 1.84e+19) // You would have to generate that many before colllisions occur.
+			attest.True(t, numOpsB4Collision < 1.85e+19)
+			attest.True(t, numOpsB4Collision > 900_000_000_000_000) // 900 trillion
 		}
 	})
 }
