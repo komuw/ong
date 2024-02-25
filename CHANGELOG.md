@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.92
+- Update docs on id generation: https://github.com/komuw/ong/pull/420
+
 # v0.0.91
 - Upgrade to Go v1.22: https://github.com/komuw/ong/pull/408
                        https://github.com/komuw/ong/pull/409
