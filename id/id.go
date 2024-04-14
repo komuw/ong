@@ -40,6 +40,7 @@ const alphabet = "ABEGHNQRTadeghnqrt2345789"
 // https://www.britannica.com/science/permutation
 
 // New returns a new random string consisting of a legible character set.
+// It is not suitable for cryptographic uses.
 //
 // Also see [UUID4] and [UUID8]
 func New() string {
@@ -48,6 +49,7 @@ func New() string {
 
 // Random generates a random string of size n consisting of a legible character set.
 // If n < 1 or significantly large, it is set to reasonable bounds.
+// It is not suitable for cryptographic uses.
 //
 // Also see [UUID4] and [UUID8]
 func Random(n int) string {
