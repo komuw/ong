@@ -18,7 +18,7 @@ func TestSync(t *testing.T) {
 		t.Parallel()
 
 		{
-			wg := WaitGroup{}
+			wg := Group{}
 			count := 0
 			err := wg.Go(func() error {
 				count = count + 3
@@ -29,7 +29,7 @@ func TestSync(t *testing.T) {
 		}
 
 		{
-			wg := &WaitGroup{}
+			wg := &Group{}
 			count := 0
 			err := wg.Go(func() error {
 				count = count + 7
