@@ -45,7 +45,7 @@ func TestCancelCause(t *testing.T) {
 			}
 
 			errG := g.Go(funcs...)
-			if errG != tc.want {
+			if !errors.Is(errG, tc.want) {
 				t.Errorf("got: %v. want: %v", errG, tc.want)
 			}
 
@@ -54,7 +54,7 @@ func TestCancelCause(t *testing.T) {
 			}
 
 			errC := context.Cause(ctx)
-			if errC != tc.want {
+			if !errors.Is(errC, tc.want) {
 				t.Errorf("got: %v. want: %v", errC, tc.want)
 			}
 		})
