@@ -127,7 +127,6 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 			}
 
 			w.wg.Wait()
-
 		}
 
 		if w.cancel != nil {
