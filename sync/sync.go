@@ -85,12 +85,12 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 					}
 				}(f)
 			}
+
 			w.wg.Wait()
+			w.err = errors.Join(w.collectedErrs...)
 			if w.cancel != nil {
 				w.cancel(w.err)
 			}
-
-			w.err = errors.Join(w.collectedErrs...)
 			return w.err
 		}
 	}
@@ -128,12 +128,10 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 
 			w.wg.Wait()
 		}
-
+		w.err = errors.Join(w.collectedErrs...)
 		if w.cancel != nil {
 			w.cancel(w.err)
 		}
-
-		w.err = errors.Join(w.collectedErrs...)
 		return w.err
 	}
 }
