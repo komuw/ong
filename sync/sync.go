@@ -13,12 +13,12 @@ import (
 //   (b) https://github.com/sourcegraph/conc whose license(MIT) can be found here:                          https://github.com/sourcegraph/conc/blob/v0.3.0/LICENSE
 //
 
-// WaitGroup is a datastructure that waits for a collection of goroutines to finish.
+// Group is a datastructure that waits for a collection of goroutines to finish.
 // See [sync.WaitGroup]
 //
-// Use [New] to get a valid Waitgroup
-type WaitGroup struct {
-	mu sync.Mutex // protects wg when WaitGroup.Go is called concurrently.
+// Use [New] to get a valid Group
+type Group struct {
+	mu sync.Mutex // protects wg when Group.Go is called concurrently.
 	wg sync.WaitGroup
 
 	cancel context.CancelCauseFunc
@@ -32,18 +32,18 @@ type WaitGroup struct {
 	collectedErrs []error
 }
 
-// New returns a valid WaitGroup and a context(derived from ctx).
-// The WaitGroup limits the number of active goroutines to at most n.
+// New returns a valid Group and a context(derived from ctx).
+// The Group limits the number of active goroutines to at most n.
 //
 // The derived Context is canceled the first time Go returns.
 // Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error.
 //
-// n limits the number of active goroutines in this WaitGroup.
+// n limits the number of active goroutines in this Group.
 // If n is <=0, it indicates no limit.
-func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
+func New(ctx context.Context, n int) (*Group, context.Context) {
 	ctx, cancel := context.WithCancelCause(ctx)
 
-	wg := &WaitGroup{cancel: cancel}
+	wg := &Group{cancel: cancel}
 	if n > 0 {
 		wg.sem = make(chan struct{}, n)
 	}
@@ -52,13 +52,13 @@ func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 
 // Go calls each of the given functions in a new goroutine.
 // It blocks until the new goroutine can be added without the number of
-// active goroutines in the WaitGroup exceeding the configured limit.
+// active goroutines in the Group exceeding the configured limit.
 //
 // It also blocks until all function calls from the Go method have returned, then returns the concated non-nil errors(if any) from them.
-// Unlike [golang.org/x/sync/errgroup.Group] the first call to return an error does not cancel the WaitGroup's context.
+// Unlike [golang.org/x/sync/errgroup.Group] the first call to return an error does not cancel the Group's context.
 //
 // If called concurrently, it will block until the previous call returns.
-func (w *WaitGroup) Go(funcs ...func() error) error {
+func (w *Group) Go(funcs ...func() error) error {
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
 		if w.cancel != nil {
@@ -72,7 +72,7 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		defer w.mu.Unlock()
 	}
 
-	{ // 1. User didn't set a limit when creating a [WaitGroup]
+	{ // 1. User didn't set a limit when creating a [Group]
 		if w.sem == nil {
 			w.wg.Add(countFuncs)
 			for _, f := range funcs {
@@ -95,7 +95,7 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		}
 	}
 
-	{ // 2. User did set a limit when creating a [WaitGroup]
+	{ // 2. User did set a limit when creating a [Group]
 		count := 0
 		for {
 			if count == countFuncs {
@@ -136,7 +136,7 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 	}
 }
 
-func (w *WaitGroup) done() {
+func (w *Group) done() {
 	if w.sem != nil {
 		<-w.sem
 	}

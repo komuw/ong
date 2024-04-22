@@ -14,11 +14,11 @@ import (
 func TestSync(t *testing.T) {
 	t.Parallel()
 
-	t.Run("zero value WaitGroup is valid", func(t *testing.T) {
+	t.Run("zero value Group is valid", func(t *testing.T) {
 		t.Parallel()
 
 		{
-			wg := WaitGroup{}
+			wg := Group{}
 			count := 0
 			err := wg.Go(func() error {
 				count = count + 3
@@ -29,7 +29,7 @@ func TestSync(t *testing.T) {
 		}
 
 		{
-			wg := &WaitGroup{}
+			wg := &Group{}
 			count := 0
 			err := wg.Go(func() error {
 				count = count + 7
@@ -288,7 +288,7 @@ func BenchmarkSync(b *testing.B) {
 		}
 	})
 
-	b.Run("errgroup WaitGroup limited", func(b *testing.B) {
+	b.Run("errgroup Group limited", func(b *testing.B) {
 		count := 0
 		eWg, _ := errgroup.WithContext(context.Background())
 		eWg.SetLimit(1)
@@ -306,7 +306,7 @@ func BenchmarkSync(b *testing.B) {
 		}
 	})
 
-	b.Run("errgroup WaitGroup unlimited", func(b *testing.B) {
+	b.Run("errgroup Group unlimited", func(b *testing.B) {
 		count := 0
 		eWg, _ := errgroup.WithContext(context.Background())
 		b.ReportAllocs()

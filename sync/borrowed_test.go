@@ -78,7 +78,7 @@ func TestZeroGroup(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		g := new(WaitGroup)
+		g := new(Group)
 
 		var firstErr error
 		for _, err := range tc.errs {
