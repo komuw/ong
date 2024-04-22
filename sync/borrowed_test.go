@@ -89,7 +89,7 @@ func TestZeroGroup(t *testing.T) {
 			}
 
 			gErr := g.Go(func() error { return err })
-			if gErr != firstErr {
+			if !errors.Is(gErr, firstErr) {
 				t.Errorf("got: %v. want %v", gErr, firstErr)
 			}
 		}
