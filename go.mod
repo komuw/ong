@@ -18,6 +18,7 @@ require (
 	github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529 // indirect
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
 

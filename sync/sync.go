@@ -4,6 +4,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"sync"
 )
 
@@ -26,15 +27,16 @@ type WaitGroup struct {
 	// See: golang.org/x/sync/errgroup
 	sem chan struct{}
 
-	errOnce sync.Once
-	err     error
+	errMu         sync.Mutex // protects err
+	err           error
+	collectedErrs []error
 }
 
 // New returns a valid WaitGroup and a context(derived from ctx).
 // The WaitGroup limits the number of active goroutines to at most n.
 //
-// The derived Context is canceled the first time a function passed to Go
-// returns an error or the first time Go returns, whichever occurs first.
+// The derived Context is canceled the first time Go returns.
+// Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error.
 //
 // n limits the number of active goroutines in this WaitGroup.
 // If n is <=0, it indicates no limit.
@@ -52,8 +54,8 @@ func New(ctx context.Context, n int) (*WaitGroup, context.Context) {
 // It blocks until the new goroutine can be added without the number of
 // active goroutines in the WaitGroup exceeding the configured limit.
 //
-// It also blocks until all function calls from the Go method have returned, then returns the first non-nil error (if any) from them.
-// The first call to return an error cancels the WaitGroup's context.
+// It also blocks until all function calls from the Go method have returned, then returns the concated non-nil errors(if any) from them.
+// Unlike [golang.org/x/sync/errgroup.Group] the first call to return an error does not cancel the WaitGroup's context.
 //
 // If called concurrently, it will block until the previous call returns.
 func (w *WaitGroup) Go(funcs ...func() error) error {
@@ -76,22 +78,19 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 			for _, f := range funcs {
 				go func(f func() error) {
 					defer w.done()
-					err := f()
-					if err != nil {
-						w.errOnce.Do(func() {
-							w.err = err
-							if w.cancel != nil {
-								w.cancel(w.err)
-							}
-						})
+					if err := f(); err != nil {
+						w.errMu.Lock()
+						w.collectedErrs = append(w.collectedErrs, err)
+						w.errMu.Unlock()
 					}
 				}(f)
 			}
+
 			w.wg.Wait()
+			w.err = errors.Join(w.collectedErrs...)
 			if w.cancel != nil {
 				w.cancel(w.err)
 			}
-
 			return w.err
 		}
 	}
@@ -119,22 +118,17 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 
 				go func(f func() error) {
 					defer w.done()
-					err := f()
-					if err != nil {
-						w.errOnce.Do(func() {
-							w.err = err
-							if w.cancel != nil {
-								w.cancel(w.err)
-							}
-						})
+					if err := f(); err != nil {
+						w.errMu.Lock()
+						w.collectedErrs = append(w.collectedErrs, err)
+						w.errMu.Unlock()
 					}
 				}(f)
 			}
 
 			w.wg.Wait()
-
 		}
-
+		w.err = errors.Join(w.collectedErrs...)
 		if w.cancel != nil {
 			w.cancel(w.err)
 		}

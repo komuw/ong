@@ -45,7 +45,7 @@ func TestCancelCause(t *testing.T) {
 			}
 
 			errG := g.Go(funcs...)
-			if errG != tc.want {
+			if !errors.Is(errG, tc.want) {
 				t.Errorf("got: %v. want: %v", errG, tc.want)
 			}
 
@@ -54,7 +54,7 @@ func TestCancelCause(t *testing.T) {
 			}
 
 			errC := context.Cause(ctx)
-			if errC != tc.want {
+			if !errors.Is(errC, tc.want) {
 				t.Errorf("got: %v. want: %v", errC, tc.want)
 			}
 		})
@@ -89,7 +89,7 @@ func TestZeroGroup(t *testing.T) {
 			}
 
 			gErr := g.Go(func() error { return err })
-			if gErr != firstErr {
+			if !errors.Is(gErr, firstErr) {
 				t.Errorf("got: %v. want %v", gErr, firstErr)
 			}
 		}
@@ -123,7 +123,8 @@ func TestWithContext(t *testing.T) {
 			)
 		}
 
-		if err := g.Go(funcs...); err != tc.want {
+		err := g.Go(funcs...)
+		if !errors.Is(err, tc.want) {
 			t.Errorf("got: %v. want: %v", err, tc.want)
 		}
 
