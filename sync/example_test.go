@@ -9,10 +9,10 @@ import (
 	"github.com/komuw/ong/sync"
 )
 
-// JustErrors illustrates the use of a WaitGroup in place of a sync.WaitGroup to
+// JustErrors illustrates the use of a Group in place of a sync.WaitGroup to
 // simplify goroutine counting and error handling.
 // This example is derived from the sync.WaitGroup example at https://golang.org/pkg/sync/#example_WaitGroup.
-func ExampleWaitGroup_justErrors() {
+func ExampleGroup_justErrors() {
 	wg, ctx := sync.New(context.Background(), 2)
 
 	urls := []string{
