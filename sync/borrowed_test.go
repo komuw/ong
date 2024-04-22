@@ -123,7 +123,8 @@ func TestWithContext(t *testing.T) {
 			)
 		}
 
-		if err := g.Go(funcs...); err != tc.want {
+		err := g.Go(funcs...)
+		if !errors.Is(err, tc.want) {
 			t.Errorf("got: %v. want: %v", err, tc.want)
 		}
 
