@@ -27,8 +27,9 @@ type WaitGroup struct {
 	// See: golang.org/x/sync/errgroup
 	sem chan struct{}
 
-	errMu sync.Mutex // protects err
-	err   error
+	errMu         sync.Mutex // protects err
+	err           error
+	collectedErrs []error
 }
 
 // New returns a valid WaitGroup and a context(derived from ctx).
@@ -77,10 +78,9 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 			for _, f := range funcs {
 				go func(f func() error) {
 					defer w.done()
-					err := f()
-					if err != nil {
+					if err := f(); err != nil {
 						w.errMu.Lock()
-						w.err = errors.Join(w.err, err)
+						w.collectedErrs = append(w.collectedErrs, err)
 						w.errMu.Unlock()
 					}
 				}(f)
@@ -90,6 +90,7 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 				w.cancel(w.err)
 			}
 
+			w.err = errors.Join(w.collectedErrs...)
 			return w.err
 		}
 	}
@@ -117,10 +118,9 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 
 				go func(f func() error) {
 					defer w.done()
-					err := f()
-					if err != nil {
+					if err := f(); err != nil {
 						w.errMu.Lock()
-						w.err = errors.Join(w.err, err)
+						w.collectedErrs = append(w.collectedErrs, err)
 						w.errMu.Unlock()
 					}
 				}(f)
@@ -133,6 +133,8 @@ func (w *WaitGroup) Go(funcs ...func() error) error {
 		if w.cancel != nil {
 			w.cancel(w.err)
 		}
+
+		w.err = errors.Join(w.collectedErrs...)
 		return w.err
 	}
 }

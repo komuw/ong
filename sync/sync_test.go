@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -83,6 +84,114 @@ func TestSync(t *testing.T) {
 			attest.Ok(t, err)
 			attest.Equal(t, count, 1)
 		}
+	})
+
+	t.Run("multiple errors", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("limited", func(t *testing.T) {
+			t.Parallel()
+
+			wgLimited, _ := New(context.Background(), 1)
+			err := wgLimited.Go(
+				func() error {
+					return fmt.Errorf("errorA number %d", 1)
+				},
+				func() error {
+					return fmt.Errorf("errorA number %d", 2)
+				},
+				func() error {
+					return fmt.Errorf("errorA number %d", 3)
+				},
+			)
+			uw, ok := err.(interface{ Unwrap() []error })
+			attest.True(t, ok)
+			errs := uw.Unwrap()
+			attest.Equal(t, len(errs), 3)
+		})
+
+		t.Run("unlimited", func(t *testing.T) {
+			t.Parallel()
+
+			wgUnlimited, _ := New(context.Background(), -1)
+			err := wgUnlimited.Go(
+				func() error {
+					return fmt.Errorf("errorB number %d", 1)
+				},
+				func() error {
+					return fmt.Errorf("errorB number %d", 2)
+				},
+				func() error {
+					return fmt.Errorf("errorB number %d", 3)
+				},
+			)
+			uw, ok := err.(interface{ Unwrap() []error })
+			attest.True(t, ok)
+			errs := uw.Unwrap()
+			attest.Equal(t, len(errs), 3)
+		})
+
+		t.Run("unlimited concurrent", func(t *testing.T) {
+			t.Parallel()
+
+			wgUnlimited, _ := New(context.Background(), -1)
+			ch := make(chan int, 2)
+
+			{ // 1. first call
+				go func() {
+					_ = wgUnlimited.Go(
+						func() error {
+							return fmt.Errorf("errorC number %d", 1)
+						},
+						func() error {
+							return fmt.Errorf("errorC number %d", 2)
+						},
+						func() error {
+							return fmt.Errorf("errorC number %d", 3)
+						},
+					)
+					ch <- 1
+				}()
+			}
+
+			{ // 2. second call
+				go func() {
+					_ = wgUnlimited.Go(
+						func() error {
+							return fmt.Errorf("errorD number %d", 4)
+						},
+						func() error {
+							return fmt.Errorf("errorD number %d", 5)
+						},
+						func() error {
+							return fmt.Errorf("errorD number %d", 6)
+						},
+						func() error {
+							return fmt.Errorf("errorD number %d", 7)
+						},
+						func() error {
+							return fmt.Errorf("errorD number %d", 8)
+						},
+					)
+					ch <- 1
+				}()
+			}
+
+			{ // 3. wait
+				a := <-ch
+				b := <-ch
+				attest.Equal(t, a, 1)
+				attest.Equal(t, b, 1)
+
+				err := wgUnlimited.Go(func() error {
+					return fmt.Errorf("errorE number %d", 9)
+				})
+				uw, ok := err.(interface{ Unwrap() []error })
+				attest.True(t, ok)
+				errs := uw.Unwrap()
+				attest.Equal(t, len(errs), 9)
+			}
+		})
 	})
 
 	t.Run("concurrency", func(t *testing.T) {
