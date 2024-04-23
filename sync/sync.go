@@ -5,6 +5,7 @@ package sync
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 )
 
@@ -42,14 +43,17 @@ type Group struct {
 // Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error or panics.
 //
 // n limits the number of active goroutines in this Group.
-// If n is <=0, it indicates no limit.
+// If n is negative, the limit is set to [runtime.NumCPU]
 func New(ctx context.Context, n int) (*Group, context.Context) {
 	ctx, cancel := context.WithCancelCause(ctx)
 
 	wg := &Group{cancel: cancel}
 	if n > 0 {
 		wg.sem = make(chan struct{}, n)
+	} else {
+		wg.sem = make(chan struct{}, runtime.NumCPU())
 	}
+
 	return wg, ctx
 }
 
@@ -80,34 +84,7 @@ func (w *Group) Go(funcs ...func() error) error {
 		defer w.mu.Unlock()
 	}
 
-	{ // 1. User didn't set a limit when creating a [Group]
-		if w.sem == nil {
-			w.wg.Add(countFuncs)
-			for _, f := range funcs {
-				go func(f func() error) {
-					defer w.done()
-					if err := f(); err != nil {
-						w.errMu.Lock()
-						w.collectedErrs = append(w.collectedErrs, err)
-						w.errMu.Unlock()
-					}
-				}(f)
-			}
-
-			w.wg.Wait()
-			w.err = errors.Join(w.collectedErrs...)
-			if w.cancel != nil {
-				w.cancel(w.err)
-			}
-			if w.panic != nil {
-				panic(w.panic)
-			}
-
-			return w.err
-		}
-	}
-
-	{ // 2. User did set a limit when creating a [Group]
+	{ // Allow upto limit when creating a [Group]
 		count := 0
 		for {
 			if count == countFuncs {
@@ -157,8 +134,6 @@ func (w *Group) done() {
 		w.panic = addStack(v)
 	}
 
-	if w.sem != nil {
-		<-w.sem
-	}
+	<-w.sem
 	w.wg.Done()
 }
