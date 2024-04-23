@@ -12,6 +12,7 @@ import (
 //   (a) https://github.com/golang/sync/tree/v0.3.0/errgroup whose license(BSD 3-Clause) can be found here: https://github.com/golang/sync/blob/v0.3.0/LICENSE
 //   (b) https://go-review.googlesource.com/c/sync/+/416555
 //   (c) https://github.com/sourcegraph/conc whose license(MIT) can be found here:                          https://github.com/sourcegraph/conc/blob/v0.3.0/LICENSE
+//   (d) https://github.com/kucherenkovova/safegroup whose license(BSD 3-Clause) can be found here:         https://github.com/kucherenkovova/safegroup/blob/v1.0.2/LICENSE
 //
 
 // Group is a datastructure that waits for a collection of goroutines to finish.
