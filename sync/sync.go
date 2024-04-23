@@ -5,7 +5,6 @@ package sync
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 )
 
@@ -88,8 +87,6 @@ func (w *Group) Go(funcs ...func() error) error {
 
 	{ // 1. User didn't set a limit when creating a [Group]
 		if w.sem == nil {
-			fmt.Println("\n\t ========= here ====") // TODO:
-
 			w.wg.Add(countFuncs)
 			for _, f := range funcs {
 				go func(f func() error) {
