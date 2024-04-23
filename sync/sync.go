@@ -166,12 +166,8 @@ func (w *Group) Go(funcs ...func() error) error {
 }
 
 func (w *Group) done() {
-	fmt.Println("\n\t ========= here done ====") // TODO:
-
-	{
-		if v := recover(); v != nil {
-			w.panic = addStack(v)
-		}
+	if v := recover(); v != nil {
+		w.panic = addStack(v)
 	}
 
 	if w.sem != nil {
