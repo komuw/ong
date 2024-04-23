@@ -31,18 +31,14 @@ type Group struct {
 	errMu         sync.Mutex // protects err
 	err           error
 	collectedErrs []error
-
-	//// TODO:
-	panic interface{} // PanicError or PanicValue
+	panic         interface{} // PanicError or PanicValue
 }
-
-// TODO: update docs.
 
 // New returns a valid Group and a context(derived from ctx).
 // The Group limits the number of active goroutines to at most n.
 //
 // The derived Context is canceled the first time Go returns.
-// Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error.
+// Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error or panics.
 //
 // n limits the number of active goroutines in this Group.
 // If n is <=0, it indicates no limit.
@@ -61,7 +57,8 @@ func New(ctx context.Context, n int) (*Group, context.Context) {
 // active goroutines in the Group exceeding the configured limit.
 //
 // It also blocks until all function calls from the Go method have returned, then returns the concated non-nil errors(if any) from them.
-// Unlike [golang.org/x/sync/errgroup.Group] the first call to return an error does not cancel the Group's context.
+// If any of those functions panic, Go will also propagate that panic.
+// Unlike [golang.org/x/sync/errgroup.Group] the first call to return an error(or panics) does not cancel the Group's context.
 //
 // If called concurrently, it will block until the previous call returns.
 func (w *Group) Go(funcs ...func() error) error {
@@ -73,9 +70,6 @@ func (w *Group) Go(funcs ...func() error) error {
 		if w.panic != nil {
 			panic(w.panic)
 		}
-		// if w.goexit { // TODO: add this.
-		// 	runtime.Goexit()
-		// }
 
 		return nil
 	}
@@ -107,9 +101,6 @@ func (w *Group) Go(funcs ...func() error) error {
 			if w.panic != nil {
 				panic(w.panic)
 			}
-			// if w.goexit { // TODO: add this.
-			// 	runtime.Goexit()
-			// }
 
 			return w.err
 		}
@@ -155,9 +146,7 @@ func (w *Group) Go(funcs ...func() error) error {
 		if w.panic != nil {
 			panic(w.panic)
 		}
-		// if w.goexit { // TODO: add this.
-		// 	runtime.Goexit()
-		// }
+
 		return w.err
 	}
 }
