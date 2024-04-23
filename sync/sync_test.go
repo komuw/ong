@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -357,19 +358,22 @@ func helpMe(t *testing.T, runFunc func() error) (recov interface{}) {
 
 func TestPanic(t *testing.T) {
 	t.Run("with nil", func(t *testing.T) {
-		got := helpMe(t,
+		got := helpMe(
+			t,
 			func() error {
 				panic(nil)
 			},
 		)
-		_, ok := got.(PanicError)
+		val, ok := got.(PanicError)
 		attest.True(t, ok)
-		gotStr := fmt.Sprintf("%+#s", got)
-		attest.Subsequence(t, gotStr, "nil") // The panic message
+		gotStr := val.Error()
+		attest.Subsequence(t, gotStr, "nil")              // The panic message
+		attest.Subsequence(t, gotStr, "sync_test.go:364") // The place where the panic happened
 	})
 
 	t.Run("some value", func(t *testing.T) {
-		got := helpMe(t,
+		got := helpMe(
+			t,
 			func() error {
 				panic("hey hey")
 			},
@@ -378,38 +382,22 @@ func TestPanic(t *testing.T) {
 		attest.True(t, ok)
 		gotStr := fmt.Sprintf("%+#s", got)
 		attest.Subsequence(t, gotStr, "hey hey")          // The panic message
-		attest.Subsequence(t, gotStr, "sync_test.go:374") // The place where the panic happened
+		attest.Subsequence(t, gotStr, "sync_test.go:378") // The place where the panic happened
 	})
 
-	// t.Run("<nil>", func(t *testing.T) {
-	// 	got := terminateInGroup(t, func() error {
-	// 		panic(nil)
-	// 	})
-	// 	t.Logf("Wait panicked with: %v", got)
-	// 	if gotV, ok := got.(PanicValue); !ok || gotV.Recovered != nil {
-	// 		t.Errorf("want errgroup.PanicValue{Recovered: nil}")
-	// 	}
-	// })
+	t.Run("some error", func(t *testing.T) {
+		errPanic := errors.New("errPanic")
 
-	// t.Run("non-error", func(t *testing.T) {
-	// 	const s = "some string"
-	// 	got := terminateInGroup(t, func() error {
-	// 		panic(s)
-	// 	})
-	// 	t.Logf("Wait panicked with: %v", got)
-	// 	if gotV, ok := got.(errgroup.PanicValue); !ok || gotV.Recovered != s {
-	// 		t.Errorf("want errgroup.PanicValue{Recovered: %q}", s)
-	// 	}
-	// })
-
-	// t.Run("error", func(t *testing.T) {
-	// 	var errPanic = errors.New("errPanic")
-	// 	got := terminateInGroup(t, func() error {
-	// 		panic(errPanic)
-	// 	})
-	// 	t.Logf("Wait panicked with: %v", got)
-	// 	if err, ok := got.(error); !ok || !errors.Is(err, errPanic) {
-	// 		t.Errorf("want errors.Is %v", errPanic)
-	// 	}
-	// })
+		got := helpMe(
+			t,
+			func() error {
+				panic(errPanic)
+			},
+		)
+		val, ok := got.(PanicError)
+		attest.True(t, ok)
+		gotStr := val.Error()
+		attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
+		attest.Subsequence(t, gotStr, "sync_test.go:394") // The place where the panic happened
+	})
 }
