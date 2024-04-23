@@ -5,12 +5,14 @@ package sync
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 )
 
 // Some of the code here is inspired by(or taken from):
 //   (a) https://github.com/golang/sync/tree/v0.3.0/errgroup whose license(BSD 3-Clause) can be found here: https://github.com/golang/sync/blob/v0.3.0/LICENSE
-//   (b) https://github.com/sourcegraph/conc whose license(MIT) can be found here:                          https://github.com/sourcegraph/conc/blob/v0.3.0/LICENSE
+//   (b) https://go-review.googlesource.com/c/sync/+/416555
+//   (c) https://github.com/sourcegraph/conc whose license(MIT) can be found here:                          https://github.com/sourcegraph/conc/blob/v0.3.0/LICENSE
 //
 
 // Group is a datastructure that waits for a collection of goroutines to finish.
@@ -30,7 +32,12 @@ type Group struct {
 	errMu         sync.Mutex // protects err
 	err           error
 	collectedErrs []error
+
+	//// TODO:
+	panic interface{} // PanicError or PanicValue
 }
+
+// TODO: update docs.
 
 // New returns a valid Group and a context(derived from ctx).
 // The Group limits the number of active goroutines to at most n.
@@ -64,6 +71,13 @@ func (w *Group) Go(funcs ...func() error) error {
 		if w.cancel != nil {
 			w.cancel(w.err)
 		}
+		if w.panic != nil {
+			panic(w.panic)
+		}
+		// if w.goexit { // TODO: add this.
+		// 	runtime.Goexit()
+		// }
+
 		return nil
 	}
 
@@ -74,6 +88,8 @@ func (w *Group) Go(funcs ...func() error) error {
 
 	{ // 1. User didn't set a limit when creating a [Group]
 		if w.sem == nil {
+			fmt.Println("\n\t ========= here ====") // TODO:
+
 			w.wg.Add(countFuncs)
 			for _, f := range funcs {
 				go func(f func() error) {
@@ -91,6 +107,13 @@ func (w *Group) Go(funcs ...func() error) error {
 			if w.cancel != nil {
 				w.cancel(w.err)
 			}
+			if w.panic != nil {
+				panic(w.panic)
+			}
+			// if w.goexit { // TODO: add this.
+			// 	runtime.Goexit()
+			// }
+
 			return w.err
 		}
 	}
@@ -132,11 +155,25 @@ func (w *Group) Go(funcs ...func() error) error {
 		if w.cancel != nil {
 			w.cancel(w.err)
 		}
+		if w.panic != nil {
+			panic(w.panic)
+		}
+		// if w.goexit { // TODO: add this.
+		// 	runtime.Goexit()
+		// }
 		return w.err
 	}
 }
 
 func (w *Group) done() {
+	fmt.Println("\n\t ========= here done ====") // TODO:
+
+	{
+		if v := recover(); v != nil {
+			w.panic = addStack(v)
+		}
+	}
+
 	if w.sem != nil {
 		<-w.sem
 	}
