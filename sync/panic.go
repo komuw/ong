@@ -61,8 +61,6 @@ func addStack(v interface{}) interface{} {
 		}
 	}
 
-	fmt.Println("\t stack: ", stack)
-	fmt.Println(string(stack))
 	if err, ok := v.(error); ok {
 		return PanicError{Recovered: err, Stack: stack}
 	}
