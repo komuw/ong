@@ -341,14 +341,14 @@ func BenchmarkSync(b *testing.B) {
 	})
 }
 
-func panicTestHelper(t *testing.T, runFunc func() error) (recov interface{}) {
+func panicTestHelper(t *testing.T, runFunc func() error, limit int) (recov interface{}) {
 	t.Helper()
 
 	defer func() {
 		recov = recover()
 	}()
 
-	wgUnlimited, _ := New(context.Background(), -1) // TODO: add test for limited.
+	wgUnlimited, _ := New(context.Background(), limit)
 	err := wgUnlimited.Go(runFunc)
 	attest.Ok(t, err)
 
@@ -357,46 +357,58 @@ func panicTestHelper(t *testing.T, runFunc func() error) (recov interface{}) {
 
 func TestPanic(t *testing.T) {
 	t.Run("with nil", func(t *testing.T) {
-		got := panicTestHelper(
-			t,
-			func() error {
-				panic(nil)
-			},
-		)
-		val, ok := got.(PanicError)
-		attest.True(t, ok)
-		gotStr := val.Error()
-		attest.Subsequence(t, gotStr, "nil")              // The panic message
-		attest.Subsequence(t, gotStr, "sync_test.go:363") // The place where the panic happened
+		// unlimited(-1), limited(1)
+		for limit := range []int{-1, 1} {
+			got := panicTestHelper(
+				t,
+				func() error {
+					panic(nil)
+				},
+				limit,
+			)
+			val, ok := got.(PanicError)
+			attest.True(t, ok)
+			gotStr := val.Error()
+			attest.Subsequence(t, gotStr, "nil")              // The panic message
+			attest.Subsequence(t, gotStr, "sync_test.go:365") // The place where the panic happened
+		}
 	})
 
 	t.Run("some value", func(t *testing.T) {
-		got := panicTestHelper(
-			t,
-			func() error {
-				panic("hey hey")
-			},
-		)
-		_, ok := got.(PanicValue)
-		attest.True(t, ok)
-		gotStr := fmt.Sprintf("%+#s", got)
-		attest.Subsequence(t, gotStr, "hey hey")          // The panic message
-		attest.Subsequence(t, gotStr, "sync_test.go:377") // The place where the panic happened
+		// unlimited(-1), limited(1)
+		for limit := range []int{-1, 1} {
+			got := panicTestHelper(
+				t,
+				func() error {
+					panic("hey hey")
+				},
+				limit,
+			)
+			_, ok := got.(PanicValue)
+			attest.True(t, ok)
+			gotStr := fmt.Sprintf("%+#s", got)
+			attest.Subsequence(t, gotStr, "hey hey")          // The panic message
+			attest.Subsequence(t, gotStr, "sync_test.go:383") // The place where the panic happened
+		}
 	})
 
 	t.Run("some error", func(t *testing.T) {
-		errPanic := errors.New("errPanic")
+		// unlimited(-1), limited(1)
+		for limit := range []int{-1, 1} {
+			errPanic := errors.New("errPanic")
 
-		got := panicTestHelper(
-			t,
-			func() error {
-				panic(errPanic)
-			},
-		)
-		val, ok := got.(PanicError)
-		attest.True(t, ok)
-		gotStr := val.Error()
-		attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
-		attest.Subsequence(t, gotStr, "sync_test.go:393") // The place where the panic happened
+			got := panicTestHelper(
+				t,
+				func() error {
+					panic(errPanic)
+				},
+				limit,
+			)
+			val, ok := got.(PanicError)
+			attest.True(t, ok)
+			gotStr := val.Error()
+			attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
+			attest.Subsequence(t, gotStr, "sync_test.go:403") // The place where the panic happened
+		}
 	})
 }
