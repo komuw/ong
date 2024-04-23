@@ -64,36 +64,7 @@ func TestCancelCause(t *testing.T) {
 // TestZeroGroup is borrowed from: https://github.com/golang/sync/blob/v0.3.0/errgroup/errgroup_test.go
 
 func TestZeroGroup(t *testing.T) {
-	err1 := errors.New("group_test: 1")
-	err2 := errors.New("group_test: 2")
-
-	cases := []struct {
-		errs []error
-	}{
-		{errs: []error{}},
-		{errs: []error{nil}},
-		{errs: []error{err1}},
-		{errs: []error{err1, nil}},
-		{errs: []error{err1, nil, err2}},
-	}
-
-	for _, tc := range cases {
-		g := new(group)
-
-		var firstErr error
-		for _, err := range tc.errs {
-			err := err
-
-			if firstErr == nil && err != nil {
-				firstErr = err
-			}
-
-			gErr := g.Go(func() error { return err })
-			if !errors.Is(gErr, firstErr) {
-				t.Errorf("got: %v. want %v", gErr, firstErr)
-			}
-		}
-	}
+	// A zero value group is not valid.
 }
 
 // TestWithContext is borrowed from: https://github.com/golang/sync/blob/v0.3.0/errgroup/errgroup_test.go
