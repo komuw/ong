@@ -355,6 +355,7 @@ func panicTestHelper(t *testing.T, runFunc func() error, limit int) (recov inter
 	return recov
 }
 
+// TestPanic is borrowed/inspired from: https://go-review.googlesource.com/c/sync/+/416555/2/errgroup/errgroup_test.go
 func TestPanic(t *testing.T) {
 	t.Run("with nil", func(t *testing.T) {
 		// unlimited(-1), limited(1)
