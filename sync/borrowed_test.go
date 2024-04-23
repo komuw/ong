@@ -64,8 +64,8 @@ func TestCancelCause(t *testing.T) {
 // TestZeroGroup is borrowed from: https://github.com/golang/sync/blob/v0.3.0/errgroup/errgroup_test.go
 
 func TestZeroGroup(t *testing.T) {
-	err1 := errors.New("errgroup_test: 1")
-	err2 := errors.New("errgroup_test: 2")
+	err1 := errors.New("group_test: 1")
+	err2 := errors.New("group_test: 2")
 
 	cases := []struct {
 		errs []error

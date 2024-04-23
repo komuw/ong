@@ -6,10 +6,8 @@ import (
 	"runtime"
 )
 
-// TODO: docs
-
 // A PanicError wraps an error recovered from an unhandled panic
-// when calling a function passed to Go or TryGo.
+// when calling a function passed to Go.
 type PanicError struct {
 	Recovered error
 	Stack     []byte
@@ -26,8 +24,7 @@ func (p PanicError) Error() string {
 func (p PanicError) Unwrap() error { return p.Recovered }
 
 // A PanicValue wraps a value that does not implement the error interface
-// recovered from an unhandled panic when calling a function passed to Go or
-// TryGo.
+// recovered from an unhandled panic when calling a function passed to Go.
 type PanicValue struct {
 	Recovered interface{}
 	Stack     []byte
@@ -43,6 +40,8 @@ func (p PanicValue) String() string {
 // addStack returns a PanicError or PanicValue that wraps v with a stack trace
 // of the panicking goroutine.
 func addStack(v interface{}) interface{} {
+	// Taken from https://go-review.googlesource.com/c/sync/+/416555
+	//
 	stack := make([]byte, 2<<10)
 	n := runtime.Stack(stack, false)
 	for n == len(stack) {
