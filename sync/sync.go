@@ -16,12 +16,13 @@ import (
 //   (d) https://github.com/kucherenkovova/safegroup whose license(BSD 3-Clause) can be found here:         https://github.com/kucherenkovova/safegroup/blob/v1.0.2/LICENSE
 //
 
-// Group is a datastructure that waits for a collection of goroutines to finish.
+// group is a datastructure that waits for a collection of goroutines to finish.
 // See [sync.WaitGroup]
 //
-// Use [New] to get a valid Group
-type Group struct {
-	mu sync.Mutex // protects wg when Group.Go is called concurrently.
+// A zero value is not a valid group.
+// Use [New] to get a valid group
+type group struct {
+	mu sync.Mutex // protects wg when group.Go is called concurrently.
 	wg sync.WaitGroup
 
 	cancel context.CancelCauseFunc
@@ -36,22 +37,22 @@ type Group struct {
 	panic         interface{} // PanicError or PanicValue
 }
 
-// New returns a valid Group and a context(derived from ctx).
-// The Group limits the number of active goroutines to at most n.
+// New returns a group and a context(derived from ctx).
+// A group waits for a collection of goroutines to finish. It has almost similar semantics to [sync.WaitGroup].
+// It limits the number of active goroutines to at most n.
 //
 // The derived Context is canceled the first time Go returns.
 // Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error or panics.
 //
-// n limits the number of active goroutines in this Group.
+// n limits the number of active goroutines in this group.
 // If n is negative, the limit is set to [runtime.NumCPU]
-func New(ctx context.Context, n int) (*Group, context.Context) {
+func New(ctx context.Context, n int) (*group, context.Context) {
 	ctx, cancel := context.WithCancelCause(ctx)
 
-	wg := &Group{cancel: cancel}
+	wg := &group{cancel: cancel}
+	wg.sem = make(chan struct{}, runtime.NumCPU())
 	if n > 0 {
 		wg.sem = make(chan struct{}, n)
-	} else {
-		wg.sem = make(chan struct{}, runtime.NumCPU())
 	}
 
 	return wg, ctx
@@ -59,14 +60,14 @@ func New(ctx context.Context, n int) (*Group, context.Context) {
 
 // Go calls each of the given functions in a new goroutine.
 // It blocks until the new goroutine can be added without the number of
-// active goroutines in the Group exceeding the configured limit.
+// active goroutines in the group exceeding the configured limit.
 //
 // It also blocks until all function calls from the Go method have returned, then returns the concated non-nil errors(if any) from them.
 // If any of those functions panic, Go will also propagate that panic.
-// Unlike [golang.org/x/sync/errgroup.Group] the first call to return an error(or panics) does not cancel the Group's context.
+// Unlike [golang.org/x/sync/errgroup.Group] the first call to return an error(or panics) does not cancel the group's context.
 //
 // If called concurrently, it will block until the previous call returns.
-func (w *Group) Go(funcs ...func() error) error {
+func (w *group) Go(funcs ...func() error) error {
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
 		if w.cancel != nil {
@@ -84,7 +85,7 @@ func (w *Group) Go(funcs ...func() error) error {
 		defer w.mu.Unlock()
 	}
 
-	{ // Allow upto limit when creating a [Group]
+	{ // Allow upto limit when creating a [group]
 		count := 0
 		for {
 			if count == countFuncs {
@@ -129,7 +130,7 @@ func (w *Group) Go(funcs ...func() error) error {
 	}
 }
 
-func (w *Group) done() {
+func (w *group) done() {
 	if v := recover(); v != nil {
 		w.panic = addStack(v)
 	}
