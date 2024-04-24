@@ -5,7 +5,6 @@ package sync
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"sync"
 )
@@ -62,8 +61,7 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 		select {
 		default:
 			if count == countFuncs {
-				fmt.Println("\n\t breaking") // TODO
-				if panicKy != nil {          // TODO: should this be in a defer?
+				if panicKy != nil {
 					panic(panicKy)
 				}
 				errRet = errors.Join(collectedErrs...)
@@ -104,8 +102,7 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 			}
 			wg.Wait()
 		case <-ctx.Done():
-			fmt.Println("\n\t ctx.Done") // TODO
-			if panicKy != nil {          // TODO: should this be in a defer?
+			if panicKy != nil {
 				panic(panicKy)
 			}
 			errRet = errors.Join(collectedErrs...)
