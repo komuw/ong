@@ -38,12 +38,13 @@ type group struct {
 // TODO: docs
 // TODO: since we create a new group everytime this func is called, this func cannot be called concurrently.
 func Go(ctx context.Context, n int, funcs ...func() error) error {
-	// w := &group{}
-	wg := &sync.WaitGroup{}
-	var panicKy interface{} = nil // PanicError or PanicValue
-	var errRet error
-	var errMu sync.Mutex // protects collectedErrs
-	var collectedErrs []error
+	var (
+		wg                        = &sync.WaitGroup{}
+		panicKy       interface{} = nil // PanicError or PanicValue
+		errRet        error
+		errMu         sync.Mutex // protects collectedErrs
+		collectedErrs []error
+	)
 	sem := make(chan struct{}, runtime.NumCPU())
 	if n > 0 {
 		sem = make(chan struct{}, n)
@@ -53,11 +54,6 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 	if countFuncs <= 0 {
 		return nil
 	}
-
-	// { // TODO: This is not needed. Since group is not concurrent.
-	// 	w.mu.Lock()
-	// 	defer w.mu.Unlock()
-	// }
 
 	// Allow upto limit when creating a [group]
 	count := 0
