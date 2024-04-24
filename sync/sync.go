@@ -5,6 +5,7 @@ package sync
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
 	"sync"
 )
@@ -58,49 +59,59 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 	// Allow upto limit when creating a [group]
 	count := 0
 	for {
-		if count == countFuncs {
-			break
-		}
-		count = count + 1
-
-		if count > countFuncs {
-			panic("unreachable")
-		}
-
-		capacity := cap(sem)
-		index := min(capacity, len(funcs))
-		newFuncs := funcs[:index]
-		funcs = funcs[index:]
-
-		wg.Add(len(newFuncs))
-		for _, f := range newFuncs {
-			sem <- struct{}{}
-
-			go func(f func() error) {
-				{ // done
-					defer func() {
-						if v := recover(); v != nil {
-							panicKy = addStack(v)
-						}
-						<-sem
-						wg.Done()
-					}()
+		select {
+		default:
+			if count == countFuncs {
+				fmt.Println("\n\t breaking") // TODO
+				if panicKy != nil {          // TODO: should this be in a defer?
+					panic(panicKy)
 				}
+				errRet = errors.Join(collectedErrs...)
+				return errRet
+			}
+			count = count + 1
 
-				if err := f(); err != nil {
-					errMu.Lock()
-					collectedErrs = append(collectedErrs, err)
-					errMu.Unlock()
-				}
-			}(f)
+			if count > countFuncs {
+				panic("unreachable")
+			}
+
+			capacity := cap(sem)
+			index := min(capacity, len(funcs))
+			newFuncs := funcs[:index]
+			funcs = funcs[index:]
+
+			wg.Add(len(newFuncs))
+			for _, f := range newFuncs {
+				sem <- struct{}{}
+
+				go func(f func() error) {
+					{ // done
+						defer func() {
+							if v := recover(); v != nil {
+								panicKy = addStack(v)
+							}
+							<-sem
+							wg.Done()
+						}()
+					}
+
+					if err := f(); err != nil {
+						errMu.Lock()
+						collectedErrs = append(collectedErrs, err)
+						errMu.Unlock()
+					}
+				}(f)
+			}
+			wg.Wait()
+		case <-ctx.Done():
+			fmt.Println("\n\t ctx.Done") // TODO
+			if panicKy != nil {          // TODO: should this be in a defer?
+				panic(panicKy)
+			}
+			errRet = errors.Join(collectedErrs...)
+			return errRet
 		}
-		wg.Wait()
 	}
-	if panicKy != nil { // TODO: should this be in a defer?
-		panic(panicKy)
-	}
-	errRet = errors.Join(collectedErrs...)
-	return errRet
 }
 
 func (w *group) done() {
