@@ -33,8 +33,6 @@ func TestCancelCause(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			g, ctx := New(context.Background(), 0)
-
 			funcs := []func() error{}
 			for _, err := range tc.errs {
 				err := err
@@ -44,18 +42,9 @@ func TestCancelCause(t *testing.T) {
 				)
 			}
 
-			errG := g.Go(funcs...)
+			errG := Go(context.Background(), 0, funcs...)
 			if !errors.Is(errG, tc.want) {
 				t.Errorf("got: %v. want: %v", errG, tc.want)
-			}
-
-			if tc.want == nil {
-				tc.want = context.Canceled
-			}
-
-			errC := context.Cause(ctx)
-			if !errors.Is(errC, tc.want) {
-				t.Errorf("got: %v. want: %v", errC, tc.want)
 			}
 		})
 	}
@@ -83,8 +72,6 @@ func TestWithContext(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		g, ctx := New(context.Background(), 0)
-
 		funcs := []func() error{}
 		for _, err := range tc.errs {
 			err := err
@@ -94,19 +81,9 @@ func TestWithContext(t *testing.T) {
 			)
 		}
 
-		err := g.Go(funcs...)
+		err := Go(context.Background(), 0, funcs...)
 		if !errors.Is(err, tc.want) {
 			t.Errorf("got: %v. want: %v", err, tc.want)
-		}
-
-		canceled := false
-		select {
-		case <-ctx.Done():
-			canceled = true
-		default:
-		}
-		if !canceled {
-			t.Error("ctx.Done() was not closed")
 		}
 	}
 }
@@ -115,8 +92,6 @@ func TestWithContext(t *testing.T) {
 
 func TestGoLimit(t *testing.T) {
 	const limit = 10
-
-	g, _ := New(context.Background(), limit)
 
 	var active int32
 	funcs := []func() error{}
@@ -135,7 +110,7 @@ func TestGoLimit(t *testing.T) {
 		)
 	}
 
-	if err := g.Go(funcs...); err != nil {
+	if err := Go(context.Background(), limit, funcs...); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -144,12 +119,15 @@ func TestGoLimit(t *testing.T) {
 
 func BenchmarkGo(b *testing.B) {
 	fn := func() {}
-	g, _ := New(context.Background(), 0)
 
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		if err := g.Go(func() error { fn(); return nil }); err != nil {
+		if err := Go(
+			context.Background(),
+			0,
+			func() error { fn(); return nil },
+		); err != nil {
 			b.Fatal(err)
 		}
 	}

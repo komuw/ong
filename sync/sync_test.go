@@ -269,7 +269,6 @@ func BenchmarkSync(b *testing.B) {
 
 	b.Run("sync limited", func(b *testing.B) {
 		count := 0
-		wgLimited, _ := New(context.Background(), 1)
 		funcs := []func() error{func() error {
 			count = count + 1
 			return nil
@@ -278,13 +277,16 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			_ = wgLimited.Go(funcs...)
+			_ = Go(
+				context.Background(),
+				1,
+				funcs...,
+			)
 		}
 	})
 
 	b.Run("sync unlimited", func(b *testing.B) {
 		count := 0
-		wgUnlimited, _ := New(context.Background(), -1)
 		funcs := []func() error{func() error {
 			count = count + 1
 			return nil
@@ -293,7 +295,11 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			_ = wgUnlimited.Go(funcs...)
+			_ = Go(
+				context.Background(),
+				-1,
+				funcs...,
+			)
 		}
 	})
 
@@ -429,7 +435,7 @@ func TestPanic(t *testing.T) {
 			attest.True(t, ok)
 			gotStr := fmt.Sprintf("%+#s", got)
 			attest.Subsequence(t, gotStr, "hey hey")          // The panic message
-			attest.Subsequence(t, gotStr, "sync_test.go:425") // The place where the panic happened
+			attest.Subsequence(t, gotStr, "sync_test.go:431") // The place where the panic happened
 		}
 	})
 
@@ -452,7 +458,7 @@ func TestPanic(t *testing.T) {
 			attest.True(t, ok)
 			gotStr := val.Error()
 			attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
-			attest.Subsequence(t, gotStr, "sync_test.go:448") // The place where the panic happened
+			attest.Subsequence(t, gotStr, "sync_test.go:454") // The place where the panic happened
 		}
 	})
 
@@ -550,7 +556,7 @@ func TestPanic(t *testing.T) {
 		attest.True(t, ok)
 		gotStr := val.Error()
 		attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
-		attest.Subsequence(t, gotStr, "sync_test.go:530") // The place where the panic happened
+		attest.Subsequence(t, gotStr, "sync_test.go:536") // The place where the panic happened
 		attest.True(t, count < 6)
 	})
 }
