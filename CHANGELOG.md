@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.93
+- ong/sync: limit export surface of package: https://github.com/komuw/ong/pull/434
+
 # v0.0.92
 - Update docs on id generation: https://github.com/komuw/ong/pull/420
 - Update dependencies: https://github.com/komuw/ong/pull/428
