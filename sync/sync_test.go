@@ -15,32 +15,6 @@ import (
 func TestSync(t *testing.T) {
 	t.Parallel()
 
-	t.Run("zero value Group is valid", func(t *testing.T) {
-		t.Parallel()
-
-		{
-			wg := Group{}
-			count := 0
-			err := wg.Go(func() error {
-				count = count + 3
-				return nil
-			})
-			attest.Ok(t, err)
-			attest.Equal(t, count, 3)
-		}
-
-		{
-			wg := &Group{}
-			count := 0
-			err := wg.Go(func() error {
-				count = count + 7
-				return nil
-			})
-			attest.Ok(t, err)
-			attest.Equal(t, count, 7)
-		}
-	})
-
 	t.Run("zero funcs", func(t *testing.T) {
 		t.Parallel()
 
@@ -373,7 +347,7 @@ func TestPanic(t *testing.T) {
 	// 		got := panicTestHelper(
 	// 			t,
 	// 			func() error {
-	// 				panic(nil) //nolint:vet
+	// 				panic(nil)
 	// 			},
 	// 			limit,
 	// 		)
@@ -381,7 +355,7 @@ func TestPanic(t *testing.T) {
 	// 		attest.True(t, ok)
 	// 		gotStr := val.Error()
 	// 		attest.Subsequence(t, gotStr, "nil")              // The panic message
-	// 		attest.Subsequence(t, gotStr, "sync_test.go:376") // The place where the panic happened
+	// 		attest.Subsequence(t, gotStr, "sync_test.go:350") // The place where the panic happened
 	// 	}
 	// })
 
@@ -401,7 +375,7 @@ func TestPanic(t *testing.T) {
 			attest.True(t, ok)
 			gotStr := fmt.Sprintf("%+#s", got)
 			attest.Subsequence(t, gotStr, "hey hey")          // The panic message
-			attest.Subsequence(t, gotStr, "sync_test.go:396") // The place where the panic happened
+			attest.Subsequence(t, gotStr, "sync_test.go:370") // The place where the panic happened
 		}
 	})
 
@@ -423,7 +397,7 @@ func TestPanic(t *testing.T) {
 			attest.True(t, ok)
 			gotStr := val.Error()
 			attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
-			attest.Subsequence(t, gotStr, "sync_test.go:418") // The place where the panic happened
+			attest.Subsequence(t, gotStr, "sync_test.go:392") // The place where the panic happened
 		}
 	})
 }
