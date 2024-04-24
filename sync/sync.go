@@ -78,44 +78,43 @@ func (w *group) Go(funcs ...func() error) error {
 		defer w.mu.Unlock()
 	}
 
-	{ // Allow upto limit when creating a [group]
-		count := 0
-		for {
-			if count == countFuncs {
-				break
-			}
-			count = count + 1
-
-			if count > countFuncs {
-				panic("unreachable")
-			}
-
-			capacity := cap(w.sem)
-			index := min(capacity, len(funcs))
-			newFuncs := funcs[:index]
-			funcs = funcs[index:]
-
-			w.wg.Add(len(newFuncs))
-			for _, f := range newFuncs {
-				w.sem <- struct{}{}
-
-				go func(f func() error) {
-					defer w.done()
-					if err := f(); err != nil {
-						w.errMu.Lock()
-						w.collectedErrs = append(w.collectedErrs, err)
-						w.errMu.Unlock()
-					}
-				}(f)
-			}
-			w.wg.Wait()
+	// Allow upto limit when creating a [group]
+	count := 0
+	for {
+		if count == countFuncs {
+			break
 		}
-		if w.panic != nil { // TODO: should this be in a defer?
-			panic(w.panic)
+		count = count + 1
+
+		if count > countFuncs {
+			panic("unreachable")
 		}
-		w.err = errors.Join(w.collectedErrs...)
-		return w.err
+
+		capacity := cap(w.sem)
+		index := min(capacity, len(funcs))
+		newFuncs := funcs[:index]
+		funcs = funcs[index:]
+
+		w.wg.Add(len(newFuncs))
+		for _, f := range newFuncs {
+			w.sem <- struct{}{}
+
+			go func(f func() error) {
+				defer w.done()
+				if err := f(); err != nil {
+					w.errMu.Lock()
+					w.collectedErrs = append(w.collectedErrs, err)
+					w.errMu.Unlock()
+				}
+			}(f)
+		}
+		w.wg.Wait()
 	}
+	if w.panic != nil { // TODO: should this be in a defer?
+		panic(w.panic)
+	}
+	w.err = errors.Join(w.collectedErrs...)
+	return w.err
 }
 
 func (w *group) done() {
