@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -336,6 +337,93 @@ func BenchmarkSync(b *testing.B) {
 				},
 			)
 			cWg.Wait()
+		}
+	})
+}
+
+func panicTestHelper(t *testing.T, runFunc func() error, limit int) (recov interface{}) {
+	t.Helper()
+
+	defer func() {
+		recov = recover()
+	}()
+
+	wgUnlimited, _ := New(context.Background(), limit)
+	err := wgUnlimited.Go(runFunc)
+	attest.Ok(t, err)
+
+	return recov
+}
+
+// TestPanic is borrowed/inspired from: https://go-review.googlesource.com/c/sync/+/416555/2/errgroup/errgroup_test.go
+func TestPanic(t *testing.T) {
+	t.Parallel()
+
+	/*
+	   We have disabled this test subtest because `nilness` fails
+	     nilness -test=true ./...
+	       sync/sync_test.go:366:11: panic with nil value
+	*/
+
+	// t.Run("with nil", func(t *testing.T) {
+	//  t.Parallel()
+	//
+	// 	// unlimited(-1), limited(1)
+	// 	for limit := range []int{-1, 1} {
+	// 		got := panicTestHelper(
+	// 			t,
+	// 			func() error {
+	// 				panic(nil) //nolint:vet
+	// 			},
+	// 			limit,
+	// 		)
+	// 		val, ok := got.(PanicError)
+	// 		attest.True(t, ok)
+	// 		gotStr := val.Error()
+	// 		attest.Subsequence(t, gotStr, "nil")              // The panic message
+	// 		attest.Subsequence(t, gotStr, "sync_test.go:376") // The place where the panic happened
+	// 	}
+	// })
+
+	t.Run("some value", func(t *testing.T) {
+		t.Parallel()
+
+		// unlimited(-1), limited(1)
+		for limit := range []int{-1, 1} {
+			got := panicTestHelper(
+				t,
+				func() error {
+					panic("hey hey")
+				},
+				limit,
+			)
+			_, ok := got.(PanicValue)
+			attest.True(t, ok)
+			gotStr := fmt.Sprintf("%+#s", got)
+			attest.Subsequence(t, gotStr, "hey hey")          // The panic message
+			attest.Subsequence(t, gotStr, "sync_test.go:396") // The place where the panic happened
+		}
+	})
+
+	t.Run("some error", func(t *testing.T) {
+		t.Parallel()
+
+		// unlimited(-1), limited(1)
+		for limit := range []int{-1, 1} {
+			errPanic := errors.New("errPanic")
+
+			got := panicTestHelper(
+				t,
+				func() error {
+					panic(errPanic)
+				},
+				limit,
+			)
+			val, ok := got.(PanicError)
+			attest.True(t, ok)
+			gotStr := val.Error()
+			attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
+			attest.Subsequence(t, gotStr, "sync_test.go:418") // The place where the panic happened
 		}
 	})
 }
