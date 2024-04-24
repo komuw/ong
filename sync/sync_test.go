@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/sourcegraph/conc"
 	"go.akshayshah.org/attest"
@@ -62,6 +64,52 @@ func TestSync(t *testing.T) {
 			)
 			attest.Ok(t, err)
 			attest.Equal(t, count, 1)
+		}
+	})
+
+	t.Run("cancel context", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			tm := time.Duration(1)
+			ctx, cancel := context.WithCancel(context.Background())
+			go func() {
+				time.Sleep(tm * time.Second)
+				cancel()
+			}()
+
+			var count int32 = 0
+			err := Go(
+				ctx,
+				2, // this number must be less than the number of funcs added to `Go`
+				func() error {
+					atomic.AddInt32(&count, 1)
+					time.Sleep(tm + 1*time.Second) // this sleeper should be longer than the one before `cancel()`.
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+			)
+			attest.Ok(t, err)
+			attest.True(t, count < 6)
 		}
 	})
 
