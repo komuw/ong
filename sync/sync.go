@@ -25,8 +25,6 @@ type group struct {
 	mu sync.Mutex // protects wg when group.Go is called concurrently.
 	wg sync.WaitGroup
 
-	cancel context.CancelCauseFunc
-
 	// For limiting work.
 	// See: golang.org/x/sync/errgroup
 	sem chan struct{}
@@ -47,15 +45,13 @@ type group struct {
 // n limits the number of active goroutines in this group.
 // If n is negative, the limit is set to [runtime.NumCPU]
 func New(ctx context.Context, n int) (*group, context.Context) {
-	ctx, cancel := context.WithCancelCause(ctx)
-
-	wg := &group{cancel: cancel}
+	wg := &group{}
 	wg.sem = make(chan struct{}, runtime.NumCPU())
 	if n > 0 {
 		wg.sem = make(chan struct{}, n)
 	}
 
-	return wg, ctx
+	return wg, ctx // TODO: don't return ctx.
 }
 
 // Go calls each of the given functions in a new goroutine.
@@ -70,7 +66,6 @@ func New(ctx context.Context, n int) (*group, context.Context) {
 func (w *group) Go(funcs ...func() error) error {
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
-		w.cancel(w.err)
 		if w.panic != nil {
 			panic(w.panic)
 		}
@@ -116,12 +111,10 @@ func (w *group) Go(funcs ...func() error) error {
 
 			w.wg.Wait()
 		}
-		w.err = errors.Join(w.collectedErrs...)
-		w.cancel(w.err)
 		if w.panic != nil {
 			panic(w.panic)
 		}
-
+		w.err = errors.Join(w.collectedErrs...)
 		return w.err
 	}
 }
