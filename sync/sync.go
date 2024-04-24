@@ -108,10 +108,9 @@ func (w *group) Go(funcs ...func() error) error {
 					}
 				}(f)
 			}
-
 			w.wg.Wait()
 		}
-		if w.panic != nil {
+		if w.panic != nil { // TODO: should this be in a defer?
 			panic(w.panic)
 		}
 		w.err = errors.Join(w.collectedErrs...)
