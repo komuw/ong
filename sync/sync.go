@@ -35,25 +35,6 @@ type group struct {
 	panic         interface{} // PanicError or PanicValue
 }
 
-// New returns a group and a context(derived from ctx).
-// A group waits for a collection of goroutines to finish. It has almost similar semantics to [sync.WaitGroup].
-// It limits the number of active goroutines to at most n.
-//
-// The derived Context is canceled the first time Go returns.
-// Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error or panics.
-//
-// n limits the number of active goroutines in this group.
-// If n is negative, the limit is set to [runtime.NumCPU]
-func New(ctx context.Context, n int) (*group, context.Context) {
-	wg := &group{}
-	wg.sem = make(chan struct{}, runtime.NumCPU())
-	if n > 0 {
-		wg.sem = make(chan struct{}, n)
-	}
-
-	return wg, ctx // TODO: don't return ctx.
-}
-
 // TODO: docs
 // TODO: since we create a new group everytime this func is called, this func cannot be called concurrently.
 func Go(ctx context.Context, n int, funcs ...func() error) error {
@@ -110,6 +91,34 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 	}
 	w.err = errors.Join(w.collectedErrs...)
 	return w.err
+}
+
+func (w *group) done() {
+	if v := recover(); v != nil {
+		w.panic = addStack(v)
+	}
+
+	<-w.sem
+	w.wg.Done()
+}
+
+// New returns a group and a context(derived from ctx).
+// A group waits for a collection of goroutines to finish. It has almost similar semantics to [sync.WaitGroup].
+// It limits the number of active goroutines to at most n.
+//
+// The derived Context is canceled the first time Go returns.
+// Unlike [golang.org/x/sync/errgroup.Group] it is not cancelled the first time a function passed to Go returns an error or panics.
+//
+// n limits the number of active goroutines in this group.
+// If n is negative, the limit is set to [runtime.NumCPU]
+func New(ctx context.Context, n int) (*group, context.Context) {
+	wg := &group{}
+	wg.sem = make(chan struct{}, runtime.NumCPU())
+	if n > 0 {
+		wg.sem = make(chan struct{}, n)
+	}
+
+	return wg, ctx // TODO: don't return ctx.
 }
 
 // Go calls each of the given functions in a new goroutine.
@@ -173,13 +182,4 @@ func (w *group) Go(funcs ...func() error) error {
 	}
 	w.err = errors.Join(w.collectedErrs...)
 	return w.err
-}
-
-func (w *group) done() {
-	if v := recover(); v != nil {
-		w.panic = addStack(v)
-	}
-
-	<-w.sem
-	w.wg.Done()
 }
