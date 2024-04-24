@@ -371,7 +371,7 @@ func TestPanic(t *testing.T) {
 				},
 				limit,
 			)
-			_, ok := got.(PanicValue)
+			_, ok := got.(panicValue)
 			attest.True(t, ok)
 			gotStr := fmt.Sprintf("%+#s", got)
 			attest.Subsequence(t, gotStr, "hey hey")          // The panic message
@@ -393,7 +393,7 @@ func TestPanic(t *testing.T) {
 				},
 				limit,
 			)
-			val, ok := got.(PanicError)
+			val, ok := got.(panicError)
 			attest.True(t, ok)
 			gotStr := val.Error()
 			attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message

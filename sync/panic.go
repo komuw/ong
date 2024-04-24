@@ -6,14 +6,14 @@ import (
 	"runtime"
 )
 
-// A PanicError wraps an error recovered from an unhandled panic
+// A panicError wraps an error recovered from an unhandled panic
 // when calling a function passed to Go.
-type PanicError struct {
+type panicError struct {
 	Recovered error
 	Stack     []byte
 }
 
-func (p PanicError) Error() string {
+func (p panicError) Error() string {
 	// A Go Error method conventionally does not include a stack dump, but here we add it.
 	if len(p.Stack) > 0 {
 		return fmt.Sprintf("recovered from group: %v\n%s", p.Recovered, p.Stack)
@@ -21,16 +21,16 @@ func (p PanicError) Error() string {
 	return fmt.Sprintf("recovered from group: %v", p.Recovered)
 }
 
-func (p PanicError) Unwrap() error { return p.Recovered }
+func (p panicError) Unwrap() error { return p.Recovered }
 
-// A PanicValue wraps a value that does not implement the error interface
+// A panicValue wraps a value that does not implement the error interface
 // recovered from an unhandled panic when calling a function passed to Go.
-type PanicValue struct {
+type panicValue struct {
 	Recovered interface{}
 	Stack     []byte
 }
 
-func (p PanicValue) String() string {
+func (p panicValue) String() string {
 	if len(p.Stack) > 0 {
 		return fmt.Sprintf("recovered from group: %v\n%s", p.Recovered, p.Stack)
 	}
@@ -60,7 +60,7 @@ func addStack(v interface{}) interface{} {
 	}
 
 	if err, ok := v.(error); ok {
-		return PanicError{Recovered: err, Stack: stack}
+		return panicError{Recovered: err, Stack: stack}
 	}
-	return PanicValue{Recovered: v, Stack: stack}
+	return panicValue{Recovered: v, Stack: stack}
 }
