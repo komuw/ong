@@ -54,6 +54,17 @@ func New(ctx context.Context, n int) (*group, context.Context) {
 	return wg, ctx // TODO: don't return ctx.
 }
 
+// TODO: docs
+func Go(ctx context.Context, n int, funcs ...func() error) error {
+	w := &group{}
+	w.sem = make(chan struct{}, runtime.NumCPU())
+	if n > 0 {
+		w.sem = make(chan struct{}, n)
+	}
+
+	return w.Go(funcs...)
+}
+
 // Go calls each of the given functions in a new goroutine.
 // It blocks until the new goroutine can be added without the number of
 // active goroutines in the group exceeding the configured limit.
