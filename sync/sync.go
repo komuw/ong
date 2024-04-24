@@ -55,6 +55,7 @@ func New(ctx context.Context, n int) (*group, context.Context) {
 }
 
 // TODO: docs
+// TODO: since we create a new group everytime this func is called, this func cannot be called concurrently.
 func Go(ctx context.Context, n int, funcs ...func() error) error {
 	w := &group{}
 	w.sem = make(chan struct{}, runtime.NumCPU())
@@ -64,17 +65,13 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
-		if w.panic != nil {
-			panic(w.panic)
-		}
-
-		return w.err
+		return nil
 	}
 
-	{
-		w.mu.Lock()
-		defer w.mu.Unlock()
-	}
+	// { // TODO: This is not needed. Since group is not concurrent.
+	// 	w.mu.Lock()
+	// 	defer w.mu.Unlock()
+	// }
 
 	// Allow upto limit when creating a [group]
 	count := 0
