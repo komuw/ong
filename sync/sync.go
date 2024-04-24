@@ -62,7 +62,57 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 		w.sem = make(chan struct{}, n)
 	}
 
-	return w.Go(funcs...)
+	countFuncs := len(funcs)
+	if countFuncs <= 0 {
+		if w.panic != nil {
+			panic(w.panic)
+		}
+
+		return nil
+	}
+
+	{
+		w.mu.Lock()
+		defer w.mu.Unlock()
+	}
+
+	// Allow upto limit when creating a [group]
+	count := 0
+	for {
+		if count == countFuncs {
+			break
+		}
+		count = count + 1
+
+		if count > countFuncs {
+			panic("unreachable")
+		}
+
+		capacity := cap(w.sem)
+		index := min(capacity, len(funcs))
+		newFuncs := funcs[:index]
+		funcs = funcs[index:]
+
+		w.wg.Add(len(newFuncs))
+		for _, f := range newFuncs {
+			w.sem <- struct{}{}
+
+			go func(f func() error) {
+				defer w.done()
+				if err := f(); err != nil {
+					w.errMu.Lock()
+					w.collectedErrs = append(w.collectedErrs, err)
+					w.errMu.Unlock()
+				}
+			}(f)
+		}
+		w.wg.Wait()
+	}
+	if w.panic != nil { // TODO: should this be in a defer?
+		panic(w.panic)
+	}
+	w.err = errors.Join(w.collectedErrs...)
+	return w.err
 }
 
 // Go calls each of the given functions in a new goroutine.
