@@ -38,10 +38,15 @@ type group struct {
 // TODO: docs
 // TODO: since we create a new group everytime this func is called, this func cannot be called concurrently.
 func Go(ctx context.Context, n int, funcs ...func() error) error {
-	w := &group{}
-	w.sem = make(chan struct{}, runtime.NumCPU())
+	// w := &group{}
+	wg := &sync.WaitGroup{}
+	var panicKy interface{} = nil // PanicError or PanicValue
+	var errRet error
+	var errMu sync.Mutex // protects collectedErrs
+	var collectedErrs []error
+	sem := make(chan struct{}, runtime.NumCPU())
 	if n > 0 {
-		w.sem = make(chan struct{}, n)
+		sem = make(chan struct{}, n)
 	}
 
 	countFuncs := len(funcs)
@@ -66,31 +71,40 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 			panic("unreachable")
 		}
 
-		capacity := cap(w.sem)
+		capacity := cap(sem)
 		index := min(capacity, len(funcs))
 		newFuncs := funcs[:index]
 		funcs = funcs[index:]
 
-		w.wg.Add(len(newFuncs))
+		wg.Add(len(newFuncs))
 		for _, f := range newFuncs {
-			w.sem <- struct{}{}
+			sem <- struct{}{}
 
 			go func(f func() error) {
-				defer w.done()
+				{ // done
+					defer func() {
+						if v := recover(); v != nil {
+							panicKy = addStack(v)
+						}
+						<-sem
+						wg.Done()
+					}()
+				}
+
 				if err := f(); err != nil {
-					w.errMu.Lock()
-					w.collectedErrs = append(w.collectedErrs, err)
-					w.errMu.Unlock()
+					errMu.Lock()
+					collectedErrs = append(collectedErrs, err)
+					errMu.Unlock()
 				}
 			}(f)
 		}
-		w.wg.Wait()
+		wg.Wait()
 	}
-	if w.panic != nil { // TODO: should this be in a defer?
-		panic(w.panic)
+	if panicKy != nil { // TODO: should this be in a defer?
+		panic(panicKy)
 	}
-	w.err = errors.Join(w.collectedErrs...)
-	return w.err
+	errRet = errors.Join(collectedErrs...)
+	return errRet
 }
 
 func (w *group) done() {
