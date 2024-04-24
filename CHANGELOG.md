@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.94
+- ong/sync: simplify API: https://github.com/komuw/ong/pull/435
+
 # v0.0.93
 - ong/sync: limit export surface of package: https://github.com/komuw/ong/pull/434
 
