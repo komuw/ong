@@ -9,6 +9,7 @@ Most recent version is listed first.
 - ong/sync: concat errors: https://github.com/komuw/ong/pull/429
 - ong/sync: rename WaitGroup to Group: https://github.com/komuw/ong/pull/430
 - ong/sync: propagate panics: https://github.com/komuw/ong/pull/431
+- ong/sync: remove unlimited concurrency from sync: https://github.com/komuw/ong/pull/433
 
 # v0.0.91
 - Upgrade to Go v1.22: https://github.com/komuw/ong/pull/408
