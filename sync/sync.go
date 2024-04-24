@@ -68,7 +68,7 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 			panic(w.panic)
 		}
 
-		return nil
+		return w.err
 	}
 
 	{
