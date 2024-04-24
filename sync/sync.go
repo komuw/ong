@@ -70,9 +70,7 @@ func New(ctx context.Context, n int) (*group, context.Context) {
 func (w *group) Go(funcs ...func() error) error {
 	countFuncs := len(funcs)
 	if countFuncs <= 0 {
-		if w.cancel != nil {
-			w.cancel(w.err)
-		}
+		w.cancel(w.err)
 		if w.panic != nil {
 			panic(w.panic)
 		}
@@ -119,9 +117,7 @@ func (w *group) Go(funcs ...func() error) error {
 			w.wg.Wait()
 		}
 		w.err = errors.Join(w.collectedErrs...)
-		if w.cancel != nil {
-			w.cancel(w.err)
-		}
+		w.cancel(w.err)
 		if w.panic != nil {
 			panic(w.panic)
 		}
