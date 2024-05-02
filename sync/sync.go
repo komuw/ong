@@ -30,7 +30,7 @@ import (
 func Go(ctx context.Context, n int, funcs ...func() error) error {
 	var (
 		wg                        = &sync.WaitGroup{}
-		panicKy       interface{} = nil // PanicError or PanicValue
+		toPanic       interface{} = nil // PanicError or PanicValue
 		errRet        error
 		errMu         sync.Mutex // protects collectedErrs
 		collectedErrs []error
@@ -51,8 +51,8 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 		select {
 		default:
 			if count == countFuncs {
-				if panicKy != nil {
-					panic(panicKy)
+				if toPanic != nil {
+					panic(toPanic)
 				}
 				errRet = errors.Join(collectedErrs...)
 				return errRet
@@ -76,7 +76,7 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 					{ // done
 						defer func() {
 							if v := recover(); v != nil {
-								panicKy = addStack(v)
+								toPanic = addStack(v)
 							}
 							<-sem
 							wg.Done()
@@ -92,8 +92,8 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 			}
 			wg.Wait()
 		case <-ctx.Done():
-			if panicKy != nil {
-				panic(panicKy)
+			if toPanic != nil {
+				panic(toPanic)
 			}
 			errRet = errors.Join(collectedErrs...)
 			return errRet
