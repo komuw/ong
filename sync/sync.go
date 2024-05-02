@@ -34,8 +34,8 @@ func Go(ctx context.Context, n int, funcs ...func() error) error {
 		errRet        error
 		errMu         sync.Mutex // protects collectedErrs
 		collectedErrs []error
+		sem           = make(chan struct{}, runtime.NumCPU())
 	)
-	sem := make(chan struct{}, runtime.NumCPU())
 	if n > 0 {
 		sem = make(chan struct{}, n)
 	}
