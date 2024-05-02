@@ -156,7 +156,7 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
 		if strings.HasPrefix(r.URL.Path, challengeURI) {
-			fileTok := []byte("ong/acme: placeholder token") // If you see this as a response, consider it a bug in ong.
+			var fileTok []byte
 			domain := r.Host
 
 			{ // error cases
