@@ -12,9 +12,7 @@ import (
 // JustErrors illustrates the use of a group in place of a sync.WaitGroup to
 // simplify goroutine counting and error handling.
 // This example is derived from the sync.WaitGroup example at https://golang.org/pkg/sync/#example_WaitGroup.
-func ExampleNew_justErrors() {
-	wg, ctx := sync.New(context.Background(), 2)
-
+func ExampleGo_justErrors() {
 	urls := []string{
 		"http://www.example.org/",
 		"http://www.example.com/",
@@ -28,7 +26,7 @@ func ExampleNew_justErrors() {
 			funcs,
 			func() error {
 				// Fetch the URL.
-				ct, cancel := context.WithTimeout(ctx, 4*time.Second)
+				ct, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 				defer cancel()
 
 				req, err := http.NewRequestWithContext(ct, http.MethodGet, url, nil)
@@ -52,6 +50,10 @@ func ExampleNew_justErrors() {
 		},
 	)
 
-	err := wg.Go(funcs...)
-	fmt.Printf("\n\t err: %v. cause: %v\n\n", err, context.Cause(ctx))
+	err := sync.Go(
+		context.Background(),
+		2, // limit concurrency to 2 goroutines.
+		funcs...,
+	)
+	fmt.Printf("\n\t err: %v\n\n", err)
 }

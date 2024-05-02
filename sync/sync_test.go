@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/sourcegraph/conc"
 	"go.akshayshah.org/attest"
@@ -19,17 +21,15 @@ func TestSync(t *testing.T) {
 		t.Parallel()
 
 		{
-			wgLimited, _ := New(context.Background(), 1)
 			count := 0
-			err := wgLimited.Go()
+			err := Go(context.Background(), 1) // limited
 			attest.Ok(t, err)
 			attest.Equal(t, count, 0)
 		}
 
 		{
-			wgUnlimited, _ := New(context.Background(), -1)
 			count := 0
-			err := wgUnlimited.Go()
+			err := Go(context.Background(), -1) // unlimited
 			attest.Ok(t, err)
 			attest.Equal(t, count, 0)
 		}
@@ -39,26 +39,118 @@ func TestSync(t *testing.T) {
 		t.Parallel()
 
 		{
-			wgLimited, _ := New(context.Background(), 1)
 			count := 0
-			err := wgLimited.Go(func() error {
-				count = count + 1
-				return nil
-			})
+			err := Go(
+				context.Background(),
+				1, // limited
+				func() error {
+					count = count + 1
+					return nil
+				},
+			)
 			attest.Ok(t, err)
 			attest.Equal(t, count, 1)
 		}
 
 		{
-			wgUnlimited, _ := New(context.Background(), -1)
 			count := 0
-			err := wgUnlimited.Go(func() error {
-				count = count + 1
-				return nil
-			})
+			err := Go(
+				context.Background(),
+				-1, // unlimited
+				func() error {
+					count = count + 1
+					return nil
+				},
+			)
 			attest.Ok(t, err)
 			attest.Equal(t, count, 1)
 		}
+	})
+
+	t.Run("cancel context", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("no error", func(t *testing.T) {
+			t.Parallel()
+
+			tm := 1 * time.Second
+			ctx, cancel := context.WithTimeout(context.Background(), tm)
+			defer cancel()
+
+			var count int32 = 0
+			err := Go(
+				ctx,
+				2, // this number must be less than the number of funcs added to `Go`
+				func() error {
+					atomic.AddInt32(&count, 1)
+					time.Sleep(tm + 1*time.Second) // this sleeper should be longer than the one before `cancel()`.
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+			)
+			attest.Ok(t, err)
+			attest.True(t, count < 6)
+		})
+
+		t.Run("with error", func(t *testing.T) {
+			t.Parallel()
+
+			tm := 1 * time.Second
+			ctx, cancel := context.WithTimeout(context.Background(), tm)
+			defer cancel()
+
+			var count int32 = 0
+			err := Go(
+				ctx,
+				2, // this number must be less than the number of funcs added to `Go`
+				func() error {
+					atomic.AddInt32(&count, 1)
+					time.Sleep(tm + 1*time.Second) // this sleeper should be longer than the one before `cancel()`.
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return errors.New("with some error")
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+				func() error {
+					atomic.AddInt32(&count, 1)
+					return nil
+				},
+			)
+			attest.Error(t, err)
+			attest.True(t, count < 6)
+		})
 	})
 
 	t.Run("multiple errors", func(t *testing.T) {
@@ -67,8 +159,9 @@ func TestSync(t *testing.T) {
 		t.Run("limited", func(t *testing.T) {
 			t.Parallel()
 
-			wgLimited, _ := New(context.Background(), 1)
-			err := wgLimited.Go(
+			err := Go(
+				context.Background(),
+				1, // limited
 				func() error {
 					return fmt.Errorf("errorA number %d", 1)
 				},
@@ -88,8 +181,9 @@ func TestSync(t *testing.T) {
 		t.Run("unlimited", func(t *testing.T) {
 			t.Parallel()
 
-			wgUnlimited, _ := New(context.Background(), -1)
-			err := wgUnlimited.Go(
+			err := Go(
+				context.Background(),
+				-1, // unlimited
 				func() error {
 					return fmt.Errorf("errorB number %d", 1)
 				},
@@ -105,76 +199,12 @@ func TestSync(t *testing.T) {
 			errs := uw.Unwrap()
 			attest.Equal(t, len(errs), 3)
 		})
-
-		t.Run("unlimited concurrent", func(t *testing.T) {
-			t.Parallel()
-
-			wgUnlimited, _ := New(context.Background(), -1)
-			ch := make(chan int, 2)
-
-			{ // 1. first call
-				go func() {
-					_ = wgUnlimited.Go(
-						func() error {
-							return fmt.Errorf("errorC number %d", 1)
-						},
-						func() error {
-							return fmt.Errorf("errorC number %d", 2)
-						},
-						func() error {
-							return fmt.Errorf("errorC number %d", 3)
-						},
-					)
-					ch <- 1
-				}()
-			}
-
-			{ // 2. second call
-				go func() {
-					_ = wgUnlimited.Go(
-						func() error {
-							return fmt.Errorf("errorD number %d", 4)
-						},
-						func() error {
-							return fmt.Errorf("errorD number %d", 5)
-						},
-						func() error {
-							return fmt.Errorf("errorD number %d", 6)
-						},
-						func() error {
-							return fmt.Errorf("errorD number %d", 7)
-						},
-						func() error {
-							return fmt.Errorf("errorD number %d", 8)
-						},
-					)
-					ch <- 1
-				}()
-			}
-
-			{ // 3. wait
-				a := <-ch
-				b := <-ch
-				attest.Equal(t, a, 1)
-				attest.Equal(t, b, 1)
-
-				err := wgUnlimited.Go(func() error {
-					return fmt.Errorf("errorE number %d", 9)
-				})
-				uw, ok := err.(interface{ Unwrap() []error })
-				attest.True(t, ok)
-				errs := uw.Unwrap()
-				attest.Equal(t, len(errs), 9)
-			}
-		})
 	})
 
 	t.Run("concurrency", func(t *testing.T) {
 		t.Parallel()
 
 		{
-			wgLimited, _ := New(context.Background(), 1)
-
 			funcs := []func() error{}
 			for i := 0; i <= 4; i++ {
 				funcs = append(funcs,
@@ -185,16 +215,22 @@ func TestSync(t *testing.T) {
 			}
 
 			go func() {
-				err := wgLimited.Go(funcs...)
+				err := Go(
+					context.Background(),
+					100,
+					funcs...,
+				)
 				attest.Ok(t, err)
 			}()
-			err := wgLimited.Go(funcs...)
+			err := Go(
+				context.Background(),
+				10,
+				funcs...,
+			)
 			attest.Ok(t, err)
 		}
 
 		{
-			wgUnlimited, _ := New(context.Background(), -1)
-
 			funcs := []func() error{}
 			for i := 0; i <= 4; i++ {
 				funcs = append(funcs,
@@ -205,10 +241,18 @@ func TestSync(t *testing.T) {
 			}
 
 			go func() {
-				err := wgUnlimited.Go(funcs...)
+				err := Go(
+					context.Background(),
+					-1,
+					funcs...,
+				)
 				attest.Ok(t, err)
 			}()
-			err := wgUnlimited.Go(funcs...)
+			err := Go(
+				context.Background(),
+				-1,
+				funcs...,
+			)
 			attest.Ok(t, err)
 		}
 	})
@@ -219,7 +263,6 @@ func BenchmarkSync(b *testing.B) {
 
 	b.Run("sync limited", func(b *testing.B) {
 		count := 0
-		wgLimited, _ := New(context.Background(), 1)
 		funcs := []func() error{func() error {
 			count = count + 1
 			return nil
@@ -228,13 +271,16 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			_ = wgLimited.Go(funcs...)
+			_ = Go(
+				context.Background(),
+				1,
+				funcs...,
+			)
 		}
 	})
 
 	b.Run("sync unlimited", func(b *testing.B) {
 		count := 0
-		wgUnlimited, _ := New(context.Background(), -1)
 		funcs := []func() error{func() error {
 			count = count + 1
 			return nil
@@ -243,7 +289,11 @@ func BenchmarkSync(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for range b.N {
-			_ = wgUnlimited.Go(funcs...)
+			_ = Go(
+				context.Background(),
+				-1,
+				funcs...,
+			)
 		}
 	})
 
@@ -315,15 +365,18 @@ func BenchmarkSync(b *testing.B) {
 	})
 }
 
-func panicTestHelper(t *testing.T, runFunc func() error, limit int) (recov interface{}) {
+func panicTestHelper(t *testing.T, ctx context.Context, limit int, runFuncs ...func() error) (recov interface{}) {
 	t.Helper()
 
 	defer func() {
 		recov = recover()
 	}()
 
-	wgUnlimited, _ := New(context.Background(), limit)
-	err := wgUnlimited.Go(runFunc)
+	err := Go(
+		ctx,
+		limit,
+		runFuncs...,
+	)
 	attest.Ok(t, err)
 
 	return recov
@@ -366,16 +419,17 @@ func TestPanic(t *testing.T) {
 		for limit := range []int{-1, 1} {
 			got := panicTestHelper(
 				t,
+				context.Background(),
+				limit,
 				func() error {
 					panic("hey hey")
 				},
-				limit,
 			)
 			_, ok := got.(panicValue)
 			attest.True(t, ok)
 			gotStr := fmt.Sprintf("%+#s", got)
 			attest.Subsequence(t, gotStr, "hey hey")          // The panic message
-			attest.Subsequence(t, gotStr, "sync_test.go:370") // The place where the panic happened
+			attest.Subsequence(t, gotStr, "sync_test.go:425") // The place where the panic happened
 		}
 	})
 
@@ -388,16 +442,109 @@ func TestPanic(t *testing.T) {
 
 			got := panicTestHelper(
 				t,
+				context.Background(),
+				limit,
 				func() error {
 					panic(errPanic)
 				},
-				limit,
 			)
 			val, ok := got.(panicError)
 			attest.True(t, ok)
 			gotStr := val.Error()
 			attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
-			attest.Subsequence(t, gotStr, "sync_test.go:392") // The place where the panic happened
+			attest.Subsequence(t, gotStr, "sync_test.go:448") // The place where the panic happened
 		}
+	})
+
+	t.Run("with cancel panic not reached", func(t *testing.T) {
+		t.Parallel()
+
+		tm := 1 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), tm)
+		defer cancel()
+
+		var count int32 = 0
+		errPanic := errors.New("errPanic")
+		got := panicTestHelper(
+			t,
+			ctx,
+			2, // this number must be less than the number of funcs added to `Go`
+			func() error {
+				atomic.AddInt32(&count, 1)
+				time.Sleep(tm + 1*time.Second) // this sleeper should be longer than the one before `cancel()`.
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				time.Sleep(tm + 5*time.Second) // Sleep longer than sleep before `cancel()`.
+				panic(errPanic)
+			},
+		)
+		_, ok := got.(panicError)
+		attest.False(t, ok)
+		attest.Zero(t, got)
+		attest.True(t, count < 6)
+	})
+
+	t.Run("with cancel panic reached", func(t *testing.T) {
+		t.Parallel()
+
+		tm := 1 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), tm)
+		defer cancel()
+
+		var count int32 = 0
+		errPanic := errors.New("errPanic")
+		got := panicTestHelper(
+			t,
+			ctx,
+			2, // this number must be less than the number of funcs added to `Go`
+			func() error {
+				atomic.AddInt32(&count, 1)
+				time.Sleep(tm + 1*time.Second) // this sleeper should be longer than the one before `cancel()`.
+				return nil
+			},
+			func() error {
+				panic(errPanic) // panic without sleeping
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+			func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			},
+		)
+		val, ok := got.(panicError)
+		attest.True(t, ok)
+		gotStr := val.Error()
+		attest.Subsequence(t, gotStr, errPanic.Error())   // The panic message
+		attest.Subsequence(t, gotStr, "sync_test.go:524") // The place where the panic happened
+		attest.True(t, count < 6)
 	})
 }

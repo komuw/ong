@@ -309,15 +309,17 @@ func (a app) handleFileServer() http.HandlerFunc {
 // - recoverer middleware.
 // - ong/sync
 func (a app) panic() http.HandlerFunc {
-	wg, _ := ongSync.New(context.Background(), 5)
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		names := []string{"John", "Jane", "Kamau"}
 
-		_ = wg.Go(func() error {
-			names = append(names, "Leon")
-			return nil
-		})
+		_ = ongSync.Go(
+			context.Background(),
+			5,
+			func() error {
+				names = append(names, "Leon")
+				return nil
+			},
+		)
 
 		_ = 93
 		msg := "hey"
