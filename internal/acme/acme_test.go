@@ -495,7 +495,7 @@ func TestAcmeHandler(t *testing.T) {
 						attest.Ok(t, err)
 					}
 
-					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 					r.Host = "2023.example.com"
 					return r
 				},
