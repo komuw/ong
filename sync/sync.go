@@ -17,7 +17,7 @@ import (
 //
 
 // Go waits for a collection of goroutines to finish. It has almost similar semantics to [sync.WaitGroup] and/or [golang.org/x/sync/errgroup.Group]
-// It limits the number of active goroutines to at most n. If n is negative, the limit is set to [runtime.NumCPU]
+// It limits the number of active goroutines to at most n. If n<=0, the limit is set to [runtime.NumCPU]
 //
 // It calls each of the given functions in a new goroutine and blocks until the new goroutine can be added without the number of
 // active goroutines in the group exceeding the configured limit.
