@@ -22,9 +22,9 @@ import (
 // It calls each of the given functions in a new goroutine and blocks until the new goroutine can be added without the number of
 // active goroutines in the group exceeding the configured limit.
 //
-// It also blocks until all function calls from the [Go] method have returned, then returns the concated non-nil errors(if any) from them.
-// If any of those functions panic, [Go] will also propagate that panic.
-// Unlike [golang.org/x/sync/errgroup.Group] errors(or panics) do not cancel the context.
+// It also blocks until all function calls have returned, then returns the concated non-nil errors(if any) from them.
+// If any of those functions panic, [Go] will propagate that panic.
+// Unlike [golang.org/x/sync/errgroup.Group] errors and panics do not cancel the context.
 //
 // If callers of [Go] cancel ctx, it will return after the current executing func has finished.
 func Go(ctx context.Context, n int, funcs ...func() error) error {

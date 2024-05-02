@@ -52,7 +52,7 @@ func ExampleGo_justErrors() {
 
 	err := sync.Go(
 		context.Background(),
-		2,
+		2, // limit concurrency to 2 goroutines.
 		funcs...,
 	)
 	fmt.Printf("\n\t err: %v\n\n", err)
