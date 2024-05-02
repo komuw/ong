@@ -156,6 +156,7 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
 		if strings.HasPrefix(r.URL.Path, challengeURI) {
+			fileTok := []byte("ong/acme: placeholder token") // If you see this as a response, consider it a bug in ong.
 			domain := r.Host
 
 			{ // error cases
@@ -205,21 +206,37 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 					return
 				}
 
-				// todo: check if the token supplied in the url is known to us and error otherwise.
+				tokenPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+				tok, errE := os.ReadFile(tokenPath)
+				if errE != nil {
+					http.Error(
+						w,
+						errE.Error(),
+						http.StatusInternalServerError,
+					)
+					return
+				}
+				fileTok = tok
+
+				{ // Check if the token supplied in the url is known to us and error otherwise.
+					iTok := strings.Split(
+						strings.TrimRight(r.URL.Path, "/"),
+						"/",
+					)
+					incomingTok := iTok[len(iTok)-1]
+					if string(fileTok) != incomingTok { // This assumes that the code that wrote `tokenFileName` to disk didn't add any characters like newlines.
+						e := errors.New("ong/acme: requested token for well-known/acme-challenge not found")
+						http.Error(
+							w,
+							e.Error(),
+							http.StatusNotFound,
+						)
+						return
+					}
+				}
 			}
 
-			certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-			tok, errE := os.ReadFile(certPath)
-			if errE != nil {
-				http.Error(
-					w,
-					errE.Error(),
-					http.StatusInternalServerError,
-				)
-				return
-			}
-
-			_, _ = w.Write(tok)
+			_, _ = w.Write(fileTok)
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -503,8 +520,8 @@ func (m *manager) fromAcme(ctx context.Context, domain string) (_ *tls.Certifica
 }
 
 func (m *manager) setToken(domain, token string) {
-	certPath := filepath.Join(m.diskCacheDir, domain, tokenFileName)
-	if err := os.WriteFile(certPath, []byte(token), 0o600); err != nil {
+	tokenPath := filepath.Join(m.diskCacheDir, domain, tokenFileName)
+	if err := os.WriteFile(tokenPath, []byte(token), 0o600); err != nil {
 		m.l.Error("m.setToken", "error", err)
 	}
 }
