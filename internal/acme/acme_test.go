@@ -628,11 +628,11 @@ func BenchmarkHandler(b *testing.B) {
 	msg := "hello"
 	wrappedHandler := Handler(someAcmeAppHandler(msg))
 
+	token := "myToken"
 	{
 		diskCacheDir, err := diskCachedir()
 		attest.Ok(b, err)
 
-		token := "myToken"
 		certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
 		err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
 		attest.Ok(b, err)
@@ -646,7 +646,7 @@ func BenchmarkHandler(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 			req.Host = domain
 			wrappedHandler.ServeHTTP(rec, req)
 
