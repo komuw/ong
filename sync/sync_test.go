@@ -73,12 +73,9 @@ func TestSync(t *testing.T) {
 		t.Run("no error", func(t *testing.T) {
 			t.Parallel()
 
-			tm := time.Duration(1)
-			ctx, cancel := context.WithCancel(context.Background())
-			go func() {
-				time.Sleep(tm * time.Second)
-				cancel()
-			}()
+			tm := 1 * time.Second
+			ctx, cancel := context.WithTimeout(context.Background(), tm)
+			defer cancel()
 
 			var count int32 = 0
 			err := Go(
@@ -117,12 +114,9 @@ func TestSync(t *testing.T) {
 		t.Run("with error", func(t *testing.T) {
 			t.Parallel()
 
-			tm := time.Duration(1)
-			ctx, cancel := context.WithCancel(context.Background())
-			go func() {
-				time.Sleep(tm * time.Second)
-				cancel()
-			}()
+			tm := 1 * time.Second
+			ctx, cancel := context.WithTimeout(context.Background(), tm)
+			defer cancel()
 
 			var count int32 = 0
 			err := Go(
@@ -465,12 +459,9 @@ func TestPanic(t *testing.T) {
 	t.Run("with cancel panic not reached", func(t *testing.T) {
 		t.Parallel()
 
-		tm := time.Duration(1)
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			time.Sleep(tm * time.Second)
-			cancel()
-		}()
+		tm := 1 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), tm)
+		defer cancel()
 
 		var count int32 = 0
 		errPanic := errors.New("errPanic")
@@ -514,12 +505,9 @@ func TestPanic(t *testing.T) {
 	t.Run("with cancel panic reached", func(t *testing.T) {
 		t.Parallel()
 
-		tm := time.Duration(1)
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			time.Sleep(tm * time.Second)
-			cancel()
-		}()
+		tm := 1 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), tm)
+		defer cancel()
 
 		var count int32 = 0
 		errPanic := errors.New("errPanic")
