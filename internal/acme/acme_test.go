@@ -359,10 +359,20 @@ func TestAcmeHandler(t *testing.T) {
 			attest.True(t, certIsValid(cert))
 		}
 
+		token := ""
+		{
+			diskCacheDir, err := diskCachedir()
+			attest.Ok(t, err)
+			tokenPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+			tok, err := os.ReadFile(tokenPath)
+			attest.Ok(t, err)
+			token = string(tok)
+		}
+
 		msg := "hello"
 		wrappedHandler := Handler(someAcmeAppHandler(msg))
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 		req.Host = domain
 		wrappedHandler.ServeHTTP(rec, req)
 
@@ -449,7 +459,7 @@ func TestAcmeHandler(t *testing.T) {
 						attest.Ok(t, err)
 					}
 
-					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 					r.Host = domain
 					return r
 				},
@@ -518,7 +528,7 @@ func TestAcmeHandler(t *testing.T) {
 						attest.Ok(t, err)
 					}
 
-					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 					r.Host = fmt.Sprintf("%s:2023", domain)
 					return r
 				},
