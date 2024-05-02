@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/komuw/ong/sync"
@@ -56,4 +57,32 @@ func ExampleGo_justErrors() {
 		funcs...,
 	)
 	fmt.Printf("\n\t err: %v\n\n", err)
+}
+
+func ExampleGo_withCancellation() {
+	// Read at most four files, with a concurrency of 2, but cancel the processing after 2 seconds.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	err := sync.Go(
+		ctx,
+		2,
+		func() error {
+			_, err := os.ReadFile("/tmp/file1.txt")
+			return err
+		},
+		func() error {
+			_, err := os.ReadFile("/tmp/file2.txt")
+			return err
+		},
+		func() error {
+			_, err := os.ReadFile("/tmp/file3.txt")
+			return err
+		},
+		func() error {
+			_, err := os.ReadFile("/tmp/file4.txt")
+			return err
+		},
+	)
+	fmt.Printf("err: %v", err)
 }
