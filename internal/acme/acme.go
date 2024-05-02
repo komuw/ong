@@ -224,8 +224,9 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 						"/",
 					)
 					incomingTok := iTok[len(iTok)-1]
+
 					if string(fileTok) != incomingTok { // This assumes that the code that wrote `tokenFileName` to disk didn't add any characters like newlines.
-						e := errors.New("ong/acme: requested token for well-known/acme-challenge not found")
+						e := errors.New("ong/acme: requested token not found for well-known/acme-challenge")
 						http.Error(
 							w,
 							e.Error(),
