@@ -223,7 +223,17 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 						strings.TrimRight(r.URL.Path, "/"),
 						"/",
 					)
-					incomingTok := iTok[len(iTok)-1]
+					iTokStr := iTok[len(iTok)-1]
+
+					accountKeyPath := filepath.Join(diskCacheDir, accountKeyFileName)
+					accountPrivKey, errF := getEcdsaPrivKey(accountKeyPath)
+					if errF != nil {
+						goto continueAnyway
+					}
+					incomingTok, errG := jWKThumbprint(accountPrivKey.PublicKey, iTokStr)
+					if errG != nil {
+						goto continueAnyway
+					}
 
 					if string(fileTok) != incomingTok { // This assumes that the code that wrote `tokenFileName` to disk didn't add any characters like newlines.
 						e := errors.New("ong/acme: requested token not found for well-known/acme-challenge")
@@ -237,6 +247,7 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 				}
 			}
 
+		continueAnyway:
 			_, _ = w.Write(fileTok)
 			w.WriteHeader(http.StatusOK)
 			return
