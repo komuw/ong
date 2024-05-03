@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.95
+- ong/acme: verify the requested acme challenge token: https://github.com/komuw/ong/pull/439
+
 # v0.0.94
 - ong/sync: simplify API: https://github.com/komuw/ong/pull/435
 

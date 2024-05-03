@@ -359,10 +359,20 @@ func TestAcmeHandler(t *testing.T) {
 			attest.True(t, certIsValid(cert))
 		}
 
+		token := ""
+		{
+			diskCacheDir, err := diskCachedir()
+			attest.Ok(t, err)
+			tokenPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+			tok, err := os.ReadFile(tokenPath)
+			attest.Ok(t, err)
+			token = string(tok)
+		}
+
 		msg := "hello"
 		wrappedHandler := Handler(someAcmeAppHandler(msg))
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 		req.Host = domain
 		wrappedHandler.ServeHTTP(rec, req)
 
@@ -449,7 +459,7 @@ func TestAcmeHandler(t *testing.T) {
 						attest.Ok(t, err)
 					}
 
-					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 					r.Host = domain
 					return r
 				},
@@ -495,7 +505,7 @@ func TestAcmeHandler(t *testing.T) {
 						attest.Ok(t, err)
 					}
 
-					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 					r.Host = "2023.example.com"
 					return r
 				},
@@ -518,7 +528,7 @@ func TestAcmeHandler(t *testing.T) {
 						attest.Ok(t, err)
 					}
 
-					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+					r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 					r.Host = fmt.Sprintf("%s:2023", domain)
 					return r
 				},
@@ -526,7 +536,7 @@ func TestAcmeHandler(t *testing.T) {
 				resp: token,
 			},
 			{
-				name: "no token found",
+				name: "file for token not found",
 				req: func() *http.Request {
 					domain := getDomain()
 					r := httptest.NewRequest(http.MethodGet, challengeURI, nil)
@@ -535,6 +545,29 @@ func TestAcmeHandler(t *testing.T) {
 				},
 				code: http.StatusInternalServerError,
 				resp: "no such file or directory",
+			},
+			{
+				name: "token not found",
+				req: func() *http.Request {
+					domain := getDomain()
+					{
+						diskCacheDir, err := diskCachedir()
+						attest.Ok(t, err)
+
+						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+						attest.Ok(t, err)
+
+						err = os.WriteFile(certPath, []byte(token), 0o600)
+						attest.Ok(t, err)
+					}
+
+					r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token+"-different"), nil)
+					r.Host = domain
+					return r
+				},
+				code: http.StatusNotFound,
+				resp: "requested token not found",
 			},
 		}
 
@@ -595,11 +628,11 @@ func BenchmarkHandler(b *testing.B) {
 	msg := "hello"
 	wrappedHandler := Handler(someAcmeAppHandler(msg))
 
+	token := "myToken"
 	{
 		diskCacheDir, err := diskCachedir()
 		attest.Ok(b, err)
 
-		token := "myToken"
 		certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
 		err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
 		attest.Ok(b, err)
@@ -613,7 +646,7 @@ func BenchmarkHandler(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, challengeURI, nil)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
 			req.Host = domain
 			wrappedHandler.ServeHTTP(rec, req)
 
