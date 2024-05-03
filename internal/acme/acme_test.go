@@ -359,20 +359,10 @@ func TestAcmeHandler(t *testing.T) {
 			attest.True(t, certIsValid(cert))
 		}
 
-		token := ""
-		{
-			diskCacheDir, err := diskCachedir()
-			attest.Ok(t, err)
-			tokenPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-			tok, err := os.ReadFile(tokenPath)
-			attest.Ok(t, err)
-			token = string(tok)
-		}
-
 		msg := "hello"
 		wrappedHandler := Handler(someAcmeAppHandler(msg))
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, token), nil)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s%s", challengeURI, acmeTestToken), nil)
 		req.Host = domain
 		wrappedHandler.ServeHTTP(rec, req)
 
