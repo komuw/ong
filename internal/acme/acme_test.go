@@ -616,11 +616,17 @@ func BenchmarkHandler(b *testing.B) {
 		diskCacheDir, err := diskCachedir()
 		attest.Ok(b, err)
 
-		certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
+		tokenPath := filepath.Join(diskCacheDir, domain, tokenFileName)
 		err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
 		attest.Ok(b, err)
 
-		err = os.WriteFile(certPath, []byte(token), 0o600)
+		accountKeyPath := filepath.Join(diskCacheDir, accountKeyFileName)
+		accountPrivKey, err := getEcdsaPrivKey(accountKeyPath)
+		attest.Ok(b, err)
+		tokenToWrite, err := jWKThumbprint(accountPrivKey.PublicKey, token)
+		attest.Ok(b, err)
+
+		err = os.WriteFile(tokenPath, []byte(tokenToWrite), 0o600)
 		attest.Ok(b, err)
 	}
 
