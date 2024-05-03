@@ -437,6 +437,23 @@ func TestAcmeHandler(t *testing.T) {
 		wrappedHandler := Handler(someAcmeAppHandler(msg))
 		token := "myToken"
 
+		setCerts := func(domain string) (certPath, tokenToWrite string) {
+			diskCacheDir, err := diskCachedir()
+			attest.Ok(t, err)
+
+			certPath = filepath.Join(diskCacheDir, domain, tokenFileName)
+			err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+			attest.Ok(t, err)
+
+			accountKeyPath := filepath.Join(diskCacheDir, accountKeyFileName)
+			accountPrivKey, err := getEcdsaPrivKey(accountKeyPath)
+			attest.Ok(t, err)
+			tokenToWrite, err = jWKThumbprint(accountPrivKey.PublicKey, token)
+			attest.Ok(t, err)
+
+			return certPath, tokenToWrite
+		}
+
 		tests := []struct {
 			name string
 			req  func() *http.Request
@@ -448,14 +465,8 @@ func TestAcmeHandler(t *testing.T) {
 				req: func() *http.Request {
 					domain := getDomain()
 					{
-						diskCacheDir, err := diskCachedir()
-						attest.Ok(t, err)
-
-						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
-						attest.Ok(t, err)
-
-						err = os.WriteFile(certPath, []byte(token), 0o600)
+						certPath, tokenToWrite := setCerts(domain)
+						err := os.WriteFile(certPath, []byte(tokenToWrite), 0o600)
 						attest.Ok(t, err)
 					}
 
@@ -494,14 +505,8 @@ func TestAcmeHandler(t *testing.T) {
 				req: func() *http.Request {
 					domain := "2023.example.com"
 					{
-						diskCacheDir, err := diskCachedir()
-						attest.Ok(t, err)
-
-						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
-						attest.Ok(t, err)
-
-						err = os.WriteFile(certPath, []byte(token), 0o600)
+						certPath, tokenToWrite := setCerts(domain)
+						err := os.WriteFile(certPath, []byte(tokenToWrite), 0o600)
 						attest.Ok(t, err)
 					}
 
@@ -517,14 +522,8 @@ func TestAcmeHandler(t *testing.T) {
 				req: func() *http.Request {
 					domain := "example.com"
 					{
-						diskCacheDir, err := diskCachedir()
-						attest.Ok(t, err)
-
-						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
-						attest.Ok(t, err)
-
-						err = os.WriteFile(certPath, []byte(token), 0o600)
+						certPath, tokenToWrite := setCerts(domain)
+						err := os.WriteFile(certPath, []byte(tokenToWrite), 0o600)
 						attest.Ok(t, err)
 					}
 
@@ -551,14 +550,8 @@ func TestAcmeHandler(t *testing.T) {
 				req: func() *http.Request {
 					domain := getDomain()
 					{
-						diskCacheDir, err := diskCachedir()
-						attest.Ok(t, err)
-
-						certPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-						err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
-						attest.Ok(t, err)
-
-						err = os.WriteFile(certPath, []byte(token), 0o600)
+						certPath, tokenToWrite := setCerts(domain)
+						err := os.WriteFile(certPath, []byte(tokenToWrite), 0o600)
 						attest.Ok(t, err)
 					}
 
