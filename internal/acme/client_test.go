@@ -20,6 +20,8 @@ import (
 	"go.akshayshah.org/attest"
 )
 
+const acmeTestToken = "random-unique-token-EuKDOWlre4"
+
 // someAcmeServerHandler mimics an ACME server.
 func someAcmeServerHandler(t *testing.T, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -94,14 +96,14 @@ func someAcmeServerHandler(t *testing.T, domain string) http.HandlerFunc {
 						Type:   "http-01",
 						Url:    fmt.Sprintf("http://%s/acme/chall-v3/7052305704/iSRkIw", r.Host),
 						Status: "pending",
-						Token:  "random-unique-token-EuKDOWlre4",
+						Token:  acmeTestToken,
 					},
 				},
 				EffectiveChallenge: challenge{
 					Type:   "http-01",
 					Url:    fmt.Sprintf("http://%s/acme/chall-v3/7052305704/iSRkIw", r.Host),
 					Status: "pending",
-					Token:  "random-unique-token-EuKDOWlre4",
+					Token:  acmeTestToken,
 				},
 			}
 
@@ -117,7 +119,7 @@ func someAcmeServerHandler(t *testing.T, domain string) http.HandlerFunc {
 				Type:   "http-01",
 				Url:    fmt.Sprintf("http://%s/acme/chall-v3/7052305704/iSRkIw", r.Host),
 				Status: "pending",
-				Token:  "random-unique-token-EuKDOWlre4",
+				Token:  acmeTestToken,
 			}
 
 			w.WriteHeader(http.StatusOK)

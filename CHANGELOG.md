@@ -3,6 +3,10 @@
 Most recent version is listed first.  
 
 
+# v0.0.96
+- ong/acme: verify the requested acme challenge token: https://github.com/komuw/ong/pull/440
+  This is a bug fix for v0.0.95
+
 # v0.0.95
 - ong/acme: verify the requested acme challenge token: https://github.com/komuw/ong/pull/439
 
