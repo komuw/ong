@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"sync"
 	"testing"
 
@@ -723,6 +725,9 @@ func TestTodo(t *testing.T) {
 	check := func(origins []string) error {
 		// origin is defined by the scheme (protocol), hostname (domain), and port
 		// https://developer.mozilla.org/en-US/docs/Glossary/Origin
+		if len(origins) > 1 && slices.Contains(origins, "*") {
+			return errors.New("ong/middleware/cors: single wildcard used together with others")
+		}
 
 		for _, origin := range origins {
 			u, err := url.Parse(origin)
@@ -744,7 +749,7 @@ func TestTodo(t *testing.T) {
 		return nil
 	}
 
-	for _, v := range [][]string{{"http://a.com"}, {"http://b.com/"}, {"https://c.com/hello"}, {"https://d.com:8888"}, {"hzzs://e.com"}, {"f.com"}} {
+	for _, v := range [][]string{{"http://a.com"}, {"http://b.com/"}, {"https://c.com/hello"}, {"https://d.com:8888"}, {"hzzs://e.com"}, {"f.com"}, {"https://g.com", "*"}} {
 		e := check(v)
 
 		fmt.Println("v, err: ", v, e)
