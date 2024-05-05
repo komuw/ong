@@ -767,12 +767,14 @@ func TestTodo(t *testing.T) {
 		{"hzzs://e.com"},
 		{"f.com"},
 		{"https://g.com", "*"},
-		{"http://*h*.com"}, // multiple wildcard
-		{"http://i*.com"},  // wildcard not prefixed to host
-		{"http://*j.com"},  // wildcard is okay
+		{"http://*h*.com"},                       // multiple wildcard
+		{"http://i*.com"},                        // wildcard not prefixed to host
+		{"http://*j.com"},                        // wildcard is okay
+		{"http://*k.com", "http://*another.com"}, // also okay
 	} {
 		e := check(v)
-
 		fmt.Println("v, err: ", v, e)
+		_ = check
+		// getOrigins(v)
 	}
 }
