@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -320,7 +322,6 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 
 	for _, origin := range allowedOrigins {
 		if i := strings.IndexByte(origin, '*'); i >= 0 {
-			fmt.Println("\n\t here, origiin: ", origin) // TODO: komuw
 			// Split the origin in two: start and end string without the *
 			prefix := origin[0:i]
 			suffix := origin[i+1:]
@@ -329,7 +330,6 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 				suffix: suffix,
 				len:    len(prefix) + len(suffix),
 			}
-			fmt.Println("prefix: ", prefix, " suffix: ", suffix) // TODO: komuw
 			allowedWildcardOrigins = append(allowedWildcardOrigins, w)
 		}
 	}
@@ -379,4 +379,40 @@ func getHeaders(ah []string) []string {
 	}
 
 	return allowedHeaders
+}
+
+func validateAllowedOrigins(allowedOrigins []string) error {
+	// origin is defined by the scheme (protocol), hostname (domain), and port
+	// https://developer.mozilla.org/en-US/docs/Glossary/Origin
+	if len(allowedOrigins) > 1 && slices.Contains(allowedOrigins, "*") {
+		return errors.New("ong/middleware/cors: single wildcard used together with others")
+	}
+
+	for _, origin := range allowedOrigins {
+		u, err := url.Parse(origin)
+		if err != nil {
+			return err
+		}
+
+		if u.Scheme == "" {
+			return fmt.Errorf("ong/middleware/cors: bad scheme in `%v`", origin)
+		}
+		if u.Host == "" {
+			return fmt.Errorf("ong/middleware/cors: bad host in `%v`", origin)
+		}
+		if u.Path != "" {
+			return fmt.Errorf("ong/middleware/cors: contains url path in `%v`", origin)
+		}
+
+		if strings.Count(origin, "*") > 1 {
+			return fmt.Errorf("ong/middleware/cors: contains more than one wildcard in `%v`", origin)
+		}
+		if strings.Count(origin, "*") == 1 {
+			if !strings.HasPrefix(u.Host, "*") {
+				return fmt.Errorf("ong/middleware/cors: wildcard not prefixed to host in `%v`", origin)
+			}
+		}
+	}
+
+	return nil
 }

@@ -1,14 +1,10 @@
 package middleware
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"slices"
-	"strings"
 	"sync"
 	"testing"
 
@@ -722,48 +718,10 @@ func TestAreHeadersAllowed(t *testing.T) {
 	}
 }
 
-func TestTodo(t *testing.T) {
-	check := func(origins []string) error {
-		// origin is defined by the scheme (protocol), hostname (domain), and port
-		// https://developer.mozilla.org/en-US/docs/Glossary/Origin
-		if len(origins) > 1 && slices.Contains(origins, "*") {
-			return errors.New("ong/middleware/cors: single wildcard used together with others")
-		}
-
-		for _, origin := range origins {
-			u, err := url.Parse(origin)
-			if err != nil {
-				return err
-			}
-
-			if u.Scheme == "" {
-				return fmt.Errorf("ong/middleware/cors: bad scheme in `%v`", origin)
-			}
-			if u.Host == "" {
-				return fmt.Errorf("ong/middleware/cors: bad host in `%v`", origin)
-			}
-			if u.Path != "" {
-				return fmt.Errorf("ong/middleware/cors: contains url path in `%v`", origin)
-			}
-
-			if strings.Count(origin, "*") > 1 {
-				return fmt.Errorf("ong/middleware/cors: contains more than one wildcard in `%v`", origin)
-			}
-			if strings.Count(origin, "*") == 1 {
-				if !strings.HasPrefix(u.Host, "*") {
-					return fmt.Errorf("ong/middleware/cors: wildcard not prefixed to host in `%v`", origin)
-				}
-			}
-		}
-
-		return nil
-	}
+func TestValidateAllowedOrigins(t *testing.T) {
+	t.Parallel()
 
 	for _, v := range [][]string{
-		{"http://a.com"},
-		{"http://b.com/"},
-		{"https://c.com/hello"},
-		{"https://d.com:8888"},
 		{"hzzs://e.com"},
 		{"f.com"},
 		{"https://g.com", "*"},
@@ -772,9 +730,56 @@ func TestTodo(t *testing.T) {
 		{"http://*j.com"},                        // wildcard is okay
 		{"http://*k.com", "http://*another.com"}, // also okay
 	} {
-		e := check(v)
+		e := validateAllowedOrigins(v)
 		fmt.Println("v, err: ", v, e)
-		_ = check
-		// getOrigins(v)
+		_ = validateAllowedOrigins
+		getOrigins(v)
+	}
+
+	tests := []struct {
+		name           string
+		allowedOrigins []string
+		succeeds       bool
+		errMsg         string
+	}{
+		{
+			name:           "okay",
+			allowedOrigins: []string{"http://a.com"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "has slash url path",
+			allowedOrigins: []string{"http://b.com/"},
+			succeeds:       false,
+			errMsg:         "contains url path",
+		},
+		{
+			name:           "has url path",
+			allowedOrigins: []string{"https://c.com/hello"},
+			succeeds:       false,
+			errMsg:         "contains url path",
+		},
+		{
+			name:           "okay with port",
+			allowedOrigins: []string{"https://d.com:8888"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowedOrigins(tt.allowedOrigins)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
 	}
 }
