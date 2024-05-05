@@ -25,7 +25,7 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -46,7 +46,7 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, http.MethodGet) // preflight request header set
@@ -78,7 +78,7 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		// preflight request header NOT set
@@ -145,7 +145,7 @@ func TestCorsPreflight(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello there from someCorsHandler"
-				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -219,7 +219,7 @@ func TestCorsPreflight(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(originHeader, "http://some-origin.com")
@@ -283,7 +283,7 @@ func TestCorsPreflight(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, tt.allowedHeaders, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, tt.allowedHeaders, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -315,7 +315,7 @@ func TestCorsActualRequest(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -334,7 +334,7 @@ func TestCorsActualRequest(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(originHeader, "http://example.com")
@@ -399,7 +399,7 @@ func TestCorsActualRequest(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 				req.Header.Add(originHeader, tt.origin)
@@ -463,7 +463,7 @@ func TestCorsActualRequest(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(tt.method, "/someUri", nil)
 				req.Header.Add(originHeader, "http://some-origin.com")
@@ -492,7 +492,7 @@ func TestCorsActualRequest(t *testing.T) {
 		msg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -526,6 +526,7 @@ func TestIsOriginAllowed(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		domain         string
 		origin         string
 		allowedOrigins []string
 		allow          bool
@@ -533,13 +534,23 @@ func TestIsOriginAllowed(t *testing.T) {
 	}{
 		{
 			name:           "nil allowedOrigins",
-			origin:         "some-origin",
+			domain:         "example.com",
+			origin:         "https://example.com",
 			allowedOrigins: nil,
 			allow:          true,
-			allowAll:       true,
+			allowAll:       false,
+		},
+		{
+			name:           "nil allowedOrigins also allows www",
+			domain:         "example.com",
+			origin:         "https://www.example.com",
+			allowedOrigins: nil,
+			allow:          true,
+			allowAll:       false,
 		},
 		{
 			name:           "star allowedOrigins",
+			domain:         "example.com",
 			origin:         "some-origin",
 			allowedOrigins: []string{"*"},
 			allow:          true,
@@ -547,6 +558,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "matched allowedOrigins",
+			domain:         "example.com",
 			origin:         "http://example.com",
 			allowedOrigins: []string{"http://hey.com", "http://example.com"},
 			allow:          true,
@@ -554,6 +566,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:   "not matched allowedOrigins",
+			domain: "example.com",
 			origin: "http://example.com",
 			// an origin consists of the scheme, domain & port
 			allowedOrigins: []string{"https://example.com"},
@@ -562,6 +575,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "star allowedOrigins is supreme",
+			domain:         "example.com",
 			origin:         "http://hey.com",
 			allowedOrigins: []string{"https://example.com", "*"},
 			allow:          true,
@@ -569,6 +583,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard allowedOrigins",
+			domain:         "example.com",
 			origin:         "http://example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -576,6 +591,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard even in scheme ",
+			domain:         "example.com",
 			origin:         "https://www.example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -583,6 +599,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard subdomain",
+			domain:         "example.com",
 			origin:         "https://subdomain.example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -594,7 +611,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins)
+			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins, tt.domain)
 			allow, allowAll := isOriginAllowed(tt.origin, allowedOrigins, allowedWildcardOrigins)
 			attest.Equal(t, allow, tt.allow)
 			attest.Equal(t, allowAll, tt.allowAll)
