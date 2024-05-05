@@ -69,9 +69,8 @@ func cors(
 	allowedHeaders []string,
 	allowCredentials bool,
 	corsCacheDuration time.Duration,
-	// domain string,// TODO: komuw
+	domain string,
 ) http.HandlerFunc {
-	domain := "example.com" // TODO: komuw
 	if err := acme.Validate(domain); err != nil {
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
