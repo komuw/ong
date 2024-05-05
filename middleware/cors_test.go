@@ -811,6 +811,13 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			succeeds:         true,
 			errMsg:           "",
 		},
+		{
+			name:             "one wildcard and credentials",
+			allowedOrigins:   []string{"*"},
+			allowCredentials: true,
+			succeeds:         false,
+			errMsg:           "allowCredentials used together with wildcard",
+		},
 	}
 
 	for _, tt := range tests {
