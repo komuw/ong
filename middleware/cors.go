@@ -86,7 +86,9 @@ func cors(
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
 
-	if corsCacheDuration < 1*time.Second { // It is measured in seconds.
+	if corsCacheDuration < 1*time.Second && (corsCacheDuration != 0*time.Second) {
+		// It is measured in seconds.
+		// Specifying a value of 0 tells browsers not to cache the preflight response, hence we should make it possible for one to specify zero seconds.
 		corsCacheDuration = config.DefaultCorsCacheDuration
 	}
 
@@ -101,7 +103,7 @@ func cors(
 				- https://jub0bs.com/posts/2023-02-08-fearless-cors/#4-categorise-requests-correctly
 			*/
 			// handle preflight request
-			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders, allowCredentials, corsCacheDuration)
+			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders, allowCredentials, int(corsCacheDuration.Seconds()))
 			// Preflight requests are standalone and should stop the chain as some other
 			// middleware may not handle OPTIONS requests correctly. One typical example
 			// is authentication middleware ; OPTIONS requests won't carry authentication headers.
@@ -122,7 +124,7 @@ func handlePreflight(
 	allowedMethods []string,
 	allowedHeaders []string,
 	allowCredentials bool,
-	corsCacheDuration time.Duration,
+	corsCacheDuration int,
 ) {
 	headers := w.Header()
 	origin := r.Header.Get(originHeader)
@@ -185,7 +187,7 @@ func handlePreflight(
 	}
 
 	// (d)
-	headers.Set(acmaHeader, fmt.Sprintf("%d", int(corsCacheDuration.Seconds())))
+	headers.Set(acmaHeader, fmt.Sprintf("%d", corsCacheDuration))
 
 	// (e)
 	if allowCredentials {

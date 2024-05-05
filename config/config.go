@@ -208,7 +208,7 @@ func (o Opts) GoString() string {
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
 // allowCredentials indicates whether the request can include user credentials like cookies, HTTP authentication or client side SSL certificates.
-// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead, 0 second is an exception and is used as is.
 //
 // csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
 //
