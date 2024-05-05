@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"slices"
 	"sync"
 	"testing"
 
@@ -715,5 +717,38 @@ func TestAreHeadersAllowed(t *testing.T) {
 			allowed := areHeadersAllowed(tt.reqHeader, allowedHeaders)
 			attest.Equal(t, allowed, tt.allowed)
 		})
+	}
+}
+
+func TestTodo(t *testing.T) {
+	check := func(origin string) error {
+		// origin is defined by the scheme (protocol), hostname (domain), and port
+		// https://developer.mozilla.org/en-US/docs/Glossary/Origin
+		u, err := url.Parse(origin)
+		if err != nil {
+			return err
+		}
+
+		// Scheme
+		// Host
+		// Path
+		// kama.Dirp(u)
+		if !slices.Contains([]string{"http", "https"}, u.Scheme) {
+			return fmt.Errorf("ong/middleware/cors: bad scheme for `%v`", origin)
+		}
+		if u.Host == "" {
+			return fmt.Errorf("ong/middleware/cors: bad host for `%v`", origin)
+		}
+		if u.Path != "" {
+			return fmt.Errorf("ong/middleware/cors: should not contain url path `%v`", origin)
+		}
+
+		return nil
+	}
+
+	for _, v := range []string{"http://a.com", "http://b.com/", "https://c.com/hello", "https://d.com:8888", "hzzs://e.com"} {
+		e := check(v)
+
+		fmt.Println("v, err: ", v, e)
 	}
 }
