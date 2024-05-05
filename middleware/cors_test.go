@@ -721,16 +721,6 @@ func TestAreHeadersAllowed(t *testing.T) {
 func TestValidateAllowedOrigins(t *testing.T) {
 	t.Parallel()
 
-	for _, v := range [][]string{
-		{"http://*j.com"},                        // wildcard is okay
-		{"http://*k.com", "http://*another.com"}, // also okay
-	} {
-		e := validateAllowedOrigins(v)
-		fmt.Println("v, err: ", v, e)
-		_ = validateAllowedOrigins
-		getOrigins(v)
-	}
-
 	tests := []struct {
 		name           string
 		allowedOrigins []string
@@ -794,6 +784,12 @@ func TestValidateAllowedOrigins(t *testing.T) {
 		{
 			name:           "wildcard is okay",
 			allowedOrigins: []string{"http://*j.com"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "wildcard in different domains",
+			allowedOrigins: []string{"http://*k.com", "http://*another.com"},
 			succeeds:       true,
 			errMsg:         "",
 		},
