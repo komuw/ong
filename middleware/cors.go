@@ -41,7 +41,8 @@ const (
 	acacHeader = "Access-Control-Allow-Credentials"
 	// header to allow CORS to resources in a private network(eg behind a VPN)
 	// you can set this header to `true` when you receive a preflight request if you want to allow access.
-	// Otherwise omit it entirely(as we will in this library)
+	// Otherwise omit it entirely(as we will in this library).
+	// If we ever implement this, read; https://jub0bs.com/posts/2023-02-08-fearless-cors/#3-provide-support-for-private-network-access
 	acrpnHeader = "Access-Control-Request-Private-Network"
 	_           = acrpnHeader
 	// acmaHeader stores how long(in seconds) the results of a preflight request can be cached.
