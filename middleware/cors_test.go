@@ -722,10 +722,11 @@ func TestValidateAllowedOrigins(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name           string
-		allowedOrigins []string
-		succeeds       bool
-		errMsg         string
+		name             string
+		allowedOrigins   []string
+		allowCredentials bool
+		succeeds         bool
+		errMsg           string
 	}{
 		{
 			name:           "okay",
@@ -734,70 +735,81 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			errMsg:         "",
 		},
 		{
-			name:           "has slash url path",
-			allowedOrigins: []string{"http://b.com/"},
-			succeeds:       false,
-			errMsg:         "contains url path",
+			name:             "has slash url path",
+			allowedOrigins:   []string{"http://b.com/"},
+			allowCredentials: false,
+			succeeds:         false,
+			errMsg:           "contains url path",
 		},
 		{
-			name:           "has url path",
-			allowedOrigins: []string{"https://c.com/hello"},
-			succeeds:       false,
-			errMsg:         "contains url path",
+			name:             "has url path",
+			allowedOrigins:   []string{"https://c.com/hello"},
+			allowCredentials: false,
+			succeeds:         false,
+			errMsg:           "contains url path",
 		},
 		{
-			name:           "okay with port",
-			allowedOrigins: []string{"https://d.com:8888"},
-			succeeds:       true,
-			errMsg:         "",
+			name:             "okay with port",
+			allowedOrigins:   []string{"https://d.com:8888"},
+			allowCredentials: false,
+			succeeds:         true,
+			errMsg:           "",
 		},
 		{
-			name:           "custom scheme okay",
-			allowedOrigins: []string{"hzzs://e.com"},
-			succeeds:       true,
-			errMsg:         "",
+			name:             "custom scheme okay",
+			allowedOrigins:   []string{"hzzs://e.com"},
+			allowCredentials: false,
+			succeeds:         true,
+			errMsg:           "",
 		},
 		{
-			name:           "missing scheme",
-			allowedOrigins: []string{"f.com"},
-			succeeds:       false,
-			errMsg:         "bad scheme",
+			name:             "missing scheme",
+			allowedOrigins:   []string{"f.com"},
+			allowCredentials: false,
+			succeeds:         false,
+			errMsg:           "bad scheme",
 		},
 		{
-			name:           "wildcard with others",
-			allowedOrigins: []string{"https://g.com", "*"},
-			succeeds:       false,
-			errMsg:         "single wildcard used together with others",
+			name:             "wildcard with others",
+			allowedOrigins:   []string{"https://g.com", "*"},
+			allowCredentials: false,
+			succeeds:         false,
+			errMsg:           "single wildcard used together with others",
 		},
 		{
-			name:           "multiple wildcard",
-			allowedOrigins: []string{"http://*h*.com"},
-			succeeds:       false,
-			errMsg:         "contains more than one wildcard",
+			name:             "multiple wildcard",
+			allowedOrigins:   []string{"http://*h*.com"},
+			allowCredentials: false,
+			succeeds:         false,
+			errMsg:           "contains more than one wildcard",
 		},
 		{
-			name:           "wildcard not prefixed to host",
-			allowedOrigins: []string{"http://i*.com"},
-			succeeds:       false,
-			errMsg:         "wildcard not prefixed to host",
+			name:             "wildcard not prefixed to host",
+			allowedOrigins:   []string{"http://i*.com"},
+			allowCredentials: false,
+			succeeds:         false,
+			errMsg:           "wildcard not prefixed to host",
 		},
 		{
-			name:           "wildcard is okay",
-			allowedOrigins: []string{"http://*j.com"},
-			succeeds:       true,
-			errMsg:         "",
+			name:             "wildcard is okay",
+			allowedOrigins:   []string{"http://*j.com"},
+			allowCredentials: false,
+			succeeds:         true,
+			errMsg:           "",
 		},
 		{
-			name:           "wildcard in different domains",
-			allowedOrigins: []string{"http://*k.com", "http://*another.com"},
-			succeeds:       true,
-			errMsg:         "",
+			name:             "wildcard in different domains",
+			allowedOrigins:   []string{"http://*k.com", "http://*another.com"},
+			allowCredentials: false,
+			succeeds:         true,
+			errMsg:           "",
 		},
 		{
-			name:           "one wildcard",
-			allowedOrigins: []string{"*"},
-			succeeds:       true,
-			errMsg:         "",
+			name:             "one wildcard",
+			allowedOrigins:   []string{"*"},
+			allowCredentials: false,
+			succeeds:         true,
+			errMsg:           "",
 		},
 	}
 
@@ -806,7 +818,7 @@ func TestValidateAllowedOrigins(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateAllowedOrigins(tt.allowedOrigins)
+			err := validateAllowedOrigins(tt.allowedOrigins, tt.allowCredentials)
 			if tt.succeeds {
 				attest.Ok(t, err)
 			} else {
