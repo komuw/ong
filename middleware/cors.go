@@ -70,7 +70,7 @@ func cors(
 	corsCacheDuration time.Duration,
 ) http.HandlerFunc {
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
-	if err := validateAllowedOrigins(allowedOrigins, allowCredentials); err != nil {
+	if err := validateAllowedOrigins(allowedOrigins); err != nil {
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
 
@@ -385,7 +385,7 @@ func getHeaders(ah []string) []string {
 	return allowedHeaders
 }
 
-func validateAllowedOrigins(allowedOrigins []string, allowCredentials bool) error {
+func validateAllowedOrigins(allowedOrigins []string) error {
 	/*
 		origin is defined by the scheme (protocol), hostname (domain), and port
 		https://developer.mozilla.org/en-US/docs/Glossary/Origin
@@ -394,11 +394,6 @@ func validateAllowedOrigins(allowedOrigins []string, allowCredentials bool) erro
 		return errors.New("ong/middleware/cors: single wildcard used together with others")
 	}
 
-	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" && allowCredentials {
-		// Credentialed requests cannot be used with wildcard.
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#credentialed_requests_and_wildcards
-		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard")
-	}
 	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
 		return nil
 	}
@@ -427,6 +422,17 @@ func validateAllowedOrigins(allowedOrigins []string, allowCredentials bool) erro
 				return fmt.Errorf("ong/middleware/cors: wildcard not prefixed to host in `%v`", origin)
 			}
 		}
+	}
+
+	return nil
+}
+
+func validateAllowCredentials(allowCredentials bool, allowedOrigins []string) error {
+	// `validateAllowedOrigins` has already checked that wildcard can only exist in slice of len 1.
+	if allowCredentials && len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
+		// Credentialed requests cannot be used with wildcard.
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#credentialed_requests_and_wildcards
+		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard")
 	}
 
 	return nil
