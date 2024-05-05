@@ -320,7 +320,7 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 
 	for _, origin := range allowedOrigins {
 		if i := strings.IndexByte(origin, '*'); i >= 0 {
-			fmt.Println("\n\t here, origiin: ", origin)
+			fmt.Println("\n\t here, origiin: ", origin) // TODO: komuw
 			// Split the origin in two: start and end string without the *
 			prefix := origin[0:i]
 			suffix := origin[i+1:]
@@ -329,7 +329,7 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 				suffix: suffix,
 				len:    len(prefix) + len(suffix),
 			}
-			fmt.Println("prefix: ", prefix, " suffix: ", suffix)
+			fmt.Println("prefix: ", prefix, " suffix: ", suffix) // TODO: komuw
 			allowedWildcardOrigins = append(allowedWildcardOrigins, w)
 		}
 	}
