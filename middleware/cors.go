@@ -77,6 +77,10 @@ func cors(
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
 
+	if err := validateAllowCredentials(allowCredentials, allowedOrigins); err != nil {
+		panic(err) // TODO: komuw, should this not happen in config.New ?
+	}
+
 	if corsCacheDuration < 1*time.Second { // It is measured in seconds.
 		corsCacheDuration = config.DefaultCorsCacheDuration
 	}
