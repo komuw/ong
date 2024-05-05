@@ -722,7 +722,6 @@ func TestValidateAllowedOrigins(t *testing.T) {
 	t.Parallel()
 
 	for _, v := range [][]string{
-
 		{"f.com"},
 		{"https://g.com", "*"},
 		{"http://*h*.com"},                       // multiple wildcard
@@ -775,8 +774,8 @@ func TestValidateAllowedOrigins(t *testing.T) {
 		{
 			name:           "missing scheme",
 			allowedOrigins: []string{"f.com"},
-			succeeds:       true,
-			errMsg:         "",
+			succeeds:       false,
+			errMsg:         "bad scheme",
 		},
 	}
 
