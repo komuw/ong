@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/komuw/ong/config"
+	"github.com/komuw/ong/internal/acme"
 )
 
 // Some of the code here is inspired(or taken from) by:
@@ -58,7 +59,7 @@ const (
 
 // cors is a middleware to implement Cross-Origin Resource Sharing support.
 //
-// If allowedOrigins is nil, domain is used. You can also use * to allow all.
+// If allowedOrigins is nil, domain and its www variant are used. You can also use * to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 func cors(
@@ -71,6 +72,10 @@ func cors(
 	// domain string,// TODO: komuw
 ) http.HandlerFunc {
 	domain := "example.com" // TODO: komuw
+	if err := acme.Validate(domain); err != nil {
+		panic(err) // TODO: komuw, should this not happen in config.New ?
+	}
+
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins, domain)
 	if err := validateAllowedOrigins(allowedOrigins); err != nil {
 		panic(err) // TODO: komuw, should this not happen in config.New ?
@@ -320,7 +325,14 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 
 func getOrigins(ao []string, domain string) (allowedOrigins []string, allowedWildcardOrigins []wildcard) {
 	if len(ao) == 0 {
-		return []string{"*"}, []wildcard{}
+		if strings.Contains(domain, "*") { // `acme.Validate(domain)` should have been called prior.
+			domain = domain[2:] // remove the `*` and `.`
+		}
+		domains := []string{"https://" + domain}
+		if !strings.HasPrefix(domain, "www") && strings.Count(domain, ".") == 1 {
+			domains = append(domains, "https://www."+domain) // as a special case, add `www`
+		}
+		return domains, []wildcard{}
 	}
 
 	canon := []string{}

@@ -535,10 +535,18 @@ func TestIsOriginAllowed(t *testing.T) {
 		{
 			name:           "nil allowedOrigins",
 			domain:         "example.com",
-			origin:         "some-origin",
+			origin:         "https://example.com",
 			allowedOrigins: nil,
 			allow:          true,
-			allowAll:       true,
+			allowAll:       false,
+		},
+		{
+			name:           "nil allowedOrigins also allows www",
+			domain:         "example.com",
+			origin:         "https://www.example.com",
+			allowedOrigins: nil,
+			allow:          true,
+			allowAll:       false,
 		},
 		{
 			name:           "star allowedOrigins",
