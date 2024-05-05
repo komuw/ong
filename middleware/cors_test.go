@@ -793,6 +793,12 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			succeeds:       true,
 			errMsg:         "",
 		},
+		{
+			name:           "one wildcard",
+			allowedOrigins: []string{"*"},
+			succeeds:       true,
+			errMsg:         "",
+		},
 	}
 
 	for _, tt := range tests {

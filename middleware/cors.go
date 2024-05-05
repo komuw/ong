@@ -70,6 +70,10 @@ func cors(
 	corsCacheDuration time.Duration,
 ) http.HandlerFunc {
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
+	if err := validateAllowedOrigins(allowedOrigins); err != nil {
+		panic(err) // TODO: komuw, should this not happen in config.New ?
+	}
+
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
 
@@ -386,6 +390,9 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 	// https://developer.mozilla.org/en-US/docs/Glossary/Origin
 	if len(allowedOrigins) > 1 && slices.Contains(allowedOrigins, "*") {
 		return errors.New("ong/middleware/cors: single wildcard used together with others")
+	}
+	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
+		return nil
 	}
 
 	for _, origin := range allowedOrigins {
