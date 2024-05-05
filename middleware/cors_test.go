@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"slices"
 	"sync"
 	"testing"
 
@@ -733,7 +732,7 @@ func TestTodo(t *testing.T) {
 		// Host
 		// Path
 		// kama.Dirp(u)
-		if !slices.Contains([]string{"http", "https"}, u.Scheme) {
+		if u.Scheme == "" {
 			return fmt.Errorf("ong/middleware/cors: bad scheme for `%v`", origin)
 		}
 		if u.Host == "" {
@@ -746,7 +745,7 @@ func TestTodo(t *testing.T) {
 		return nil
 	}
 
-	for _, v := range []string{"http://a.com", "http://b.com/", "https://c.com/hello", "https://d.com:8888", "hzzs://e.com"} {
+	for _, v := range []string{"http://a.com", "http://b.com/", "https://c.com/hello", "https://d.com:8888", "hzzs://e.com", "f.com"} {
 		e := check(v)
 
 		fmt.Println("v, err: ", v, e)
