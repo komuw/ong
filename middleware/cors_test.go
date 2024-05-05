@@ -749,6 +749,11 @@ func TestTodo(t *testing.T) {
 			if strings.Count(origin, "*") > 1 {
 				return fmt.Errorf("ong/middleware/cors: contains more than one wildcard in `%v`", origin)
 			}
+			if strings.Count(origin, "*") == 1 {
+				if !strings.HasPrefix(u.Host, "*") {
+					return fmt.Errorf("ong/middleware/cors: wildcard not prefixed to host in `%v`", origin)
+				}
+			}
 		}
 
 		return nil
@@ -763,6 +768,7 @@ func TestTodo(t *testing.T) {
 		{"f.com"},
 		{"https://g.com", "*"},
 		{"http://*h*.com"}, // multiple wildcard
+		{"http://h*.com"},  // wildcard not prefixed to host
 	} {
 		e := check(v)
 
