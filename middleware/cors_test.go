@@ -720,32 +720,31 @@ func TestAreHeadersAllowed(t *testing.T) {
 }
 
 func TestTodo(t *testing.T) {
-	check := func(origin string) error {
+	check := func(origins []string) error {
 		// origin is defined by the scheme (protocol), hostname (domain), and port
 		// https://developer.mozilla.org/en-US/docs/Glossary/Origin
-		u, err := url.Parse(origin)
-		if err != nil {
-			return err
-		}
 
-		// Scheme
-		// Host
-		// Path
-		// kama.Dirp(u)
-		if u.Scheme == "" {
-			return fmt.Errorf("ong/middleware/cors: bad scheme for `%v`", origin)
-		}
-		if u.Host == "" {
-			return fmt.Errorf("ong/middleware/cors: bad host for `%v`", origin)
-		}
-		if u.Path != "" {
-			return fmt.Errorf("ong/middleware/cors: should not contain url path `%v`", origin)
+		for _, origin := range origins {
+			u, err := url.Parse(origin)
+			if err != nil {
+				return err
+			}
+
+			if u.Scheme == "" {
+				return fmt.Errorf("ong/middleware/cors: bad scheme in `%v`", origin)
+			}
+			if u.Host == "" {
+				return fmt.Errorf("ong/middleware/cors: bad host in `%v`", origin)
+			}
+			if u.Path != "" {
+				return fmt.Errorf("ong/middleware/cors: contains url path in `%v`", origin)
+			}
 		}
 
 		return nil
 	}
 
-	for _, v := range []string{"http://a.com", "http://b.com/", "https://c.com/hello", "https://d.com:8888", "hzzs://e.com", "f.com"} {
+	for _, v := range [][]string{{"http://a.com"}, {"http://b.com/"}, {"https://c.com/hello"}, {"https://d.com:8888"}, {"hzzs://e.com"}, {"f.com"}} {
 		e := check(v)
 
 		fmt.Println("v, err: ", v, e)
