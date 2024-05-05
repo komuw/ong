@@ -107,7 +107,7 @@ func TestCorsPreflight(t *testing.T) {
 		}{
 			{
 				name:           "star origins",
-				origin:         "http:/example.com",
+				origin:         "http://example.com",
 				allowedOrigins: []string{"*"},
 				succeed:        true,
 				statusCode:     http.StatusNoContent,
@@ -115,16 +115,16 @@ func TestCorsPreflight(t *testing.T) {
 			},
 			{
 				name:           "origin not matched",
-				origin:         "http:/example.com",
-				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
+				origin:         "http://example.com",
+				allowedOrigins: []string{"https://example.com", "http://www.hey.com"},
 				succeed:        false,
 				statusCode:     http.StatusNoContent,
 				content:        "", // someCorsHandler is NOT called.
 			},
 			{
 				name:           "origin matched",
-				origin:         "http:/www.example.com",
-				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
+				origin:         "http://www.example.com",
+				allowedOrigins: []string{"http://www.example.com", "http://www.hey.com"},
 				succeed:        true,
 				statusCode:     http.StatusNoContent,
 				content:        "", // someCorsHandler is NOT called.
@@ -372,22 +372,22 @@ func TestCorsActualRequest(t *testing.T) {
 			},
 			{
 				name:           "star origins",
-				origin:         "http:/example.com",
+				origin:         "http://example.com",
 				allowedOrigins: []string{"*"},
 				succeed:        true,
 				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "origin not matched",
-				origin:         "http:/example.com",
-				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
+				origin:         "http://example.com",
+				allowedOrigins: []string{"https://example.com", "http://www.hey.com"},
 				succeed:        false,
 				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "origin matched",
-				origin:         "http:/www.example.com",
-				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
+				origin:         "http://www.example.com",
+				allowedOrigins: []string{"http://www.example.com", "http://www.hey.com"},
 				succeed:        true,
 				statusCode:     http.StatusOK,
 			},
