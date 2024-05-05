@@ -822,24 +822,48 @@ func TestValidateAllowCredentials(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		allowedOrigins   []string
 		allowCredentials bool
+		allowedOrigins   []string
+		allowedMethods   []string
+		allowedHeaders   []string
 		succeeds         bool
 		errMsg           string
 	}{
 		{
 			name:             "one wildcard origin and credentials",
-			allowedOrigins:   []string{"*"},
 			allowCredentials: true,
+			allowedOrigins:   []string{"*"},
+			allowedMethods:   nil,
+			allowedHeaders:   nil,
 			succeeds:         false,
 			errMsg:           "allowCredentials used together with wildcard",
 		},
 		{
 			name:             "credentials no wildcard origin",
-			allowedOrigins:   []string{"http://example.com"},
 			allowCredentials: true,
+			allowedOrigins:   []string{"http://example.com"},
+			allowedMethods:   nil,
+			allowedHeaders:   nil,
 			succeeds:         true,
 			errMsg:           "",
+		},
+		{
+			name:             "one wildcard method and credentials",
+			allowCredentials: true,
+			allowedOrigins:   nil,
+			allowedMethods:   []string{"*"},
+			allowedHeaders:   nil,
+			succeeds:         false,
+			errMsg:           "allowCredentials used together with wildcard",
+		},
+		{
+			name:             "one wildcard header and credentials",
+			allowCredentials: true,
+			allowedOrigins:   nil,
+			allowedMethods:   nil,
+			allowedHeaders:   []string{"*"},
+			succeeds:         false,
+			errMsg:           "allowCredentials used together with wildcard",
 		},
 	}
 
@@ -848,7 +872,7 @@ func TestValidateAllowCredentials(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validateAllowCredentials(tt.allowCredentials, tt.allowedOrigins)
+			err := validateAllowCredentials(tt.allowCredentials, tt.allowedOrigins, tt.allowedMethods, tt.allowedHeaders)
 			if tt.succeeds {
 				attest.Ok(t, err)
 			} else {

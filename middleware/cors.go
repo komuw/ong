@@ -73,11 +73,10 @@ func cors(
 	if err := validateAllowedOrigins(allowedOrigins); err != nil {
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
-
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
 
-	if err := validateAllowCredentials(allowCredentials, allowedOrigins); err != nil {
+	if err := validateAllowCredentials(allowCredentials, allowedOrigins, allowedMethods, allowedHeaders); err != nil {
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
 
@@ -431,12 +430,24 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 	return nil
 }
 
-func validateAllowCredentials(allowCredentials bool, allowedOrigins []string) error {
+func validateAllowCredentials(
+	allowCredentials bool,
+	allowedOrigins []string,
+	allowedMethods []string,
+	allowedHeaders []string,
+) error {
+	// Credentialed requests cannot be used with wildcard.
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#credentialed_requests_and_wildcards
+
 	// `validateAllowedOrigins` has already checked that wildcard can only exist in slice of len 1.
 	if allowCredentials && len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
-		// Credentialed requests cannot be used with wildcard.
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#credentialed_requests_and_wildcards
-		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard")
+		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard allowedOrigins")
+	}
+	if allowCredentials && len(allowedMethods) == 1 && allowedMethods[0] == "*" {
+		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard allowedMethods")
+	}
+	if allowCredentials && len(allowedHeaders) == 1 && allowedHeaders[0] == "*" {
+		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard allowedHeaders")
 	}
 
 	return nil
