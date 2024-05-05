@@ -526,6 +526,7 @@ func TestIsOriginAllowed(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		domain         string
 		origin         string
 		allowedOrigins []string
 		allow          bool
@@ -533,6 +534,7 @@ func TestIsOriginAllowed(t *testing.T) {
 	}{
 		{
 			name:           "nil allowedOrigins",
+			domain:         "example.com",
 			origin:         "some-origin",
 			allowedOrigins: nil,
 			allow:          true,
@@ -540,6 +542,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "star allowedOrigins",
+			domain:         "example.com",
 			origin:         "some-origin",
 			allowedOrigins: []string{"*"},
 			allow:          true,
@@ -547,6 +550,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "matched allowedOrigins",
+			domain:         "example.com",
 			origin:         "http://example.com",
 			allowedOrigins: []string{"http://hey.com", "http://example.com"},
 			allow:          true,
@@ -554,6 +558,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:   "not matched allowedOrigins",
+			domain: "example.com",
 			origin: "http://example.com",
 			// an origin consists of the scheme, domain & port
 			allowedOrigins: []string{"https://example.com"},
@@ -562,6 +567,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "star allowedOrigins is supreme",
+			domain:         "example.com",
 			origin:         "http://hey.com",
 			allowedOrigins: []string{"https://example.com", "*"},
 			allow:          true,
@@ -569,6 +575,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard allowedOrigins",
+			domain:         "example.com",
 			origin:         "http://example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -576,6 +583,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard even in scheme ",
+			domain:         "example.com",
 			origin:         "https://www.example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -583,6 +591,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard subdomain",
+			domain:         "example.com",
 			origin:         "https://subdomain.example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -594,7 +603,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins)
+			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins, tt.domain)
 			allow, allowAll := isOriginAllowed(tt.origin, allowedOrigins, allowedWildcardOrigins)
 			attest.Equal(t, allow, tt.allow)
 			attest.Equal(t, allowAll, tt.allowAll)

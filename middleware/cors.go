@@ -58,7 +58,7 @@ const (
 
 // cors is a middleware to implement Cross-Origin Resource Sharing support.
 //
-// If allowedOrigins is nil, all origins are allowed. You can also use * to allow all.
+// If allowedOrigins is nil, domain is used. You can also use * to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 func cors(
@@ -68,8 +68,10 @@ func cors(
 	allowedHeaders []string,
 	allowCredentials bool,
 	corsCacheDuration time.Duration,
+	// domain string,// TODO: komuw
 ) http.HandlerFunc {
-	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins)
+	domain := "example.com" // TODO: komuw
+	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins, domain)
 	if err := validateAllowedOrigins(allowedOrigins); err != nil {
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
@@ -316,7 +318,7 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 	return true
 }
 
-func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []wildcard) {
+func getOrigins(ao []string, domain string) (allowedOrigins []string, allowedWildcardOrigins []wildcard) {
 	if len(ao) == 0 {
 		return []string{"*"}, []wildcard{}
 	}
