@@ -29,6 +29,7 @@ func TestCorsPreflight(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, "is-set") // preflight request header set
+		req.Header.Add(originHeader, "localhost")
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -49,6 +50,7 @@ func TestCorsPreflight(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, http.MethodGet) // preflight request header set
+		req.Header.Add(originHeader, "localhost")
 		req.Header.Add(acrhHeader, "HEAD, POST")
 		req.Header.Add(originHeader, "http://example.com")
 		wrappedHandler.ServeHTTP(rec, req)
@@ -100,30 +102,40 @@ func TestCorsPreflight(t *testing.T) {
 			origin         string
 			allowedOrigins []string
 			succeed        bool
+			statusCode     int
+			content        string
 		}{
-			{
-				name:           "empty origin",
-				origin:         "",
-				allowedOrigins: []string{"*"},
-				succeed:        false,
-			},
 			{
 				name:           "star origins",
 				origin:         "http:/example.com",
 				allowedOrigins: []string{"*"},
 				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				content:        "", // someCorsHandler is NOT called.
 			},
 			{
 				name:           "origin not matched",
 				origin:         "http:/example.com",
 				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
 				succeed:        false,
+				statusCode:     http.StatusNoContent,
+				content:        "", // someCorsHandler is NOT called.
 			},
 			{
 				name:           "origin matched",
 				origin:         "http:/www.example.com",
 				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
 				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				content:        "", // someCorsHandler is NOT called.
+			},
+			{
+				name:           "empty origin",
+				origin:         "",
+				allowedOrigins: []string{"*"},
+				succeed:        false,
+				statusCode:     http.StatusOK,                      // since origin is empty, it is not treated as a pre-flight request.
+				content:        "hello there from someCorsHandler", // someCorsHandler is called.
 			},
 		}
 
@@ -132,7 +144,7 @@ func TestCorsPreflight(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				msg := "hello"
+				msg := "hello there from someCorsHandler"
 				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
@@ -146,8 +158,8 @@ func TestCorsPreflight(t *testing.T) {
 				rb, err := io.ReadAll(res.Body)
 				attest.Ok(t, err)
 
-				attest.Equal(t, res.StatusCode, http.StatusNoContent)
-				attest.Equal(t, string(rb), "") // someCorsHandler is NOT called.
+				attest.Equal(t, res.StatusCode, tt.statusCode)
+				attest.Equal(t, string(rb), tt.content)
 
 				// if this header was set, then the preflight request succeeded
 				gotSucess := res.Header.Get(acmaHeader) != ""
@@ -349,30 +361,35 @@ func TestCorsActualRequest(t *testing.T) {
 			origin         string
 			allowedOrigins []string
 			succeed        bool
+			statusCode     int
 		}{
 			{
 				name:           "empty origin",
 				origin:         "",
 				allowedOrigins: []string{"*"},
 				succeed:        false,
+				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "star origins",
 				origin:         "http:/example.com",
 				allowedOrigins: []string{"*"},
 				succeed:        true,
+				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "origin not matched",
 				origin:         "http:/example.com",
 				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
 				succeed:        false,
+				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "origin matched",
 				origin:         "http:/www.example.com",
 				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
 				succeed:        true,
+				statusCode:     http.StatusOK,
 			},
 		}
 
@@ -394,7 +411,7 @@ func TestCorsActualRequest(t *testing.T) {
 				rb, err := io.ReadAll(res.Body)
 				attest.Ok(t, err)
 
-				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Equal(t, res.StatusCode, tt.statusCode)
 				attest.Equal(t, string(rb), msg)
 				attest.NotZero(t, res.Header.Get(varyHeader))
 

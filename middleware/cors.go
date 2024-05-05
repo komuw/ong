@@ -76,7 +76,15 @@ func cors(
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodOptions && r.Header.Get(acrmHeader) != "" {
+		if (r.Method == http.MethodOptions) && (r.Header.Get(acrmHeader) != "") && (r.Header.Get(originHeader) != "") {
+			/*
+				The Fetch standard says that a preflight request is one that:
+				(a) uses the OPTIONS method
+				(b) includes an Origin header,
+				(c) includes an Access-Control-Request-Method header.
+				- https://fetch.spec.whatwg.org/#cors-preflight-request
+				- https://jub0bs.com/posts/2023-02-08-fearless-cors/#4-categorise-requests-correctly
+			*/
 			// handle preflight request
 			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders, allowCredentials, corsCacheDuration)
 			// Preflight requests are standalone and should stop the chain as some other
