@@ -312,10 +312,6 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 		return []string{"*"}, []wildcard{}
 	}
 
-	if slices.Contains(allowedOrigins, "*") {
-		return []string{"*"}, []wildcard{}
-	}
-
 	canon := []string{}
 	for _, v := range ao {
 		canon = append(canon, strings.ToLower(v))
@@ -324,6 +320,7 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 
 	for _, origin := range allowedOrigins {
 		if i := strings.IndexByte(origin, '*'); i >= 0 {
+			fmt.Println("\n\t here, origiin: ", origin)
 			// Split the origin in two: start and end string without the *
 			prefix := origin[0:i]
 			suffix := origin[i+1:]
@@ -332,6 +329,7 @@ func getOrigins(ao []string) (allowedOrigins []string, allowedWildcardOrigins []
 				suffix: suffix,
 				len:    len(prefix) + len(suffix),
 			}
+			fmt.Println("prefix: ", prefix, " suffix: ", suffix)
 			allowedWildcardOrigins = append(allowedWildcardOrigins, w)
 		}
 	}
