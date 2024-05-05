@@ -24,6 +24,7 @@ import (
 // `http://example.com` and `https://example.com` are different origins(http vs https)
 //
 // - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+// - https://jub0bs.com/posts/2023-02-08-fearless-cors
 
 const (
 	// header is used by browsers when issuing a preflight request.
