@@ -768,7 +768,8 @@ func TestTodo(t *testing.T) {
 		{"f.com"},
 		{"https://g.com", "*"},
 		{"http://*h*.com"}, // multiple wildcard
-		{"http://h*.com"},  // wildcard not prefixed to host
+		{"http://i*.com"},  // wildcard not prefixed to host
+		{"http://*j.com"},  // wildcard is okay
 	} {
 		e := check(v)
 
