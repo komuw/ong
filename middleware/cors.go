@@ -362,6 +362,7 @@ func getMethods(am []string) []string {
 	if len(am) == 0 {
 		return []string{
 			// the spec by default allows this simple methods for cross-origin-requests: GET, POST, HEAD.
+			// https://fetch.spec.whatwg.org/#methods
 			strings.ToUpper(http.MethodGet),
 			strings.ToUpper(http.MethodPost),
 			strings.ToUpper(http.MethodHead),
