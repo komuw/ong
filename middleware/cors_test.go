@@ -817,10 +817,44 @@ func TestValidateAllowedOrigins(t *testing.T) {
 	}
 }
 
-// {
-// 	name:             "one wildcard and credentials",
-// 	allowedOrigins:   []string{"*"},
-// 	allowCredentials: true,
-// 	succeeds:         false,
-// 	errMsg:           "allowCredentials used together with wildcard",
-// },
+func TestValidateAllowCredentials(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		allowedOrigins   []string
+		allowCredentials bool
+		succeeds         bool
+		errMsg           string
+	}{
+		{
+			name:             "one wildcard origin and credentials",
+			allowedOrigins:   []string{"*"},
+			allowCredentials: true,
+			succeeds:         false,
+			errMsg:           "allowCredentials used together with wildcard",
+		},
+		{
+			name:             "credentials no wildcard origin",
+			allowedOrigins:   []string{"http://example.com"},
+			allowCredentials: true,
+			succeeds:         true,
+			errMsg:           "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowCredentials(tt.allowCredentials, tt.allowedOrigins)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
