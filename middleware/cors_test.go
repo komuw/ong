@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 
@@ -744,12 +745,25 @@ func TestTodo(t *testing.T) {
 			if u.Path != "" {
 				return fmt.Errorf("ong/middleware/cors: contains url path in `%v`", origin)
 			}
+
+			if strings.Count(origin, "*") > 1 {
+				return fmt.Errorf("ong/middleware/cors: contains more than one wildcard in `%v`", origin)
+			}
 		}
 
 		return nil
 	}
 
-	for _, v := range [][]string{{"http://a.com"}, {"http://b.com/"}, {"https://c.com/hello"}, {"https://d.com:8888"}, {"hzzs://e.com"}, {"f.com"}, {"https://g.com", "*"}} {
+	for _, v := range [][]string{
+		{"http://a.com"},
+		{"http://b.com/"},
+		{"https://c.com/hello"},
+		{"https://d.com:8888"},
+		{"hzzs://e.com"},
+		{"f.com"},
+		{"https://g.com", "*"},
+		{"http://*h*.com"}, // multiple wildcard
+	} {
 		e := check(v)
 
 		fmt.Println("v, err: ", v, e)
