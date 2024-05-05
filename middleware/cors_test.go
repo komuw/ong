@@ -722,7 +722,6 @@ func TestValidateAllowedOrigins(t *testing.T) {
 	t.Parallel()
 
 	for _, v := range [][]string{
-		{"f.com"},
 		{"https://g.com", "*"},
 		{"http://*h*.com"},                       // multiple wildcard
 		{"http://i*.com"},                        // wildcard not prefixed to host
@@ -776,6 +775,12 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			allowedOrigins: []string{"f.com"},
 			succeeds:       false,
 			errMsg:         "bad scheme",
+		},
+		{
+			name:           "wildcard with others",
+			allowedOrigins: []string{"https://g.com", "*"},
+			succeeds:       false,
+			errMsg:         "single wildcard used together with others",
 		},
 	}
 
