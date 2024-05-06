@@ -819,13 +819,13 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			name:           "has slash url path",
 			allowedOrigins: []string{"http://b.com/"},
 			succeeds:       false,
-			errMsg:         "contains url path",
+			errMsg:         "should not contain url path",
 		},
 		{
 			name:           "has url path",
 			allowedOrigins: []string{"https://c.com/hello"},
 			succeeds:       false,
-			errMsg:         "contains url path",
+			errMsg:         "should not contain url path",
 		},
 		{
 			name:           "okay with port",
@@ -849,19 +849,19 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			name:           "wildcard with others",
 			allowedOrigins: []string{"https://g.com", "*"},
 			succeeds:       false,
-			errMsg:         "single wildcard used together with others",
+			errMsg:         "single wildcard should not be used together with others",
 		},
 		{
 			name:           "multiple wildcard",
 			allowedOrigins: []string{"http://*h*.com"},
 			succeeds:       false,
-			errMsg:         "contains more than one wildcard",
+			errMsg:         "should not contain more than one wildcard",
 		},
 		{
-			name:           "wildcard not prefixed to host",
+			name:           "wildcard should be prefixed to host",
 			allowedOrigins: []string{"http://i*.com"},
 			succeeds:       false,
-			errMsg:         "wildcard not prefixed to host",
+			errMsg:         "wildcard should be prefixed to host",
 		},
 		{
 			name:           "wildcard is okay",
@@ -918,7 +918,7 @@ func TestValidateAllowCredentials(t *testing.T) {
 			allowedMethods:   nil,
 			allowedHeaders:   nil,
 			succeeds:         false,
-			errMsg:           "allowCredentials used together with wildcard",
+			errMsg:           "allowCredentials should not be used together with wildcard",
 		},
 		{
 			name:             "credentials no wildcard origin",
@@ -936,7 +936,7 @@ func TestValidateAllowCredentials(t *testing.T) {
 			allowedMethods:   []string{"*"},
 			allowedHeaders:   nil,
 			succeeds:         false,
-			errMsg:           "allowCredentials used together with wildcard",
+			errMsg:           "allowCredentials should not be used together with wildcard",
 		},
 		{
 			name:             "one wildcard header and credentials",
@@ -945,7 +945,7 @@ func TestValidateAllowCredentials(t *testing.T) {
 			allowedMethods:   nil,
 			allowedHeaders:   []string{"*"},
 			succeeds:         false,
-			errMsg:           "allowCredentials used together with wildcard",
+			errMsg:           "allowCredentials should not be used together with wildcard",
 		},
 	}
 
@@ -978,7 +978,7 @@ func TestValidateAllowedMethods(t *testing.T) {
 			name:           "bad",
 			allowedMethods: []string{"TRACE", "GET"},
 			succeeds:       false,
-			errMsg:         "method not allowed",
+			errMsg:         "method is forbidden",
 		},
 		{
 			name:           "good",
@@ -1017,19 +1017,19 @@ func TestValidateAllowedRequestHeaders(t *testing.T) {
 			name:           "bad",
 			allowedHeaders: []string{"Trailer"},
 			succeeds:       false,
-			errMsg:         "header not allowed",
+			errMsg:         "header is forbidden",
 		},
 		{
 			name:           "other bad",
 			allowedHeaders: []string{"ConTent-LenGTh"},
 			succeeds:       false,
-			errMsg:         "header not allowed",
+			errMsg:         "header is forbidden",
 		},
 		{
 			name:           "again bad",
 			allowedHeaders: []string{"sec-sasa"},
 			succeeds:       false,
-			errMsg:         "header not allowed",
+			errMsg:         "header is forbidden",
 		},
 		{
 			name:           "good",

@@ -427,7 +427,7 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 		https://developer.mozilla.org/en-US/docs/Glossary/Origin
 	*/
 	if len(allowedOrigins) > 1 && slices.Contains(allowedOrigins, "*") {
-		return errors.New("ong/middleware/cors: single wildcard used together with others")
+		return errors.New("ong/middleware/cors: single wildcard should not be used together with others")
 	}
 
 	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
@@ -441,21 +441,21 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 		}
 
 		if u.Scheme == "" {
-			return fmt.Errorf("ong/middleware/cors: bad scheme in `%v`", origin)
+			return fmt.Errorf("ong/middleware/cors: bad scheme `%v`", origin)
 		}
 		if u.Host == "" {
-			return fmt.Errorf("ong/middleware/cors: bad host in `%v`", origin)
+			return fmt.Errorf("ong/middleware/cors: bad host `%v`", origin)
 		}
 		if u.Path != "" {
-			return fmt.Errorf("ong/middleware/cors: contains url path in `%v`", origin)
+			return fmt.Errorf("ong/middleware/cors: should not contain url path `%v`", origin)
 		}
 
 		if strings.Count(origin, "*") > 1 {
-			return fmt.Errorf("ong/middleware/cors: contains more than one wildcard in `%v`", origin)
+			return fmt.Errorf("ong/middleware/cors: should not contain more than one wildcard `%v`", origin)
 		}
 		if strings.Count(origin, "*") == 1 {
 			if !strings.HasPrefix(u.Host, "*") {
-				return fmt.Errorf("ong/middleware/cors: wildcard not prefixed to host in `%v`", origin)
+				return fmt.Errorf("ong/middleware/cors: wildcard should be prefixed to host `%v`", origin)
 			}
 		}
 	}
@@ -474,13 +474,13 @@ func validateAllowCredentials(
 
 	// `validateAllowedOrigins` has already checked that wildcard can only exist in slice of len 1.
 	if allowCredentials && len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
-		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard allowedOrigins")
+		return errors.New("ong/middleware/cors: allowCredentials should not be used together with wildcard allowedOrigins")
 	}
 	if allowCredentials && len(allowedMethods) == 1 && allowedMethods[0] == "*" {
-		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard allowedMethods")
+		return errors.New("ong/middleware/cors: allowCredentials should not be used together with wildcard allowedMethods")
 	}
 	if allowCredentials && len(allowedHeaders) == 1 && allowedHeaders[0] == "*" {
-		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard allowedHeaders")
+		return errors.New("ong/middleware/cors: allowCredentials should not be used together with wildcard allowedHeaders")
 	}
 
 	return nil
@@ -491,7 +491,7 @@ func validateAllowedMethods(allowedMethods []string) error {
 	// https://fetch.spec.whatwg.org/#methods
 	for _, m := range allowedMethods {
 		if slices.Contains([]string{"CONNECT", "TRACE", "TRACK"}, strings.ToUpper(m)) {
-			return fmt.Errorf("ong/middleware/cors: method not allowed `%v`", m)
+			return fmt.Errorf("ong/middleware/cors: method is forbidden in CORS allowedMethods `%v`", m)
 		}
 	}
 
@@ -529,14 +529,14 @@ func validateAllowedRequestHeaders(allowedHeaders []string) error {
 			// So the use of `strings.ToUpper` here is correct.
 			strings.ToUpper(h),
 		) {
-			return fmt.Errorf("ong/middleware/cors: header not allowed `%v`", h)
+			return fmt.Errorf("ong/middleware/cors: header is forbidden in CORS allowedHeaders `%v`", h)
 		}
 
 		if strings.HasPrefix(strings.ToLower(h), "proxy-") ||
 			strings.HasPrefix(strings.ToLower(h), "sec-") {
 			// Spec says; "If name when byte-lowercased starts with `proxy-` or `sec-`"
 			// So the use of `strings.ToLower` here is correct.
-			return fmt.Errorf("ong/middleware/cors: header not allowed `%v`", h)
+			return fmt.Errorf("ong/middleware/cors: header is forbidden in CORS allowedHeaders `%v`", h)
 		}
 	}
 
