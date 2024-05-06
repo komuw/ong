@@ -400,12 +400,16 @@ func getMethods(am []string) []string {
 
 func getHeaders(ah []string) []string {
 	if len(ah) == 0 {
-		// use sensible defaults.
+		// Use the list of CORS safelisted request headers.
+		// - https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_request_header
+		// - https://fetch.spec.whatwg.org/#no-cors-safelisted-request-header-name
+		// - https://fetch.spec.whatwg.org/#privileged-no-cors-request-header-name
 		return []string{
-			http.CanonicalHeaderKey("Origin"),
 			http.CanonicalHeaderKey("Accept"),
+			http.CanonicalHeaderKey("Accept-Language"),
+			http.CanonicalHeaderKey("Content-Language"),
 			http.CanonicalHeaderKey("Content-Type"),
-			http.CanonicalHeaderKey("X-Requested-With"),
+			http.CanonicalHeaderKey("Range"),
 		}
 	}
 
