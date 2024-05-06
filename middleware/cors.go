@@ -84,6 +84,9 @@ func cors(
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
 	allowedHeaders = getHeaders(allowedHeaders)
+	if err := validateAllowedRequestHeaders(allowedHeaders); err != nil {
+		panic(err) // TODO: komuw, should this not happen in config.New ?
+	}
 
 	if err := validateAllowCredentials(allowCredentials, allowedOrigins, allowedMethods, allowedHeaders); err != nil {
 		panic(err) // TODO: komuw, should this not happen in config.New ?
@@ -489,6 +492,51 @@ func validateAllowedMethods(allowedMethods []string) error {
 	for _, m := range allowedMethods {
 		if slices.Contains([]string{"CONNECT", "TRACE", "TRACK"}, strings.ToUpper(m)) {
 			return fmt.Errorf("ong/middleware/cors: method not allowed `%v`", m)
+		}
+	}
+
+	return nil
+}
+
+func validateAllowedRequestHeaders(allowedHeaders []string) error {
+	// There are some headers that are disallowed.
+	// https://fetch.spec.whatwg.org/#terminology-headers
+	for _, h := range allowedHeaders {
+		if slices.Contains([]string{
+			"ACCEPT-CHARSET",
+			"ACCEPT-ENCODING",
+			"ACCESS-CONTROL-REQUEST-HEADERS",
+			"ACCESS-CONTROL-REQUEST-METHOD",
+			"CONNECTION",
+			"CONTENT-LENGTH",
+			"COOKIE",
+			"COOKIE2",
+			"DATE",
+			"DNT",
+			"EXPECT",
+			"HOST",
+			"KEEP-ALIVE",
+			"ORIGIN",
+			"REFERER",
+			"SET-COOKIE",
+			"TE",
+			"TRAILER",
+			"TRANSFER-ENCODING",
+			"Upgrade",
+			"VIA",
+		},
+			// Spec says; "If name is a byte-case-insensitive match"
+			// So the use of `strings.ToUpper` here is correct.
+			strings.ToUpper(h),
+		) {
+			return fmt.Errorf("ong/middleware/cors: header not allowed `%v`", h)
+		}
+
+		if strings.HasPrefix(strings.ToLower(h), "proxy-") ||
+			strings.HasPrefix(strings.ToLower(h), "sec-") {
+			// Spec says; "If name when byte-lowercased starts with `proxy-` or `sec-`"
+			// So the use of `strings.ToLower` here is correct.
+			return fmt.Errorf("ong/middleware/cors: header not allowed `%v`", h)
 		}
 	}
 

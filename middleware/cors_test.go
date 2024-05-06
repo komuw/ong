@@ -1003,3 +1003,54 @@ func TestValidateAllowedMethods(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAllowedRequestHeaders(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		allowedHeaders []string
+		succeeds       bool
+		errMsg         string
+	}{
+		{
+			name:           "bad",
+			allowedHeaders: []string{"Trailer"},
+			succeeds:       false,
+			errMsg:         "header not allowed",
+		},
+		{
+			name:           "other bad",
+			allowedHeaders: []string{"ConTent-LenGTh"},
+			succeeds:       false,
+			errMsg:         "header not allowed",
+		},
+		{
+			name:           "again bad",
+			allowedHeaders: []string{"sec-sasa"},
+			succeeds:       false,
+			errMsg:         "header not allowed",
+		},
+		{
+			name:           "good",
+			allowedHeaders: []string{"DushDush"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowedRequestHeaders(tt.allowedHeaders)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
