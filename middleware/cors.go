@@ -177,7 +177,15 @@ func handlePreflight(
 	// (b)
 	// spec says we can return just one method instead of all the supported ones.
 	// that one method has to be the one that came in via the `acrmHeader`
-	headers.Set(acamHeader, strings.ToUpper(reqMethod))
+	headers.Set(
+		acamHeader,
+		// According to the CORS/Fetch standard, method names are case-sensitive.
+		// Thus if preflight has `put`, the header should have `put`(not `PUT`) else browser will show error.
+		//
+		// - https://fetch.spec.whatwg.org/#methods
+		// - https://jub0bs.com/posts/2023-02-08-fearless-cors/#violation-of-the-case-sensitivity-of-method-names
+		reqMethod,
+	)
 
 	// (c)
 	if len(reqMethod) > 0 {
@@ -282,6 +290,9 @@ func isMethodAllowed(method string, allowedMethods []string) bool {
 		return true
 	}
 
+	// The spec talks of normalizing some methods(`DELETE`, `GET`, `HEAD`, `OPTIONS`, `POST`, `PUT`) to uppercase.
+	// This library normalizes all methods not just the ones mentioned in the spec.
+	// https://fetch.spec.whatwg.org/#concept-method-normalize
 	method = strings.ToUpper(method)
 	if method == http.MethodOptions {
 		// Always allow preflight requests

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -213,6 +214,14 @@ func TestCorsPreflight(t *testing.T) {
 				statusCode:     http.StatusNoContent,
 				resContent:     "",
 			},
+			{
+				name:           "method matched lower",
+				method:         strings.ToLower(http.MethodDelete),
+				allowedMethods: []string{http.MethodGet, http.MethodDelete, http.MethodPatch},
+				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				resContent:     "",
+			},
 		}
 
 		for _, tt := range tests {
@@ -239,6 +248,9 @@ func TestCorsPreflight(t *testing.T) {
 				// if this header was set, then the preflight request succeeded
 				gotSucess := res.Header.Get(acmaHeader) != ""
 				attest.Equal(t, gotSucess, tt.succeed)
+				if tt.succeed {
+					attest.Equal(t, res.Header.Get(acamHeader), tt.method) // method should match the casing of request.
+				}
 			})
 		}
 	})
