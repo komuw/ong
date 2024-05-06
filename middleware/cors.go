@@ -80,6 +80,9 @@ func cors(
 		panic(err) // TODO: komuw, should this not happen in config.New ?
 	}
 	allowedMethods = getMethods(allowedMethods)
+	if err := validateAllowedMethods(allowedMethods); err != nil {
+		panic(err) // TODO: komuw, should this not happen in config.New ?
+	}
 	allowedHeaders = getHeaders(allowedHeaders)
 
 	if err := validateAllowCredentials(allowCredentials, allowedOrigins, allowedMethods, allowedHeaders); err != nil {
@@ -475,6 +478,18 @@ func validateAllowCredentials(
 	}
 	if allowCredentials && len(allowedHeaders) == 1 && allowedHeaders[0] == "*" {
 		return errors.New("ong/middleware/cors: allowCredentials used together with wildcard allowedHeaders")
+	}
+
+	return nil
+}
+
+func validateAllowedMethods(allowedMethods []string) error {
+	// There are some methods that are disallowed.
+	// https://fetch.spec.whatwg.org/#methods
+	for _, m := range allowedMethods {
+		if slices.Contains([]string{"CONNECT", "TRACE", "TRACK"}, strings.ToUpper(m)) {
+			return fmt.Errorf("ong/middleware/cors: method not allowed `%v`", m)
+		}
 	}
 
 	return nil

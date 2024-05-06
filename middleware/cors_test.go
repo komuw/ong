@@ -964,3 +964,42 @@ func TestValidateAllowCredentials(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAllowedMethods(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		allowedMethods []string
+		succeeds       bool
+		errMsg         string
+	}{
+		{
+			name:           "bad",
+			allowedMethods: []string{"TRACE", "GET"},
+			succeeds:       false,
+			errMsg:         "method not allowed",
+		},
+		{
+			name:           "good",
+			allowedMethods: []string{"PUT", "pOWEr"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowedMethods(tt.allowedMethods)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
