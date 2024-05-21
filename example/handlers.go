@@ -174,6 +174,12 @@ func (a app) login(secretKey string) http.HandlerFunc {
 		margin: auto;
 		font-size: 1.0em;
 	}
+
+     /* sticky-tables: https://github.com/andybrewer/mvp/issues/113 */
+     thead {
+        position: sticky;
+        top: 0;
+    }
 </style>
 </head>
 <body>
