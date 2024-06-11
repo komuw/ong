@@ -54,9 +54,10 @@ func Dwrap(errp *error) {
 	}
 }
 
-func wrap(err error, skip int) error {
-	if _, ok := err.(*stackError); ok {
-		return err
+func wrap(err error, skip int) *stackError {
+	c, ok := err.(*stackError)
+	if ok {
+		return c
 	}
 
 	// limit stack size to 64 call depth.
@@ -107,9 +108,60 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 
 // StackTrace returns the stack trace contained in err, if any, else an empty string.
 func StackTrace(err error) string {
-	sterr, ok := err.(*stackError)
-	if !ok {
-		return ""
+	if sterr, ok := err.(*stackError); ok {
+		return sterr.getStackTrace()
 	}
-	return sterr.getStackTrace()
+	if sterr, ok := err.(*join); ok {
+		return sterr.getStackTrace()
+	}
+
+	return ""
+}
+
+func Join(errs ...error) error {
+	n := 0
+	for _, err := range errs {
+		if err != nil {
+			n++
+		}
+	}
+	if n == 0 {
+		return nil
+	}
+
+	e := &join{errs: make([]error, 0, n)}
+	for _, err := range errs {
+		if err != nil {
+			ef := wrap(err, 3)
+			e.errs = append(e.errs, ef)
+			if e.stackError == nil {
+				e.stackError = ef
+			}
+		}
+	}
+
+	return e
+}
+
+type join struct {
+	*stackError
+	errs []error
+}
+
+func (e *join) Error() string {
+	var b []byte
+	for i, err := range e.errs {
+		if i > 0 {
+			b = append(b, '\n')
+		}
+		b = append(b, err.Error()...)
+	}
+	return string(b)
+}
+
+func (e *join) Unwrap() error {
+	if len(e.errs) > 0 {
+		return e.errs[0]
+	}
+	return nil
 }
