@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.97
+- ong/errors: add equivalent functions from standard library: https://github.com/komuw/ong/pull/449
+
 # v0.0.96
 - ong/acme: verify the requested acme challenge token: https://github.com/komuw/ong/pull/440
   This is a bug fix for v0.0.95
