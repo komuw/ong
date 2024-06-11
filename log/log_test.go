@@ -120,7 +120,7 @@ func TestLogger(t *testing.T) {
 		maxMsgs := 3
 		l := New(context.Background(), w, maxMsgs)
 		msg := "oops, Houston we got 99 problems."
-		l.Error(msg, errors.New(msg))
+		l.Error(msg, "err", errors.New(msg))
 
 		attest.Subsequence(t, w.String(), msg)
 
@@ -165,7 +165,7 @@ func TestLogger(t *testing.T) {
 
 			infoMsg := "hello world"
 			l.Info(infoMsg)
-			l.Error("some-err", errors.New("this-ting-is-bad"))
+			l.Error("some-err", "err", errors.New("this-ting-is-bad"))
 
 			attest.Subsequence(t, w.String(), logIDFieldName)
 			attest.Subsequence(t, w.String(), "level")
@@ -200,7 +200,7 @@ func TestLogger(t *testing.T) {
 			l.Info(infoMsg)
 		}
 		errMsg := "oops, Houston we got 99 problems."
-		l.Error("somer-error", errors.New(errMsg))
+		l.Error("somer-error", "err", errors.New(errMsg))
 
 		attest.False(t, strings.Contains(w.String(), "hello world : 1"))
 		attest.False(t, strings.Contains(w.String(), "hello world : 2"))
@@ -219,7 +219,7 @@ func TestLogger(t *testing.T) {
 		l1 := New(context.Background(), w, maxMsgs)
 		_, ok := l1.Handler().(*handler)
 		attest.True(t, ok)
-		l1.Error("hey1", errors.New("cool1"))
+		l1.Error("hey1", "err", errors.New("cool1"))
 
 		attest.Subsequence(t, w.String(), "hey1")
 		attest.Subsequence(t, w.String(), logIDFieldName)
@@ -230,7 +230,7 @@ func TestLogger(t *testing.T) {
 		w.Reset() // clear buffer.
 
 		l2 := l1.With("category", "load_balancers")
-		l2.Error("hey2", errors.New("cool2"))
+		l2.Error("hey2", "err", errors.New("cool2"))
 		attest.Subsequence(t, w.String(), "hey2")
 		attest.False(t, strings.Contains(w.String(), "hey1")) // hey1 is not loggged here.
 		attest.Subsequence(t, w.String(), logIDFieldName)
@@ -278,7 +278,7 @@ func TestLogger(t *testing.T) {
 		{
 			logger2 := l.With("name", "Kim")
 			errMsg := "oops, Houston we got 99 problems."
-			logger2.Error("some-error", errors.New(errMsg))
+			logger2.Error("some-error", "err", errors.New(errMsg))
 
 			attest.False(t, strings.Contains(w.String(), "hello world : 0"))
 			attest.False(t, strings.Contains(w.String(), "hello world : 1"))
