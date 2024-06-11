@@ -12,6 +12,8 @@ package errors
 //
 // A non-nil error returned by Join implements the Unwrap() error method.
 //
+// It only returns the stack trace of the first error.
+//
 // Note that this function is equivalent to the one in standard library only in spirit.
 // This is not a direct replacement of the standard library one.
 func Join(errs ...error) error {
@@ -25,7 +27,7 @@ func Join(errs ...error) error {
 		return nil
 	}
 
-	e := &join{errs: make([]error, 0, n)}
+	e := &joinError{errs: make([]error, 0, n)}
 	for _, err := range errs {
 		if err != nil {
 			ef := wrap(err, 3)
@@ -39,12 +41,12 @@ func Join(errs ...error) error {
 	return e
 }
 
-type join struct {
+type joinError struct {
 	*stackError
 	errs []error
 }
 
-func (e *join) Error() string {
+func (e *joinError) Error() string {
 	var b []byte
 	for i, err := range e.errs {
 		if i > 0 {
@@ -55,7 +57,7 @@ func (e *join) Error() string {
 	return string(b)
 }
 
-func (e *join) Unwrap() error {
+func (e *joinError) Unwrap() error {
 	if len(e.errs) > 0 {
 		return e.errs[0]
 	}

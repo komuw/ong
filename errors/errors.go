@@ -111,7 +111,7 @@ func StackTrace(err error) string {
 	if sterr, ok := err.(*stackError); ok {
 		return sterr.getStackTrace()
 	}
-	if sterr, ok := err.(*join); ok {
+	if sterr, ok := err.(*joinError); ok {
 		return sterr.getStackTrace()
 	}
 

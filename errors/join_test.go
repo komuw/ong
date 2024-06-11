@@ -2,33 +2,33 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package errors_test
+package errors
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/komuw/ong/errors"
+	"go.akshayshah.org/attest"
 )
 
 // Some of the code here is inspired(or taken from) by:
 //   (a) https://github.com/golang/go/blob/go1.20.14/src/errors/join.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/go/blob/go1.20.14/LICENSE
 
 func TestJoinReturnsNil(t *testing.T) {
-	if err := errors.Join(); err != nil {
+	if err := Join(); err != nil {
 		t.Errorf("errors.Join() = %v, want nil", err)
 	}
-	if err := errors.Join(nil); err != nil {
+	if err := Join(nil); err != nil {
 		t.Errorf("errors.Join(nil) = %v, want nil", err)
 	}
-	if err := errors.Join(nil, nil); err != nil {
+	if err := Join(nil, nil); err != nil {
 		t.Errorf("errors.Join(nil, nil) = %v, want nil", err)
 	}
 }
 
 func TestJoin(t *testing.T) {
-	err1 := errors.New("err1")
-	err2 := errors.New("err2")
+	err1 := New("err1")
+	err2 := New("err2")
 	for _, test := range []struct {
 		errs []error
 		want error
@@ -50,7 +50,7 @@ func TestJoin(t *testing.T) {
 			want: err2,
 		},
 	} {
-		got := errors.Join(test.errs...).(interface{ Unwrap() error }).Unwrap()
+		got := Join(test.errs...).(interface{ Unwrap() error }).Unwrap()
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("Join(%v) got = %v; want %v", test.errs, got, test.want)
 		}
@@ -61,8 +61,8 @@ func TestJoin(t *testing.T) {
 }
 
 func TestJoinErrorMethod(t *testing.T) {
-	err1 := errors.New("err1")
-	err2 := errors.New("err2")
+	err1 := New("err1")
+	err2 := New("err2")
 	for _, test := range []struct {
 		errs []error
 		want string
@@ -76,9 +76,54 @@ func TestJoinErrorMethod(t *testing.T) {
 		errs: []error{err1, nil, err2},
 		want: "err1\nerr2",
 	}} {
-		got := errors.Join(test.errs...).Error()
+		got := Join(test.errs...).Error()
 		if got != test.want {
 			t.Errorf("Join(%v).Error() = %q; want %q", test.errs, got, test.want)
 		}
 	}
+}
+
+func TestJoinStackTrace(t *testing.T) {
+	t.Parallel()
+
+	t.Run("errors.Join", func(t *testing.T) {
+		t.Parallel()
+
+		err1 := New("hello")
+		err2 := hello()
+
+		{
+			err3 := Join(err1, err2)
+
+			sterr, ok := err3.(*joinError)
+			attest.True(t, ok)
+			attest.Equal(t, sterr.Error(), "hello\nerror in foo")
+
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				"ong/errors/join_test.go:92", // Join only shows stack trace of first error. ie, err1
+			} {
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
+			}
+		}
+
+		{
+			err3 := Join(err2, err1)
+
+			sterr, ok := err3.(*joinError)
+			attest.True(t, ok)
+			attest.Equal(t, sterr.Error(), "error in foo\nhello")
+
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				// Join only shows stack trace of first error. ie, err2
+				"ong/errors/errors_test.go:30",
+				"ong/errors/errors_test.go:23",
+				"ong/errors/errors_test.go:17",
+				"ong/errors/join_test.go:93",
+			} {
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
+			}
+		}
+	})
 }
