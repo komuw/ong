@@ -46,7 +46,7 @@ func Wrap(err error) error {
 	return wrap(err, 3)
 }
 
-// Dwrap adds stack traces to the error.
+// Dwrap(aka deferred wrap) adds stack traces to the error.
 // It does nothing when *errp == nil.
 func Dwrap(errp *error) {
 	if *errp != nil {
@@ -54,9 +54,10 @@ func Dwrap(errp *error) {
 	}
 }
 
-func wrap(err error, skip int) error {
-	if _, ok := err.(*stackError); ok {
-		return err
+func wrap(err error, skip int) *stackError {
+	c, ok := err.(*stackError)
+	if ok {
+		return c
 	}
 
 	// limit stack size to 64 call depth.
@@ -107,9 +108,12 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 
 // StackTrace returns the stack trace contained in err, if any, else an empty string.
 func StackTrace(err error) string {
-	sterr, ok := err.(*stackError)
-	if !ok {
-		return ""
+	if sterr, ok := err.(*stackError); ok {
+		return sterr.getStackTrace()
 	}
-	return sterr.getStackTrace()
+	if sterr, ok := err.(*joinError); ok {
+		return sterr.getStackTrace()
+	}
+
+	return ""
 }

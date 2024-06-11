@@ -190,5 +190,7 @@ func TestStackError(t *testing.T) {
 		attest.True(t, stdErrors.Is(err, os.ErrNotExist))
 		attest.NotZero(t, stdErrors.Unwrap(err))
 		attest.True(t, stdErrors.As(err, &targetErr))
+
+		_ = wrap(err, 2) // This is here to quiet golangci-lint which complains that wrap is always called with an argument of 3.
 	})
 }
