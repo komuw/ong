@@ -295,7 +295,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info(sl[0], slAny...)
-			l.Error("some-error", logErr)
+			l.Error("some-error", "err", logErr)
 		}
 	})
 
