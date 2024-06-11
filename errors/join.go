@@ -10,7 +10,10 @@ package errors
 // by calling the Error method of each element of errs, with a newline
 // between each string.
 //
-// A non-nil error returned by Join implements the Unwrap() []error method.
+// A non-nil error returned by Join implements the Unwrap() error method.
+//
+// Note that this function is equivalent to the one in standard library only in spirit.
+// This is not a direct replacement of the standard library one.
 func Join(errs ...error) error {
 	n := 0
 	for _, err := range errs {
