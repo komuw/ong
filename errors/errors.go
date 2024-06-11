@@ -46,7 +46,7 @@ func Wrap(err error) error {
 	return wrap(err, 3)
 }
 
-// Dwrap adds stack traces to the error.
+// Dwrap(aka deferred wrap) adds stack traces to the error.
 // It does nothing when *errp == nil.
 func Dwrap(errp *error) {
 	if *errp != nil {
