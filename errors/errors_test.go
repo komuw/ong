@@ -259,5 +259,13 @@ func TestStackTrace(t *testing.T) {
 			got := StackTrace(err)
 			attest.Subsequence(t, got, "ong/errors/errors_test.go:256")
 		}
+		{
+			e1 := New("e1")
+			e2 := New("e2")
+			err := Join(e2, e1)
+
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:264")
+		}
 	})
 }
