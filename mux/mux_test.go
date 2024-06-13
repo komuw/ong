@@ -16,6 +16,8 @@ func TestNew(t *testing.T) {
 		}
 	}
 
+	// There are other tests in internal/mx
+
 	t.Run("conflict detected", func(t *testing.T) {
 		rtz := []Route{}
 		rtz = append(rtz, tarpitRoutes()...)
