@@ -45,10 +45,6 @@ func tarpitRoutes() []Route {
 		"/plugins/",
 		"/drupal/",
 		"/Drupal.php",
-
-		// OTHERS
-		"/freenode-proxy-checker.txt",
-		"/w00tw00t.at.blackhats.romanian.anti-sec:)",
 	} {
 		uri := uri
 		routes = append(
