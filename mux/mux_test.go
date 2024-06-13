@@ -120,21 +120,6 @@ func tarpitRoutes() []Route {
 		"/hue2.php",
 		"/new_license.php",
 		"/up.php",
-		// "/pmd/",
-		// "/PMA/",
-		// "/PMA2/",
-		// "/pmamy/",
-		// "/pmamy2/",
-		// "/dbadmin/",
-		// "/tools/",
-		// "/phpma/",
-		// "/php-my-admin/",
-		// "/websql/",
-		// "/dbadmin/",
-		// "/xmlrpc.php",
-		// "/user/",
-		// "/vuln.htm",
-		// "/webconfig.txt.php",
 	} {
 		uri := uri
 		routes = append(
