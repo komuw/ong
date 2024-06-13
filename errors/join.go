@@ -33,7 +33,7 @@ func Join(errs ...error) error {
 			ef := wrap(err, 3)
 			e.errs = append(e.errs, ef)
 			if e.stackError == nil {
-				e.stackError = ef
+				e.stackError = ef.(*stackError) // ef is guaranteed to be a stackError
 			}
 		}
 	}

@@ -28,6 +28,12 @@ func (e *stackError) Unwrap() error {
 	return e.err
 }
 
+// Is reports whether target is a stackError
+func (e *stackError) Is(target error) bool {
+	_, ok := target.(*stackError)
+	return ok
+}
+
 // New returns an error with the supplied message.
 // It also records the stack trace at the point it was called.
 //
@@ -54,10 +60,16 @@ func Dwrap(errp *error) {
 	}
 }
 
-func wrap(err error, skip int) *stackError {
-	c, ok := err.(*stackError)
-	if ok {
-		return c
+func wrap(err error, skip int) error {
+	// c, ok := err.(*stackError)
+	// fmt.Println("c, ok: ", c, ok, Is(err, &stackError{}))
+	// if ok {
+	// 	return c
+	// }
+
+	if Is(err, &stackError{}) {
+		return err
+		// return Unwrap(err)
 	}
 
 	// limit stack size to 64 call depth.
@@ -109,9 +121,6 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 // StackTrace returns the stack trace contained in err, if any, else an empty string.
 func StackTrace(err error) string {
 	if sterr, ok := err.(*stackError); ok {
-		return sterr.getStackTrace()
-	}
-	if sterr, ok := err.(*joinError); ok {
 		return sterr.getStackTrace()
 	}
 
