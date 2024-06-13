@@ -193,4 +193,30 @@ func TestStackError(t *testing.T) {
 
 		_ = wrap(err, 2) // This is here to quiet golangci-lint which complains that wrap is always called with an argument of 3.
 	})
+
+	t.Run("multiple wrapping preserves traces", func(t *testing.T) {
+		t.Parallel()
+
+		f := func() (err error) {
+			defer Dwrap(&err)
+
+			e1 := New("hey")
+			e2 := Wrap(e1)
+			e3 := Errorf("fmting: %w", e2)
+
+			return e3
+		}
+
+		err := f()
+		extendedFormatting := fmt.Sprintf("%+v", err)
+
+		attest.True(t, stdErrors.Is(err, &stackError{}))
+		attest.Equal(t, err.Error(), "fmting: hey")
+		for _, v := range []string{
+			"ong/errors/errors_test.go:203",
+			"ong/errors/errors_test.go:210",
+		} {
+			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
+		}
+	})
 }

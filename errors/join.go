@@ -14,7 +14,7 @@ package errors
 //
 // It only returns the stack trace of the first error. Unwrap also only returns the first error.
 //
-// Note that this function is equivalent to the one in standard library only in spirit.
+// Note that this function is equivalent to the one in standard library mainly in spirit.
 // This is not a direct replacement of the standard library one.
 func Join(errs ...error) error {
 	n := 0
@@ -33,7 +33,8 @@ func Join(errs ...error) error {
 			ef := wrap(err, 3)
 			e.errs = append(e.errs, ef)
 			if e.stackError == nil {
-				e.stackError = ef
+				eff, _ := ef.(*stackError) // ef is guaranteed to be a stackError since it comes from wrap()
+				e.stackError = eff
 			}
 		}
 	}
