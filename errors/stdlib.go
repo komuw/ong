@@ -24,6 +24,7 @@ func Unwrap(err error) error {
 func Errorf(format string, a ...any) error {
 	err := fmt.Errorf(format, a...)
 
+	// see: https://gitlab.com/tozd/go/errors/-/blob/v0.8.1/errors.go#L324
 	switch u := err.(type) {
 	default:
 		// todo: handle this somehow
