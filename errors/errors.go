@@ -114,8 +114,26 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 
 // StackTrace returns the stack trace contained in err, if any, else an empty string.
 func StackTrace(err error) string {
+	if err == nil {
+		return ""
+	}
+
 	if sterr, ok := err.(*stackError); ok {
 		return sterr.getStackTrace()
+	}
+
+	if Is(err, &stackError{}) {
+		switch u := err.(type) {
+		default:
+			// This is already handled by the `err.(*stackError)` case above.
+			// todo: handle this somehow
+			return ""
+		case interface{ Unwrap() error }:
+			ef := u.Unwrap()
+			if eff, ok := ef.(*stackError); ok {
+				return eff.getStackTrace()
+			}
+		}
 	}
 
 	return ""
