@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.0.99
+- ong/errors: errors; retain stack traces when errors are wrapped with fmt: https://github.com/komuw/ong/pull/452
+
 # v0.0.98
 - ong/errors: add equivalent functions from standard library: https://github.com/komuw/ong/pull/449
 
