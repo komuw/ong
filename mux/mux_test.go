@@ -27,25 +27,11 @@ func TestNew(t *testing.T) {
 }
 
 func tarpitRoutes() []Route {
-	tarpitHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-
-	routes := []Route{}
-
-	for _, uri := range []string{
-		// CMS
-		"/libraries/joomla/",
-	} {
-		uri := uri
-		routes = append(
-			routes,
-			NewRoute(
-				uri,
-				MethodAll,
-				tarpitHandler,
-			),
-		)
-
+	return []Route{
+		NewRoute(
+			"/libraries/joomla/",
+			MethodAll,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		),
 	}
-
-	return routes
 }
