@@ -201,7 +201,7 @@ func (r *router) detectConflict(method, pattern string, originalHandler http.Han
 		sameLen := len(incomingSegments) == len(existingSegments)
 		if !sameLen {
 			// no conflict
-			break
+			continue
 		}
 
 		errMsg := fmt.Errorf(`
