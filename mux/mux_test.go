@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/komuw/ong/config"
+	"go.akshayshah.org/attest"
 )
 
 func TestNew(t *testing.T) {
@@ -20,9 +21,9 @@ func TestNew(t *testing.T) {
 		rtz = append(rtz, tarpitRoutes()...)
 		rtz = append(rtz, routes()...)
 
-		// attest.Panics(t, func() {
-		_ = New(config.DevOpts(nil, "secretKey12@34String"), nil, rtz...)
-		// })
+		attest.Panics(t, func() {
+			_ = New(config.DevOpts(nil, "secretKey12@34String"), nil, rtz...)
+		})
 	})
 }
 
