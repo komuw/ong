@@ -220,3 +220,15 @@ func TestStackError(t *testing.T) {
 		}
 	})
 }
+
+func TestStackTrace(t *testing.T) {
+	t.Parallel()
+
+	t.Run("handles nil", func(t *testing.T) {
+		t.Parallel()
+
+		var err error = nil
+		got := StackTrace(err)
+		attest.Equal(t, got, "")
+	})
+}
