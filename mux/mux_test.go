@@ -17,7 +17,6 @@ func TestNew(t *testing.T) {
 	}
 
 	// There are other tests in internal/mx
-
 	t.Run("conflict detected", func(t *testing.T) {
 		rtz := []Route{}
 		rtz = append(rtz, tarpitRoutes()...)
@@ -26,6 +25,15 @@ func TestNew(t *testing.T) {
 		attest.Panics(t, func() {
 			_ = New(config.DevOpts(nil, "secretKey12@34String"), nil, rtz...)
 		})
+	})
+
+	t.Run("okay", func(t *testing.T) {
+		rtz := []Route{
+			NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+		// does not panic.
+		_ = New(config.DevOpts(nil, "secretKey12@34String"), nil, rtz...)
 	})
 }
 
