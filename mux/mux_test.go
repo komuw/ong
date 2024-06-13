@@ -42,9 +42,6 @@ func tarpitRoutes() []Route {
 		"/templates/",
 		"/includes/",
 		"/modules/",
-		"/plugins/",
-		"/drupal/",
-		"/Drupal.php",
 	} {
 		uri := uri
 		routes = append(
