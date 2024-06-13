@@ -3,9 +3,9 @@ module github.com/komuw/ong
 go 1.22
 
 require (
-	golang.org/x/crypto v0.22.0
-	golang.org/x/net v0.24.0
-	golang.org/x/sys v0.19.0
+	golang.org/x/crypto v0.24.0
+	golang.org/x/net v0.26.0
+	golang.org/x/sys v0.21.0
 )
 
 require (
@@ -19,15 +19,15 @@ require (
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 )
 
 require (
 	braces.dev/errtrace v0.3.0 // test
 	github.com/NYTimes/gziphandler v1.1.1 // test
-	github.com/klauspost/compress v1.17.8 // test
+	github.com/klauspost/compress v1.17.9 // test
 	github.com/pkg/errors v0.9.1 // test
-	github.com/rs/zerolog v1.32.0 // test
+	github.com/rs/zerolog v1.33.0 // test
 	github.com/sirupsen/logrus v1.9.3 // test
 	github.com/sourcegraph/conc v0.3.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
