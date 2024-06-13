@@ -133,8 +133,8 @@ func StackTrace(err error) string {
 			return ""
 		case interface{ Unwrap() error }:
 			ef := u.Unwrap()
-			if eff, ok := ef.(*stackError); ok {
-				return eff.getStackTrace()
+			if sterr, ok := ef.(*stackError); ok {
+				return sterr.getStackTrace()
 			}
 		}
 	}
