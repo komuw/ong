@@ -231,4 +231,26 @@ func TestStackTrace(t *testing.T) {
 		got := StackTrace(err)
 		attest.Equal(t, got, "")
 	})
+
+	t.Run("traces", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			err := New("hello")
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:239")
+		}
+		{
+			err := stdErrors.New("hello stdErrors")
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "")
+		}
+		{
+			e1 := New("hello")
+			err := Wrap(e1)
+
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:249")
+		}
+	})
 }
