@@ -209,7 +209,6 @@ func TestStackError(t *testing.T) {
 
 		err := f()
 		extendedFormatting := fmt.Sprintf("%+v", err)
-		fmt.Println("extendedFormatting: ", extendedFormatting)
 
 		attest.True(t, stdErrors.Is(err, &stackError{}))
 		attest.Equal(t, err.Error(), "fmting: hey")
