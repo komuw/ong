@@ -20,7 +20,19 @@ func Unwrap(err error) error {
 	return stdErrors.Unwrap(err)
 }
 
-// Errorf is a pass through to the same func from the standard library fmt package.
+// Errorf is equivalent to the one in standard library mainly in spirit.
 func Errorf(format string, a ...any) error {
-	return fmt.Errorf(format, a...)
+	err := fmt.Errorf(format, a...)
+
+	switch u := err.(type) {
+	default:
+		// todo: handle this somehow
+		return err
+	case interface{ Unwrap() error }:
+		ef := wrap(u.Unwrap(), 3)
+		return &joinError{
+			errs:       []error{err},
+			stackError: ef.(*stackError), // ef is guaranteed to be a stackError since it comes from wrap()
+		}
+	}
 }

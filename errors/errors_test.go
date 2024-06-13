@@ -213,5 +213,11 @@ func TestStackError(t *testing.T) {
 
 		attest.True(t, stdErrors.Is(err, &stackError{}))
 		attest.Equal(t, err.Error(), "fmting: hey")
+		for _, v := range []string{
+			"ong/errors/errors_test.go:203",
+			"ong/errors/errors_test.go:210",
+		} {
+			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
+		}
 	})
 }
