@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.0
+- ong/errors: handle stacktraces for more error types: https://github.com/komuw/ong/pull/455
+
 # v0.0.99
 - ong/errors: retain stack traces when errors are wrapped with fmt: https://github.com/komuw/ong/pull/452
 - ong/mux: detect route conflicts in more cases: https://github.com/komuw/ong/pull/453
