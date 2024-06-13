@@ -47,10 +47,6 @@ func tarpitRoutes() []Route {
 		"/Drupal.php",
 
 		// OTHERS
-		"/echo.php",
-		"/composer.php",
-		"/uploader.php",
-		"/shell.php",
 		"/freenode-proxy-checker.txt",
 		"/w00tw00t.at.blackhats.romanian.anti-sec:)",
 	} {
