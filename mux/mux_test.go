@@ -52,18 +52,6 @@ func tarpitRoutes() []Route {
 		"/uploader.php",
 		"/shell.php",
 		"/freenode-proxy-checker.txt",
-		"/cmd.php",
-		"/muhstiks.php",
-		"/muhstik.php",
-		"/jmx-console",
-		"/status.php",
-		"/TP/",
-		"/HNAP1/",
-		"/manager/",
-		"/program/",
-		"/shopdb/",
-		"/programs/",
-		"/jenkins/",
 		"/w00tw00t.at.blackhats.romanian.anti-sec:)",
 	} {
 		uri := uri
