@@ -39,9 +39,6 @@ func tarpitRoutes() []Route {
 		"/libraries/joomla/",
 		"/administrator/",
 		"/components/",
-		"/templates/",
-		"/includes/",
-		"/modules/",
 	} {
 		uri := uri
 		routes = append(
