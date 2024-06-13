@@ -31,9 +31,11 @@ func Errorf(format string, a ...any) error {
 		return err
 	case interface{ Unwrap() error }:
 		ef := wrap(u.Unwrap(), 3)
+		eff, _ := ef.(*stackError) // ef is guaranteed to be a stackError since it comes from wrap()
+
 		return &joinError{
 			errs:       []error{err},
-			stackError: ef.(*stackError), // ef is guaranteed to be a stackError since it comes from wrap()
+			stackError: eff,
 		}
 	}
 }
