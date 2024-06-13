@@ -37,8 +37,6 @@ func tarpitRoutes() []Route {
 		"/images/",
 		"/joomla/",
 		"/libraries/joomla/",
-		"/administrator/",
-		"/components/",
 	} {
 		uri := uri
 		routes = append(
