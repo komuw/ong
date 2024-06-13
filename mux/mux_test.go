@@ -33,9 +33,6 @@ func tarpitRoutes() []Route {
 
 	for _, uri := range []string{
 		// CMS
-
-		"/images/",
-		"/joomla/",
 		"/libraries/joomla/",
 	} {
 		uri := uri
