@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.1
+- ong/middleware: do not show hint: https://github.com/komuw/ong/pull/457 
+
 # v0.1.0
 - ong/errors: handle stacktraces for more error types: https://github.com/komuw/ong/pull/455
 

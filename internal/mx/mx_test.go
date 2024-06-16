@@ -60,7 +60,7 @@ func TestNewRoute(t *testing.T) {
 	_, errA := NewRoute(
 		"/api",
 		MethodGet,
-		middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-h1rd-passwd", "hey"),
+		middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-h1rd-passwd"),
 	)
 	attest.Ok(t, errA)
 

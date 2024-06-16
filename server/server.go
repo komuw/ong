@@ -71,7 +71,6 @@ func Run(h http.Handler, o config.Opts) error {
 							profHandler,
 							string(o.SecretKey),
 							string(o.SecretKey),
-							"Use config.Opts.SecretKey",
 						),
 					),
 				); err != nil {
@@ -86,7 +85,6 @@ func Run(h http.Handler, o config.Opts) error {
 							profHandler,
 							string(o.SecretKey),
 							string(o.SecretKey),
-							"Use config.Opts.SecretKey",
 						),
 					),
 				); err != nil {
