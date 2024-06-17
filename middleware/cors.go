@@ -431,7 +431,7 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 		https://developer.mozilla.org/en-US/docs/Glossary/Origin
 	*/
 	if len(allowedOrigins) > 1 && slices.Contains(allowedOrigins, "*") {
-		return errors.New("ong/middleware/cors: single wildcard should not be used together with others")
+		return errors.New("ong/middleware/cors: single wildcard should not be used together with other allowedOrigins")
 	}
 
 	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
