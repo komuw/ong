@@ -43,7 +43,7 @@ func ExampleNew() {
 		// If the p99 response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
 		200*time.Millisecond,
 		// Allow access from these origins for CORs.
-		[]string{"example.net", "example.org"},
+		[]string{"http://example.net", "https://example.org"},
 		// Allow only GET and POST for CORs.
 		[]string{"GET", "POST"},
 		// Allow all http headers for CORs.
