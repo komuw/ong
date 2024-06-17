@@ -28,6 +28,7 @@ import (
 //
 // - https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 // - https://jub0bs.com/posts/2023-02-08-fearless-cors
+// - https://fetch.spec.whatwg.org/#cors-preflight-request <- The fetch standard is also the canonical reference for CORS. YES.
 
 const (
 	// header is used by browsers when issuing a preflight request.
@@ -134,6 +135,7 @@ func handlePreflight(
 ) {
 	headers := w.Header()
 	origin := r.Header.Get(originHeader)
+	// According to the CORS/Fetch standard, method names are case-sensitive. So do not uppercase/lowercase reqMethod.
 	reqMethod := r.Header.Get(acrmHeader) // note this is different from the one in `handleActualRequest`
 	reqHeader := r.Header.Get(acrhHeader)
 
