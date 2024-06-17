@@ -930,7 +930,7 @@ func TestValidateAllowCredentials(t *testing.T) {
 		{
 			name:             "credentials no wildcard origin",
 			allowCredentials: true,
-			allowedOrigins:   []string{"http://example.com"},
+			allowedOrigins:   []string{"https://example.com"},
 			allowedMethods:   nil,
 			allowedHeaders:   nil,
 			succeeds:         true,
@@ -953,6 +953,15 @@ func TestValidateAllowCredentials(t *testing.T) {
 			allowedHeaders:   []string{"*"},
 			succeeds:         false,
 			errMsg:           "allowCredentials should not be used together with wildcard",
+		},
+		{
+			name:             "insecure http scheme",
+			allowCredentials: true,
+			allowedOrigins:   []string{"http://example.org"},
+			allowedMethods:   nil,
+			allowedHeaders:   nil,
+			succeeds:         false,
+			errMsg:           "allowCredentials should not be used together with origin that uses unsecure scheme",
 		},
 	}
 

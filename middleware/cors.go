@@ -489,6 +489,21 @@ func validateAllowCredentials(
 		return errors.New("ong/middleware/cors: allowCredentials should not be used together with wildcard allowedHeaders")
 	}
 
+	if allowCredentials {
+		// Credentialed requests should not be used with 'http' scheme. Should require 'https'.
+		// https://jub0bs.com/posts/2023-02-08-fearless-cors/#disallow-insecure-origins-by-default
+		// https://portswigger.net/research/exploiting-cors-misconfigurations-for-bitcoins-and-bounties
+		for _, origin := range allowedOrigins {
+			u, err := url.Parse(origin)
+			if err != nil {
+				return err
+			}
+			if u.Scheme == "http" {
+				return fmt.Errorf("ong/middleware/cors: allowCredentials should not be used together with origin that uses unsecure scheme `%v`", origin)
+			}
+		}
+	}
+
 	return nil
 }
 
