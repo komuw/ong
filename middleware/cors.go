@@ -536,8 +536,7 @@ func validateAllowedRequestHeaders(allowedHeaders []string) error {
 			return fmt.Errorf("ong/middleware/cors: header is forbidden in CORS allowedHeaders `%v`", h)
 		}
 
-		if strings.HasPrefix(strings.ToLower(h), "proxy-") ||
-			strings.HasPrefix(strings.ToLower(h), "sec-") {
+		if strings.HasPrefix(strings.ToLower(h), "proxy-") || strings.HasPrefix(strings.ToLower(h), "sec-") {
 			// Spec says; "If name when byte-lowercased starts with `proxy-` or `sec-`"
 			// So the use of `strings.ToLower` here is correct.
 			return fmt.Errorf("ong/middleware/cors: header is forbidden in CORS allowedHeaders `%v`", h)
