@@ -85,7 +85,7 @@ func loadShedder(
 		p99 := lq.getP99(loadShedMinSampleSize)
 		if p99.Milliseconds() > loadShedBreachLatency.Milliseconds() && !sendProbe {
 			// drop request
-			err := fmt.Errorf("ong/middleware: server is overloaded, retry after %s", retryAfter)
+			err := fmt.Errorf("ong/middleware/loadshed: server is overloaded, retry after %s", retryAfter)
 			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. loadShedBreachLatency: %s", err.Error(), p99, loadShedBreachLatency))
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(
