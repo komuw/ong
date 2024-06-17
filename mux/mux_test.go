@@ -1,14 +1,19 @@
 package mux
 
 import (
+	"bytes"
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/komuw/ong/config"
+	"github.com/komuw/ong/log"
 	"go.akshayshah.org/attest"
 )
 
 func TestNew(t *testing.T) {
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
 	routes := func() []Route {
 		return []Route{
 			NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
@@ -23,7 +28,7 @@ func TestNew(t *testing.T) {
 		rtz = append(rtz, routes()...)
 
 		attest.Panics(t, func() {
-			_ = New(config.DevOpts(nil, "secretKey12@34String"), nil, rtz...)
+			_ = New(config.DevOpts(l, "secretKey12@34String"), nil, rtz...)
 		})
 	})
 
@@ -33,7 +38,7 @@ func TestNew(t *testing.T) {
 			NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
 		}
 		// does not panic.
-		_ = New(config.DevOpts(nil, "secretKey12@34String"), nil, rtz...)
+		_ = New(config.DevOpts(l, "secretKey12@34String"), nil, rtz...)
 	})
 }
 

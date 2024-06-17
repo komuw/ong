@@ -157,6 +157,7 @@ func allDefaultMiddlewares(
 													allowedHeaders,
 													allowCredentials,
 													corsCacheDuration,
+													domain,
 												),
 												domain,
 											),

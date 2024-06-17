@@ -204,11 +204,11 @@ func (o Opts) GoString() string {
 // loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
 //
 // allowedOrigins, allowedMethods, allowedHeaders, allowCredentials & corsCacheDuration are used by the CORS middleware.
-// If allowedOrigins is nil, all origins are allowed. You can also use []string{"*"} to allow all.
+// If allowedOrigins is nil, [domain] and its www variant are used. Use []string{"*"} to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
 // allowCredentials indicates whether the request can include user credentials like cookies, HTTP authentication or client side SSL certificates.
-// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead.
+// corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead, 0 second is an exception and is used as is.
 //
 // csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
 //

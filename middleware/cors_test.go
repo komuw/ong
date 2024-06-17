@@ -5,8 +5,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/komuw/ong/config"
 	"go.akshayshah.org/attest"
@@ -25,10 +27,11 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, "is-set") // preflight request header set
+		req.Header.Add(originHeader, "localhost")
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
@@ -45,10 +48,11 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		req.Header.Add(acrmHeader, http.MethodGet) // preflight request header set
+		req.Header.Add(originHeader, "localhost")
 		req.Header.Add(acrhHeader, "HEAD, POST")
 		req.Header.Add(originHeader, "http://example.com")
 		wrappedHandler.ServeHTTP(rec, req)
@@ -76,7 +80,7 @@ func TestCorsPreflight(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 		// preflight request header NOT set
@@ -100,30 +104,40 @@ func TestCorsPreflight(t *testing.T) {
 			origin         string
 			allowedOrigins []string
 			succeed        bool
+			statusCode     int
+			content        string
 		}{
+			{
+				name:           "star origins",
+				origin:         "http://example.com",
+				allowedOrigins: []string{"*"},
+				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				content:        "", // someCorsHandler is NOT called.
+			},
+			{
+				name:           "origin not matched",
+				origin:         "http://example.com",
+				allowedOrigins: []string{"https://example.com", "http://www.hey.com"},
+				succeed:        false,
+				statusCode:     http.StatusNoContent,
+				content:        "", // someCorsHandler is NOT called.
+			},
+			{
+				name:           "origin matched",
+				origin:         "http://www.example.com",
+				allowedOrigins: []string{"http://www.example.com", "http://www.hey.com"},
+				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				content:        "", // someCorsHandler is NOT called.
+			},
 			{
 				name:           "empty origin",
 				origin:         "",
 				allowedOrigins: []string{"*"},
 				succeed:        false,
-			},
-			{
-				name:           "star origins",
-				origin:         "http:/example.com",
-				allowedOrigins: []string{"*"},
-				succeed:        true,
-			},
-			{
-				name:           "origin not matched",
-				origin:         "http:/example.com",
-				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
-				succeed:        false,
-			},
-			{
-				name:           "origin matched",
-				origin:         "http:/www.example.com",
-				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
-				succeed:        true,
+				statusCode:     http.StatusOK,                      // since origin is empty, it is not treated as a pre-flight request.
+				content:        "hello there from someCorsHandler", // someCorsHandler is called.
 			},
 		}
 
@@ -132,8 +146,8 @@ func TestCorsPreflight(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				msg := "hello there from someCorsHandler"
+				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -146,8 +160,8 @@ func TestCorsPreflight(t *testing.T) {
 				rb, err := io.ReadAll(res.Body)
 				attest.Ok(t, err)
 
-				attest.Equal(t, res.StatusCode, http.StatusNoContent)
-				attest.Equal(t, string(rb), "") // someCorsHandler is NOT called.
+				attest.Equal(t, res.StatusCode, tt.statusCode)
+				attest.Equal(t, string(rb), tt.content)
 
 				// if this header was set, then the preflight request succeeded
 				gotSucess := res.Header.Get(acmaHeader) != ""
@@ -200,6 +214,14 @@ func TestCorsPreflight(t *testing.T) {
 				statusCode:     http.StatusNoContent,
 				resContent:     "",
 			},
+			{
+				name:           "method matched lower",
+				method:         strings.ToLower(http.MethodDelete),
+				allowedMethods: []string{http.MethodGet, http.MethodDelete, http.MethodPatch},
+				succeed:        true,
+				statusCode:     http.StatusNoContent,
+				resContent:     "",
+			},
 		}
 
 		for _, tt := range tests {
@@ -207,7 +229,7 @@ func TestCorsPreflight(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(originHeader, "http://some-origin.com")
@@ -226,6 +248,9 @@ func TestCorsPreflight(t *testing.T) {
 				// if this header was set, then the preflight request succeeded
 				gotSucess := res.Header.Get(acmaHeader) != ""
 				attest.Equal(t, gotSucess, tt.succeed)
+				if tt.succeed {
+					attest.Equal(t, res.Header.Get(acamHeader), tt.method) // method should match the casing of request.
+				}
 			})
 		}
 	})
@@ -271,7 +296,7 @@ func TestCorsPreflight(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, tt.allowedHeaders, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, tt.allowedHeaders, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
 				req.Header.Add(acrmHeader, "is-set") // preflight request header set
@@ -294,6 +319,58 @@ func TestCorsPreflight(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("cache duration", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name              string
+			corsCacheDuration time.Duration
+			expected          string
+		}{
+			{
+				name:              "zero duration",
+				corsCacheDuration: 0 * time.Second,
+				expected:          "0",
+			},
+			{
+				name:              "less than zero duration",
+				corsCacheDuration: 100 * time.Millisecond,
+				expected:          fmt.Sprintf("%d", int(config.DefaultCorsCacheDuration.Seconds())),
+			},
+			{
+				name:              "greater than zero duration",
+				corsCacheDuration: 72 * time.Hour,
+				expected:          fmt.Sprintf("%d", int(72*time.Hour.Seconds())),
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				msg := "hello"
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, tt.corsCacheDuration, "example.com")
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
+				req.Header.Add(acrmHeader, "is-set") // preflight request header set
+				req.Header.Add(originHeader, "http://some-origin.com")
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, http.StatusNoContent)
+				attest.Equal(t, string(rb), "") // someCorsHandler is NOT called.
+
+				attest.Equal(t, res.Header.Get(acmaHeader), tt.expected)
+			})
+		}
+	})
 }
 
 func TestCorsActualRequest(t *testing.T) {
@@ -303,7 +380,7 @@ func TestCorsActualRequest(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		wrappedHandler.ServeHTTP(rec, req)
@@ -322,7 +399,7 @@ func TestCorsActualRequest(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.Header.Add(originHeader, "http://example.com")
@@ -349,30 +426,35 @@ func TestCorsActualRequest(t *testing.T) {
 			origin         string
 			allowedOrigins []string
 			succeed        bool
+			statusCode     int
 		}{
 			{
 				name:           "empty origin",
 				origin:         "",
 				allowedOrigins: []string{"*"},
 				succeed:        false,
+				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "star origins",
-				origin:         "http:/example.com",
+				origin:         "http://example.com",
 				allowedOrigins: []string{"*"},
 				succeed:        true,
+				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "origin not matched",
-				origin:         "http:/example.com",
-				allowedOrigins: []string{"https:/example.com", "http://www.hey.com"},
+				origin:         "http://example.com",
+				allowedOrigins: []string{"https://example.com", "http://www.hey.com"},
 				succeed:        false,
+				statusCode:     http.StatusOK,
 			},
 			{
 				name:           "origin matched",
-				origin:         "http:/www.example.com",
-				allowedOrigins: []string{"http:/www.example.com", "http://www.hey.com"},
+				origin:         "http://www.example.com",
+				allowedOrigins: []string{"http://www.example.com", "http://www.hey.com"},
 				succeed:        true,
+				statusCode:     http.StatusOK,
 			},
 		}
 
@@ -382,7 +464,7 @@ func TestCorsActualRequest(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), tt.allowedOrigins, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 				req.Header.Add(originHeader, tt.origin)
@@ -394,7 +476,7 @@ func TestCorsActualRequest(t *testing.T) {
 				rb, err := io.ReadAll(res.Body)
 				attest.Ok(t, err)
 
-				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Equal(t, res.StatusCode, tt.statusCode)
 				attest.Equal(t, string(rb), msg)
 				attest.NotZero(t, res.Header.Get(varyHeader))
 
@@ -446,7 +528,7 @@ func TestCorsActualRequest(t *testing.T) {
 				t.Parallel()
 
 				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration)
+				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, tt.allowedMethods, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(tt.method, "/someUri", nil)
 				req.Header.Add(originHeader, "http://some-origin.com")
@@ -475,7 +557,7 @@ func TestCorsActualRequest(t *testing.T) {
 		msg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration)
+		wrappedHandler := cors(someCorsHandler(msg), nil, nil, nil, false, config.DefaultCorsCacheDuration, "example.com")
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -509,6 +591,7 @@ func TestIsOriginAllowed(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		domain         string
 		origin         string
 		allowedOrigins []string
 		allow          bool
@@ -516,13 +599,23 @@ func TestIsOriginAllowed(t *testing.T) {
 	}{
 		{
 			name:           "nil allowedOrigins",
-			origin:         "some-origin",
+			domain:         "example.com",
+			origin:         "https://example.com",
 			allowedOrigins: nil,
 			allow:          true,
-			allowAll:       true,
+			allowAll:       false,
+		},
+		{
+			name:           "nil allowedOrigins also allows www",
+			domain:         "example.com",
+			origin:         "https://www.example.com",
+			allowedOrigins: nil,
+			allow:          true,
+			allowAll:       false,
 		},
 		{
 			name:           "star allowedOrigins",
+			domain:         "example.com",
 			origin:         "some-origin",
 			allowedOrigins: []string{"*"},
 			allow:          true,
@@ -530,6 +623,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "matched allowedOrigins",
+			domain:         "example.com",
 			origin:         "http://example.com",
 			allowedOrigins: []string{"http://hey.com", "http://example.com"},
 			allow:          true,
@@ -537,6 +631,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:   "not matched allowedOrigins",
+			domain: "example.com",
 			origin: "http://example.com",
 			// an origin consists of the scheme, domain & port
 			allowedOrigins: []string{"https://example.com"},
@@ -545,6 +640,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "star allowedOrigins is supreme",
+			domain:         "example.com",
 			origin:         "http://hey.com",
 			allowedOrigins: []string{"https://example.com", "*"},
 			allow:          true,
@@ -552,6 +648,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard allowedOrigins",
+			domain:         "example.com",
 			origin:         "http://example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -559,6 +656,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard even in scheme ",
+			domain:         "example.com",
 			origin:         "https://www.example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -566,6 +664,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 		{
 			name:           "wildcard subdomain",
+			domain:         "example.com",
 			origin:         "https://subdomain.example.com",
 			allowedOrigins: []string{"*example.com"},
 			allow:          true,
@@ -577,7 +676,7 @@ func TestIsOriginAllowed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins)
+			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins, tt.domain)
 			allow, allowAll := isOriginAllowed(tt.origin, allowedOrigins, allowedWildcardOrigins)
 			attest.Equal(t, allow, tt.allow)
 			attest.Equal(t, allowAll, tt.allowAll)
@@ -697,6 +796,277 @@ func TestAreHeadersAllowed(t *testing.T) {
 			allowedHeaders := getHeaders(tt.allowedHeaders)
 			allowed := areHeadersAllowed(tt.reqHeader, allowedHeaders)
 			attest.Equal(t, allowed, tt.allowed)
+		})
+	}
+}
+
+func TestValidateAllowedOrigins(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		allowedOrigins []string
+		succeeds       bool
+		errMsg         string
+	}{
+		{
+			name:           "okay",
+			allowedOrigins: []string{"http://a.com"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "has slash url path",
+			allowedOrigins: []string{"http://b.com/"},
+			succeeds:       false,
+			errMsg:         "should not contain url path",
+		},
+		{
+			name:           "has url path",
+			allowedOrigins: []string{"https://c.com/hello"},
+			succeeds:       false,
+			errMsg:         "should not contain url path",
+		},
+		{
+			name:           "okay with port",
+			allowedOrigins: []string{"https://d.com:8888"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "custom scheme okay",
+			allowedOrigins: []string{"hzzs://e.com"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "missing scheme",
+			allowedOrigins: []string{"f.com"},
+			succeeds:       false,
+			errMsg:         "scheme should not be empty",
+		},
+		{
+			name:           "wildcard with others",
+			allowedOrigins: []string{"https://g.com", "*"},
+			succeeds:       false,
+			errMsg:         "single wildcard should not be used together with other allowedOrigins",
+		},
+		{
+			name:           "multiple wildcard",
+			allowedOrigins: []string{"http://*h*.com"},
+			succeeds:       false,
+			errMsg:         "should not contain more than one wildcard",
+		},
+		{
+			name:           "wildcard should be prefixed to host",
+			allowedOrigins: []string{"http://i*.com"},
+			succeeds:       false,
+			errMsg:         "wildcard should be prefixed to host",
+		},
+		{
+			// null origin should be rejected, see: https://jub0bs.com/posts/2023-02-08-fearless-cors/#do-not-support-the-null-origin
+			name:           "null origin",
+			allowedOrigins: []string{"null"},
+			succeeds:       false,
+			errMsg:         "scheme should not be empty",
+		},
+		{
+			name:           "wildcard is okay",
+			allowedOrigins: []string{"http://*j.com"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "wildcard in different domains",
+			allowedOrigins: []string{"http://*k.com", "http://*another.com"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "one wildcard",
+			allowedOrigins: []string{"*"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowedOrigins(tt.allowedOrigins)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestValidateAllowCredentials(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		allowCredentials bool
+		allowedOrigins   []string
+		allowedMethods   []string
+		allowedHeaders   []string
+		succeeds         bool
+		errMsg           string
+	}{
+		{
+			name:             "one wildcard origin and credentials",
+			allowCredentials: true,
+			allowedOrigins:   []string{"*"},
+			allowedMethods:   nil,
+			allowedHeaders:   nil,
+			succeeds:         false,
+			errMsg:           "allowCredentials should not be used together with wildcard",
+		},
+		{
+			name:             "credentials no wildcard origin",
+			allowCredentials: true,
+			allowedOrigins:   []string{"https://example.com"},
+			allowedMethods:   nil,
+			allowedHeaders:   nil,
+			succeeds:         true,
+			errMsg:           "",
+		},
+		{
+			name:             "one wildcard method and credentials",
+			allowCredentials: true,
+			allowedOrigins:   nil,
+			allowedMethods:   []string{"*"},
+			allowedHeaders:   nil,
+			succeeds:         false,
+			errMsg:           "allowCredentials should not be used together with wildcard",
+		},
+		{
+			name:             "one wildcard header and credentials",
+			allowCredentials: true,
+			allowedOrigins:   nil,
+			allowedMethods:   nil,
+			allowedHeaders:   []string{"*"},
+			succeeds:         false,
+			errMsg:           "allowCredentials should not be used together with wildcard",
+		},
+		{
+			name:             "insecure http scheme",
+			allowCredentials: true,
+			allowedOrigins:   []string{"http://example.org"},
+			allowedMethods:   nil,
+			allowedHeaders:   nil,
+			succeeds:         false,
+			errMsg:           "allowCredentials should not be used together with origin that uses unsecure scheme",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowCredentials(tt.allowCredentials, tt.allowedOrigins, tt.allowedMethods, tt.allowedHeaders)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestValidateAllowedMethods(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		allowedMethods []string
+		succeeds       bool
+		errMsg         string
+	}{
+		{
+			name:           "bad",
+			allowedMethods: []string{"TRACE", "GET"},
+			succeeds:       false,
+			errMsg:         "method is forbidden",
+		},
+		{
+			name:           "good",
+			allowedMethods: []string{"PUT", "pOWEr"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowedMethods(tt.allowedMethods)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestValidateAllowedRequestHeaders(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		allowedHeaders []string
+		succeeds       bool
+		errMsg         string
+	}{
+		{
+			name:           "bad",
+			allowedHeaders: []string{"Trailer"},
+			succeeds:       false,
+			errMsg:         "header is forbidden",
+		},
+		{
+			name:           "other bad",
+			allowedHeaders: []string{"ConTent-LenGTh"},
+			succeeds:       false,
+			errMsg:         "header is forbidden",
+		},
+		{
+			name:           "again bad",
+			allowedHeaders: []string{"sec-sasa"},
+			succeeds:       false,
+			errMsg:         "header is forbidden",
+		},
+		{
+			name:           "good",
+			allowedHeaders: []string{"DushDush"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateAllowedRequestHeaders(tt.allowedHeaders)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
 		})
 	}
 }
