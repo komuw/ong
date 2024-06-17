@@ -56,11 +56,14 @@ func TestNewRoute(t *testing.T) {
 	)
 	attest.Ok(t, err)
 
+	basicAuth, err := middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-h1rd-passwd")
+	attest.Ok(t, err)
+
 	// succeds
 	_, errA := NewRoute(
 		"/api",
 		MethodGet,
-		middleware.BasicAuth(someMuxHandler("msg"), "some-user", "some-very-very-h1rd-passwd"),
+		basicAuth,
 	)
 	attest.Ok(t, errA)
 

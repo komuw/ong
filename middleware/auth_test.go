@@ -32,7 +32,8 @@ func TestBasicAuth(t *testing.T) {
 	msg := "hello"
 	user := "some-user"
 	passwd := "some-long-p1sswd"
-	wrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
+	wrappedHandler, err := BasicAuth(protectedHandler(msg), user, passwd)
+	attest.Ok(t, err)
 
 	tests := []struct {
 		name     string
@@ -90,7 +91,8 @@ func TestBasicAuth(t *testing.T) {
 
 		// for this concurrency test, we have to re-use the same newWrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		newWrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
+		newWrappedHandler, err := BasicAuth(protectedHandler(msg), user, passwd)
+		attest.Ok(t, err)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
