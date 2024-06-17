@@ -843,13 +843,13 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			name:           "missing scheme",
 			allowedOrigins: []string{"f.com"},
 			succeeds:       false,
-			errMsg:         "bad scheme",
+			errMsg:         "scheme should not be empty",
 		},
 		{
 			name:           "wildcard with others",
 			allowedOrigins: []string{"https://g.com", "*"},
 			succeeds:       false,
-			errMsg:         "single wildcard should not be used together with others",
+			errMsg:         "single wildcard should not be used together with other allowedOrigins",
 		},
 		{
 			name:           "multiple wildcard",
@@ -862,6 +862,12 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			allowedOrigins: []string{"http://i*.com"},
 			succeeds:       false,
 			errMsg:         "wildcard should be prefixed to host",
+		},
+		{
+			name:           "null origin",
+			allowedOrigins: []string{"null"},
+			succeeds:       false,
+			errMsg:         "null origin is prohibited",
 		},
 		{
 			name:           "wildcard is okay",
