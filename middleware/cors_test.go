@@ -864,10 +864,11 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			errMsg:         "wildcard should be prefixed to host",
 		},
 		{
+			// null origin should be rejected, see: https://jub0bs.com/posts/2023-02-08-fearless-cors/#do-not-support-the-null-origin
 			name:           "null origin",
 			allowedOrigins: []string{"null"},
 			succeeds:       false,
-			errMsg:         "null origin is prohibited",
+			errMsg:         "scheme should not be empty",
 		},
 		{
 			name:           "wildcard is okay",

@@ -441,10 +441,6 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 	}
 
 	for _, origin := range allowedOrigins {
-		if origin == "null" {
-			return fmt.Errorf("ong/middleware/cors: null origin is prohibited `%v`", origin)
-		}
-
 		u, err := url.Parse(origin)
 		if err != nil {
 			return err
