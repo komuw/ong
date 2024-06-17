@@ -14,7 +14,7 @@ func BasicAuth(wrappedHandler http.Handler, user, passwd string) http.HandlerFun
 	}
 
 	// See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
-	realm := `enter username and password`
+	realm := `enter username and password` // Shouldn't contain 'weird' chars otherwise may break mobile browsers; https://github.com/komuw/ong/pull/457
 	e := func(w http.ResponseWriter) {
 		errMsg := `Basic realm=` + realm
 		w.Header().Set("WWW-Authenticate", errMsg)
