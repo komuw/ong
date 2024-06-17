@@ -383,6 +383,20 @@ func TestConflicts(t *testing.T) {
 		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
 		attest.Ok(t, errH)
 	})
+
+	t.Run("http MethodAll conflicts with all other methods", func(t *testing.T) {
+		t.Parallel()
+		r := newRouter(nil)
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+		attest.Ok(t, err)
+
+		// This one returns with a conflict message.
+		errB := r.handle(MethodAll, "post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errB)
+	})
 }
 
 func TestNotFound(t *testing.T) {

@@ -137,16 +137,17 @@ func allDefaultMiddlewares(
 											securityHeaders(
 												cors(
 													csrf(
-														reloadProtector(
-															session(
-																wrappedHandler,
-																string(secretKey),
-																domain,
-																sessionCookieDuration,
-																SessionAntiReplyFunc,
-															),
+														// TODO: re-enable after https://github.com/komuw/ong/issues/447 is fixed.
+														// reloadProtector(
+														session(
+															wrappedHandler,
+															string(secretKey),
 															domain,
+															sessionCookieDuration,
+															SessionAntiReplyFunc,
 														),
+														// 	domain,
+														// ),
 														string(secretKey),
 														domain,
 														csrfTokenDuration,

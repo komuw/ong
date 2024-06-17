@@ -216,7 +216,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		for range b.N {
 			l.Info(sl[0], slAny...)
 			if rand.IntN(100) >= 99 {
-				l.Error("some-error", logErr)
+				l.Error("some-error", "err", logErr)
 			}
 		}
 	})
@@ -228,7 +228,7 @@ func BenchmarkAverageCase(b *testing.B) {
 		for range b.N {
 			l.Info(sl[0], slAny...)
 			if rand.IntN(100) >= 99 {
-				l.Error("some-error", logErr)
+				l.Error("some-error", "err", logErr)
 			}
 		}
 	})
@@ -285,7 +285,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info(sl[0], slAny...)
-			l.Error("some-error", logErr)
+			l.Error("some-error", "err", logErr)
 		}
 	})
 
@@ -295,7 +295,7 @@ func BenchmarkWorstCase(b *testing.B) {
 		b.ResetTimer()
 		for range b.N {
 			l.Info(sl[0], slAny...)
-			l.Error("some-error", logErr)
+			l.Error("some-error", "err", logErr)
 		}
 	})
 

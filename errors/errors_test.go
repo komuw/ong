@@ -190,5 +190,82 @@ func TestStackError(t *testing.T) {
 		attest.True(t, stdErrors.Is(err, os.ErrNotExist))
 		attest.NotZero(t, stdErrors.Unwrap(err))
 		attest.True(t, stdErrors.As(err, &targetErr))
+
+		_ = wrap(err, 2) // This is here to quiet golangci-lint which complains that wrap is always called with an argument of 3.
+	})
+
+	t.Run("multiple wrapping preserves traces", func(t *testing.T) {
+		t.Parallel()
+
+		f := func() (err error) {
+			defer Dwrap(&err)
+
+			e1 := New("hey")
+			e2 := Wrap(e1)
+			e3 := Errorf("fmting: %w", e2)
+
+			return e3
+		}
+
+		err := f()
+		extendedFormatting := fmt.Sprintf("%+v", err)
+
+		attest.True(t, stdErrors.Is(err, &stackError{}))
+		attest.Equal(t, err.Error(), "fmting: hey")
+		for _, v := range []string{
+			"ong/errors/errors_test.go:203",
+			"ong/errors/errors_test.go:210",
+		} {
+			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
+		}
+	})
+}
+
+func TestStackTrace(t *testing.T) {
+	t.Parallel()
+
+	t.Run("handles nil", func(t *testing.T) {
+		t.Parallel()
+
+		var err error = nil
+		got := StackTrace(err)
+		attest.Equal(t, got, "")
+	})
+
+	t.Run("traces", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			err := New("hello")
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:239")
+		}
+		{
+			err := stdErrors.New("hello stdErrors")
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "")
+		}
+		{
+			e1 := New("hello")
+			err := Wrap(e1)
+
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:249")
+		}
+		{
+			e1 := New("hello")
+			err := Errorf("yolo: %w", e1)
+
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:256")
+		}
+		{
+			e1 := New("e1")
+			e2 := New("e2")
+			err := Join(e2, e1)
+
+			got := StackTrace(err)
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:264")
+		}
 	})
 }

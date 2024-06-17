@@ -3,6 +3,23 @@
 Most recent version is listed first.  
 
 
+# v0.1.1
+- ong/middleware: do not show hint: https://github.com/komuw/ong/pull/457 
+
+# v0.1.0
+- ong/errors: handle stacktraces for more error types: https://github.com/komuw/ong/pull/455
+
+# v0.0.99
+- ong/errors: retain stack traces when errors are wrapped with fmt: https://github.com/komuw/ong/pull/452
+- ong/mux: detect route conflicts in more cases: https://github.com/komuw/ong/pull/453
+
+# v0.0.98
+- ong/errors: add equivalent functions from standard library: https://github.com/komuw/ong/pull/449
+
+# v0.0.97
+- ong/middleware: disable reload protector middleware : https://github.com/komuw/ong/pull/448
+  That middleware is not working as intended. This PR mitigates until we can implement a proper fix.
+
 # v0.0.96
 - ong/acme: verify the requested acme challenge token: https://github.com/komuw/ong/pull/440
   This is a bug fix for v0.0.95

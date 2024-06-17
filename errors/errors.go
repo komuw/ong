@@ -11,7 +11,8 @@ import (
 
 // Some of the code here is inspired(or taken from) by:
 //   (a) https://github.com/golang/pkgsite whose license(BSD 3-Clause "New") can be found here: https://github.com/golang/pkgsite/blob/24f94ffc546bde6aae0552efa6a940041d9d28e1/LICENSE
-//   (b) https://www.komu.engineer/blogs/08/golang-stacktrace
+//   (b) https://gitlab.com/tozd/go/errors whose license(Apache 2.0) can be found here: https://gitlab.com/tozd/go/errors/-/blob/v0.8.1/LICENSE
+//   (c) https://www.komu.engineer/blogs/08/golang-stacktrace
 
 // stackError is an implementation of error that adds stack trace support and error wrapping.
 type stackError struct {
@@ -26,6 +27,12 @@ func (e *stackError) Error() string {
 // Unwrap unpacks wrapped errors.
 func (e *stackError) Unwrap() error {
 	return e.err
+}
+
+// Is reports whether target is a stackError
+func (e *stackError) Is(target error) bool {
+	_, ok := target.(*stackError)
+	return ok
 }
 
 // New returns an error with the supplied message.
@@ -46,7 +53,7 @@ func Wrap(err error) error {
 	return wrap(err, 3)
 }
 
-// Dwrap adds stack traces to the error.
+// Dwrap(aka deferred wrap) adds stack traces to the error.
 // It does nothing when *errp == nil.
 func Dwrap(errp *error) {
 	if *errp != nil {
@@ -55,7 +62,7 @@ func Dwrap(errp *error) {
 }
 
 func wrap(err error, skip int) error {
-	if _, ok := err.(*stackError); ok {
+	if Is(err, &stackError{}) {
 		return err
 	}
 
@@ -107,9 +114,30 @@ func (e *stackError) Format(f fmt.State, verb rune) {
 
 // StackTrace returns the stack trace contained in err, if any, else an empty string.
 func StackTrace(err error) string {
-	sterr, ok := err.(*stackError)
-	if !ok {
+	if err == nil {
 		return ""
 	}
-	return sterr.getStackTrace()
+
+	if sterr, ok := err.(*stackError); ok {
+		return sterr.getStackTrace()
+	}
+	if sterr, ok := err.(*joinError); ok {
+		return sterr.getStackTrace()
+	}
+
+	if Is(err, &stackError{}) {
+		switch u := err.(type) {
+		default:
+			// This is already handled by the `err.(*stackError)` case above.
+			// todo: handle this somehow
+			return ""
+		case interface{ Unwrap() error }:
+			ef := u.Unwrap()
+			if sterr, ok := ef.(*stackError); ok {
+				return sterr.getStackTrace()
+			}
+		}
+	}
+
+	return ""
 }
