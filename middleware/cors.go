@@ -73,24 +73,24 @@ func cors(
 	domain string,
 ) http.HandlerFunc {
 	if err := acme.Validate(domain); err != nil {
-		panic(err) // TODO: komuw, should this not happen in config.New ?
+		panic(err)
 	}
 
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins, domain)
 	if err := validateAllowedOrigins(allowedOrigins); err != nil {
-		panic(err) // TODO: komuw, should this not happen in config.New ?
+		panic(err)
 	}
 	allowedMethods = getMethods(allowedMethods)
 	if err := validateAllowedMethods(allowedMethods); err != nil {
-		panic(err) // TODO: komuw, should this not happen in config.New ?
+		panic(err)
 	}
 	allowedHeaders = getHeaders(allowedHeaders)
 	if err := validateAllowedRequestHeaders(allowedHeaders); err != nil {
-		panic(err) // TODO: komuw, should this not happen in config.New ?
+		panic(err)
 	}
 
 	if err := validateAllowCredentials(allowCredentials, allowedOrigins, allowedMethods, allowedHeaders); err != nil {
-		panic(err) // TODO: komuw, should this not happen in config.New ?
+		panic(err)
 	}
 
 	if corsCacheDuration < 1*time.Second && (corsCacheDuration != 0*time.Second) {
