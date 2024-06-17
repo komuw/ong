@@ -32,7 +32,7 @@ func rateLimiter(
 		tb := rl.get(host, rateLimit)
 
 		if !tb.allow() {
-			err := fmt.Errorf("ong/middleware: rate limited, retry after %s", retryAfter)
+			err := fmt.Errorf("ong/middleware/ratelimiter: rate limited, retry after %s", retryAfter)
 			w.Header().Set(ongMiddlewareErrorHeader, err.Error())
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(

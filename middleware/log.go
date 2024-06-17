@@ -155,7 +155,7 @@ func (lrw *logRW) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if hj, ok := lrw.ResponseWriter.(http.Hijacker); ok {
 		return hj.Hijack()
 	}
-	return nil, nil, fmt.Errorf("ong/middleware: http.Hijacker interface is not supported")
+	return nil, nil, fmt.Errorf("ong/middleware/log: http.Hijacker interface is not supported")
 }
 
 // Push implements http.Pusher
@@ -163,7 +163,7 @@ func (lrw *logRW) Push(target string, opts *http.PushOptions) error {
 	if p, ok := lrw.ResponseWriter.(http.Pusher); ok {
 		return p.Push(target, opts)
 	}
-	return fmt.Errorf("ong/middleware: http.Pusher interface is not supported")
+	return fmt.Errorf("ong/middleware/log: http.Pusher interface is not supported")
 }
 
 // ReadFrom implements io.ReaderFrom

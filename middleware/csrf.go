@@ -24,9 +24,9 @@ import (
 var (
 	// errCsrfTokenNotFound is returned when a request using a non-safe http method
 	// either does not supply a csrf token, or the supplied token is not recognized by the server.
-	errCsrfTokenNotFound    = errors.New("ong/middleware: csrf token not found")
-	errCsrfTokenExpired     = errors.New("ong/middleware: csrf token is expired")
-	errCsrfTokenWrongFormat = errors.New("ong/middleware: csrf token wrong format")
+	errCsrfTokenNotFound    = errors.New("ong/middleware/csrf: token not found")
+	errCsrfTokenExpired     = errors.New("ong/middleware/csrf: token is expired")
+	errCsrfTokenWrongFormat = errors.New("ong/middleware/csrf: token wrong format")
 	once                    sync.Once //nolint:gochecknoglobals
 	enc                     cry.Enc   //nolint:gochecknoglobals
 )
