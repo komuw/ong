@@ -445,10 +445,10 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 		}
 
 		if u.Scheme == "" {
-			return fmt.Errorf("ong/middleware/cors: bad scheme `%v`", origin)
+			return fmt.Errorf("ong/middleware/cors: scheme should not be empty `%v`", origin)
 		}
 		if u.Host == "" {
-			return fmt.Errorf("ong/middleware/cors: bad host `%v`", origin)
+			return fmt.Errorf("ong/middleware/cors: host should not be empty `%v`", origin)
 		}
 		if u.Path != "" {
 			return fmt.Errorf("ong/middleware/cors: should not contain url path `%v`", origin)
