@@ -63,15 +63,20 @@ func Run(h http.Handler, o config.Opts) error {
 					profHandler = pprofHandler(o)
 				)
 
+				basicAuth, err := middleware.BasicAuth(
+					profHandler,
+					string(o.SecretKey),
+					string(o.SecretKey),
+				)
+				if err != nil {
+					errJ = errors.Join(errJ, err)
+				}
+
 				if err := m.Unwrap().AddRoute(
 					mux.NewRoute(
 						"/debug/pprof",
 						mux.MethodAll,
-						middleware.BasicAuth(
-							profHandler,
-							string(o.SecretKey),
-							string(o.SecretKey),
-						),
+						basicAuth,
 					),
 				); err != nil {
 					errJ = errors.Join(errJ, err)
@@ -81,11 +86,7 @@ func Run(h http.Handler, o config.Opts) error {
 					mux.NewRoute(
 						"/debug/pprof/:part",
 						mux.MethodAll,
-						middleware.BasicAuth(
-							profHandler,
-							string(o.SecretKey),
-							string(o.SecretKey),
-						),
+						basicAuth,
 					),
 				); err != nil {
 					errJ = errors.Join(errJ, err)
