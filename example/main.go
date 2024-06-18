@@ -16,6 +16,12 @@ func main() {
 	const secretKey = "super-h@rd-Pas1word"
 
 	api := NewApp(myDB{map[string]string{}}, l)
+
+	basicAuth, err := middleware.BasicAuth(api.handleFileServer(), "user", "some-long-1passwd")
+	if err != nil {
+		panic(err)
+	}
+
 	mx := mux.New(
 		config.WithOpts("localhost", 65081, secretKey, config.DirectIpStrategy, l),
 		nil,
@@ -27,7 +33,7 @@ func main() {
 		mux.NewRoute(
 			"staticAssets/:file",
 			mux.MethodAll,
-			middleware.BasicAuth(api.handleFileServer(), "user", "some-long-1passwd"),
+			basicAuth,
 		),
 		mux.NewRoute(
 			"check/:age/",
@@ -46,8 +52,7 @@ func main() {
 		),
 	)
 
-	err := server.Run(mx, config.DevOpts(l, secretKey))
-	if err != nil {
+	if err := server.Run(mx, config.DevOpts(l, secretKey)); err != nil {
 		l.Error("server.Run error", "error", err)
 		os.Exit(1)
 	}
