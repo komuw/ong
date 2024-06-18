@@ -663,7 +663,7 @@ type middlewareOpts struct {
 
 	// session
 	SessionCookieDuration time.Duration
-	SessionAntiReplayFunc func(r http.Request) string
+	SessionAntiReplayFunc func(r http.Request) string // Does NOT take a pointer to http.Request for security reasons.
 }
 
 // String implements [fmt.Stringer]
