@@ -125,7 +125,7 @@ func GetCspNonce(c context.Context) string {
 }
 
 func getCsp(domain, nonce string) string {
-	// content is only permitted from:
+	// This csp only permitts content from:
 	// - the document's origin(and subdomains)
 	// - images may load from anywhere
 	// - media is allowed from domain(and its subdomains)
