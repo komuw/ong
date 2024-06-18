@@ -84,7 +84,7 @@ func IsSecure(secretKey string) error {
 
 // entropy measures the entropy entropy of a string.
 // See http://bearcave.com/misl/misl_tech/wavelets/compression/shannon.html for the algorithmic explanation.
-func entropy(value string) (bits int) {
+func entropy(value string) int {
 	frq := make(map[rune]float64)
 
 	// frequency of characters
@@ -99,6 +99,6 @@ func entropy(value string) (bits int) {
 		sum += f * math.Log2(f)
 	}
 
-	bits = int(math.Ceil(sum*-1)) * len(value)
-	return
+	bits := int(math.Ceil(sum*-1)) * len(value)
+	return bits
 }
