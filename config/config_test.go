@@ -129,7 +129,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 			t.Parallel()
 
 			opt := tt.opt()
-			o := newMiddlewareOpts(
+			o, err := newMiddlewareOpts(
 				opt.Domain,
 				opt.HttpsPort,
 				string(opt.SecretKey),
@@ -149,70 +149,48 @@ func TestNewMiddlewareOpts(t *testing.T) {
 				opt.SessionCookieDuration,
 				opt.SessionAntiReplyFunc,
 			)
+			attest.Ok(t, err)
 			tt.assert(o)
 		})
 	}
 }
 
-func TestNewMiddlewareOptsPanics(t *testing.T) {
+func TestNewMiddlewareOptsDomain(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		domain      string
-		expectPanic bool
+		name      string
+		domain    string
+		expectErr bool
 	}{
 		// Some of them are taken from; https://github.com/golang/go/blob/go1.20.5/src/net/dnsname_test.go#L19-L34
 		{
-			name:        "good domain",
-			domain:      "localhost",
-			expectPanic: false,
+			name:      "good domain",
+			domain:    "localhost",
+			expectErr: false,
 		},
 		{
-			name:        "good domain B",
-			domain:      "foo.com",
-			expectPanic: false,
+			name:      "good domain B",
+			domain:    "foo.com",
+			expectErr: false,
 		},
 		{
-			name:        "good domain C",
-			domain:      "bar.foo.com",
-			expectPanic: false,
+			name:      "good domain C",
+			domain:    "bar.foo.com",
+			expectErr: false,
 		},
 		{
-			name:        "bad domain",
-			domain:      "a.b-.com",
-			expectPanic: true,
+			name:      "bad domain",
+			domain:    "a.b-.com",
+			expectErr: true,
 		},
 	}
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if tt.expectPanic {
-				attest.Panics(t, func() {
-					newMiddlewareOpts(
-						tt.domain,
-						443,
-						tst.SecretKey(),
-						clientip.DirectIpStrategy,
-						slog.Default(),
-						DefaultRateShedSamplePercent,
-						DefaultRateLimit,
-						DefaultLoadShedSamplingPeriod,
-						DefaultLoadShedMinSampleSize,
-						DefaultLoadShedBreachLatency,
-						nil,
-						nil,
-						nil,
-						false,
-						DefaultCorsCacheDuration,
-						DefaultCsrfCookieDuration,
-						DefaultSessionCookieDuration,
-						DefaultSessionAntiReplyFunc,
-					)
-				})
-			} else {
-				newMiddlewareOpts(
+			if tt.expectErr {
+				_, err := newMiddlewareOpts(
 					tt.domain,
 					443,
 					tst.SecretKey(),
@@ -232,6 +210,29 @@ func TestNewMiddlewareOptsPanics(t *testing.T) {
 					DefaultSessionCookieDuration,
 					DefaultSessionAntiReplyFunc,
 				)
+				attest.Error(t, err)
+			} else {
+				_, err := newMiddlewareOpts(
+					tt.domain,
+					443,
+					tst.SecretKey(),
+					clientip.DirectIpStrategy,
+					slog.Default(),
+					DefaultRateShedSamplePercent,
+					DefaultRateLimit,
+					DefaultLoadShedSamplingPeriod,
+					DefaultLoadShedMinSampleSize,
+					DefaultLoadShedBreachLatency,
+					nil,
+					nil,
+					nil,
+					false,
+					DefaultCorsCacheDuration,
+					DefaultCsrfCookieDuration,
+					DefaultSessionCookieDuration,
+					DefaultSessionAntiReplyFunc,
+				)
+				attest.Ok(t, err)
 			}
 		})
 	}
