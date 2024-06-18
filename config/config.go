@@ -637,6 +637,21 @@ func newMiddlewareOpts(
 		panic(err)
 	}
 
+	{ // cors validation.
+		if err := validateAllowedOrigins(allowedOrigins); err != nil {
+			panic(err)
+		}
+		if err := validateAllowedMethods(allowedMethods); err != nil {
+			panic(err)
+		}
+		if err := validateAllowedRequestHeaders(allowedHeaders); err != nil {
+			panic(err)
+		}
+		if err := validateAllowCredentials(allowCredentials, allowedOrigins, allowedMethods, allowedHeaders); err != nil {
+			panic(err)
+		}
+	}
+
 	return middlewareOpts{
 		Domain:    domain,
 		HttpsPort: httpsPort,
