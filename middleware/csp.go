@@ -116,8 +116,7 @@ func csp(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 func GetCspNonce(c context.Context) string {
 	v := c.Value(cspCtxKey)
 	if v != nil {
-		s, ok := v.(string)
-		if ok {
+		if s, ok := v.(string); ok {
 			return s
 		}
 	}
