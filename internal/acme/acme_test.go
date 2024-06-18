@@ -151,7 +151,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, errB)
 		}
 
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(t, err)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -282,7 +283,8 @@ func TestGetCertificate(t *testing.T) {
 			attest.Ok(t, errB)
 		}
 
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(t, err)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -295,7 +297,8 @@ func TestGetCertificate(t *testing.T) {
 		t.Parallel()
 
 		domain := "127.0.0.1"
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(t, err)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -349,7 +352,8 @@ func TestAcmeHandler(t *testing.T) {
 		attest.Ok(t, errA)
 
 		{ // initialize manager.
-			getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+			getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+			attest.Ok(t, err)
 			attest.NotZero(t, getCrt)
 			cert, errB := getCrt(&tls.ClientHelloInfo{
 				ServerName: domain,
@@ -591,7 +595,8 @@ func BenchmarkGetCertificate(b *testing.B) {
 			errB := certToDisk(cert, certPath)
 			attest.Ok(b, errB)
 		}
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(b, err)
 
 		b.ReportAllocs()
 		b.ResetTimer()

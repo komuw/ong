@@ -34,12 +34,16 @@ func getTlsConfig(o config.Opts) (c *tls.Config, e error) {
 
 		// You need to call it once instead of per request.
 		// See: https://github.com/komuw/ong/issues/296
-		getCert := acme.GetCertificate(
+		getCert, err := acme.GetCertificate(
 			o.Tls.Hosts,
 			o.Tls.AcmeEmail,
 			o.Tls.AcmeDirectoryUrl,
 			o.Logger,
 		)
+		if err != nil {
+			return nil, err
+		}
+
 		// Support for acme certificate manager needs to be added in three places:
 		// (a) In http middlewares.
 		// (b) In http server.

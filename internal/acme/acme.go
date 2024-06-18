@@ -77,13 +77,13 @@ func Validate(domain string) error {
 // It should be called once and then the returned function can be called per request.
 //
 // GetCertificate panics on error, however the returned function handles errors normally.
-func GetCertificate(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.Logger) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+func GetCertificate(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.Logger) (_ func(hello *tls.ClientHelloInfo) (*tls.Certificate, error), _ error) {
 	man, err := initManager(tlsHosts, email, acmeDirectoryUrl, l)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	f := func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		name := hello.ServerName
 
 		if c := man.getCertFastPath(name); c != nil {
@@ -130,6 +130,8 @@ func GetCertificate(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.L
 
 		return man.getCert(ctx, dmn)
 	}
+
+	return f, nil
 }
 
 // Handler returns a [http.Handler] that can be used to respond to ACME "http-01" challenge responses.
