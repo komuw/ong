@@ -6,8 +6,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-
-	"github.com/komuw/ong/config"
 )
 
 // Some of the code here is inspired(or taken from) by:
@@ -61,7 +59,7 @@ const (
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 //
-// This func assumes that the arguments to it are valid. Use [config.New] to ensure that the arguments are valid.
+// This func assumes that the arguments to it are valid. Use [github.com/komuw/ong/config.New] to ensure that the arguments are valid.
 func cors(
 	wrappedHandler http.Handler,
 	allowedOrigins []string,
@@ -71,15 +69,10 @@ func cors(
 	corsCacheDuration time.Duration,
 	domain string,
 ) http.HandlerFunc {
+	// Validation of arguments should already have happened in `github.com/komuw/ong/config`
 	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins, domain)
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
-
-	if corsCacheDuration < 1*time.Second && (corsCacheDuration != 0*time.Second) {
-		// It is measured in seconds.
-		// Specifying a value of 0 tells browsers not to cache the preflight response, hence we should make it possible for one to specify zero seconds.
-		corsCacheDuration = config.DefaultCorsCacheDuration
-	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if (r.Method == http.MethodOptions) && (r.Header.Get(acrmHeader) != "") && (r.Header.Get(originHeader) != "") {

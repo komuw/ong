@@ -650,6 +650,12 @@ func newMiddlewareOpts(
 		if err := validateAllowCredentials(allowCredentials, allowedOrigins, allowedMethods, allowedHeaders); err != nil {
 			panic(err)
 		}
+
+		if corsCacheDuration < 1*time.Second && (corsCacheDuration != 0*time.Second) {
+			// It is measured in seconds.
+			// Specifying a value of 0 tells browsers not to cache the preflight response, hence we should make it possible for one to specify zero seconds.
+			corsCacheDuration = DefaultCorsCacheDuration
+		}
 	}
 
 	return middlewareOpts{
