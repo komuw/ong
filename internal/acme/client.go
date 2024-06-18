@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 	"time"
 )
 
@@ -426,7 +427,7 @@ func checkChallengeStatus(
 
 	ctx = context.WithValue(ctx, clientContextKey, "checkChallengeStatus")
 	for {
-		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
+		if testing.Testing() {
 			l.InfoContext(ctx, "checkStatusSleep",
 				"count", count,
 				"duration", dur,
@@ -597,7 +598,7 @@ func checkOrderStatus(
 
 	ctx = context.WithValue(ctx, clientContextKey, fmt.Sprintf("checkOrderStatus-%s", expectedStatus))
 	for {
-		if os.Getenv("ONG_RUNNING_IN_TESTS") != "" {
+		if testing.Testing() {
 			l.InfoContext(ctx, "checkStatusSleep",
 				"count", count,
 				"duration", dur,
