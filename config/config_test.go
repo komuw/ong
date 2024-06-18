@@ -119,7 +119,27 @@ func TestNewMiddlewareOpts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			o := tt.opt()
+			opt := tt.opt()
+			o := newMiddlewareOpts(
+				opt.Domain,
+				opt.HttpsPort,
+				string(opt.SecretKey),
+				opt.Strategy,
+				opt.Logger,
+				opt.RateShedSamplePercent,
+				opt.RateLimit,
+				opt.LoadShedSamplingPeriod,
+				opt.LoadShedMinSampleSize,
+				opt.LoadShedBreachLatency,
+				opt.AllowedOrigins,
+				opt.AllowedMethods,
+				opt.AllowedHeaders,
+				opt.AllowCredentials,
+				opt.CorsCacheDuration,
+				opt.CsrfTokenDuration,
+				opt.SessionCookieDuration,
+				opt.SessionAntiReplyFunc,
+			)
 			tt.assert(o)
 		})
 	}
