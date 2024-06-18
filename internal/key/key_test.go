@@ -78,7 +78,7 @@ func TestCommon10kPasswords(t *testing.T) {
 
 	count := 0
 	scanner := bufio.NewScanner(f)
-	// optionally, resize scanner's capacity for lines over 64K, see next example
+	// optionally, resize scanner's capacity for lines over 64K.
 	for scanner.Scan() {
 		count = count + 1
 		key := scanner.Text()
