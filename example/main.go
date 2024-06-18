@@ -52,8 +52,8 @@ func main() {
 		),
 	)
 
-	if err := server.Run(mx, config.DevOpts(l, secretKey)); err != nil {
-		l.Error("server.Run error", "error", err)
+	if e := server.Run(mx, config.DevOpts(l, secretKey)); e != nil {
+		l.Error("server.Run error", "error", e)
 		os.Exit(1)
 	}
 }

@@ -30,8 +30,8 @@ func TestBasicAuth(t *testing.T) {
 	msg := "hello"
 	user := "some-user"
 	passwd := "some-long-p1sswd"
-	wrappedHandler, err := BasicAuth(protectedHandler(msg), user, passwd)
-	attest.Ok(t, err)
+	wrappedHandler, errA := BasicAuth(protectedHandler(msg), user, passwd)
+	attest.Ok(t, errA)
 
 	tests := []struct {
 		name     string
@@ -101,8 +101,8 @@ func TestBasicAuth(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+			rb, errB := io.ReadAll(res.Body)
+			attest.Ok(t, errB)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
