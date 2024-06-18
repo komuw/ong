@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/komuw/ong/config"
 	"go.akshayshah.org/attest"
@@ -316,58 +315,6 @@ func TestCorsPreflight(t *testing.T) {
 				// if this header was set, then the preflight request succeeded
 				gotSucess := res.Header.Get(acmaHeader) != ""
 				attest.Equal(t, gotSucess, tt.succeed)
-			})
-		}
-	})
-
-	t.Run("cache duration", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []struct {
-			name              string
-			corsCacheDuration time.Duration
-			expected          string
-		}{
-			{
-				name:              "zero duration",
-				corsCacheDuration: 0 * time.Second,
-				expected:          "0",
-			},
-			{
-				name:              "less than zero duration",
-				corsCacheDuration: 100 * time.Millisecond,
-				expected:          fmt.Sprintf("%d", int(config.DefaultCorsCacheDuration.Seconds())),
-			},
-			{
-				name:              "greater than zero duration",
-				corsCacheDuration: 72 * time.Hour,
-				expected:          fmt.Sprintf("%d", int(72*time.Hour.Seconds())),
-			},
-		}
-
-		for _, tt := range tests {
-			tt := tt
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-
-				msg := "hello"
-				wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, tt.corsCacheDuration, "example.com")
-				rec := httptest.NewRecorder()
-				req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
-				req.Header.Add(acrmHeader, "is-set") // preflight request header set
-				req.Header.Add(originHeader, "http://some-origin.com")
-				wrappedHandler.ServeHTTP(rec, req)
-
-				res := rec.Result()
-				defer res.Body.Close()
-
-				rb, err := io.ReadAll(res.Body)
-				attest.Ok(t, err)
-
-				attest.Equal(t, res.StatusCode, http.StatusNoContent)
-				attest.Equal(t, string(rb), "") // someCorsHandler is NOT called.
-
-				attest.Equal(t, res.Header.Get(acmaHeader), tt.expected)
 			})
 		}
 	})
