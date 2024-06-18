@@ -32,10 +32,10 @@ const (
 	cspBytesTokenLength = csrfBytesTokenLength
 )
 
-// securityHeaders is a middleware that adds some important HTTP security headers and assigns them sensible default values.
+// csp is a middleware that sets Content-Security-Policy(CSP) and adds some important HTTP security headers and assigns them sensible default values.
 //
-// Some of the headers set are Permissions-Policy, Content-securityHeaders-Policy, X-Content-Type-Options, X-Frame-Options, Cross-Origin-Resource-Policy, Cross-Origin-Opener-Policy, Referrer-Policy & Strict-Transport-securityHeaders
-func securityHeaders(wrappedHandler http.Handler, domain string) http.HandlerFunc {
+// Some of the headers set are Permissions-Policy, Content-Security-Policy, X-Content-Type-Options, X-Frame-Options, Cross-Origin-Resource-Policy, Cross-Origin-Opener-Policy, Referrer-Policy & Strict-Transport-Security
+func csp(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -116,8 +116,7 @@ func securityHeaders(wrappedHandler http.Handler, domain string) http.HandlerFun
 func GetCspNonce(c context.Context) string {
 	v := c.Value(cspCtxKey)
 	if v != nil {
-		s, ok := v.(string)
-		if ok {
+		if s, ok := v.(string); ok {
 			return s
 		}
 	}
@@ -125,7 +124,7 @@ func GetCspNonce(c context.Context) string {
 }
 
 func getCsp(domain, nonce string) string {
-	// content is only permitted from:
+	// This csp only permitts content from:
 	// - the document's origin(and subdomains)
 	// - images may load from anywhere
 	// - media is allowed from domain(and its subdomains)

@@ -134,7 +134,7 @@ func allDefaultMiddlewares(
 								loadShedder(
 									acme.Handler(
 										httpsRedirector(
-											securityHeaders(
+											csp(
 												cors(
 													csrf(
 														// TODO: re-enable after https://github.com/komuw/ong/issues/447 is fixed.

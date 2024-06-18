@@ -7,6 +7,7 @@ Most recent version is listed first.
 - ong/middleware: Fix a number of CORS issues: https://github.com/komuw/ong/pull/442
 - ong/middleware: Eliminate panics: https://github.com/komuw/ong/pull/459
 - ong/middleware: AntiReplay function should not take a pointer to request: https://github.com/komuw/ong/pull/460
+- ong/middleware: Rename security middleware to csp: https://github.com/komuw/ong/pull/461
 
 # v0.1.1
 - ong/middleware: do not show hint: https://github.com/komuw/ong/pull/457 
