@@ -22,11 +22,9 @@ func TestBasicAuth(t *testing.T) {
 	t.Parallel()
 
 	{
-		// small passwd panics.
-		attest.Panics(t, func() {
-			BasicAuth(protectedHandler("hello"), "user", strings.Repeat("a", 8))
-		},
-		)
+		// small passwd errors.
+		_, err := BasicAuth(protectedHandler("hello"), "user", strings.Repeat("a", 8))
+		attest.Error(t, err)
 	}
 
 	msg := "hello"
