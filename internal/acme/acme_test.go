@@ -142,8 +142,7 @@ func TestManager(t *testing.T) {
 		t.Parallel()
 
 		domain := getDomain()
-		diskCacheDir, errA := diskCachedir()
-		attest.Ok(t, errA)
+		diskCacheDir := diskCachedir()
 		{ // prep by saving a certificate for the domain to disk.
 			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
 			cert := createTlsCert(t, domain)
@@ -151,7 +150,8 @@ func TestManager(t *testing.T) {
 			attest.Ok(t, errB)
 		}
 
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(t, err)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -273,8 +273,7 @@ func TestGetCertificate(t *testing.T) {
 		t.Parallel()
 
 		domain := getDomain()
-		diskCacheDir, errA := diskCachedir()
-		attest.Ok(t, errA)
+		diskCacheDir := diskCachedir()
 		{ // prep by saving a certificate for the domain to disk.
 			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
 			cert := createTlsCert(t, domain)
@@ -282,7 +281,8 @@ func TestGetCertificate(t *testing.T) {
 			attest.Ok(t, errB)
 		}
 
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(t, err)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -295,7 +295,8 @@ func TestGetCertificate(t *testing.T) {
 		t.Parallel()
 
 		domain := "127.0.0.1"
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(t, err)
 		cert, errC := getCrt(&tls.ClientHelloInfo{
 			ServerName: domain,
 		})
@@ -349,7 +350,8 @@ func TestAcmeHandler(t *testing.T) {
 		attest.Ok(t, errA)
 
 		{ // initialize manager.
-			getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+			getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+			attest.Ok(t, err)
 			attest.NotZero(t, getCrt)
 			cert, errB := getCrt(&tls.ClientHelloInfo{
 				ServerName: domain,
@@ -428,11 +430,10 @@ func TestAcmeHandler(t *testing.T) {
 		token := "myToken"
 
 		setCerts := func(domain string) (tokenPath, tokenToWrite string) {
-			diskCacheDir, err := diskCachedir()
-			attest.Ok(t, err)
+			diskCacheDir := diskCachedir()
 
 			tokenPath = filepath.Join(diskCacheDir, domain, tokenFileName)
-			err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+			err := os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
 			attest.Ok(t, err)
 
 			accountKeyPath := filepath.Join(diskCacheDir, accountKeyFileName)
@@ -583,15 +584,15 @@ func BenchmarkGetCertificate(b *testing.B) {
 		l := slog.Default()
 
 		domain := getDomain()
-		diskCacheDir, errA := diskCachedir()
-		attest.Ok(b, errA)
+		diskCacheDir := diskCachedir()
 		{ // prep by saving a certificate for the domain to disk.
 			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
 			cert := createTlsCert(b, domain)
 			errB := certToDisk(cert, certPath)
 			attest.Ok(b, errB)
 		}
-		getCrt := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		getCrt, err := GetCertificate([]string{domain}, email, acmeDirectoryUrl, l)
+		attest.Ok(b, err)
 
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -613,11 +614,10 @@ func BenchmarkHandler(b *testing.B) {
 
 	token := "myToken"
 	{
-		diskCacheDir, err := diskCachedir()
-		attest.Ok(b, err)
+		diskCacheDir := diskCachedir()
 
 		tokenPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-		err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+		err := os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
 		attest.Ok(b, err)
 
 		accountKeyPath := filepath.Join(diskCacheDir, accountKeyFileName)

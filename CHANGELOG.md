@@ -5,6 +5,7 @@ Most recent version is listed first.
 
 # v0.1.2
 - ong/middleware: Fix a number of CORS issues: https://github.com/komuw/ong/pull/442
+- ong/middleware: Eliminate panics: https://github.com/komuw/ong/pull/459
 
 # v0.1.1
 - ong/middleware: do not show hint: https://github.com/komuw/ong/pull/457 

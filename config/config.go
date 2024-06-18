@@ -81,11 +81,11 @@ const (
 	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
-// DefaultSessionAntiReplyFunc is the function used, by default, to try and mitigate against [replay attacks].
+// DefaultSessionAntiReplayFunc is the function used, by default, to try and mitigate against [replay attacks].
 // It is a no-op.
 //
 // [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
-func DefaultSessionAntiReplyFunc(r *http.Request) string { return "" }
+func DefaultSessionAntiReplayFunc(r *http.Request) string { return "" }
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 //
@@ -153,6 +153,14 @@ const (
 	LetsEncryptStagingUrl = "https://acme-staging-v02.api.letsencrypt.org/directory"
 )
 
+const (
+	defaultReadHeaderTimeout = 1 * time.Second
+	defaultReadTimeout       = defaultReadHeaderTimeout + (1 * time.Second)
+	defaultWriteTimeout      = defaultReadTimeout + (1 * time.Second)
+	defaultHandlerTimeout    = defaultWriteTimeout + (10 * time.Second)
+	defaultIdleTimeout       = defaultHandlerTimeout + (100 * time.Second)
+)
+
 // Opts are the various parameters(optionals) that can be used to configure ong.
 //
 // Use either [New], [WithOpts], [DevOpts], [CertOpts], [AcmeOpts] or [LetsEncryptOpts] to get a valid Opts.
@@ -213,8 +221,8 @@ func (o Opts) GoString() string {
 // csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
 //
 // sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
-// sessionAntiReplyFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
-// If it is nil, [DefaultSessionAntiReplyFunc] is used instead.
+// sessionAntiReplayFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
+// If it is nil, [DefaultSessionAntiReplayFunc] is used instead.
 //
 // maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
 //
@@ -266,7 +274,7 @@ func New(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
-	sessionAntiReplyFunc func(r *http.Request) string,
+	sessionAntiReplayFunc func(r *http.Request) string,
 	// server
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
@@ -282,27 +290,32 @@ func New(
 	acmeDirectoryUrl string,
 	clientCertificatePool *x509.CertPool,
 ) Opts {
+	middlewareOpts, err := newMiddlewareOpts(
+		domain,
+		port,
+		secretKey,
+		strategy,
+		logger,
+		rateShedSamplePercent,
+		rateLimit,
+		loadShedSamplingPeriod,
+		loadShedMinSampleSize,
+		loadShedBreachLatency,
+		allowedOrigins,
+		allowedMethods,
+		allowedHeaders,
+		allowCredentials,
+		corsCacheDuration,
+		csrfTokenDuration,
+		sessionCookieDuration,
+		sessionAntiReplayFunc,
+	)
+	if err != nil {
+		panic(err)
+	}
+
 	return Opts{
-		middlewareOpts: newMiddlewareOpts(
-			domain,
-			port,
-			secretKey,
-			strategy,
-			logger,
-			rateShedSamplePercent,
-			rateLimit,
-			loadShedSamplingPeriod,
-			loadShedMinSampleSize,
-			loadShedBreachLatency,
-			allowedOrigins,
-			allowedMethods,
-			allowedHeaders,
-			allowCredentials,
-			corsCacheDuration,
-			csrfTokenDuration,
-			sessionCookieDuration,
-			sessionAntiReplyFunc,
-		),
+		middlewareOpts: middlewareOpts,
 		serverOpts: newServerOpts(
 			domain,
 			port,
@@ -338,24 +351,43 @@ func WithOpts(
 ) Opts {
 	certFile, keyFile := createDevCertKey(logger)
 
-	return Opts{
-		middlewareOpts: withMiddlewareOpts(
-			domain,
-			httpsPort,
-			secretKey,
-			strategy,
-			logger,
-		),
-		serverOpts: withServerOpts(
-			domain,
-			httpsPort,
-			certFile,
-			keyFile,
-			"",
-			nil,
-			"",
-		),
-	}
+	return New(
+		// common
+		domain,
+		httpsPort,
+
+		// middleware
+		secretKey,
+		strategy,
+		logger,
+		DefaultRateShedSamplePercent,
+		DefaultRateLimit,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+		nil,
+		nil,
+		nil,
+		false,
+		DefaultCorsCacheDuration,
+		DefaultCsrfCookieDuration,
+		DefaultSessionCookieDuration,
+		DefaultSessionAntiReplayFunc,
+		// server
+		DefaultMaxBodyBytes,
+		DefaultServerLogLevel,
+		defaultReadHeaderTimeout,
+		defaultReadTimeout,
+		defaultWriteTimeout,
+		defaultIdleTimeout,
+		DefaultDrainDuration,
+		certFile,
+		keyFile,
+		"",
+		nil,
+		"",
+		nil,
+	)
 }
 
 // DevOpts returns a new Opts that has sensible defaults, especially for dev environments.
@@ -368,24 +400,43 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 	httpsPort := uint16(65081)
 	certFile, keyFile := createDevCertKey(logger)
 
-	return Opts{
-		middlewareOpts: withMiddlewareOpts(
-			domain,
-			httpsPort,
-			secretKey,
-			clientip.DirectIpStrategy,
-			logger,
-		),
-		serverOpts: withServerOpts(
-			domain,
-			httpsPort,
-			certFile,
-			keyFile,
-			"",
-			nil,
-			"",
-		),
-	}
+	return New(
+		// common
+		domain,
+		httpsPort,
+
+		// middleware
+		secretKey,
+		clientip.DirectIpStrategy,
+		logger,
+		DefaultRateShedSamplePercent,
+		DefaultRateLimit,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+		nil,
+		nil,
+		nil,
+		false,
+		DefaultCorsCacheDuration,
+		DefaultCsrfCookieDuration,
+		DefaultSessionCookieDuration,
+		DefaultSessionAntiReplayFunc,
+		// server
+		DefaultMaxBodyBytes,
+		DefaultServerLogLevel,
+		defaultReadHeaderTimeout,
+		defaultReadTimeout,
+		defaultWriteTimeout,
+		defaultIdleTimeout,
+		DefaultDrainDuration,
+		certFile,
+		keyFile,
+		"",
+		nil,
+		"",
+		nil,
+	)
 }
 
 // CertOpts returns a new Opts that has sensible defaults given certFile & keyFile.
@@ -404,24 +455,44 @@ func CertOpts(
 	tlsHosts []string,
 ) Opts {
 	httpsPort := uint16(443)
-	return Opts{
-		middlewareOpts: withMiddlewareOpts(
-			domain,
-			httpsPort,
-			secretKey,
-			strategy,
-			logger,
-		),
-		serverOpts: withServerOpts(
-			domain,
-			httpsPort,
-			certFile,
-			keyFile,
-			"",
-			tlsHosts,
-			"",
-		),
-	}
+
+	return New(
+		// common
+		domain,
+		httpsPort,
+
+		// middleware
+		secretKey,
+		clientip.DirectIpStrategy,
+		logger,
+		DefaultRateShedSamplePercent,
+		DefaultRateLimit,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+		nil,
+		nil,
+		nil,
+		false,
+		DefaultCorsCacheDuration,
+		DefaultCsrfCookieDuration,
+		DefaultSessionCookieDuration,
+		DefaultSessionAntiReplayFunc,
+		// server
+		DefaultMaxBodyBytes,
+		DefaultServerLogLevel,
+		defaultReadHeaderTimeout,
+		defaultReadTimeout,
+		defaultWriteTimeout,
+		defaultIdleTimeout,
+		DefaultDrainDuration,
+		certFile,
+		keyFile,
+		"",
+		tlsHosts,
+		"",
+		nil,
+	)
 }
 
 // AcmeOpts returns a new Opts that procures certificates from an [ACME] certificate authority.
@@ -443,24 +514,44 @@ func AcmeOpts(
 	acmeDirectoryUrl string,
 ) Opts {
 	httpsPort := uint16(443)
-	return Opts{
-		middlewareOpts: withMiddlewareOpts(
-			domain,
-			httpsPort,
-			secretKey,
-			strategy,
-			logger,
-		),
-		serverOpts: withServerOpts(
-			domain,
-			httpsPort,
-			"",
-			"",
-			acmeEmail,
-			tlsHosts,
-			acmeDirectoryUrl,
-		),
-	}
+
+	return New(
+		// common
+		domain,
+		httpsPort,
+
+		// middleware
+		secretKey,
+		clientip.DirectIpStrategy,
+		logger,
+		DefaultRateShedSamplePercent,
+		DefaultRateLimit,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+		nil,
+		nil,
+		nil,
+		false,
+		DefaultCorsCacheDuration,
+		DefaultCsrfCookieDuration,
+		DefaultSessionCookieDuration,
+		DefaultSessionAntiReplayFunc,
+		// server
+		DefaultMaxBodyBytes,
+		DefaultServerLogLevel,
+		defaultReadHeaderTimeout,
+		defaultReadTimeout,
+		defaultWriteTimeout,
+		defaultIdleTimeout,
+		DefaultDrainDuration,
+		"",
+		"",
+		acmeEmail,
+		tlsHosts,
+		acmeDirectoryUrl,
+		nil,
+	)
 }
 
 // LetsEncryptOpts returns a new Opts that procures certificates from [letsencrypt].
@@ -481,24 +572,44 @@ func LetsEncryptOpts(
 	tlsHosts []string,
 ) Opts {
 	httpsPort := uint16(443)
-	return Opts{
-		middlewareOpts: withMiddlewareOpts(
-			domain,
-			httpsPort,
-			secretKey,
-			strategy,
-			logger,
-		),
-		serverOpts: withServerOpts(
-			domain,
-			httpsPort,
-			"",
-			"",
-			acmeEmail,
-			tlsHosts,
-			"",
-		),
-	}
+
+	return New(
+		// common
+		domain,
+		httpsPort,
+
+		// middleware
+		secretKey,
+		clientip.DirectIpStrategy,
+		logger,
+		DefaultRateShedSamplePercent,
+		DefaultRateLimit,
+		DefaultLoadShedSamplingPeriod,
+		DefaultLoadShedMinSampleSize,
+		DefaultLoadShedBreachLatency,
+		nil,
+		nil,
+		nil,
+		false,
+		DefaultCorsCacheDuration,
+		DefaultCsrfCookieDuration,
+		DefaultSessionCookieDuration,
+		DefaultSessionAntiReplayFunc,
+		// server
+		DefaultMaxBodyBytes,
+		DefaultServerLogLevel,
+		defaultReadHeaderTimeout,
+		defaultReadTimeout,
+		defaultWriteTimeout,
+		defaultIdleTimeout,
+		DefaultDrainDuration,
+		"",
+		"",
+		acmeEmail,
+		tlsHosts,
+		"",
+		nil,
+	)
 }
 
 // secureKey is a custom string that does not reveal its content when printed.
@@ -552,7 +663,7 @@ type middlewareOpts struct {
 
 	// session
 	SessionCookieDuration time.Duration
-	SessionAntiReplyFunc  func(r *http.Request) string
+	SessionAntiReplayFunc func(r *http.Request) string
 }
 
 // String implements [fmt.Stringer]
@@ -575,7 +686,7 @@ func (m middlewareOpts) String() string {
   CorsCacheDuration: %v,
   CsrfTokenDuration: %v,
   SessionCookieDuration: %v,
-  SessionAntiReplyFunc: %T,
+  SessionAntiReplayFunc: %T,
 }`,
 		m.Domain,
 		m.HttpsPort,
@@ -594,7 +705,7 @@ func (m middlewareOpts) String() string {
 		m.CorsCacheDuration,
 		m.CsrfTokenDuration,
 		m.SessionCookieDuration,
-		m.SessionAntiReplyFunc,
+		m.SessionAntiReplayFunc,
 	)
 }
 
@@ -621,11 +732,10 @@ func newMiddlewareOpts(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
-	sessionAntiReplyFunc func(r *http.Request) string,
-) middlewareOpts {
-	// todo: return error instead of panic. Only [New] should panic.
+	sessionAntiReplayFunc func(r *http.Request) string,
+) (middlewareOpts, error) {
 	if err := acme.Validate(domain); err != nil {
-		panic(err)
+		return middlewareOpts{}, err
 	}
 
 	if strings.Contains(domain, "*") {
@@ -634,7 +744,28 @@ func newMiddlewareOpts(
 	}
 
 	if err := key.IsSecure(secretKey); err != nil {
-		panic(err)
+		return middlewareOpts{}, err
+	}
+
+	{ // cors validation.
+		if err := validateAllowedOrigins(allowedOrigins); err != nil {
+			return middlewareOpts{}, err
+		}
+		if err := validateAllowedMethods(allowedMethods); err != nil {
+			return middlewareOpts{}, err
+		}
+		if err := validateAllowedRequestHeaders(allowedHeaders); err != nil {
+			return middlewareOpts{}, err
+		}
+		if err := validateAllowCredentials(allowCredentials, allowedOrigins, allowedMethods, allowedHeaders); err != nil {
+			return middlewareOpts{}, err
+		}
+
+		if corsCacheDuration < 1*time.Second && (corsCacheDuration != 0*time.Second) {
+			// It is measured in seconds.
+			// Specifying a value of 0 tells browsers not to cache the preflight response, hence we should make it possible for one to specify zero seconds.
+			corsCacheDuration = DefaultCorsCacheDuration
+		}
 	}
 
 	return middlewareOpts{
@@ -667,41 +798,8 @@ func newMiddlewareOpts(
 
 		// session
 		SessionCookieDuration: sessionCookieDuration,
-		SessionAntiReplyFunc:  sessionAntiReplyFunc,
-	}
-}
-
-// withMiddlewareOpts returns a new Opts that has sensible defaults.
-// It panics on error.
-//
-// See [New] for extra documentation.
-func withMiddlewareOpts(
-	domain string,
-	httpsPort uint16,
-	secretKey string,
-	strategy ClientIPstrategy,
-	logger *slog.Logger,
-) middlewareOpts {
-	return newMiddlewareOpts(
-		domain,
-		httpsPort,
-		secretKey,
-		strategy,
-		logger,
-		DefaultRateShedSamplePercent,
-		DefaultRateLimit,
-		DefaultLoadShedSamplingPeriod,
-		DefaultLoadShedMinSampleSize,
-		DefaultLoadShedBreachLatency,
-		nil,
-		nil,
-		nil,
-		false,
-		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
-		DefaultSessionCookieDuration,
-		DefaultSessionAntiReplyFunc,
-	)
+		SessionAntiReplayFunc: sessionAntiReplayFunc,
+	}, nil
 }
 
 type tlsOpts struct {
@@ -837,35 +935,6 @@ func newServerOpts(
 		Network:       "tcp",
 		HttpPort:      fmt.Sprintf(":%d", httpPort),
 	}
-}
-
-func withServerOpts(domain string, port uint16, certFile, keyFile, acmeEmail string, tlsHosts []string, acmeDirectoryUrl string) serverOpts {
-	readHeaderTimeout := 1 * time.Second
-	readTimeout := readHeaderTimeout + (1 * time.Second)
-	writeTimeout := readTimeout + (1 * time.Second)
-	handlerTimeout := writeTimeout + (10 * time.Second)
-	idleTimeout := handlerTimeout + (100 * time.Second)
-	drainTimeout := DefaultDrainDuration
-
-	maxBodyBytes := DefaultMaxBodyBytes
-	serverLogLevel := DefaultServerLogLevel
-	return newServerOpts(
-		domain,
-		port,
-		maxBodyBytes,
-		serverLogLevel,
-		readHeaderTimeout,
-		readTimeout,
-		writeTimeout,
-		idleTimeout,
-		drainTimeout,
-		certFile,
-		keyFile,
-		acmeEmail,
-		tlsHosts,
-		acmeDirectoryUrl,
-		nil,
-	)
 }
 
 // String implements [fmt.Stringer]
@@ -1027,7 +1096,7 @@ func (o Opts) Equal(other Opts) bool {
 		if o.SessionCookieDuration != other.SessionCookieDuration {
 			return false
 		}
-		if o.SessionAntiReplyFunc(&http.Request{}) != other.SessionAntiReplyFunc(&http.Request{}) {
+		if o.SessionAntiReplayFunc(&http.Request{}) != other.SessionAntiReplayFunc(&http.Request{}) {
 			return false
 		}
 	}

@@ -22,17 +22,16 @@ func TestBasicAuth(t *testing.T) {
 	t.Parallel()
 
 	{
-		// small passwd panics.
-		attest.Panics(t, func() {
-			BasicAuth(protectedHandler("hello"), "user", strings.Repeat("a", 8))
-		},
-		)
+		// small passwd errors.
+		_, err := BasicAuth(protectedHandler("hello"), "user", strings.Repeat("a", 8))
+		attest.Error(t, err)
 	}
 
 	msg := "hello"
 	user := "some-user"
 	passwd := "some-long-p1sswd"
-	wrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
+	wrappedHandler, errA := BasicAuth(protectedHandler(msg), user, passwd)
+	attest.Ok(t, errA)
 
 	tests := []struct {
 		name     string
@@ -90,7 +89,8 @@ func TestBasicAuth(t *testing.T) {
 
 		// for this concurrency test, we have to re-use the same newWrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		newWrappedHandler := BasicAuth(protectedHandler(msg), user, passwd)
+		newWrappedHandler, err := BasicAuth(protectedHandler(msg), user, passwd)
+		attest.Ok(t, err)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -101,8 +101,8 @@ func TestBasicAuth(t *testing.T) {
 			res := rec.Result()
 			defer res.Body.Close()
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+			rb, errB := io.ReadAll(res.Body)
+			attest.Ok(t, errB)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)

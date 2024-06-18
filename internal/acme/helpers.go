@@ -28,7 +28,7 @@ import (
 )
 
 // diskCachedir is directory for acme configs like certificates.
-func diskCachedir() (string, error) {
+func diskCachedir() string {
 	/* The file hierarchy document[1] says that `/dev/shm` is world-writable and should be avoided
 	They recommend memor-mapped files in $XDG_RUNTIME_DIR or `/run`
 	Other password managers[2][3][4] however do use `/dev/shm`.
@@ -44,9 +44,6 @@ func diskCachedir() (string, error) {
 	if dir == "" {
 		dir = "/dev/shm"
 	}
-	if dir == "" {
-		dir = "/tmp/"
-	}
 	if testing.Testing() {
 		// Set dir==/tmp/ for tests, so that we do not fill the disk.
 		dir = "/tmp/"
@@ -54,10 +51,10 @@ func diskCachedir() (string, error) {
 
 	dir = filepath.Join(dir, "ong_acme")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		// If path is already a directory, MkdirAll does nothing
-		return "", fmt.Errorf("ong/acme: unable to create directory %s: %w", dir, err)
+		dir = "/tmp/" // without joining with ong_acme.
 	}
-	return dir, nil
+
+	return dir
 }
 
 // jwkEncode encodes public part of an ECDSA key into a JWK.
@@ -96,16 +93,16 @@ func jwkEncode(pub ecdsa.PublicKey) jwk {
 // It returns ("", 0) if the key is not supported.
 func jwsHasher(pub ecdsa.PublicKey) (string, crypto.Hash) {
 	switch pub.Params().Name {
+	default:
+		// This package only deals with `ecdsa.PublicKey`.
+		// So, if we get here, it must be a programmer error.
+		panic(fmt.Sprintf("ong/acme: unknown ecdsa.PublicKey param; %v", pub.Params().Name))
 	case "P-256":
 		return "ES256", crypto.SHA256
 	case "P-384":
 		return "ES384", crypto.SHA384
 	case "P-521":
 		return "ES512", crypto.SHA512
-	default:
-		// This package only deals with `ecdsa.PublicKey`.
-		// So, if we get here, it must be a programmer error.
-		panic(fmt.Sprintf("ong/acme: unknown ecdsa.PublicKey param; %v", pub.Params().Name))
 	}
 }
 
