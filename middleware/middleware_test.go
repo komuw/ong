@@ -501,7 +501,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		config.DefaultCorsCacheDuration,
 		config.DefaultCsrfCookieDuration,
 		config.DefaultSessionCookieDuration,
-		config.DefaultSessionAntiReplyFunc,
+		config.DefaultSessionAntiReplayFunc,
 		20*1024*1024,
 		slog.LevelDebug,
 		1*time.Second,

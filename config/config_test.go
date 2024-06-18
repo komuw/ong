@@ -147,7 +147,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 				opt.CorsCacheDuration,
 				opt.CsrfTokenDuration,
 				opt.SessionCookieDuration,
-				opt.SessionAntiReplyFunc,
+				opt.SessionAntiReplayFunc,
 			)
 			attest.Ok(t, err)
 			tt.assert(o)
@@ -208,7 +208,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					DefaultCorsCacheDuration,
 					DefaultCsrfCookieDuration,
 					DefaultSessionCookieDuration,
-					DefaultSessionAntiReplyFunc,
+					DefaultSessionAntiReplayFunc,
 				)
 				attest.Error(t, err)
 			} else {
@@ -230,7 +230,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					DefaultCorsCacheDuration,
 					DefaultCsrfCookieDuration,
 					DefaultSessionCookieDuration,
-					DefaultSessionAntiReplyFunc,
+					DefaultSessionAntiReplayFunc,
 				)
 				attest.Ok(t, err)
 			}
@@ -265,7 +265,7 @@ func TestOpts(t *testing.T) {
 				CorsCacheDuration:      DefaultCorsCacheDuration,
 				CsrfTokenDuration:      DefaultCsrfCookieDuration,
 				SessionCookieDuration:  DefaultSessionCookieDuration,
-				SessionAntiReplyFunc:   DefaultSessionAntiReplyFunc,
+				SessionAntiReplayFunc:  DefaultSessionAntiReplayFunc,
 			},
 
 			serverOpts: serverOpts{

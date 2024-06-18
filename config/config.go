@@ -81,11 +81,11 @@ const (
 	DefaultSessionCookieDuration = 14 * time.Hour
 )
 
-// DefaultSessionAntiReplyFunc is the function used, by default, to try and mitigate against [replay attacks].
+// DefaultSessionAntiReplayFunc is the function used, by default, to try and mitigate against [replay attacks].
 // It is a no-op.
 //
 // [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
-func DefaultSessionAntiReplyFunc(r *http.Request) string { return "" }
+func DefaultSessionAntiReplayFunc(r *http.Request) string { return "" }
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 //
@@ -221,8 +221,8 @@ func (o Opts) GoString() string {
 // csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
 //
 // sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
-// sessionAntiReplyFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
-// If it is nil, [DefaultSessionAntiReplyFunc] is used instead.
+// sessionAntiReplayFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
+// If it is nil, [DefaultSessionAntiReplayFunc] is used instead.
 //
 // maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
 //
@@ -274,7 +274,7 @@ func New(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
-	sessionAntiReplyFunc func(r *http.Request) string,
+	sessionAntiReplayFunc func(r *http.Request) string,
 	// server
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
@@ -308,7 +308,7 @@ func New(
 		corsCacheDuration,
 		csrfTokenDuration,
 		sessionCookieDuration,
-		sessionAntiReplyFunc,
+		sessionAntiReplayFunc,
 	)
 	if err != nil {
 		panic(err)
@@ -372,7 +372,7 @@ func WithOpts(
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
-		DefaultSessionAntiReplyFunc,
+		DefaultSessionAntiReplayFunc,
 		// server
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
@@ -421,7 +421,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
-		DefaultSessionAntiReplyFunc,
+		DefaultSessionAntiReplayFunc,
 		// server
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
@@ -477,7 +477,7 @@ func CertOpts(
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
-		DefaultSessionAntiReplyFunc,
+		DefaultSessionAntiReplayFunc,
 		// server
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
@@ -536,7 +536,7 @@ func AcmeOpts(
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
-		DefaultSessionAntiReplyFunc,
+		DefaultSessionAntiReplayFunc,
 		// server
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
@@ -594,7 +594,7 @@ func LetsEncryptOpts(
 		DefaultCorsCacheDuration,
 		DefaultCsrfCookieDuration,
 		DefaultSessionCookieDuration,
-		DefaultSessionAntiReplyFunc,
+		DefaultSessionAntiReplayFunc,
 		// server
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
@@ -663,7 +663,7 @@ type middlewareOpts struct {
 
 	// session
 	SessionCookieDuration time.Duration
-	SessionAntiReplyFunc  func(r *http.Request) string
+	SessionAntiReplayFunc func(r *http.Request) string
 }
 
 // String implements [fmt.Stringer]
@@ -686,7 +686,7 @@ func (m middlewareOpts) String() string {
   CorsCacheDuration: %v,
   CsrfTokenDuration: %v,
   SessionCookieDuration: %v,
-  SessionAntiReplyFunc: %T,
+  SessionAntiReplayFunc: %T,
 }`,
 		m.Domain,
 		m.HttpsPort,
@@ -705,7 +705,7 @@ func (m middlewareOpts) String() string {
 		m.CorsCacheDuration,
 		m.CsrfTokenDuration,
 		m.SessionCookieDuration,
-		m.SessionAntiReplyFunc,
+		m.SessionAntiReplayFunc,
 	)
 }
 
@@ -732,7 +732,7 @@ func newMiddlewareOpts(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
-	sessionAntiReplyFunc func(r *http.Request) string,
+	sessionAntiReplayFunc func(r *http.Request) string,
 ) (middlewareOpts, error) {
 	if err := acme.Validate(domain); err != nil {
 		return middlewareOpts{}, err
@@ -798,7 +798,7 @@ func newMiddlewareOpts(
 
 		// session
 		SessionCookieDuration: sessionCookieDuration,
-		SessionAntiReplyFunc:  sessionAntiReplyFunc,
+		SessionAntiReplayFunc: sessionAntiReplayFunc,
 	}, nil
 }
 
@@ -1096,7 +1096,7 @@ func (o Opts) Equal(other Opts) bool {
 		if o.SessionCookieDuration != other.SessionCookieDuration {
 			return false
 		}
-		if o.SessionAntiReplyFunc(&http.Request{}) != other.SessionAntiReplyFunc(&http.Request{}) {
+		if o.SessionAntiReplayFunc(&http.Request{}) != other.SessionAntiReplayFunc(&http.Request{}) {
 			return false
 		}
 	}
