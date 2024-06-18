@@ -142,8 +142,7 @@ func TestManager(t *testing.T) {
 		t.Parallel()
 
 		domain := getDomain()
-		diskCacheDir, errA := diskCachedir()
-		attest.Ok(t, errA)
+		diskCacheDir := diskCachedir()
 		{ // prep by saving a certificate for the domain to disk.
 			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
 			cert := createTlsCert(t, domain)
@@ -274,8 +273,7 @@ func TestGetCertificate(t *testing.T) {
 		t.Parallel()
 
 		domain := getDomain()
-		diskCacheDir, errA := diskCachedir()
-		attest.Ok(t, errA)
+		diskCacheDir := diskCachedir()
 		{ // prep by saving a certificate for the domain to disk.
 			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
 			cert := createTlsCert(t, domain)
@@ -432,11 +430,10 @@ func TestAcmeHandler(t *testing.T) {
 		token := "myToken"
 
 		setCerts := func(domain string) (tokenPath, tokenToWrite string) {
-			diskCacheDir, err := diskCachedir()
-			attest.Ok(t, err)
+			diskCacheDir := diskCachedir()
 
 			tokenPath = filepath.Join(diskCacheDir, domain, tokenFileName)
-			err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+			err := os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
 			attest.Ok(t, err)
 
 			accountKeyPath := filepath.Join(diskCacheDir, accountKeyFileName)
@@ -587,8 +584,7 @@ func BenchmarkGetCertificate(b *testing.B) {
 		l := slog.Default()
 
 		domain := getDomain()
-		diskCacheDir, errA := diskCachedir()
-		attest.Ok(b, errA)
+		diskCacheDir := diskCachedir()
 		{ // prep by saving a certificate for the domain to disk.
 			certPath := filepath.Join(diskCacheDir, domain, certAndKeyFileName)
 			cert := createTlsCert(b, domain)
@@ -618,11 +614,10 @@ func BenchmarkHandler(b *testing.B) {
 
 	token := "myToken"
 	{
-		diskCacheDir, err := diskCachedir()
-		attest.Ok(b, err)
+		diskCacheDir := diskCachedir()
 
 		tokenPath := filepath.Join(diskCacheDir, domain, tokenFileName)
-		err = os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
+		err := os.MkdirAll(filepath.Join(diskCacheDir, domain), 0o755)
 		attest.Ok(b, err)
 
 		accountKeyPath := filepath.Join(diskCacheDir, accountKeyFileName)

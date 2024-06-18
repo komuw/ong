@@ -201,8 +201,7 @@ func TestAcmeFunctions(t *testing.T) {
 	ctx := context.Background()
 
 	setup := func(t *testing.T, acmeServerURL, domain string) (directory, account, order, authorization, order, *ecdsa.PrivateKey, *ecdsa.PrivateKey) {
-		cacheDir, err := diskCachedir()
-		attest.Ok(t, err)
+		cacheDir := diskCachedir()
 
 		directoryUrl, err := url.JoinPath(acmeServerURL, "/directory")
 		attest.Ok(t, err)

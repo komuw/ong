@@ -151,10 +151,8 @@ func Handler(wrappedHandler http.Handler) http.HandlerFunc {
 	// fixed prefix "/.well-known/acme-challenge/", followed by the "token" value in the challenge.
 	// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
 
-	diskCacheDir, errA := diskCachedir()
-	if errA != nil {
-		panic(errA)
-	}
+	diskCacheDir := diskCachedir()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		// This code is taken from; https://github.com/golang/crypto/blob/v0.10.0/acme/autocert/autocert.go#L398-L401
 		if strings.HasPrefix(r.URL.Path, challengeURI) {
@@ -305,11 +303,7 @@ func initManager(tlsHosts []string, email, acmeDirectoryUrl string, l *slog.Logg
 	if len(testDiskCache) > 0 && testing.Testing() {
 		diskCacheDir = testDiskCache[0]
 	} else {
-		d, errA := diskCachedir()
-		if errA != nil {
-			return nil, errA
-		}
-		diskCacheDir = d
+		diskCacheDir = diskCachedir()
 	}
 
 	c := newCache()
