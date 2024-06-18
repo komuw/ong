@@ -78,7 +78,7 @@ func TestSession(t *testing.T) {
 			secretKey,
 			domain,
 			config.DefaultSessionCookieDuration,
-			func(r *http.Request) string { return r.RemoteAddr },
+			func(r http.Request) string { return r.RemoteAddr },
 		)
 
 		rec := httptest.NewRecorder()
@@ -105,7 +105,7 @@ func TestSession(t *testing.T) {
 		value := "John Doe"
 
 		header := "Anti-Replay"
-		antiReplayFunc := func(r *http.Request) string {
+		antiReplayFunc := func(r http.Request) string {
 			return r.Header.Get(header)
 		}
 		wrappedHandler := session(
@@ -150,7 +150,7 @@ func TestSession(t *testing.T) {
 
 			// very important to do this assignment, since `antiReplayFunc` checks for IP mismatch.
 			req2.Header.Add(header, headerVal)
-			req2 = cookie.SetAntiReplay(req2, antiReplayFunc(req2))
+			req2 = cookie.SetAntiReplay(req2, antiReplayFunc(*req2))
 			attest.Ok(t, err)
 			req2.AddCookie(&http.Cookie{
 				Name:  res.Cookies()[0].Name,
@@ -175,7 +175,7 @@ func TestSession(t *testing.T) {
 			secretKey,
 			domain,
 			config.DefaultSessionCookieDuration,
-			func(r *http.Request) string { return r.RemoteAddr },
+			func(r http.Request) string { return r.RemoteAddr },
 		)
 
 		rec := httptest.NewRecorder()
@@ -205,7 +205,7 @@ func TestSession(t *testing.T) {
 		key := "name"
 		value := "John Doe"
 
-		antiReplayFunc := func(r *http.Request) string { return r.RemoteAddr }
+		antiReplayFunc := func(r http.Request) string { return r.RemoteAddr }
 		wrappedHandler := session(
 			someSessionHandler(msg, key, value),
 			secretKey,
@@ -233,7 +233,7 @@ func TestSession(t *testing.T) {
 			req2 := httptest.NewRequest(http.MethodGet, "/hey-uri", nil)
 			// very important to do this assignment, since `antiReplayFunc` checks for IP mismatch.
 			req2.RemoteAddr = ip1
-			req2 = cookie.SetAntiReplay(req2, antiReplayFunc(req2))
+			req2 = cookie.SetAntiReplay(req2, antiReplayFunc(*req2))
 			req2.AddCookie(&http.Cookie{
 				Name:  res.Cookies()[0].Name,
 				Value: res.Cookies()[0].Value,
@@ -249,7 +249,7 @@ func TestSession(t *testing.T) {
 			req3 := httptest.NewRequest(http.MethodGet, "/hey-uri", nil)
 			ip2 := "148.65.4.3"
 			req3.RemoteAddr = ip2
-			req3 = cookie.SetAntiReplay(req3, antiReplayFunc(req3))
+			req3 = cookie.SetAntiReplay(req3, antiReplayFunc(*req3))
 			req3.AddCookie(&http.Cookie{
 				Name:  res.Cookies()[0].Name,
 				Value: res.Cookies()[0].Value,
@@ -275,7 +275,7 @@ func TestSession(t *testing.T) {
 			secretKey,
 			domain,
 			config.DefaultSessionCookieDuration,
-			func(r *http.Request) string { return r.RemoteAddr },
+			func(r http.Request) string { return r.RemoteAddr },
 		)
 
 		runhandler := func() {

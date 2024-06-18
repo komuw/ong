@@ -85,7 +85,7 @@ const (
 // It is a no-op.
 //
 // [replay attacks]: https://en.wikipedia.org/wiki/Replay_attack
-func DefaultSessionAntiReplayFunc(r *http.Request) string { return "" }
+func DefaultSessionAntiReplayFunc(r http.Request) string { return "" }
 
 // ClientIPstrategy is a middleware option that describes the strategy to use when fetching the client's IP address.
 //
@@ -274,7 +274,7 @@ func New(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
-	sessionAntiReplayFunc func(r *http.Request) string,
+	sessionAntiReplayFunc func(r http.Request) string,
 	// server
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
@@ -663,7 +663,7 @@ type middlewareOpts struct {
 
 	// session
 	SessionCookieDuration time.Duration
-	SessionAntiReplayFunc func(r *http.Request) string
+	SessionAntiReplayFunc func(r http.Request) string
 }
 
 // String implements [fmt.Stringer]
@@ -732,7 +732,7 @@ func newMiddlewareOpts(
 	corsCacheDuration time.Duration,
 	csrfTokenDuration time.Duration,
 	sessionCookieDuration time.Duration,
-	sessionAntiReplayFunc func(r *http.Request) string,
+	sessionAntiReplayFunc func(r http.Request) string,
 ) (middlewareOpts, error) {
 	if err := acme.Validate(domain); err != nil {
 		return middlewareOpts{}, err
@@ -1096,7 +1096,7 @@ func (o Opts) Equal(other Opts) bool {
 		if o.SessionCookieDuration != other.SessionCookieDuration {
 			return false
 		}
-		if o.SessionAntiReplayFunc(&http.Request{}) != other.SessionAntiReplayFunc(&http.Request{}) {
+		if o.SessionAntiReplayFunc(http.Request{}) != other.SessionAntiReplayFunc(http.Request{}) {
 			return false
 		}
 	}

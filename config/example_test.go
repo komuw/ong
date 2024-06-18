@@ -57,7 +57,7 @@ func ExampleNew() {
 		// Expire session cookie after 6hours.
 		6*time.Hour,
 		// Use a given header to try and mitigate against replay-attacks.
-		func(r *http.Request) string { return r.Header.Get("Anti-Replay") },
+		func(r http.Request) string { return r.Header.Get("Anti-Replay") },
 		//
 		// The maximum size in bytes for incoming request bodies.
 		2*1024*1024,
