@@ -113,6 +113,15 @@ func TestNewMiddlewareOpts(t *testing.T) {
 			},
 			assert: func(o middlewareOpts) { attest.Equal(t, o.CorsCacheDuration, DefaultCorsCacheDuration) },
 		},
+		{
+			name: "greater than zero duration",
+			opt: func() middlewareOpts {
+				opt := validOpts(t)
+				opt.middlewareOpts.CorsCacheDuration = 372 * time.Hour
+				return opt.middlewareOpts
+			},
+			assert: func(o middlewareOpts) { attest.Equal(t, o.CorsCacheDuration, 372*time.Hour) },
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
