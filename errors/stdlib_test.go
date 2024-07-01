@@ -1,6 +1,7 @@
 package errors
 
 import (
+	stdErrors "errors"
 	"io/fs"
 	"os"
 	"testing"
@@ -29,6 +30,13 @@ func TestStdLib(t *testing.T) {
 
 		{
 			e1 := New("hello")
+			err := Errorf("yolo: %w", e1)
+			attest.Subsequence(t, err.Error(), "hello")
+			attest.Subsequence(t, err.Error(), "yolo")
+		}
+
+		{
+			e1 := stdErrors.New("hello")
 			err := Errorf("yolo: %w", e1)
 			attest.Subsequence(t, err.Error(), "hello")
 			attest.Subsequence(t, err.Error(), "yolo")
