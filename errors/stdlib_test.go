@@ -1,6 +1,8 @@
 package errors
 
 import (
+	stdErrors "errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"testing"
@@ -19,8 +21,36 @@ func TestStdLib(t *testing.T) {
 
 		_, ok := err.(*stackError)
 		attest.True(t, ok)
+		attest.True(t, As(err, &targetErr))
 		attest.True(t, Is(err, os.ErrNotExist))
 		attest.NotZero(t, Unwrap(err))
-		attest.True(t, As(err, &targetErr))
+	})
+
+	t.Run("stdlib errorf", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			e1 := New("hello")
+			err := Errorf("yolo: %w", e1)
+			attest.Subsequence(t, err.Error(), "hello")
+			attest.Subsequence(t, err.Error(), "yolo")
+		}
+
+		{
+			e1 := stdErrors.New("hello")
+			err := Errorf("yolo %s okay : %w", "one", e1)
+
+			{
+				attest.Subsequence(t, err.Error(), "hello")
+				attest.Subsequence(t, err.Error(), "yolo")
+				attest.Subsequence(t, err.Error(), "one")
+			}
+			{
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "hello")
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "yolo")
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "one")
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "ong/errors/stdlib_test.go:41")
+			}
+		}
 	})
 }

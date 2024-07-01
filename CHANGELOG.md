@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.3
+- ong/errors: Join error should be formatted correctly: https://github.com/komuw/ong/pull/462
+
 # v0.1.2
 - ong/middleware: Fix a number of CORS issues: https://github.com/komuw/ong/pull/442
 - ong/middleware: Eliminate panics: https://github.com/komuw/ong/pull/459
