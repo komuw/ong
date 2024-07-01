@@ -72,6 +72,7 @@ func (j *joinError) Unwrap() error {
 
 // Format implements the fmt.Formatter interface
 func (j *joinError) Format(f fmt.State, verb rune) {
+	// todo: this should be kept in sync with `stackError.Format`
 	switch verb {
 	case 'v':
 		if f.Flag('+') {
