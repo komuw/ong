@@ -37,9 +37,10 @@ func TestStdLib(t *testing.T) {
 
 		{
 			e1 := stdErrors.New("hello")
-			err := Errorf("yolo: %w", e1)
+			err := Errorf("yolo %s okay : %w", "one", e1)
 			attest.Subsequence(t, err.Error(), "hello")
 			attest.Subsequence(t, err.Error(), "yolo")
+			attest.Subsequence(t, err.Error(), "one")
 		}
 	})
 }
