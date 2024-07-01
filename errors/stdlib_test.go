@@ -2,6 +2,7 @@ package errors
 
 import (
 	stdErrors "errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"testing"
@@ -38,9 +39,18 @@ func TestStdLib(t *testing.T) {
 		{
 			e1 := stdErrors.New("hello")
 			err := Errorf("yolo %s okay : %w", "one", e1)
-			attest.Subsequence(t, err.Error(), "hello")
-			attest.Subsequence(t, err.Error(), "yolo")
-			attest.Subsequence(t, err.Error(), "one")
+
+			{
+				attest.Subsequence(t, err.Error(), "hello")
+				attest.Subsequence(t, err.Error(), "yolo")
+				attest.Subsequence(t, err.Error(), "one")
+			}
+			{
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "hello")
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "yolo")
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "one")
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "ong/errors/stdlib_test.go:41")
+			}
 		}
 	})
 }

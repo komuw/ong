@@ -1,5 +1,10 @@
 package errors
 
+import (
+	"fmt"
+	"io"
+)
+
 // Some of the code here is inspired(or taken from) by:
 //   (a) https://github.com/golang/go/blob/go1.20.14/src/errors/join.go whose license(BSD 3-Clause) can be found here: https://github.com/golang/go/blob/go1.20.14/LICENSE
 
@@ -47,9 +52,9 @@ type joinError struct {
 	errs []error
 }
 
-func (e *joinError) Error() string {
+func (j *joinError) Error() string {
 	var b []byte
-	for i, err := range e.errs {
+	for i, err := range j.errs {
 		if i > 0 {
 			b = append(b, '\n')
 		}
@@ -58,9 +63,26 @@ func (e *joinError) Error() string {
 	return string(b)
 }
 
-func (e *joinError) Unwrap() error {
-	if len(e.errs) > 0 {
-		return e.errs[0]
+func (j *joinError) Unwrap() error {
+	if len(j.errs) > 0 {
+		return j.errs[0]
 	}
 	return nil
+}
+
+// Format implements the fmt.Formatter interface
+func (j *joinError) Format(f fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		if f.Flag('+') {
+			_, _ = io.WriteString(f, j.Error())
+			_, _ = io.WriteString(f, j.getStackTrace())
+			return
+		}
+		fallthrough
+	case 's':
+		_, _ = io.WriteString(f, j.Error())
+	case 'q':
+		_, _ = fmt.Fprintf(f, "%q", j.Error())
+	}
 }
