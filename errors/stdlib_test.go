@@ -23,4 +23,15 @@ func TestStdLib(t *testing.T) {
 		attest.True(t, Is(err, os.ErrNotExist))
 		attest.NotZero(t, Unwrap(err))
 	})
+
+	t.Run("stdlib errorf", func(t *testing.T) {
+		t.Parallel()
+
+		{
+			e1 := New("hello")
+			err := Errorf("yolo: %w", e1)
+			attest.Subsequence(t, err.Error(), "hello")
+			attest.Subsequence(t, err.Error(), "yolo")
+		}
+	})
 }
