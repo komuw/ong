@@ -53,4 +53,18 @@ func TestStdLib(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("issues/463", func(t *testing.T) {
+		t.Parallel()
+
+		var errs []error
+		for i := range 2 {
+			e := New("err")
+			errs = append(errs, Errorf("failed(%d): %w", i, e))
+		}
+
+		if err := Join(errs...); err != nil {
+			fmt.Printf("%+#v", err)
+		}
+	})
 }
