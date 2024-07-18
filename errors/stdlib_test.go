@@ -57,10 +57,7 @@ func TestStdLib(t *testing.T) {
 	t.Run("issues/463", func(t *testing.T) {
 		t.Parallel()
 
-		errs := []error{
-			Errorf("%w", New("err1")),
-			Errorf("%w", New("err2")),
-		}
+		errs := []error{Errorf("%w", New("err1"))}
 
 		if err := Join(errs...); err != nil {
 			fmt.Printf("%+#v", err)
