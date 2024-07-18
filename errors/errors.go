@@ -97,7 +97,6 @@ func (e *stackError) getStackTrace() string {
 
 // Format implements the fmt.Formatter interface
 func (e *stackError) Format(f fmt.State, verb rune) {
-	// todo: this should be kept in sync with `joinError.Format`
 	switch verb {
 	case 'v':
 		if f.Flag('+') {
@@ -122,9 +121,6 @@ func StackTrace(err error) string {
 	if sterr, ok := err.(*stackError); ok {
 		return sterr.getStackTrace()
 	}
-	// if sterr, ok := err.(*joinError); ok {
-	// 	return sterr.getStackTrace()
-	// }
 
 	if Is(err, &stackError{}) {
 		switch u := err.(type) {
