@@ -34,13 +34,15 @@ func Join(errs ...error) error {
 		return nil
 	}
 
-	e := wrap(stdErrors.New(strings.Join(msgs, "\n")), 3)
 	if ef, ok := errs[0].(*stackError); ok {
 		// If the first error was already a stack error, use its stacktrace.
-		e.stack = ef.stack
+		return &stackError{
+			err:   stdErrors.New(strings.Join(msgs, "\n")),
+			stack: ef.stack,
+		}
 	}
 
-	return e
+	return wrap(stdErrors.New(strings.Join(msgs, "\n")), 3)
 
 	// e := &joinError{errs: make([]error, 0, n)}
 	// for _, err := range errs {
