@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 	"testing"
 
 	"go.akshayshah.org/attest"
@@ -63,7 +64,8 @@ func TestStdLib(t *testing.T) {
 		}
 
 		if err := Join(errs...); err != nil {
-			_ = fmt.Sprintf("%+#v", err)
+			result := fmt.Sprintf("%+#v", err)
+			attest.False(t, strings.Contains(result, "PANIC"), attest.Sprintf("result should not have panic message. got=`%v`", result))
 		}
 	})
 }
