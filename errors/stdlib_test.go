@@ -50,7 +50,7 @@ func TestStdLib(t *testing.T) {
 				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "hello")
 				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "yolo")
 				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "one")
-				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "ong/errors/stdlib_test.go:41")
+				attest.Subsequence(t, fmt.Sprintf("%+#v", err), "ong/errors/stdlib_test.go:42")
 			}
 		}
 	})
