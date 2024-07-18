@@ -5,7 +5,7 @@
 package errors
 
 import (
-	"reflect"
+	"strings"
 	"testing"
 
 	"go.akshayshah.org/attest"
@@ -31,29 +31,30 @@ func TestJoin(t *testing.T) {
 	err2 := New("err2")
 	for _, test := range []struct {
 		errs []error
-		want error
+		want string
 	}{
 		{
 			errs: []error{err1},
-			want: err1,
+			want: err1.Error(),
 		},
 		{
 			errs: []error{err1, err2},
-			want: err1,
+			want: strings.Join([]string{err1.Error(), err2.Error()}, "\n"),
 		},
 		{
 			errs: []error{err2, err1, nil},
-			want: err2,
+			want: strings.Join([]string{err2.Error(), err1.Error()}, "\n"),
 		},
 		{
 			errs: []error{nil, err2, err1},
-			want: err2,
+			want: strings.Join([]string{err2.Error(), err1.Error()}, "\n"),
 		},
 	} {
 		got := Join(test.errs...).(interface{ Unwrap() error }).Unwrap()
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("Join(%v) got = %v; want %v", test.errs, got, test.want)
-		}
+		attest.Equal(t, got.Error(), test.want)
+		// if !reflect.DeepEqual(got, test.want) {
+		// 	t.Errorf("Join(%v) got = %v; want %v", test.errs, got, test.want)
+		// }
 		// if len(got) != cap(got) {
 		// 	t.Errorf("Join(%v) returns errors with len=%v, cap=%v; want len==cap", test.errs, len(got), cap(got))
 		// }
@@ -95,13 +96,13 @@ func TestJoinStackTrace(t *testing.T) {
 		{
 			err3 := Join(err1, err2)
 
-			sterr, ok := err3.(*joinError)
+			sterr, ok := err3.(*stackError)
 			attest.True(t, ok)
 			attest.Equal(t, sterr.Error(), "hello\nerror in foo")
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/join_test.go:92", // Join only shows stack trace of first error. ie, err1
+				"ong/errors/join_test.go:93", // Join only shows stack trace of first error. ie, err1
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -110,7 +111,7 @@ func TestJoinStackTrace(t *testing.T) {
 		{
 			err3 := Join(err2, err1)
 
-			sterr, ok := err3.(*joinError)
+			sterr, ok := err3.(*stackError)
 			attest.True(t, ok)
 			attest.Equal(t, sterr.Error(), "error in foo\nhello")
 
@@ -120,7 +121,7 @@ func TestJoinStackTrace(t *testing.T) {
 				"ong/errors/errors_test.go:30",
 				"ong/errors/errors_test.go:23",
 				"ong/errors/errors_test.go:17",
-				"ong/errors/join_test.go:93",
+				"ong/errors/join_test.go:94",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}

@@ -24,18 +24,19 @@ func Unwrap(err error) error {
 func Errorf(format string, a ...any) error {
 	err := fmt.Errorf(format, a...)
 
-	// see: https://gitlab.com/tozd/go/errors/-/blob/v0.8.1/errors.go#L324
-	switch u := err.(type) {
-	default:
-		// todo: handle this somehow
-		return err
-	case interface{ Unwrap() error }:
-		ef := wrap(u.Unwrap(), 3)
-		eff, _ := ef.(*stackError) // ef is guaranteed to be a stackError since it comes from wrap()
-
-		return &joinError{
-			errs:       []error{err},
-			stackError: eff,
+	var stack []uintptr
+	for _, e := range a {
+		if ef, ok := e.(*stackError); ok {
+			stack = ef.stack
 		}
 	}
+
+	if len(stack) > 0 {
+		return &stackError{
+			err:   err,
+			stack: stack,
+		}
+	}
+
+	return wrap(err, 3)
 }

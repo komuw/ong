@@ -2,7 +2,7 @@
 package errors
 
 import (
-	"errors"
+	stdErrors "errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -44,7 +44,7 @@ func (e *stackError) Is(target error) bool {
 //	%v   see %s
 //	%+v  print the error and stacktrace.
 func New(text string) error {
-	return wrap(errors.New(text), 3)
+	return wrap(stdErrors.New(text), 3)
 }
 
 // Wrap returns err, capturing a stack trace.
@@ -61,9 +61,9 @@ func Dwrap(errp *error) {
 	}
 }
 
-func wrap(err error, skip int) error {
+func wrap(err error, skip int) *stackError {
 	if Is(err, &stackError{}) {
-		return err
+		return err.(*stackError)
 	}
 
 	// limit stack size to 64 call depth.
@@ -97,7 +97,6 @@ func (e *stackError) getStackTrace() string {
 
 // Format implements the fmt.Formatter interface
 func (e *stackError) Format(f fmt.State, verb rune) {
-	// todo: this should be kept in sync with `joinError.Format`
 	switch verb {
 	case 'v':
 		if f.Flag('+') {
@@ -120,9 +119,6 @@ func StackTrace(err error) string {
 	}
 
 	if sterr, ok := err.(*stackError); ok {
-		return sterr.getStackTrace()
-	}
-	if sterr, ok := err.(*joinError); ok {
 		return sterr.getStackTrace()
 	}
 

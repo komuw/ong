@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.4
+- ong/errors: Do not panic when joining stack errors that have used errorf: https://github.com/komuw/ong/pull/464
+
 # v0.1.3
 - ong/errors: Join error should be formatted correctly: https://github.com/komuw/ong/pull/462
 
