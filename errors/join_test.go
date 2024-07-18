@@ -84,47 +84,47 @@ func TestJoinErrorMethod(t *testing.T) {
 	}
 }
 
-// func TestJoinStackTrace(t *testing.T) {
-// 	t.Parallel()
+func TestJoinStackTrace(t *testing.T) {
+	t.Parallel()
 
-// 	t.Run("errors.Join", func(t *testing.T) {
-// 		t.Parallel()
+	t.Run("errors.Join", func(t *testing.T) {
+		t.Parallel()
 
-// 		err1 := New("hello")
-// 		err2 := hello()
+		err1 := New("hello")
+		err2 := hello()
 
-// 		{
-// 			err3 := Join(err1, err2)
+		{
+			err3 := Join(err1, err2)
 
-// 			sterr, ok := err3.(*joinError)
-// 			attest.True(t, ok)
-// 			attest.Equal(t, sterr.Error(), "hello\nerror in foo")
+			sterr, ok := err3.(*stackError)
+			attest.True(t, ok)
+			attest.Equal(t, sterr.Error(), "hello\nerror in foo")
 
-// 			stackTrace := sterr.getStackTrace()
-// 			for _, v := range []string{
-// 				"ong/errors/join_test.go:92", // Join only shows stack trace of first error. ie, err1
-// 			} {
-// 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
-// 			}
-// 		}
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				"ong/errors/join_test.go:93", // Join only shows stack trace of first error. ie, err1
+			} {
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
+			}
+		}
 
-// 		{
-// 			err3 := Join(err2, err1)
+		{
+			err3 := Join(err2, err1)
 
-// 			sterr, ok := err3.(*joinError)
-// 			attest.True(t, ok)
-// 			attest.Equal(t, sterr.Error(), "error in foo\nhello")
+			sterr, ok := err3.(*stackError)
+			attest.True(t, ok)
+			attest.Equal(t, sterr.Error(), "error in foo\nhello")
 
-// 			stackTrace := sterr.getStackTrace()
-// 			for _, v := range []string{
-// 				// Join only shows stack trace of first error. ie, err2
-// 				"ong/errors/errors_test.go:30",
-// 				"ong/errors/errors_test.go:23",
-// 				"ong/errors/errors_test.go:17",
-// 				"ong/errors/join_test.go:93",
-// 			} {
-// 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
-// 			}
-// 		}
-// 	})
-// }
+			stackTrace := sterr.getStackTrace()
+			for _, v := range []string{
+				// Join only shows stack trace of first error. ie, err2
+				"ong/errors/errors_test.go:30",
+				"ong/errors/errors_test.go:23",
+				"ong/errors/errors_test.go:17",
+				"ong/errors/join_test.go:94",
+			} {
+				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
+			}
+		}
+	})
+}
