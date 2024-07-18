@@ -24,5 +24,19 @@ func Unwrap(err error) error {
 func Errorf(format string, a ...any) error {
 	err := fmt.Errorf(format, a...)
 
-	return Join(err)
+	var stack []uintptr
+	for _, e := range a {
+		if ef, ok := e.(*stackError); ok {
+			stack = ef.stack
+		}
+	}
+
+	if len(stack) > 0 {
+		return &stackError{
+			err:   err,
+			stack: stack,
+		}
+	}
+
+	return wrap(err, 3)
 }
