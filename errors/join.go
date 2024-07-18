@@ -36,6 +36,7 @@ func Join(errs ...error) error {
 
 	e := wrap(stdErrors.New(strings.Join(msgs, "\n")), 3)
 	if ef, ok := errs[0].(*stackError); ok {
+		// If the first error was already a stack error, use its stacktrace.
 		e.stack = ef.stack
 	}
 
