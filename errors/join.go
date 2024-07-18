@@ -16,8 +16,9 @@ import (
 // between each string.
 //
 // A non-nil error returned by Join implements the Unwrap() error method.
+// Unwrap returns an error whose text is the concatenation of each of the errs texts.
 //
-// It only returns the stack trace of the first error. Unwrap also only returns the first error.
+// It only returns the stack trace of the first error.
 //
 // Note that this function is equivalent to the one in standard library mainly in spirit.
 // This is not a direct replacement of the standard library one.
