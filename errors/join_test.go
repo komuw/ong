@@ -5,8 +5,10 @@
 package errors
 
 import (
-	"reflect"
+	"strings"
 	"testing"
+
+	"go.akshayshah.org/attest"
 )
 
 // Some of the code here is inspired(or taken from) by:
@@ -26,32 +28,33 @@ func TestJoinReturnsNil(t *testing.T) {
 
 func TestJoin(t *testing.T) {
 	err1 := New("err1")
-	// err2 := New("err2")
+	err2 := New("err2")
 	for _, test := range []struct {
 		errs []error
-		want error
+		want string
 	}{
 		{
 			errs: []error{err1},
-			want: err1,
+			want: err1.Error(),
 		},
-		// {
-		// 	errs: []error{err1, err2},
-		// 	want: err1,
-		// },
-		// {
-		// 	errs: []error{err2, err1, nil},
-		// 	want: err2,
-		// },
-		// {
-		// 	errs: []error{nil, err2, err1},
-		// 	want: err2,
-		// },
+		{
+			errs: []error{err1, err2},
+			want: strings.Join([]string{err1.Error(), err2.Error()}, "\n"),
+		},
+		{
+			errs: []error{err2, err1, nil},
+			want: strings.Join([]string{err2.Error(), err1.Error()}, "\n"),
+		},
+		{
+			errs: []error{nil, err2, err1},
+			want: strings.Join([]string{err2.Error(), err1.Error()}, "\n"),
+		},
 	} {
 		got := Join(test.errs...).(interface{ Unwrap() error }).Unwrap()
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("Join(%v) got = %v; want %v", test.errs, got, test.want)
-		}
+		attest.Equal(t, got.Error(), test.want)
+		// if !reflect.DeepEqual(got, test.want) {
+		// 	t.Errorf("Join(%v) got = %v; want %v", test.errs, got, test.want)
+		// }
 		// if len(got) != cap(got) {
 		// 	t.Errorf("Join(%v) returns errors with len=%v, cap=%v; want len==cap", test.errs, len(got), cap(got))
 		// }
