@@ -63,7 +63,7 @@ func TestStdLib(t *testing.T) {
 		}
 
 		if err := Join(errs...); err != nil {
-			fmt.Printf("%+#v", err)
+			_ = fmt.Sprintf("%+#v", err)
 		}
 	})
 }
