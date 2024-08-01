@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.5
+- ong/errors: Fix panic when an error is already wrapped: https://github.com/komuw/ong/pull/467
+
 # v0.1.4
 - ong/errors: Do not panic when joining stack errors that have used errorf: https://github.com/komuw/ong/pull/464
 

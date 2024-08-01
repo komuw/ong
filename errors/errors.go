@@ -62,8 +62,18 @@ func Dwrap(errp *error) {
 }
 
 func wrap(err error, skip int) *stackError {
+	if err == nil {
+		return nil
+	}
+
 	if Is(err, &stackError{}) {
-		return err.(*stackError)
+		if e, ok := err.(*stackError); ok {
+			return e
+		}
+
+		if e, ok := Unwrap(err).(*stackError); ok {
+			return e
+		}
 	}
 
 	// limit stack size to 64 call depth.
