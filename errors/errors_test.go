@@ -53,11 +53,11 @@ func lateWrapping() error {
 	return Wrap(hello())
 }
 
-type apiError struct{ err error }
+type myCustomErr struct{ err error }
 
-func (a apiError) Error() string { return a.err.Error() }
+func (a myCustomErr) Error() string { return a.err.Error() }
 
-func (a apiError) Unwrap() error {
+func (a myCustomErr) Unwrap() error {
 	// This method is the one that causes issue.
 	// See; https://github.com/komuw/ong/issues/466
 	return a.err
@@ -234,7 +234,7 @@ func TestStackError(t *testing.T) {
 		t.Parallel()
 
 		{ // success
-			var err error = apiError{err: New("hey")}
+			var err error = myCustomErr{err: New("hey")}
 			err = Wrap(err)
 			got := fmt.Sprintf("%+#v", err)
 
@@ -243,7 +243,7 @@ func TestStackError(t *testing.T) {
 		}
 
 		{ // nil
-			var err error = apiError{err: New("hey")}
+			var err error = myCustomErr{err: New("hey")}
 			err = nil
 			err = Wrap(err)
 			got := fmt.Sprintf("%+#v", err)
