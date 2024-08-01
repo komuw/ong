@@ -53,6 +53,16 @@ func lateWrapping() error {
 	return Wrap(hello())
 }
 
+type apiError struct{ err error }
+
+func (a apiError) Error() string { return a.err.Error() }
+
+func (a apiError) Unwrap() error {
+	// This method is the one that causes issue.
+	// See; https://github.com/komuw/ong/issues/466
+	return a.err
+}
+
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
 	goleak.VerifyTestMain(m)
@@ -78,7 +88,7 @@ func TestStackError(t *testing.T) {
 				"ong/errors/errors_test.go:30",
 				"ong/errors/errors_test.go:23",
 				"ong/errors/errors_test.go:17",
-				"ong/errors/errors_test.go:70",
+				"ong/errors/errors_test.go:80",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -97,7 +107,7 @@ func TestStackError(t *testing.T) {
 			for _, v := range []string{
 				"ong/errors/errors_test.go:45",
 				"ong/errors/errors_test.go:36",
-				"ong/errors/errors_test.go:90",
+				"ong/errors/errors_test.go:100",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -132,8 +142,8 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:114",
-				"ong/errors/errors_test.go:121",
+				"ong/errors/errors_test.go:124",
+				"ong/errors/errors_test.go:131",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
 			}
@@ -173,7 +183,7 @@ func TestStackError(t *testing.T) {
 			"ong/errors/errors_test.go:30",
 			"ong/errors/errors_test.go:23",
 			"ong/errors/errors_test.go:17",
-			"ong/errors/errors_test.go:165",
+			"ong/errors/errors_test.go:175",
 		} {
 			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
 		}
@@ -213,10 +223,32 @@ func TestStackError(t *testing.T) {
 		attest.True(t, stdErrors.Is(err, &stackError{}))
 		attest.Equal(t, err.Error(), "fmting: hey")
 		for _, v := range []string{
-			"ong/errors/errors_test.go:203",
-			"ong/errors/errors_test.go:210",
+			"ong/errors/errors_test.go:213",
+			"ong/errors/errors_test.go:220",
 		} {
 			attest.Subsequence(t, extendedFormatting, v, attest.Sprintf("\n\t%s: not found in extendedFormatting: %s", v, extendedFormatting))
+		}
+	})
+
+	t.Run("issues/466", func(t *testing.T) {
+		t.Parallel()
+
+		{ // success
+			var err error = apiError{err: New("hey")}
+			err = Wrap(err)
+			got := fmt.Sprintf("%+#v", err)
+
+			attest.Subsequence(t, got, "hey")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:237")
+		}
+
+		{ // nil
+			var err error = apiError{err: New("hey")}
+			err = nil
+			err = Wrap(err)
+			got := fmt.Sprintf("%+#v", err)
+
+			attest.Subsequence(t, got, "nil")
 		}
 	})
 }
@@ -238,7 +270,7 @@ func TestStackTrace(t *testing.T) {
 		{
 			err := New("hello")
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:239")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:271")
 		}
 		{
 			err := stdErrors.New("hello stdErrors")
@@ -250,14 +282,14 @@ func TestStackTrace(t *testing.T) {
 			err := Wrap(e1)
 
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:249")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:281")
 		}
 		{
 			e1 := New("hello")
 			err := Errorf("yolo: %w", e1)
 
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:256")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:288")
 		}
 		{
 			e1 := New("e1")
@@ -265,39 +297,7 @@ func TestStackTrace(t *testing.T) {
 			err := Join(e2, e1)
 
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:264")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:296")
 		}
-	})
-}
-
-type apiError struct{ err error }
-
-func (a apiError) Error() string { return a.err.Error() }
-
-func (a apiError) Unwrap() error { return a.err }
-
-func TestTodo(t *testing.T) {
-	t.Parallel()
-
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-
-		var err error = apiError{err: New("hey")}
-		err = Wrap(err)
-		got := fmt.Sprintf("%+#v", err)
-
-		attest.Subsequence(t, got, "hey")
-		attest.Subsequence(t, got, "ong/errors/errors_test.go:285")
-	})
-
-	t.Run("nil", func(t *testing.T) {
-		t.Parallel()
-
-		var err error = apiError{err: New("hey")}
-		err = nil
-		err = Wrap(err)
-		got := fmt.Sprintf("%+#v", err)
-
-		attest.Subsequence(t, got, "nil")
 	})
 }
