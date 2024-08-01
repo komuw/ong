@@ -284,7 +284,7 @@ func TestTodo(t *testing.T) {
 
 		var err error = apiError{err: New("hey")}
 		err = Wrap(err)
-		fmt.Printf("\n\n\t er: %+#v \n\n", err)
+		fmt.Printf("\n\n\t errrr: %+#v \n\n", err)
 	})
 
 	t.Run("nil", func(t *testing.T) {
@@ -293,6 +293,6 @@ func TestTodo(t *testing.T) {
 		var err error = apiError{err: New("hey")}
 		err = nil
 		err = Wrap(err)
-		fmt.Printf("\n\n\t er: %+#v \n\n", err)
+		fmt.Printf("\n\n\t errrr: %+#v \n\n", err)
 	})
 }
