@@ -243,8 +243,7 @@ func TestStackError(t *testing.T) {
 		}
 
 		{ // nil
-			var err error = myCustomErr{err: New("hey")}
-			err = nil
+			var err error = nil
 			err = Wrap(err)
 			got := fmt.Sprintf("%+#v", err)
 
@@ -270,7 +269,7 @@ func TestStackTrace(t *testing.T) {
 		{
 			err := New("hello")
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:271")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:270")
 		}
 		{
 			err := stdErrors.New("hello stdErrors")
@@ -282,14 +281,14 @@ func TestStackTrace(t *testing.T) {
 			err := Wrap(e1)
 
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:281")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:280")
 		}
 		{
 			e1 := New("hello")
 			err := Errorf("yolo: %w", e1)
 
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:288")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:287")
 		}
 		{
 			e1 := New("e1")
@@ -297,7 +296,7 @@ func TestStackTrace(t *testing.T) {
 			err := Join(e2, e1)
 
 			got := StackTrace(err)
-			attest.Subsequence(t, got, "ong/errors/errors_test.go:296")
+			attest.Subsequence(t, got, "ong/errors/errors_test.go:295")
 		}
 	})
 }
