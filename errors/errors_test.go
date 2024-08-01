@@ -269,3 +269,30 @@ func TestStackTrace(t *testing.T) {
 		}
 	})
 }
+
+type apiError struct{ err error }
+
+func (a apiError) Error() string { return a.err.Error() }
+
+func (a apiError) Unwrap() error { return a.err }
+
+func TestTodo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		var err error = apiError{err: New("hey")}
+		err = Wrap(err)
+		fmt.Printf("\n\n\t er: %+#v \n\n", err)
+	})
+
+	t.Run("nil", func(t *testing.T) {
+		t.Parallel()
+
+		var err error = apiError{err: New("hey")}
+		err = nil
+		err = Wrap(err)
+		fmt.Printf("\n\n\t er: %+#v \n\n", err)
+	})
+}
