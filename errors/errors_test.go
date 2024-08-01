@@ -58,7 +58,7 @@ type myCustomErr struct{ err error }
 func (a myCustomErr) Error() string { return a.err.Error() }
 
 func (a myCustomErr) Unwrap() error {
-	// This method is the one that causes issue.
+	// If you remove this method the issue does not reproduce.
 	// See; https://github.com/komuw/ong/issues/466
 	return a.err
 }
