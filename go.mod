@@ -3,9 +3,9 @@ module github.com/komuw/ong
 go 1.22
 
 require (
-	golang.org/x/crypto v0.25.0
-	golang.org/x/net v0.27.0
-	golang.org/x/sys v0.22.0
+	golang.org/x/crypto v0.26.0
+	golang.org/x/net v0.28.0
+	golang.org/x/sys v0.24.0
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 )
 
 require (
@@ -32,8 +32,8 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // test
 	github.com/tmthrgd/gziphandler v0.0.0-20210130054451-9e3dc377f14f // test
 	github.com/tsenart/vegeta/v12 v12.12.0 // test
-	go.akshayshah.org/attest v1.0.2 // test
+	go.akshayshah.org/attest v1.1.0 // test
 	go.uber.org/goleak v1.3.0 // test
 	go.uber.org/zap v1.27.0 // test
-	golang.org/x/sync v0.7.0 // test
+	golang.org/x/sync v0.8.0 // test
 )

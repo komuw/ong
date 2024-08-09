@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.6
+- Bump versions of dependencies used
+
 # v0.1.5
 - ong/errors: Fix panic when an error is already wrapped: https://github.com/komuw/ong/pull/467
 
