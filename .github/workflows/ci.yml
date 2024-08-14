@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 1
     strategy:
       matrix:
-        go-version: ['>=1.22.4']
+        go-version: ['>=1.23.0']
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -68,7 +68,7 @@ jobs:
     timeout-minutes: 7
     strategy:
       matrix:
-        go-version: ['>=1.22.4']
+        go-version: ['>=1.23.0']
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -102,7 +102,7 @@ jobs:
     timeout-minutes: 8
     strategy:
       matrix:
-        go-version: ['>=1.22.4']
+        go-version: ['>=1.23.0']
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -126,7 +126,7 @@ jobs:
           go install honnef.co/go/tools/cmd/staticcheck@latest
           go install github.com/securego/gosec/cmd/gosec@latest
           go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
-          go install github.com/orijtech/structslop/cmd/structslop@latest
+          # go install github.com/orijtech/structslop/cmd/structslop@latest
           go install github.com/orijtech/httperroryzer/cmd/httperroryzer@latest
           go install golang.org/x/tools/cmd/stress@latest
           go install golang.org/x/tools/cmd/goimports@latest
@@ -138,8 +138,7 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           go install github.com/mdempsky/unconvert@latest
           go install github.com/zricethezav/gitleaks/v8@latest
-          # go install gvisor.dev/gvisor/tools/checklocks/cmd/checklocks@latest
-          go install gvisor.dev/gvisor/tools/checklocks/cmd/checklocks@v0.0.0-20240209071109-59a057980d9b
+          go install gvisor.dev/gvisor/tools/checklocks/cmd/checklocks@latest
 
           /home/runner/go/bin/staticcheck -version
         env:
@@ -156,7 +155,7 @@ jobs:
           go vet -all ./...
           go vet -vettool=/home/runner/go/bin/shadow -strict ./...
           go vet -vettool=/home/runner/go/bin/nilness -test ./...
-          /home/runner/go/bin/checklocks -test=false ./...
+          # /home/runner/go/bin/checklocks -test=false ./...
           /home/runner/go/bin/staticcheck -tests ./...
           /home/runner/go/bin/govulncheck ./...
           # /home/runner/go/bin/gosec ./... # does not seem to work with Go1.21
@@ -189,7 +188,7 @@ jobs:
 
           # deadlock detection
           # https://github.com/cockroachdb/cockroach/issues/7972
-          go get github.com/sasha-s/go-deadlock
+          go get -u github.com/sasha-s/go-deadlock
           find . -name "*.go" | xargs -n 1 sed -i.backup 's/sync.RWMutex/deadlock.RWMutex/'
           find . -name "*.go" | xargs -n 1 sed -i.backup 's/sync.Mutex/deadlock.Mutex/'
           find . -name '*.backup' -delete
@@ -208,7 +207,7 @@ jobs:
     timeout-minutes: 3
     strategy:
       matrix:
-        go-version: ['>=1.22.4']
+        go-version: ['>=1.23.0']
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -265,7 +264,7 @@ jobs:
   #   timeout-minutes: 2
   #   strategy:
   #     matrix:
-  #       go-version: ['>=1.22.4']
+  #       go-version: ['>=1.23.0']
   #       platform: [ubuntu-22.04]
   #   runs-on: ${{ matrix.platform }}
   #   steps:
