@@ -31,9 +31,8 @@ func logger(
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		lrw := &logRW{
-			ResponseWriter: w,
-		}
+		lrw := &logRW{ResponseWriter: w}
+
 		defer func() {
 			flds := []any{
 				"clientIP", ClientIP(r),
