@@ -38,7 +38,15 @@ func recoverer(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 					extra := []any{"ongError", ongError}
 					flds = append(flds, extra...)
 				}
-				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
+
+				// Remove header so that users dont see it.
+				//
+				// Note that this may not actually work.
+				// According to: https://pkg.go.dev/net/http#ResponseWriter
+				// Changing the header map after a call to WriteHeader (or
+				// Write) has no effect unless the HTTP status code was of the
+				// 1xx class or the modified headers are trailers.
+				w.Header().Del(ongMiddlewareErrorHeader)
 
 				if e, ok := errR.(error); ok {
 					extra := []any{"err", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.

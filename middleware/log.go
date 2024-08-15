@@ -90,6 +90,37 @@ func logger(
 	}
 }
 
+// TODO:
+func doLog(w http.ResponseWriter, r http.Request, statusCode int, l *slog.Logger, fields []any) {
+	reqL := log.WithID(r.Context(), l)
+	msg := "http_server"
+
+	var rateShedSamplePercent int = 0 // TODO
+	if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
+		// We are either in load shedding or rate-limiting.
+		// Only log (rateShedSamplePercent)% of the errors.
+		shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
+		if shouldLog {
+			reqL.Error(msg, fields...)
+			return
+		}
+	}
+
+	if statusCode < http.StatusBadRequest {
+		reqL.Info(msg, fields...)
+		return
+	}
+
+	// Both client and server errors.
+	if statusCode == http.StatusNotFound || statusCode == http.StatusMethodNotAllowed || statusCode == http.StatusTeapot {
+		// These ones are more of an annoyance, than been actual errors.
+		reqL.Info(msg, fields...)
+		return
+	}
+
+	reqL.Info(msg, fields...)
+}
+
 // logRW provides an http.ResponseWriter interface, which logs requests/responses.
 type logRW struct {
 	http.ResponseWriter
