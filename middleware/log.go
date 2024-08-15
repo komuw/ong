@@ -37,7 +37,6 @@ func logger(
 			ResponseWriter: w,
 		}
 		defer func() {
-			msg := "http_server"
 			flds := []any{
 				"clientIP", ClientIP(r),
 				"clientFingerPrint", ClientFingerPrint(r),
@@ -61,29 +60,7 @@ func logger(
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
-			// The logger should be in the defer block so that it uses the updated context containing the logID.
-			reqL := log.WithID(r.Context(), l)
-
-			if (lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
-				// We are either in load shedding or rate-limiting.
-				// Only log (rateShedSamplePercent)% of the errors.
-				shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
-				if shouldLog {
-					reqL.Error(msg, flds...)
-				}
-			} else if lrw.code >= http.StatusBadRequest {
-				// Both client and server errors.
-				if lrw.code == http.StatusNotFound ||
-					lrw.code == http.StatusMethodNotAllowed ||
-					lrw.code == http.StatusTeapot {
-					// These ones are more of an annoyance, than been actual errors.
-					reqL.Info(msg, flds...)
-				} else {
-					reqL.Error(msg, flds...)
-				}
-			} else {
-				reqL.Info(msg, flds...)
-			}
+			doLog(w, *r, lrw.code, l, flds)
 		}()
 
 		wrappedHandler.ServeHTTP(lrw, r)

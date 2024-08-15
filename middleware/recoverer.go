@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/komuw/ong/errors"
-	"github.com/komuw/ong/log"
 )
 
 // Some of the code here is inspired(or taken from) by:
@@ -19,14 +18,10 @@ func recoverer(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 		defer func() {
 			errR := recover()
 			if errR != nil {
-				reqL := log.WithID(r.Context(), l)
-
 				code := http.StatusInternalServerError
 				status := http.StatusText(code)
 
-				msg := "http_server"
 				flds := []any{
-					"error", fmt.Sprint(errR),
 					"clientIP", ClientIP(r),
 					"clientFingerPrint", ClientFingerPrint(r),
 					"method", r.Method,
@@ -48,13 +43,13 @@ func recoverer(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 				// 1xx class or the modified headers are trailers.
 				w.Header().Del(ongMiddlewareErrorHeader)
 
+				extra := []any{"error", fmt.Sprint(errR)}
 				if e, ok := errR.(error); ok {
-					extra := []any{"err", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
-					flds = append(flds, extra...)
-					reqL.Error(msg, flds...)
-				} else {
-					reqL.Error(msg, flds...)
+					extra = []any{"error", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
 				}
+				flds = append(flds, extra...)
+
+				doLog(w, *r, code, l, flds)
 
 				// respond.
 				http.Error(
