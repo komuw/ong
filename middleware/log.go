@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 )
 
@@ -18,16 +17,10 @@ import (
 func logger(
 	wrappedHandler http.Handler,
 	l *slog.Logger,
-	rateShedSamplePercent int,
 ) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
-
-	// Note: a value of 0, disables logging of ratelimited and loadshed responses.
-	if rateShedSamplePercent < 0 {
-		rateShedSamplePercent = config.DefaultRateShedSamplePercent
-	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -69,8 +62,9 @@ func doLog(w http.ResponseWriter, r http.Request, statusCode int, l *slog.Logger
 	// Each request should get its own context. That's why we call `log.WithID` for every request.
 	reqL := log.WithID(r.Context(), l)
 	msg := "http_server"
+	// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
+	rateShedSamplePercent := 10
 
-	var rateShedSamplePercent int = 0 // TODO
 	if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
 		// We are either in load shedding or rate-limiting.
 		// Only log (rateShedSamplePercent)% of the errors.

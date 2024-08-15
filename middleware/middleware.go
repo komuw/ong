@@ -56,9 +56,6 @@ func allDefaultMiddlewares(
 	strategy := o.Strategy
 	l := o.Logger
 
-	// logger
-	rateShedSamplePercent := o.RateShedSamplePercent
-
 	// ratelimit
 	rateLimit := o.RateLimit
 
@@ -173,7 +170,6 @@ func allDefaultMiddlewares(
 							),
 						),
 						l,
-						rateShedSamplePercent,
 					),
 					l,
 				),

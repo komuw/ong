@@ -16,12 +16,6 @@ import (
 	"github.com/komuw/ong/internal/key"
 )
 
-// logging middleware.
-const (
-	// DefaultRateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
-	DefaultRateShedSamplePercent = 10
-)
-
 // ratelimit middleware.
 const (
 	// DefaultRateLimit is the maximum requests allowed (from one IP address) per second, by default.
@@ -201,8 +195,6 @@ func (o Opts) GoString() string {
 //
 // logger is an [slog.Logger] that will be used for logging.
 //
-// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [DefaultRateShedSamplePercent] is used instead.
-//
 // rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
 // loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
@@ -262,7 +254,6 @@ func New(
 	secretKey string,
 	strategy ClientIPstrategy,
 	logger *slog.Logger,
-	rateShedSamplePercent int,
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
@@ -296,7 +287,6 @@ func New(
 		secretKey,
 		strategy,
 		logger,
-		rateShedSamplePercent,
 		rateLimit,
 		loadShedSamplingPeriod,
 		loadShedMinSampleSize,
@@ -360,7 +350,6 @@ func WithOpts(
 		secretKey,
 		strategy,
 		logger,
-		DefaultRateShedSamplePercent,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -409,7 +398,6 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		secretKey,
 		clientip.DirectIpStrategy,
 		logger,
-		DefaultRateShedSamplePercent,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -465,7 +453,6 @@ func CertOpts(
 		secretKey,
 		clientip.DirectIpStrategy,
 		logger,
-		DefaultRateShedSamplePercent,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -524,7 +511,6 @@ func AcmeOpts(
 		secretKey,
 		clientip.DirectIpStrategy,
 		logger,
-		DefaultRateShedSamplePercent,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -582,7 +568,6 @@ func LetsEncryptOpts(
 		secretKey,
 		clientip.DirectIpStrategy,
 		logger,
-		DefaultRateShedSamplePercent,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -640,9 +625,6 @@ type middlewareOpts struct {
 	Strategy  ClientIPstrategy
 	Logger    *slog.Logger
 
-	// logger
-	RateShedSamplePercent int
-
 	// ratelimit
 	RateLimit float64
 
@@ -674,7 +656,6 @@ func (m middlewareOpts) String() string {
   SecretKey: %s,
   Strategy: %v,
   Logger: %v,
-  RateShedSamplePercent: %v,
   RateLimit: %v,
   LoadShedSamplingPeriod: %v,
   LoadShedMinSampleSize: %v,
@@ -693,7 +674,6 @@ func (m middlewareOpts) String() string {
 		m.SecretKey,
 		m.Strategy,
 		m.Logger,
-		m.RateShedSamplePercent,
 		m.RateLimit,
 		m.LoadShedSamplingPeriod,
 		m.LoadShedMinSampleSize,
@@ -720,7 +700,6 @@ func newMiddlewareOpts(
 	secretKey string,
 	strategy ClientIPstrategy,
 	logger *slog.Logger,
-	rateShedSamplePercent int,
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
@@ -774,9 +753,6 @@ func newMiddlewareOpts(
 		SecretKey: secureKey(secretKey),
 		Strategy:  strategy,
 		Logger:    logger,
-
-		// logger
-		RateShedSamplePercent: rateShedSamplePercent,
 
 		// ratelimiter
 		RateLimit: rateLimit,
@@ -1055,9 +1031,6 @@ func (o Opts) Equal(other Opts) bool {
 			return false
 		}
 
-		if o.RateShedSamplePercent != other.RateShedSamplePercent {
-			return false
-		}
 		if int(o.RateLimit) != int(other.RateLimit) {
 			return false
 		}

@@ -35,8 +35,6 @@ func validOpts(t *testing.T) Opts {
 		SingleIpStrategy("CF-Connecting-IP"),
 		// Logger.
 		l,
-		// log 90% of all responses that are either rate-limited or loadshed.
-		90,
 		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
 		13.0,
 		// Sample response latencies over a 5 minute window to determine if to loadshed.
@@ -135,7 +133,6 @@ func TestNewMiddlewareOpts(t *testing.T) {
 				string(opt.SecretKey),
 				opt.Strategy,
 				opt.Logger,
-				opt.RateShedSamplePercent,
 				opt.RateLimit,
 				opt.LoadShedSamplingPeriod,
 				opt.LoadShedMinSampleSize,
@@ -196,7 +193,6 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					tst.SecretKey(),
 					clientip.DirectIpStrategy,
 					slog.Default(),
-					DefaultRateShedSamplePercent,
 					DefaultRateLimit,
 					DefaultLoadShedSamplingPeriod,
 					DefaultLoadShedMinSampleSize,
@@ -218,7 +214,6 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					tst.SecretKey(),
 					clientip.DirectIpStrategy,
 					slog.Default(),
-					DefaultRateShedSamplePercent,
 					DefaultRateLimit,
 					DefaultLoadShedSamplingPeriod,
 					DefaultLoadShedMinSampleSize,
@@ -254,7 +249,6 @@ func TestOpts(t *testing.T) {
 				SecretKey:              secureKey(tst.SecretKey()),
 				Strategy:               clientip.DirectIpStrategy,
 				Logger:                 l,
-				RateShedSamplePercent:  DefaultRateShedSamplePercent,
 				RateLimit:              DefaultRateLimit,
 				LoadShedSamplingPeriod: DefaultLoadShedSamplingPeriod,
 				LoadShedMinSampleSize:  DefaultLoadShedMinSampleSize,

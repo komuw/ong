@@ -489,7 +489,6 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		tst.SecretKey(),
 		config.DirectIpStrategy,
 		l,
-		config.DefaultRateShedSamplePercent,
 		rateLimit,
 		config.DefaultLoadShedSamplingPeriod,
 		config.DefaultLoadShedMinSampleSize,
