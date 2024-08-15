@@ -4,19 +4,15 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log/slog"
-	mathRand "math/rand/v2"
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/komuw/ong/log"
 )
 
 // logger is a middleware that logs http requests and responses using [log.Logger].
 func logger(
 	wrappedHandler http.Handler,
-	l *slog.Logger,
+	doLog func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
 ) http.HandlerFunc {
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
@@ -50,44 +46,11 @@ func logger(
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
-			doLog(w, *r, lrw.code, l, flds)
+			doLog(w, *r, lrw.code, flds)
 		}()
 
 		wrappedHandler.ServeHTTP(lrw, r)
 	}
-}
-
-// TODO:
-func doLog(w http.ResponseWriter, r http.Request, statusCode int, l *slog.Logger, fields []any) {
-	// Each request should get its own context. That's why we call `log.WithID` for every request.
-	reqL := log.WithID(r.Context(), l)
-	msg := "http_server"
-	// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
-	rateShedSamplePercent := 10
-
-	if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
-		// We are either in load shedding or rate-limiting.
-		// Only log (rateShedSamplePercent)% of the errors.
-		shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
-		if shouldLog {
-			reqL.Error(msg, fields...)
-			return
-		}
-	}
-
-	if statusCode >= http.StatusBadRequest {
-		// Both client and server errors.
-		if statusCode == http.StatusNotFound || statusCode == http.StatusMethodNotAllowed || statusCode == http.StatusTeapot {
-			// These ones are more of an annoyance, than been actual errors.
-			reqL.Info(msg, fields...)
-			return
-		}
-
-		reqL.Error(msg, fields...)
-		return
-	}
-
-	reqL.Info(msg, fields...)
 }
 
 // logRW provides an http.ResponseWriter interface, which logs requests/responses.

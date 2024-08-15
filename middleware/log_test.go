@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	mathRand "math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -38,6 +39,42 @@ func someLogHandler(successMsg string) http.HandlerFunc {
 			fmt.Fprint(w, successMsg)
 			return
 		}
+	}
+}
+
+func toLog(t *testing.T, l *slog.Logger) func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+	t.Helper()
+
+	return func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+		// Each request should get its own context. That's why we call `log.WithID` for every request.
+		reqL := log.WithID(r.Context(), l)
+		msg := "http_server"
+		// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
+		rateShedSamplePercent := 10
+
+		if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
+			// We are either in load shedding or rate-limiting.
+			// Only log (rateShedSamplePercent)% of the errors.
+			shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
+			if shouldLog {
+				reqL.Error(msg, fields...)
+				return
+			}
+		}
+
+		if statusCode >= http.StatusBadRequest {
+			// Both client and server errors.
+			if statusCode == http.StatusNotFound || statusCode == http.StatusMethodNotAllowed || statusCode == http.StatusTeapot {
+				// These ones are more of an annoyance, than been actual errors.
+				reqL.Info(msg, fields...)
+				return
+			}
+
+			reqL.Error(msg, fields...)
+			return
+		}
+
+		reqL.Info(msg, fields...)
 	}
 }
 
