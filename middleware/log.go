@@ -83,15 +83,15 @@ func doLog(w http.ResponseWriter, r http.Request, statusCode int, l *slog.Logger
 		}
 	}
 
-	if statusCode < http.StatusBadRequest {
-		reqL.Info(msg, fields...)
-		return
-	}
+	if statusCode >= http.StatusBadRequest {
+		// Both client and server errors.
+		if statusCode == http.StatusNotFound || statusCode == http.StatusMethodNotAllowed || statusCode == http.StatusTeapot {
+			// These ones are more of an annoyance, than been actual errors.
+			reqL.Info(msg, fields...)
+			return
+		}
 
-	// Both client and server errors.
-	if statusCode == http.StatusNotFound || statusCode == http.StatusMethodNotAllowed || statusCode == http.StatusTeapot {
-		// These ones are more of an annoyance, than been actual errors.
-		reqL.Info(msg, fields...)
+		reqL.Error(msg, fields...)
 		return
 	}
 
