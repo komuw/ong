@@ -23,8 +23,6 @@ func logger(
 	// We pass the logger as an argument so that the middleware can share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
 	// This makes debugging easier for developers.
-	//
-	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
 
 	// Note: a value of 0, disables logging of ratelimited and loadshed responses.
 	if rateShedSamplePercent < 0 {
@@ -69,6 +67,7 @@ func logger(
 
 // TODO:
 func doLog(w http.ResponseWriter, r http.Request, statusCode int, l *slog.Logger, fields []any) {
+	// Each request should get its own context. That's why we call `log.WithID` for every request.
 	reqL := log.WithID(r.Context(), l)
 	msg := "http_server"
 
