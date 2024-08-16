@@ -27,12 +27,15 @@ const (
 func toLog(t *testing.T, l *slog.Logger) func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
 	t.Helper()
 
+	const (
+		msg = "http_server"
+		// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
+		rateShedSamplePercent = 10
+	)
+
 	return func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
 		// Each request should get its own context. That's why we call `log.WithID` for every request.
 		reqL := log.WithID(r.Context(), l)
-		msg := "http_server"
-		// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
-		rateShedSamplePercent := 10
 
 		if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
 			// We are either in load shedding or rate-limiting.
