@@ -14,8 +14,7 @@ func TestHash(t *testing.T) {
 		t.Parallel()
 
 		password := "hey ok"
-		hash, err := Hash(password)
-		attest.Ok(t, err)
+		hash := Hash(password)
 		attest.NotZero(t, hash)
 	})
 
@@ -23,11 +22,10 @@ func TestHash(t *testing.T) {
 		t.Parallel()
 
 		password := "hey ok"
-		hash, err := Hash(password)
-		attest.Ok(t, err)
+		hash := Hash(password)
 		attest.NotZero(t, hash)
 
-		err = Eql(password, hash)
+		err := Eql(password, hash)
 		attest.Ok(t, err)
 	})
 
@@ -35,12 +33,11 @@ func TestHash(t *testing.T) {
 		t.Parallel()
 
 		password := "hey ok"
-		hash, err := Hash(password)
-		attest.Ok(t, err)
+		hash := Hash(password)
 		attest.NotZero(t, hash)
 
 		hash = strings.ReplaceAll(hash, separator, "-")
-		err = Eql(password, hash)
+		err := Eql(password, hash)
 		attest.Error(t, err)
 	})
 }
