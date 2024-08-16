@@ -41,12 +41,9 @@ func ExampleEnc_EncryptEncode() {
 func ExampleHash() {
 	password := "my NSA-hard password"
 	// it is okay to save hashedPasswd to the database, as an example.
-	hashedPasswd, err := cry.Hash(password)
-	if err != nil {
-		panic(err)
-	}
+	hashedPasswd := cry.Hash(password)
 
-	err = cry.Eql(password, hashedPasswd)
+	err := cry.Eql(password, hashedPasswd)
 	if err != nil {
 		panic(err)
 	}

@@ -8,16 +8,16 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
+	"runtime"
 	"slices"
 
 	"github.com/komuw/ong/internal/key"
 
 	"golang.org/x/crypto/chacha20poly1305"
-	"golang.org/x/crypto/scrypt"
 )
 
 // Latacora recommends ChaCha20-Poly1305 for encryption.
-// https://latacora.micro.blog/2018/04/03/cryptographic-right-answers.html
+// https://www.latacora.com/blog/2024/07/29/crypto-right-answers-pq/
 //
 // The Go authors also recommend to use `crypto/cipher.NewGCM` or `XChaCha20-Poly1305`
 // https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/tea/cipher.go#L13-L14
@@ -35,14 +35,15 @@ import (
 const (
 	keyLen  = chacha20poly1305.KeySize
 	saltLen = 8
+)
+
+var (
 	//
-	// The values recommended as of year 2017 are:
-	// n=32768, r=8 and p=1
-	// https://pkg.go.dev/golang.org/x/crypto/scrypt#Key
-	//
-	n = 32768 // CPU/memory cost parameter.
-	r = 8     // r and p must satisfy r * p < 2³⁰, else [scrypt.Key] returns an error.
-	p = 1
+	// The values recommended are:
+	// golang.org/x/crypto/argon2
+	time    = uint32(1)               //nolint:gochecknoglobals
+	memory  = uint32(64 * 1024)       //nolint:gochecknoglobals  // 64MB
+	threads = uint8(runtime.NumCPU()) //nolint:gochecknoglobals
 )
 
 // Enc is an AEAD cipher mode providing authenticated encryption with associated data, ie [cipher.AEAD]
@@ -58,7 +59,7 @@ type Enc struct {
 //
 // It panics on error.
 //
-// It uses [scrypt] to derive the final key that will be used for encryption.
+// It uses argon2id to derive the final key that will be used for encryption.
 func New(secretKey string) Enc {
 	// I think it is okay for New to panic instead of returning an error.
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
@@ -71,16 +72,12 @@ func New(secretKey string) Enc {
 	// derive a key.
 	password := []byte(secretKey)
 	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
-	derivedKey, err := deriveKey(password, salt)
-	if err != nil {
-		panic(err)
-	}
+	derivedKey := deriveKey(password, salt)
 
 	/*
 		Another option would be to use argon2.
-		  import "golang.org/x/crypto/argon2"
-		  salt := rand(16, 16) // 16bytes are recommended
-		  key := argon2.Key( []byte("super-h@rd-Pas1word"), salt, 3, 32 * 1024, 4, keyLen)
+		  import "golang.org/x/crypto/scrypt"
+		  key := scrypt.Key("password", salt, 32768, 8, 1, keyLen)
 	*/
 
 	// xchacha20poly1305 takes a longer nonce, suitable to be generated randomly without risk of collisions.
@@ -136,10 +133,7 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if !slices.Equal(salt, e.salt) {
 		// The encryptedMsg was encrypted using a different salt.
 		// So, we need to get the derived key for that salt and use it for decryption.
-		derivedKey, errK := scrypt.Key(e.key, salt, n, r, p, keyLen)
-		if errK != nil {
-			return nil, errK
-		}
+		derivedKey := deriveKey(e.key, salt)
 
 		aead, err = chacha20poly1305.NewX(derivedKey)
 		if err != nil {
