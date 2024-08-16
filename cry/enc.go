@@ -41,9 +41,9 @@ var (
 	//
 	// The values recommended are:
 	// golang.org/x/crypto/argon2
-	time    = uint32(1)
-	memory  = uint32(64 * 1024) // 64MB
-	threads = uint8(runtime.NumCPU())
+	time    = uint32(1)               //nolint:gochecknoglobals
+	memory  = uint32(64 * 1024)       //nolint:gochecknoglobals  // 64MB
+	threads = uint8(runtime.NumCPU()) //nolint:gochecknoglobals
 )
 
 // Enc is an AEAD cipher mode providing authenticated encryption with associated data, ie [cipher.AEAD]
