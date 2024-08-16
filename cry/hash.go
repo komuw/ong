@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/crypto/scrypt"
+	"golang.org/x/crypto/argon2"
 )
 
 // Some of the code here is inspired by(or taken from):
@@ -20,23 +20,15 @@ const (
 	separator = "$"
 )
 
-func deriveKey(password, salt []byte) (derivedKey []byte, err error) {
-	derivedKey, err = scrypt.Key(password, salt, n, r, p, keyLen)
-	if err != nil {
-		return nil, err
-	}
-
-	return derivedKey, nil
+func deriveKey(password, salt []byte) []byte {
+	return argon2.IDKey(password, salt, time, memory, threads, keyLen)
 }
 
 // Hash returns the scrypt hash of the password.
 // It is safe to persist the result in your database instead of storing the actual password.
-func Hash(password string) (string, error) {
+func Hash(password string) string {
 	salt := random(saltLen, saltLen)
-	derivedKey, err := deriveKey([]byte(password), salt)
-	if err != nil {
-		return "", err
-	}
+	derivedKey := deriveKey([]byte(password), salt)
 
 	// Add version, salt to the derived key.
 	// The salt and the derived key are hex encoded.
@@ -47,7 +39,7 @@ func Hash(password string) (string, error) {
 		salt,
 		separator,
 		derivedKey,
-	), nil
+	)
 }
 
 // Eql performs a constant-time comparison between the password and the hash.
@@ -77,11 +69,7 @@ func Eql(password, hash string) error {
 		return err
 	}
 
-	dk, err := deriveKey([]byte(password), pSalt)
-	if err != nil {
-		return err
-	}
-
+	dk := deriveKey([]byte(password), pSalt)
 	if subtle.ConstantTimeCompare(dk, pDerivedKey) == 1 {
 		return nil
 	}
