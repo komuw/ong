@@ -15,16 +15,17 @@ import (
 //   (a) https://github.com/elithrar/simple-scrypt whose license(MIT) can be found here: https://github.com/elithrar/simple-scrypt/blob/v1.3.0/LICENSE
 
 const (
-	// this should be increased every time the parameters passed to [scrypt.Key] are changed.
+	// this should be increased every time the parameters passed to [argon2.IDKey] are changed.
 	version   = 1
 	separator = "$"
 )
 
 func deriveKey(password, salt []byte) []byte {
+	// IDKey is Argon2id
 	return argon2.IDKey(password, salt, time, memory, threads, keyLen)
 }
 
-// Hash returns the scrypt hash of the password.
+// Hash returns the argon2id hash of the password.
 // It is safe to persist the result in your database instead of storing the actual password.
 func Hash(password string) string {
 	salt := random(saltLen, saltLen)
