@@ -13,7 +13,6 @@ import (
 
 	"github.com/komuw/ong/internal/key"
 
-	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -134,7 +133,7 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	if !slices.Equal(salt, e.salt) {
 		// The encryptedMsg was encrypted using a different salt.
 		// So, we need to get the derived key for that salt and use it for decryption.
-		derivedKey := argon2.IDKey(e.key, salt, time, memory, threads, keyLen)
+		derivedKey := deriveKey(e.key, salt)
 
 		aead, err = chacha20poly1305.NewX(derivedKey)
 		if err != nil {
