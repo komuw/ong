@@ -41,6 +41,11 @@ const (
 	allowHeader = "Allow"
 )
 
+// TODO: remove
+func todoRemove(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+	return
+}
+
 // allDefaultMiddlewares is a middleware that bundles all the default/core middlewares into one.
 //
 // example usage:
@@ -168,7 +173,9 @@ func allDefaultMiddlewares(
 								rateLimit,
 							),
 						),
+						todoRemove,
 					),
+					todoRemove,
 				),
 			),
 			strategy,
