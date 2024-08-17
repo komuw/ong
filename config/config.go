@@ -195,6 +195,9 @@ func (o Opts) GoString() string {
 //
 // logger is an [slog.Logger] that will be used for logging.
 //
+// logFunc is a function that dictates what/how middleware is going to log. It is also used to log any recovered panics in the middleware.
+// If it is nil, no logging happens in the middleware. For server logging, see [logger]
+//
 // rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
 // loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
@@ -215,6 +218,8 @@ func (o Opts) GoString() string {
 // sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
 // sessionAntiReplayFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
 // If it is nil, [DefaultSessionAntiReplayFunc] is used instead.
+//
+// logger is an [slog.Logger] that will be used for logging in the server but not middleware. For middleware see [logFunc]
 //
 // maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
 //

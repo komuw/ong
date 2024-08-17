@@ -12,11 +12,12 @@ import (
 // logger is a middleware that logs http requests and responses using [log.Logger].
 func logger(
 	wrappedHandler http.Handler,
-	doLog func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
+	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
 ) http.HandlerFunc {
-	// We pass the logger as an argument so that the middleware can share the same logger as the app.
+	// The middleware should ideally share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
-	// This makes debugging easier for developers.
+	// That's one reason why we pass in the logFunc.This makes debugging easier for developers.
+	// Another reason is so that app developers are in control of what(and how) exactly gets logged.
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -46,7 +47,9 @@ func logger(
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
-			doLog(w, *r, lrw.code, flds)
+			if logFunc != nil {
+				logFunc(w, *r, lrw.code, flds)
+			}
 		}()
 
 		wrappedHandler.ServeHTTP(lrw, r)
