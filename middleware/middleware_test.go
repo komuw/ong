@@ -486,6 +486,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	o := config.New(
 		domain,
 		httpsPort,
+		l,
 		tst.SecretKey(),
 		config.DirectIpStrategy,
 		nil,
@@ -501,7 +502,6 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		config.DefaultCsrfCookieDuration,
 		config.DefaultSessionCookieDuration,
 		config.DefaultSessionAntiReplayFunc,
-		l,
 		20*1024*1024,
 		slog.LevelDebug,
 		1*time.Second,

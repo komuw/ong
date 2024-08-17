@@ -56,6 +56,7 @@ func allDefaultMiddlewares(
 	strategy := o.Strategy
 
 	// logger
+	l := o.Logger
 	logFunc := o.LogFunc
 
 	// ratelimit
@@ -172,8 +173,10 @@ func allDefaultMiddlewares(
 							),
 						),
 						logFunc,
+						l,
 					),
 					logFunc,
+					l,
 				),
 			),
 			strategy,

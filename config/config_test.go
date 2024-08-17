@@ -29,6 +29,8 @@ func validOpts(t *testing.T) Opts {
 		"example.com",
 		// The https port that our application will be listening on.
 		443,
+		// Logger.
+		l,
 		// The security key to use for securing signed data.
 		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
@@ -63,8 +65,6 @@ func validOpts(t *testing.T) Opts {
 		// Use a given header to try and mitigate against replay-attacks.
 		func(r http.Request) string { return r.Header.Get("Anti-Replay") },
 		//
-		// Logger.
-		l,
 		// The maximum size in bytes for incoming request bodies.
 		2*1024*1024,
 		// Log level of the logger that will be passed into [http.Server.ErrorLog]
@@ -135,6 +135,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 			o, err := newMiddlewareOpts(
 				opt.Domain,
 				opt.HttpsPort,
+				slog.Default(),
 				string(opt.SecretKey),
 				opt.Strategy,
 				nil,
@@ -195,6 +196,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 				_, err := newMiddlewareOpts(
 					tt.domain,
 					443,
+					slog.Default(),
 					tst.SecretKey(),
 					clientip.DirectIpStrategy,
 					nil,
@@ -216,6 +218,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 				_, err := newMiddlewareOpts(
 					tt.domain,
 					443,
+					slog.Default(),
 					tst.SecretKey(),
 					clientip.DirectIpStrategy,
 					nil,

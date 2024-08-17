@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/komuw/ong/errors"
@@ -15,9 +16,14 @@ import (
 func recoverer(
 	wrappedHandler http.Handler,
 	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
+	l *slog.Logger,
 ) http.HandlerFunc {
 	code := http.StatusInternalServerError
 	status := http.StatusText(code)
+
+	if logFunc == nil {
+		logFunc = defaultLogFunc(l)
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -52,9 +58,7 @@ func recoverer(
 				}
 				flds = append(flds, extra...)
 
-				if logFunc != nil {
-					logFunc(w, *r, code, flds)
-				}
+				logFunc(w, *r, code, flds)
 
 				// respond.
 				http.Error(

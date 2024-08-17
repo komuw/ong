@@ -3,6 +3,7 @@ package config
 
 import (
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -187,16 +188,17 @@ func (o Opts) GoString() string {
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 // port is the TLS port where the server will listen on. Http requests will also redirected to that port.
 //
+// logger is an [slog.Logger] that will be used for logging.
+//
 // secretKey is used for securing signed data. It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
 //
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
 // It is important to choose your strategy carefully, see the warning in [ClientIPstrategy].
 //
-// logger is an [slog.Logger] that will be used for logging.
-//
 // logFunc is a function that dictates what/how middleware is going to log. It is also used to log any recovered panics in the middleware.
-// If it is nil, no logging happens in the middleware. For server logging, see [logger]
+// This function is not used in the server.
+// If it is nil, a suitable default is used. To disable logging, use a function that does nothing.
 //
 // rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
@@ -218,8 +220,6 @@ func (o Opts) GoString() string {
 // sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
 // sessionAntiReplayFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
 // If it is nil, [DefaultSessionAntiReplayFunc] is used instead.
-//
-// logger is an [slog.Logger] that will be used for logging in the server but not middleware. For middleware see [logFunc]
 //
 // maxBodyBytes is the maximum size in bytes for incoming request bodies. If this is zero, a reasonable default is used.
 //
@@ -254,6 +254,7 @@ func New(
 	// common
 	domain string,
 	port uint16,
+	logger *slog.Logger,
 
 	// middleware
 	secretKey string,
@@ -272,7 +273,6 @@ func New(
 	sessionCookieDuration time.Duration,
 	sessionAntiReplayFunc func(r http.Request) string,
 	// server
-	logger *slog.Logger,
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
 	readHeaderTimeout time.Duration,
@@ -290,6 +290,7 @@ func New(
 	middlewareOpts, err := newMiddlewareOpts(
 		domain,
 		port,
+		logger,
 		secretKey,
 		strategy,
 		logFunc,
@@ -315,7 +316,6 @@ func New(
 		serverOpts: newServerOpts(
 			domain,
 			port,
-			logger,
 			maxBodyBytes,
 			serverLogLevel,
 			readHeaderTimeout,
@@ -352,6 +352,7 @@ func WithOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
@@ -370,7 +371,6 @@ func WithOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
-		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -401,6 +401,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
@@ -419,7 +420,6 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
-		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -457,6 +457,7 @@ func CertOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
@@ -475,7 +476,6 @@ func CertOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
-		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -516,6 +516,7 @@ func AcmeOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
@@ -534,7 +535,6 @@ func AcmeOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
-		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -574,6 +574,7 @@ func LetsEncryptOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
@@ -592,7 +593,6 @@ func LetsEncryptOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
-		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -629,6 +629,8 @@ func (s secureKey) GoString() string {
 type middlewareOpts struct {
 	Domain    string
 	HttpsPort uint16
+	Logger    *slog.Logger
+
 	// When printing a struct, fmt does not invoke custom formatting methods on unexported fields.
 	// We thus need to make this field to be exported.
 	// - https://pkg.go.dev/fmt#:~:text=When%20printing%20a%20struct
@@ -707,6 +709,7 @@ func (m middlewareOpts) GoString() string {
 func newMiddlewareOpts(
 	domain string,
 	httpsPort uint16,
+	logger *slog.Logger,
 	secretKey string,
 	strategy ClientIPstrategy,
 	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
@@ -730,6 +733,10 @@ func newMiddlewareOpts(
 	if strings.Contains(domain, "*") {
 		// remove the `*` and `.`
 		domain = domain[2:]
+	}
+
+	if logger == nil && logFunc == nil {
+		return middlewareOpts{}, errors.New("both logger and logFunc should not be nil at the same time")
 	}
 
 	if err := key.IsSecure(secretKey); err != nil {
@@ -760,6 +767,7 @@ func newMiddlewareOpts(
 	return middlewareOpts{
 		Domain:    domain,
 		HttpsPort: httpsPort,
+		Logger:    logger,
 		SecretKey: secureKey(secretKey),
 		Strategy:  strategy,
 		LogFunc:   logFunc,
@@ -831,7 +839,6 @@ func (t tlsOpts) GoString() string {
 // serverOpts are the various parameters(optionals) that can be used to configure a HTTP server.
 type serverOpts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
-	Logger            *slog.Logger
 	MaxBodyBytes      uint64 // max size of request body allowed.
 	ServerLogLevel    slog.Level
 	ReadHeaderTimeout time.Duration
@@ -853,7 +860,6 @@ type serverOpts struct {
 func newServerOpts(
 	domain string,
 	port uint16,
-	logger *slog.Logger,
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
 	readHeaderTimeout time.Duration,
@@ -899,7 +905,6 @@ func newServerOpts(
 
 	return serverOpts{
 		port:              port,
-		Logger:            logger,
 		MaxBodyBytes:      maxBodyBytes,
 		ServerLogLevel:    serverLogLevel,
 		ReadHeaderTimeout: readHeaderTimeout,
@@ -930,7 +935,6 @@ func newServerOpts(
 func (s serverOpts) String() string {
 	return fmt.Sprintf(`serverOpts{
   port: %v,
-  Logger: %v,
   MaxBodyBytes: %v,
   ServerLogLevel: %v,
   ReadHeaderTimeout: %v,
@@ -946,7 +950,6 @@ func (s serverOpts) String() string {
   HttpPort: %v,
 }`,
 		s.port,
-		s.Logger,
 		s.MaxBodyBytes,
 		s.ServerLogLevel,
 		s.ReadHeaderTimeout,
