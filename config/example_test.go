@@ -32,7 +32,7 @@ func ExampleNew() {
 		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
 		config.SingleIpStrategy("CF-Connecting-IP"),
-		// function to log in middlewares.
+		// function to use for logging in middlewares
 		func(_ http.ResponseWriter, r http.Request, statusCode int, fields []any) {
 			if statusCode >= http.StatusInternalServerError {
 				// Only log 500's

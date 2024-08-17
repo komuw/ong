@@ -35,7 +35,7 @@ func validOpts(t *testing.T) Opts {
 		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
 		SingleIpStrategy("CF-Connecting-IP"),
-		// function to log in middlewares.
+		// function to use for logging in middlewares.
 		func(_ http.ResponseWriter, r http.Request, statusCode int, fields []any) {
 			reqL := log.WithID(r.Context(), l)
 			reqL.Info("request-and-response", fields...)
