@@ -214,6 +214,28 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Zero(t, logOutput.String())
 	})
 
+	t.Run("nil logger and logfunc", func(t *testing.T) {
+		t.Parallel()
+
+		logOutput := &bytes.Buffer{}
+		successMsg := "hello"
+		wrappedHandler := logger(someLogHandler(successMsg), nil, nil)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), successMsg)
+		attest.Zero(t, logOutput.String())
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
