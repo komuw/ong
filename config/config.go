@@ -188,7 +188,7 @@ func (o Opts) GoString() string {
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 // port is the TLS port where the server will listen on. Http requests will also redirected to that port.
 //
-// logger is an [slog.Logger] that will be used for logging.
+// logger is an [slog.Logger] that will be used for logging. It is used in the server, it's use in middlewares is only if [logFunc] is nil.
 //
 // secretKey is used for securing signed data. It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
@@ -198,7 +198,7 @@ func (o Opts) GoString() string {
 //
 // logFunc is a function that dictates what/how middleware is going to log. It is also used to log any recovered panics in the middleware.
 // This function is not used in the server.
-// If it is nil, a suitable default is used. To disable logging, use a function that does nothing.
+// If it is nil, a suitable default(that utilizes [logger]) is used. To disable logging, use a function that does nothing.
 //
 // rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
