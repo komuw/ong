@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/id"
 	"github.com/komuw/ong/log"
 
@@ -54,7 +53,7 @@ func TestLogMiddleware(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput), config.DefaultRateShedSamplePercent)
+		wrappedHandler := logger(someLogHandler(successMsg), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -77,7 +76,7 @@ func TestLogMiddleware(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		errorMsg := "someLogHandler failed"
 		successMsg := "hello"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput), config.DefaultRateShedSamplePercent)
+		wrappedHandler := logger(someLogHandler(successMsg), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -113,7 +112,7 @@ func TestLogMiddleware(t *testing.T) {
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
 		errorMsg := "someLogHandler failed"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput), config.DefaultRateShedSamplePercent)
+		wrappedHandler := logger(someLogHandler(successMsg), nil, getLogger(logOutput))
 
 		{
 			// first request that succeds
@@ -192,7 +191,7 @@ func TestLogMiddleware(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		successMsg := "hello"
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput), config.DefaultRateShedSamplePercent)
+		wrappedHandler := logger(someLogHandler(successMsg), nil, getLogger(logOutput))
 
 		someLogID := "hey-some-log-id:" + id.New()
 
@@ -215,6 +214,28 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Zero(t, logOutput.String())
 	})
 
+	t.Run("nil logger and logfunc", func(t *testing.T) {
+		t.Parallel()
+
+		logOutput := &bytes.Buffer{}
+		successMsg := "hello"
+		wrappedHandler := logger(someLogHandler(successMsg), nil, nil)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), successMsg)
+		attest.Zero(t, logOutput.String())
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
@@ -222,7 +243,7 @@ func TestLogMiddleware(t *testing.T) {
 		successMsg := "hello"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := logger(someLogHandler(successMsg), getLogger(logOutput), config.DefaultRateShedSamplePercent)
+		wrappedHandler := logger(someLogHandler(successMsg), nil, getLogger(logOutput))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()

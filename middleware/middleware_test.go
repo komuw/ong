@@ -486,10 +486,10 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 	o := config.New(
 		domain,
 		httpsPort,
+		l,
 		tst.SecretKey(),
 		config.DirectIpStrategy,
-		l,
-		config.DefaultRateShedSamplePercent,
+		nil,
 		rateLimit,
 		config.DefaultLoadShedSamplingPeriod,
 		config.DefaultLoadShedMinSampleSize,

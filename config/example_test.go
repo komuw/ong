@@ -26,14 +26,21 @@ func ExampleNew() {
 		"example.com",
 		// The https port that our application will be listening on.
 		443,
+		// Logger.
+		l,
 		// The security key to use for securing signed data.
 		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
 		config.SingleIpStrategy("CF-Connecting-IP"),
-		// Logger.
-		l,
-		// log 90% of all responses that are either rate-limited or loadshed.
-		90,
+		// function to use for logging in middlewares
+		func(_ http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+			if statusCode >= http.StatusInternalServerError {
+				// Only log 500's
+				reqL := log.WithID(r.Context(), l)
+				fields = append(fields, "statusCode", statusCode)
+				reqL.Info("request-and-response", fields...)
+			}
+		},
 		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
 		13.0,
 		// Sample response latencies over a 5 minute window to determine if to loadshed.

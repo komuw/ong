@@ -3,6 +3,7 @@ package config
 
 import (
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -14,12 +15,6 @@ import (
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/clientip"
 	"github.com/komuw/ong/internal/key"
-)
-
-// logging middleware.
-const (
-	// DefaultRateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
-	DefaultRateShedSamplePercent = 10
 )
 
 // ratelimit middleware.
@@ -193,15 +188,17 @@ func (o Opts) GoString() string {
 // domain is the domain name of your website. It can be an exact domain, subdomain or wildcard.
 // port is the TLS port where the server will listen on. Http requests will also redirected to that port.
 //
+// logger is an [slog.Logger] that will be used for logging. It is used in the server, it's use in middlewares is only if [logFunc] is nil.
+//
 // secretKey is used for securing signed data. It should be unique & kept secret.
 // If it becomes compromised, generate a new one and restart your application using the new one.
 //
 // strategy is the algorithm to use when fetching the client's IP address; see [ClientIPstrategy].
 // It is important to choose your strategy carefully, see the warning in [ClientIPstrategy].
 //
-// logger is an [slog.Logger] that will be used for logging.
-//
-// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors. If it is less than 0, [DefaultRateShedSamplePercent] is used instead.
+// logFunc is a function that dictates what/how middleware is going to log. It is also used to log any recovered panics in the middleware.
+// This function is not used in the server.
+// If it is nil, a suitable default(that utilizes [logger]) is used. To disable logging, use a function that does nothing.
 //
 // rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
 //
@@ -257,12 +254,12 @@ func New(
 	// common
 	domain string,
 	port uint16,
+	logger *slog.Logger,
 
 	// middleware
 	secretKey string,
 	strategy ClientIPstrategy,
-	logger *slog.Logger,
-	rateShedSamplePercent int,
+	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
@@ -293,10 +290,10 @@ func New(
 	middlewareOpts, err := newMiddlewareOpts(
 		domain,
 		port,
+		logger,
 		secretKey,
 		strategy,
-		logger,
-		rateShedSamplePercent,
+		logFunc,
 		rateLimit,
 		loadShedSamplingPeriod,
 		loadShedMinSampleSize,
@@ -355,12 +352,12 @@ func WithOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
 		strategy,
-		logger,
-		DefaultRateShedSamplePercent,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -404,12 +401,12 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
-		DefaultRateShedSamplePercent,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -460,12 +457,12 @@ func CertOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
-		DefaultRateShedSamplePercent,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -519,12 +516,12 @@ func AcmeOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
-		DefaultRateShedSamplePercent,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -577,12 +574,12 @@ func LetsEncryptOpts(
 		// common
 		domain,
 		httpsPort,
+		logger,
 
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
-		DefaultRateShedSamplePercent,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -632,16 +629,15 @@ func (s secureKey) GoString() string {
 type middlewareOpts struct {
 	Domain    string
 	HttpsPort uint16
+	Logger    *slog.Logger
+
 	// When printing a struct, fmt does not invoke custom formatting methods on unexported fields.
 	// We thus need to make this field to be exported.
 	// - https://pkg.go.dev/fmt#:~:text=When%20printing%20a%20struct
 	// - https://go.dev/play/p/wL2gqumZ23b
 	SecretKey secureKey
 	Strategy  ClientIPstrategy
-	Logger    *slog.Logger
-
-	// logger
-	RateShedSamplePercent int
+	LogFunc   func(w http.ResponseWriter, r http.Request, statusCode int, fields []any)
 
 	// ratelimit
 	RateLimit float64
@@ -673,8 +669,6 @@ func (m middlewareOpts) String() string {
   HttpsPort: %d,
   SecretKey: %s,
   Strategy: %v,
-  Logger: %v,
-  RateShedSamplePercent: %v,
   RateLimit: %v,
   LoadShedSamplingPeriod: %v,
   LoadShedMinSampleSize: %v,
@@ -692,8 +686,6 @@ func (m middlewareOpts) String() string {
 		m.HttpsPort,
 		m.SecretKey,
 		m.Strategy,
-		m.Logger,
-		m.RateShedSamplePercent,
 		m.RateLimit,
 		m.LoadShedSamplingPeriod,
 		m.LoadShedMinSampleSize,
@@ -717,10 +709,10 @@ func (m middlewareOpts) GoString() string {
 func newMiddlewareOpts(
 	domain string,
 	httpsPort uint16,
+	logger *slog.Logger,
 	secretKey string,
 	strategy ClientIPstrategy,
-	logger *slog.Logger,
-	rateShedSamplePercent int,
+	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
@@ -741,6 +733,10 @@ func newMiddlewareOpts(
 	if strings.Contains(domain, "*") {
 		// remove the `*` and `.`
 		domain = domain[2:]
+	}
+
+	if logger == nil && logFunc == nil {
+		return middlewareOpts{}, errors.New("both logger and logFunc should not be nil at the same time")
 	}
 
 	if err := key.IsSecure(secretKey); err != nil {
@@ -771,12 +767,10 @@ func newMiddlewareOpts(
 	return middlewareOpts{
 		Domain:    domain,
 		HttpsPort: httpsPort,
+		Logger:    logger,
 		SecretKey: secureKey(secretKey),
 		Strategy:  strategy,
-		Logger:    logger,
-
-		// logger
-		RateShedSamplePercent: rateShedSamplePercent,
+		LogFunc:   logFunc,
 
 		// ratelimiter
 		RateLimit: rateLimit,
@@ -1051,13 +1045,7 @@ func (o Opts) Equal(other Opts) bool {
 		if o.Strategy != other.Strategy {
 			return false
 		}
-		if o.Logger != other.Logger {
-			return false
-		}
 
-		if o.RateShedSamplePercent != other.RateShedSamplePercent {
-			return false
-		}
 		if int(o.RateLimit) != int(other.RateLimit) {
 			return false
 		}

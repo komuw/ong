@@ -54,10 +54,10 @@ func allDefaultMiddlewares(
 	httpsPort := o.HttpsPort
 	secretKey := o.SecretKey
 	strategy := o.Strategy
-	l := o.Logger
 
 	// logger
-	rateShedSamplePercent := o.RateShedSamplePercent
+	l := o.Logger
+	logFunc := o.LogFunc
 
 	// ratelimit
 	rateLimit := o.RateLimit
@@ -172,9 +172,10 @@ func allDefaultMiddlewares(
 								rateLimit,
 							),
 						),
+						logFunc,
 						l,
-						rateShedSamplePercent,
 					),
+					logFunc,
 					l,
 				),
 			),

@@ -6,6 +6,7 @@ Most recent version is listed first.
 # v0.1.7
 - Update go version; https://github.com/komuw/ong/pull/469
 - ong/cry: Replace scrypt with argon2id: https://github.com/komuw/ong/pull/471
+- ong/middleware: Give users control over what and how logging happens in the middlewares: https://github.com/komuw/ong/pull/472
 
 # v0.1.6
 - Bump versions of dependencies used

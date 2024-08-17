@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/komuw/ong/errors"
-	"github.com/komuw/ong/log"
 )
 
 // Some of the code here is inspired(or taken from) by:
@@ -14,19 +13,24 @@ import (
 
 // recoverer is a middleware that recovers from panics in wrappedHandler.
 // When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
-func recoverer(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
+func recoverer(
+	wrappedHandler http.Handler,
+	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
+	l *slog.Logger,
+) http.HandlerFunc {
+	code := http.StatusInternalServerError
+	status := http.StatusText(code)
+
+	if logFunc == nil {
+		logFunc = defaultLogFunc(l)
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			errR := recover()
 			if errR != nil {
-				reqL := log.WithID(r.Context(), l)
 
-				code := http.StatusInternalServerError
-				status := http.StatusText(code)
-
-				msg := "http_server"
 				flds := []any{
-					"error", fmt.Sprint(errR),
 					"clientIP", ClientIP(r),
 					"clientFingerPrint", ClientFingerPrint(r),
 					"method", r.Method,
@@ -38,15 +42,23 @@ func recoverer(wrappedHandler http.Handler, l *slog.Logger) http.HandlerFunc {
 					extra := []any{"ongError", ongError}
 					flds = append(flds, extra...)
 				}
-				w.Header().Del(ongMiddlewareErrorHeader) // remove header so that users dont see it.
 
+				// Remove header so that users dont see it.
+				//
+				// Note that this may not actually work.
+				// According to: https://pkg.go.dev/net/http#ResponseWriter
+				// Changing the header map after a call to WriteHeader (or
+				// Write) has no effect unless the HTTP status code was of the
+				// 1xx class or the modified headers are trailers.
+				w.Header().Del(ongMiddlewareErrorHeader)
+
+				extra := []any{"error", fmt.Sprint(errR)}
 				if e, ok := errR.(error); ok {
-					extra := []any{"err", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
-					flds = append(flds, extra...)
-					reqL.Error(msg, flds...)
-				} else {
-					reqL.Error(msg, flds...)
+					extra = []any{"error", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
 				}
+				flds = append(flds, extra...)
+
+				logFunc(w, *r, code, flds)
 
 				// respond.
 				http.Error(

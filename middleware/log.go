@@ -10,34 +10,28 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/log"
 )
 
 // logger is a middleware that logs http requests and responses using [log.Logger].
 func logger(
 	wrappedHandler http.Handler,
+	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
 	l *slog.Logger,
-	rateShedSamplePercent int,
 ) http.HandlerFunc {
-	// We pass the logger as an argument so that the middleware can share the same logger as the app.
+	// The middleware should ideally share the same logger as the app.
 	// That way, if the app logs an error, the middleware logs are also flushed.
-	// This makes debugging easier for developers.
-	//
-	// However, each request should get its own context. That's why we call `logger.WithCtx` for every request.
-
-	// Note: a value of 0, disables logging of ratelimited and loadshed responses.
-	if rateShedSamplePercent < 0 {
-		rateShedSamplePercent = config.DefaultRateShedSamplePercent
+	// That's one reason why we pass in the logFunc.This makes debugging easier for developers.
+	// Another reason is so that app developers are in control of what(and how) exactly gets logged.
+	if logFunc == nil {
+		logFunc = defaultLogFunc(l)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		lrw := &logRW{
-			ResponseWriter: w,
-		}
+		lrw := &logRW{ResponseWriter: w}
+
 		defer func() {
-			msg := "http_server"
 			flds := []any{
 				"clientIP", ClientIP(r),
 				"clientFingerPrint", ClientFingerPrint(r),
@@ -61,29 +55,7 @@ func logger(
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
-			// The logger should be in the defer block so that it uses the updated context containing the logID.
-			reqL := log.WithID(r.Context(), l)
-
-			if (lrw.code == http.StatusServiceUnavailable || lrw.code == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
-				// We are either in load shedding or rate-limiting.
-				// Only log (rateShedSamplePercent)% of the errors.
-				shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
-				if shouldLog {
-					reqL.Error(msg, flds...)
-				}
-			} else if lrw.code >= http.StatusBadRequest {
-				// Both client and server errors.
-				if lrw.code == http.StatusNotFound ||
-					lrw.code == http.StatusMethodNotAllowed ||
-					lrw.code == http.StatusTeapot {
-					// These ones are more of an annoyance, than been actual errors.
-					reqL.Info(msg, flds...)
-				} else {
-					reqL.Error(msg, flds...)
-				}
-			} else {
-				reqL.Info(msg, flds...)
-			}
+			logFunc(w, *r, lrw.code, flds)
 		}()
 
 		wrappedHandler.ServeHTTP(lrw, r)
@@ -179,4 +151,46 @@ func (lrw *logRW) ReadFrom(src io.Reader) (n int64, err error) {
 // which is necessary for http.ResponseController to work correctly.
 func (lrw *logRW) Unwrap() http.ResponseWriter {
 	return lrw.ResponseWriter
+}
+
+// defaultLogFunc is the logging function used if the user did not explicitly provide one.
+func defaultLogFunc(l *slog.Logger) func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+	const (
+		msg = "http_server"
+		// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
+		rateShedSamplePercent = 10
+	)
+
+	if l == nil {
+		return func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {}
+	}
+
+	return func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+		// Each request should get its own context. That's why we call `log.WithID` for every request.
+		reqL := log.WithID(r.Context(), l)
+
+		if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
+			// We are either in load shedding or rate-limiting.
+			// Only log (rateShedSamplePercent)% of the errors.
+			shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
+			if shouldLog {
+				reqL.Error(msg, fields...)
+				return
+			}
+		}
+
+		if statusCode >= http.StatusBadRequest {
+			// Both client and server errors.
+			if statusCode == http.StatusNotFound || statusCode == http.StatusMethodNotAllowed || statusCode == http.StatusTeapot {
+				// These ones are more of an annoyance, than been actual errors.
+				reqL.Info(msg, fields...)
+				return
+			}
+
+			reqL.Error(msg, fields...)
+			return
+		}
+
+		reqL.Info(msg, fields...)
+	}
 }

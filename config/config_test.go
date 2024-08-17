@@ -29,14 +29,17 @@ func validOpts(t *testing.T) Opts {
 		"example.com",
 		// The https port that our application will be listening on.
 		443,
+		// Logger.
+		l,
 		// The security key to use for securing signed data.
 		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
 		SingleIpStrategy("CF-Connecting-IP"),
-		// Logger.
-		l,
-		// log 90% of all responses that are either rate-limited or loadshed.
-		90,
+		// function to use for logging in middlewares.
+		func(_ http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+			reqL := log.WithID(r.Context(), l)
+			reqL.Info("request-and-response", fields...)
+		},
 		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
 		13.0,
 		// Sample response latencies over a 5 minute window to determine if to loadshed.
@@ -132,10 +135,10 @@ func TestNewMiddlewareOpts(t *testing.T) {
 			o, err := newMiddlewareOpts(
 				opt.Domain,
 				opt.HttpsPort,
+				slog.Default(),
 				string(opt.SecretKey),
 				opt.Strategy,
-				opt.Logger,
-				opt.RateShedSamplePercent,
+				nil,
 				opt.RateLimit,
 				opt.LoadShedSamplingPeriod,
 				opt.LoadShedMinSampleSize,
@@ -193,10 +196,10 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 				_, err := newMiddlewareOpts(
 					tt.domain,
 					443,
+					slog.Default(),
 					tst.SecretKey(),
 					clientip.DirectIpStrategy,
-					slog.Default(),
-					DefaultRateShedSamplePercent,
+					nil,
 					DefaultRateLimit,
 					DefaultLoadShedSamplingPeriod,
 					DefaultLoadShedMinSampleSize,
@@ -215,10 +218,10 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 				_, err := newMiddlewareOpts(
 					tt.domain,
 					443,
+					slog.Default(),
 					tst.SecretKey(),
 					clientip.DirectIpStrategy,
-					slog.Default(),
-					DefaultRateShedSamplePercent,
+					nil,
 					DefaultRateLimit,
 					DefaultLoadShedSamplingPeriod,
 					DefaultLoadShedMinSampleSize,
@@ -253,8 +256,7 @@ func TestOpts(t *testing.T) {
 				HttpsPort:              65081,
 				SecretKey:              secureKey(tst.SecretKey()),
 				Strategy:               clientip.DirectIpStrategy,
-				Logger:                 l,
-				RateShedSamplePercent:  DefaultRateShedSamplePercent,
+				LogFunc:                nil,
 				RateLimit:              DefaultRateLimit,
 				LoadShedSamplingPeriod: DefaultLoadShedSamplingPeriod,
 				LoadShedMinSampleSize:  DefaultLoadShedMinSampleSize,

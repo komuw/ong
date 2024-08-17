@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -57,7 +56,7 @@ func TestPanic(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
-		wrappedHandler := recoverer(handlerThatPanics(msg, false, nil), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, nil), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -74,7 +73,7 @@ func TestPanic(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
-		wrappedHandler := recoverer(handlerThatPanics(msg, true, nil), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, true, nil), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -104,7 +103,7 @@ func TestPanic(t *testing.T) {
 		msg := "hello"
 		errMsg := "99 problems"
 		err := errors.New(errMsg)
-		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -132,7 +131,7 @@ func TestPanic(t *testing.T) {
 		t.Parallel()
 
 		logOutput := &bytes.Buffer{}
-		wrappedHandler := recoverer(anotherHandlerThatPanics(), getLogger(logOutput))
+		wrappedHandler := recoverer(anotherHandlerThatPanics(), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -141,19 +140,19 @@ func TestPanic(t *testing.T) {
 		res := rec.Result()
 		defer res.Body.Close()
 		attest.Equal(t, res.StatusCode, http.StatusInternalServerError)
-		attest.Subsequence(t, logOutput.String(), "middleware/recoverer_test.go:42") // line where panic happened.
+		attest.Subsequence(t, logOutput.String(), "middleware/recoverer_test.go:41") // line where panic happened.
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
-		// &bytes.Buffer{} is not concurrency safe, so we use os.Stderr instead.
-		logOutput := os.Stderr
+		// If &bytes.Buffer{} is not concurrency safe, we can use os.Stderr instead.
+		logOutput := &bytes.Buffer{}
 		msg := "hey"
 		err := errors.New(msg)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), getLogger(logOutput))
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), nil, getLogger(logOutput))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
