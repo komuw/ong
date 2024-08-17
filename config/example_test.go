@@ -30,8 +30,11 @@ func ExampleNew() {
 		"super-h@rd-Pas1word",
 		// In this case, the actual client IP address is fetched from the given http header.
 		config.SingleIpStrategy("CF-Connecting-IP"),
-		// Logger.
-		l,
+		// function to log in middlewares.
+		func(_ http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+			reqL := log.WithID(r.Context(), l)
+			reqL.Info("request-and-response", fields...)
+		},
 		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
 		13.0,
 		// Sample response latencies over a 5 minute window to determine if to loadshed.
@@ -57,6 +60,8 @@ func ExampleNew() {
 		// Use a given header to try and mitigate against replay-attacks.
 		func(r http.Request) string { return r.Header.Get("Anti-Replay") },
 		//
+		// Logger.
+		l,
 		// The maximum size in bytes for incoming request bodies.
 		2*1024*1024,
 		// Log level of the logger that will be passed into [http.Server.ErrorLog]

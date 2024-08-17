@@ -253,7 +253,7 @@ func New(
 	// middleware
 	secretKey string,
 	strategy ClientIPstrategy,
-	logger *slog.Logger,
+	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
@@ -267,6 +267,7 @@ func New(
 	sessionCookieDuration time.Duration,
 	sessionAntiReplayFunc func(r http.Request) string,
 	// server
+	logger *slog.Logger,
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
 	readHeaderTimeout time.Duration,
@@ -286,7 +287,7 @@ func New(
 		port,
 		secretKey,
 		strategy,
-		logger,
+		logFunc,
 		rateLimit,
 		loadShedSamplingPeriod,
 		loadShedMinSampleSize,
@@ -309,6 +310,7 @@ func New(
 		serverOpts: newServerOpts(
 			domain,
 			port,
+			logger,
 			maxBodyBytes,
 			serverLogLevel,
 			readHeaderTimeout,
@@ -349,7 +351,7 @@ func WithOpts(
 		// middleware
 		secretKey,
 		strategy,
-		logger,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -363,6 +365,7 @@ func WithOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
+		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -397,7 +400,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -411,6 +414,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
+		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -452,7 +456,7 @@ func CertOpts(
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -466,6 +470,7 @@ func CertOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
+		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -510,7 +515,7 @@ func AcmeOpts(
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -524,6 +529,7 @@ func AcmeOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
+		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -567,7 +573,7 @@ func LetsEncryptOpts(
 		// middleware
 		secretKey,
 		clientip.DirectIpStrategy,
-		logger,
+		nil,
 		DefaultRateLimit,
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
@@ -581,6 +587,7 @@ func LetsEncryptOpts(
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
+		logger,
 		DefaultMaxBodyBytes,
 		DefaultServerLogLevel,
 		defaultReadHeaderTimeout,
@@ -623,7 +630,7 @@ type middlewareOpts struct {
 	// - https://go.dev/play/p/wL2gqumZ23b
 	SecretKey secureKey
 	Strategy  ClientIPstrategy
-	Logger    *slog.Logger
+	LogFunc   func(w http.ResponseWriter, r http.Request, statusCode int, fields []any)
 
 	// ratelimit
 	RateLimit float64
@@ -655,7 +662,6 @@ func (m middlewareOpts) String() string {
   HttpsPort: %d,
   SecretKey: %s,
   Strategy: %v,
-  Logger: %v,
   RateLimit: %v,
   LoadShedSamplingPeriod: %v,
   LoadShedMinSampleSize: %v,
@@ -673,7 +679,6 @@ func (m middlewareOpts) String() string {
 		m.HttpsPort,
 		m.SecretKey,
 		m.Strategy,
-		m.Logger,
 		m.RateLimit,
 		m.LoadShedSamplingPeriod,
 		m.LoadShedMinSampleSize,
@@ -699,7 +704,7 @@ func newMiddlewareOpts(
 	httpsPort uint16,
 	secretKey string,
 	strategy ClientIPstrategy,
-	logger *slog.Logger,
+	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
@@ -752,7 +757,7 @@ func newMiddlewareOpts(
 		HttpsPort: httpsPort,
 		SecretKey: secureKey(secretKey),
 		Strategy:  strategy,
-		Logger:    logger,
+		LogFunc:   logFunc,
 
 		// ratelimiter
 		RateLimit: rateLimit,
@@ -821,6 +826,7 @@ func (t tlsOpts) GoString() string {
 // serverOpts are the various parameters(optionals) that can be used to configure a HTTP server.
 type serverOpts struct {
 	port              uint16 // tcp port is a 16bit unsigned integer.
+	Logger            *slog.Logger
 	MaxBodyBytes      uint64 // max size of request body allowed.
 	ServerLogLevel    slog.Level
 	ReadHeaderTimeout time.Duration
@@ -842,6 +848,7 @@ type serverOpts struct {
 func newServerOpts(
 	domain string,
 	port uint16,
+	logger *slog.Logger,
 	maxBodyBytes uint64,
 	serverLogLevel slog.Level,
 	readHeaderTimeout time.Duration,
@@ -887,6 +894,7 @@ func newServerOpts(
 
 	return serverOpts{
 		port:              port,
+		Logger:            logger,
 		MaxBodyBytes:      maxBodyBytes,
 		ServerLogLevel:    serverLogLevel,
 		ReadHeaderTimeout: readHeaderTimeout,
@@ -917,6 +925,7 @@ func newServerOpts(
 func (s serverOpts) String() string {
 	return fmt.Sprintf(`serverOpts{
   port: %v,
+  Logger: %v,
   MaxBodyBytes: %v,
   ServerLogLevel: %v,
   ReadHeaderTimeout: %v,
@@ -932,6 +941,7 @@ func (s serverOpts) String() string {
   HttpPort: %v,
 }`,
 		s.port,
+		s.Logger,
 		s.MaxBodyBytes,
 		s.ServerLogLevel,
 		s.ReadHeaderTimeout,
@@ -1025,9 +1035,6 @@ func (o Opts) Equal(other Opts) bool {
 			return false
 		}
 		if o.Strategy != other.Strategy {
-			return false
-		}
-		if o.Logger != other.Logger {
 			return false
 		}
 
