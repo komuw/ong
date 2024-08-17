@@ -2,7 +2,10 @@ package middleware
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/komuw/ong/errors"
+	"github.com/komuw/ong/log"
 
 	"go.akshayshah.org/attest"
 )
@@ -43,12 +47,16 @@ func anotherHandlerThatPanics() http.HandlerFunc {
 func TestPanic(t *testing.T) {
 	t.Parallel()
 
+	getLogger := func(w io.Writer) *slog.Logger {
+		return log.New(context.Background(), w, 500)
+	}
+
 	t.Run("ok if no panic", func(t *testing.T) {
 		t.Parallel()
 
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
-		wrappedHandler := recoverer(handlerThatPanics(msg, false, nil), toLog(t, logOutput), nil)
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, nil), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -65,7 +73,7 @@ func TestPanic(t *testing.T) {
 
 		logOutput := &bytes.Buffer{}
 		msg := "hello"
-		wrappedHandler := recoverer(handlerThatPanics(msg, true, nil), toLog(t, logOutput), nil)
+		wrappedHandler := recoverer(handlerThatPanics(msg, true, nil), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -95,7 +103,7 @@ func TestPanic(t *testing.T) {
 		msg := "hello"
 		errMsg := "99 problems"
 		err := errors.New(errMsg)
-		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), toLog(t, logOutput), nil)
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -123,7 +131,7 @@ func TestPanic(t *testing.T) {
 		t.Parallel()
 
 		logOutput := &bytes.Buffer{}
-		wrappedHandler := recoverer(anotherHandlerThatPanics(), toLog(t, logOutput), nil)
+		wrappedHandler := recoverer(anotherHandlerThatPanics(), nil, getLogger(logOutput))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -144,7 +152,7 @@ func TestPanic(t *testing.T) {
 		err := errors.New(msg)
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), toLog(t, logOutput), nil)
+		wrappedHandler := recoverer(handlerThatPanics(msg, false, err), nil, getLogger(logOutput))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
