@@ -34,8 +34,12 @@ func ExampleNew() {
 		config.SingleIpStrategy("CF-Connecting-IP"),
 		// function to log in middlewares.
 		func(_ http.ResponseWriter, r http.Request, statusCode int, fields []any) {
-			reqL := log.WithID(r.Context(), l)
-			reqL.Info("request-and-response", fields...)
+			if statusCode >= http.StatusInternalServerError {
+				// Only log 500's
+				reqL := log.WithID(r.Context(), l)
+				fields = append(fields, "statusCode", statusCode)
+				reqL.Info("request-and-response", fields...)
+			}
 		},
 		// If a particular IP address sends more than 13 requests per second, throttle requests from that IP.
 		13.0,
