@@ -1074,7 +1074,7 @@ func (o Opts) Equal(other Opts) bool {
 		if o.LoadShedBreachLatency != other.LoadShedBreachLatency {
 			return false
 		}
-		if o.LoadShedPercentile != other.LoadShedPercentile {
+		if int64(o.LoadShedPercentile) != int64(other.LoadShedPercentile) {
 			return false
 		}
 
