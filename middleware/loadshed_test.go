@@ -41,6 +41,7 @@ func TestLoadShedder(t *testing.T) {
 			config.DefaultLoadShedSamplingPeriod,
 			config.DefaultLoadShedMinSampleSize,
 			config.DefaultLoadShedBreachLatency,
+			99,
 		)
 
 		rec := httptest.NewRecorder()
@@ -69,6 +70,7 @@ func TestLoadShedder(t *testing.T) {
 			config.DefaultLoadShedSamplingPeriod,
 			config.DefaultLoadShedMinSampleSize,
 			config.DefaultLoadShedBreachLatency,
+			99,
 		)
 
 		runhandler := func() {
@@ -182,7 +184,7 @@ func TestLatencyQueue(t *testing.T) {
 			lq.add(time.Duration(i) * time.Second)
 		}
 
-		got := lq.getP99(minSampleSize)
+		got := lq.getPercentile(99, minSampleSize)
 		attest.Equal(t, got.Seconds(), 991)
 	})
 
@@ -195,7 +197,7 @@ func TestLatencyQueue(t *testing.T) {
 			lq.add(time.Duration(i) * time.Second)
 		}
 
-		got := lq.getP99(minSampleSize)
+		got := lq.getPercentile(99, minSampleSize)
 		attest.Zero(t, got)
 	})
 
@@ -244,7 +246,7 @@ func TestLatencyQueue(t *testing.T) {
 
 				lq.add(1 * time.Second)
 				lq.reSize()
-				lq.getP99(3)
+				lq.getPercentile(99, 3)
 			}()
 		}
 		wg.Wait()
@@ -267,6 +269,7 @@ func BenchmarkLoadShedder(b *testing.B) {
 		config.DefaultLoadShedSamplingPeriod,
 		config.DefaultLoadShedMinSampleSize,
 		config.DefaultLoadShedBreachLatency,
+		99,
 	)
 
 	rec := httptest.NewRecorder()
