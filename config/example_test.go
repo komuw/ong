@@ -47,8 +47,10 @@ func ExampleNew() {
 		5*time.Minute,
 		// If the number of responses in the last 5minutes is less than 10, do not make a loadshed determination.
 		10,
-		// If the p99 response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
+		// If the 83rd percentile response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
 		200*time.Millisecond,
+		// We check for loadshed breach at the 83 percentile
+		83,
 		// Allow access from these origins for CORs.
 		[]string{"http://example.net", "https://example.org"},
 		// Allow only GET and POST for CORs.

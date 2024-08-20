@@ -494,6 +494,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		config.DefaultLoadShedSamplingPeriod,
 		config.DefaultLoadShedMinSampleSize,
 		config.DefaultLoadShedBreachLatency,
+		config.DefaultLoadShedPercentile,
 		nil,
 		nil,
 		nil,

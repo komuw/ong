@@ -46,8 +46,10 @@ func validOpts(t *testing.T) Opts {
 		5*time.Minute,
 		// If the number of responses in the last 5minutes is less than 10, do not make a loadshed determination.
 		10,
-		// If the p99 response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
+		// If the 83rd percentile response latencies, over the last 5minutes is more than 200ms, then start loadshedding.
 		200*time.Millisecond,
+		// We check for loadshed breach at the 83 percentile
+		83,
 		// Allow access from these origins for CORs.
 		[]string{"http://example.net", "https://example.org"},
 		// Allow only GET and POST for CORs.
@@ -143,6 +145,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 				opt.LoadShedSamplingPeriod,
 				opt.LoadShedMinSampleSize,
 				opt.LoadShedBreachLatency,
+				opt.LoadShedPercentile,
 				opt.AllowedOrigins,
 				opt.AllowedMethods,
 				opt.AllowedHeaders,
@@ -204,6 +207,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					DefaultLoadShedSamplingPeriod,
 					DefaultLoadShedMinSampleSize,
 					DefaultLoadShedBreachLatency,
+					DefaultLoadShedPercentile,
 					nil,
 					nil,
 					nil,
@@ -226,6 +230,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					DefaultLoadShedSamplingPeriod,
 					DefaultLoadShedMinSampleSize,
 					DefaultLoadShedBreachLatency,
+					DefaultLoadShedPercentile,
 					nil,
 					nil,
 					nil,
@@ -261,6 +266,7 @@ func TestOpts(t *testing.T) {
 				LoadShedSamplingPeriod: DefaultLoadShedSamplingPeriod,
 				LoadShedMinSampleSize:  DefaultLoadShedMinSampleSize,
 				LoadShedBreachLatency:  DefaultLoadShedBreachLatency,
+				LoadShedPercentile:     DefaultLoadShedPercentile,
 				AllowedOrigins:         []string{},
 				AllowedMethods:         []string{},
 				AllowedHeaders:         []string{},

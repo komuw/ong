@@ -41,6 +41,7 @@ func TestLoadShedder(t *testing.T) {
 			config.DefaultLoadShedSamplingPeriod,
 			config.DefaultLoadShedMinSampleSize,
 			config.DefaultLoadShedBreachLatency,
+			99,
 		)
 
 		rec := httptest.NewRecorder()
@@ -69,6 +70,7 @@ func TestLoadShedder(t *testing.T) {
 			config.DefaultLoadShedSamplingPeriod,
 			config.DefaultLoadShedMinSampleSize,
 			config.DefaultLoadShedBreachLatency,
+			99,
 		)
 
 		runhandler := func() {
@@ -167,6 +169,12 @@ func TestPercentile(t *testing.T) {
 				attest.Equal(t, gotM, 6*time.Millisecond)
 			}
 		}
+
+		{
+			N := []int64{315, 17, 254, 1215, 306, 7, 318, 13, 316, 143, 209, 315, 46, 42, 43, 544, 46, 300, 325, 905, 325, 718, 908, 527, 65, 637, 48, 31, 43, 318, 1030, 326, 9, 318, 10, 343, 1042, 11, 267, 706, 43, 397, 322, 971, 317, 7, 40, 390, 318, 9, 331, 410, 749, 46, 489, 334, 585, 47}
+			got := percentile(N, 99, len(N))
+			attest.Equal(t, got, 1215)
+		}
 	})
 }
 
@@ -182,7 +190,7 @@ func TestLatencyQueue(t *testing.T) {
 			lq.add(time.Duration(i) * time.Second)
 		}
 
-		got := lq.getP99(minSampleSize)
+		got := lq.getPercentile(99, minSampleSize)
 		attest.Equal(t, got.Seconds(), 991)
 	})
 
@@ -195,7 +203,7 @@ func TestLatencyQueue(t *testing.T) {
 			lq.add(time.Duration(i) * time.Second)
 		}
 
-		got := lq.getP99(minSampleSize)
+		got := lq.getPercentile(99, minSampleSize)
 		attest.Zero(t, got)
 	})
 
@@ -244,7 +252,7 @@ func TestLatencyQueue(t *testing.T) {
 
 				lq.add(1 * time.Second)
 				lq.reSize()
-				lq.getP99(3)
+				lq.getPercentile(99, 3)
 			}()
 		}
 		wg.Wait()
@@ -267,6 +275,7 @@ func BenchmarkLoadShedder(b *testing.B) {
 		config.DefaultLoadShedSamplingPeriod,
 		config.DefaultLoadShedMinSampleSize,
 		config.DefaultLoadShedBreachLatency,
+		99,
 	)
 
 	rec := httptest.NewRecorder()

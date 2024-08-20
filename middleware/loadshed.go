@@ -32,6 +32,7 @@ func loadShedder(
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
 	loadShedBreachLatency time.Duration,
+	loadShedPercentile float64,
 ) http.HandlerFunc {
 	// lq should not be a global variable, we want it to be per handler.
 	// This is because different handlers(URIs) could have different latencies and we want each to be loadshed independently.
@@ -47,12 +48,15 @@ func loadShedder(
 	if loadShedBreachLatency < 1*time.Nanosecond {
 		loadShedBreachLatency = config.DefaultLoadShedBreachLatency
 	}
+	if loadShedPercentile < 0 { // zero is a valid user choice.
+		loadShedPercentile = config.DefaultLoadShedPercentile
+	}
 	var (
 		// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
 		retryAfter = loadShedSamplingPeriod + (5 * time.Minute)
 		// resizePeriod is the duration after which we should trim the latencyQueue.
 		// It should always be > loadShedSamplingPeriod
-		// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getP99()` will always return zero.
+		// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getPercentile()` will always return zero.
 		resizePeriod = loadShedSamplingPeriod + (3 * time.Minute)
 	)
 
@@ -66,7 +70,7 @@ func loadShedder(
 				lq.add(durReq)
 			}
 
-			// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getP99()` will always return zero.
+			// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getPercentile()` will always return zero.
 			if endReq.Sub(loadShedCheckStart) > resizePeriod {
 				// lets reduce the size of latencyQueue
 				lq.reSize()
@@ -82,11 +86,11 @@ func loadShedder(
 			sendProbe = mathRand.IntN(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
 		}
 
-		p99 := lq.getP99(loadShedMinSampleSize)
-		if p99.Milliseconds() > loadShedBreachLatency.Milliseconds() && !sendProbe {
+		pctl := lq.getPercentile(loadShedPercentile, loadShedMinSampleSize)
+		if pctl.Milliseconds() > loadShedBreachLatency.Milliseconds() && !sendProbe {
 			// drop request
 			err := fmt.Errorf("ong/middleware/loadshed: server is overloaded, retry after %s", retryAfter)
-			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. p99latency: %s. loadShedBreachLatency: %s", err.Error(), p99, loadShedBreachLatency))
+			w.Header().Set(ongMiddlewareErrorHeader, fmt.Sprintf("%s. %vPercentile: %s. loadShedBreachLatency: %s", err.Error(), loadShedPercentile, pctl, loadShedBreachLatency))
 			w.Header().Set(retryAfterHeader, fmt.Sprintf("%d", int(retryAfter.Seconds()))) // header should be in seconds(decimal-integer).
 			http.Error(
 				w,
@@ -136,7 +140,7 @@ func (lq *latencyQueue) reSize() {
 	}
 }
 
-func (lq *latencyQueue) getP99(loadShedMinSampleSize int) (p99latency time.Duration) {
+func (lq *latencyQueue) getPercentile(pctl float64, loadShedMinSampleSize int) (latency time.Duration) {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
@@ -147,7 +151,7 @@ func (lq *latencyQueue) getP99(loadShedMinSampleSize int) (p99latency time.Durat
 		return 0 * time.Millisecond
 	}
 
-	return time.Duration(percentile(lq.sl, 99, lenSl)) * time.Millisecond
+	return time.Duration(percentile(lq.sl, pctl, lenSl)) * time.Millisecond
 }
 
 func percentile(N []int64, pctl float64, lenSl int) int64 {

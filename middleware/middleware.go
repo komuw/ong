@@ -66,6 +66,7 @@ func allDefaultMiddlewares(
 	loadShedSamplingPeriod := o.LoadShedSamplingPeriod
 	loadShedMinSampleSize := o.LoadShedMinSampleSize
 	loadShedBreachLatency := o.LoadShedBreachLatency
+	loadShedPercentile := o.LoadShedPercentile
 
 	// cors
 	allowedOrigins := o.AllowedOrigins
@@ -168,6 +169,7 @@ func allDefaultMiddlewares(
 									loadShedSamplingPeriod,
 									loadShedMinSampleSize,
 									loadShedBreachLatency,
+									loadShedPercentile,
 								),
 								rateLimit,
 							),

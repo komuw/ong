@@ -39,7 +39,7 @@ const (
 	// DefaultLoadShedMinSampleSize is the minimum number of past requests that have to be available, in the last `loadShedSamplingPeriod` for us to make a decision, by default.
 	// If there were fewer requests(than `loadShedMinSampleSize`) in the `loadShedSamplingPeriod`, then we do decide to let things continue without load shedding.
 	DefaultLoadShedMinSampleSize = 50
-	// DefaultLoadShedBreachLatency is the p99 latency at which point we start dropping requests, by default.
+	// DefaultLoadShedBreachLatency is the latency at which point we start dropping requests, by default.
 	//
 	// The value chosen here is because;
 	// The wikipedia [monitoring] dashboards are public.
@@ -49,6 +49,8 @@ const (
 	// [monitoring]: https://grafana.wikimedia.org/?orgId=1
 	// [response]: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
 	DefaultLoadShedBreachLatency = 700 * time.Millisecond
+	// DefaultLoadShedPercentile is percentile used to check for load breach, by default.
+	DefaultLoadShedPercentile = 75
 )
 
 // cors middleware.
@@ -206,7 +208,8 @@ func (o Opts) GoString() string {
 // loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
 // If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
 // If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
-// loadShedBreachLatency is the p99 latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
+// loadShedBreachLatency is the latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
+// loadShedPercentile is percentile used to check for load breach, by default. If it is less than 0, [DefaultLoadShedPercentile] is used instead.
 //
 // allowedOrigins, allowedMethods, allowedHeaders, allowCredentials & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, [domain] and its www variant are used. Use []string{"*"} to allow all.
@@ -264,6 +267,7 @@ func New(
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
 	loadShedBreachLatency time.Duration,
+	loadShedPercentile float64,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
@@ -298,6 +302,7 @@ func New(
 		loadShedSamplingPeriod,
 		loadShedMinSampleSize,
 		loadShedBreachLatency,
+		loadShedPercentile,
 		allowedOrigins,
 		allowedMethods,
 		allowedHeaders,
@@ -362,6 +367,7 @@ func WithOpts(
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
+		DefaultLoadShedPercentile,
 		nil,
 		nil,
 		nil,
@@ -411,6 +417,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
+		DefaultLoadShedPercentile,
 		nil,
 		nil,
 		nil,
@@ -467,6 +474,7 @@ func CertOpts(
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
+		DefaultLoadShedPercentile,
 		nil,
 		nil,
 		nil,
@@ -526,6 +534,7 @@ func AcmeOpts(
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
+		DefaultLoadShedPercentile,
 		nil,
 		nil,
 		nil,
@@ -584,6 +593,7 @@ func LetsEncryptOpts(
 		DefaultLoadShedSamplingPeriod,
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
+		DefaultLoadShedPercentile,
 		nil,
 		nil,
 		nil,
@@ -646,6 +656,7 @@ type middlewareOpts struct {
 	LoadShedSamplingPeriod time.Duration
 	LoadShedMinSampleSize  int
 	LoadShedBreachLatency  time.Duration
+	LoadShedPercentile     float64
 
 	// cors
 	AllowedOrigins    []string
@@ -673,6 +684,7 @@ func (m middlewareOpts) String() string {
   LoadShedSamplingPeriod: %v,
   LoadShedMinSampleSize: %v,
   LoadShedBreachLatency: %v,
+  LoadShedPercentile: %v,
   AllowedOrigins: %v,
   AllowedMethods: %v,
   AllowedHeaders: %v,
@@ -690,6 +702,7 @@ func (m middlewareOpts) String() string {
 		m.LoadShedSamplingPeriod,
 		m.LoadShedMinSampleSize,
 		m.LoadShedBreachLatency,
+		m.LoadShedPercentile,
 		m.AllowedOrigins,
 		m.AllowedMethods,
 		m.AllowedHeaders,
@@ -717,6 +730,7 @@ func newMiddlewareOpts(
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
 	loadShedBreachLatency time.Duration,
+	loadShedPercentile float64,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
@@ -779,6 +793,7 @@ func newMiddlewareOpts(
 		LoadShedSamplingPeriod: loadShedSamplingPeriod,
 		LoadShedMinSampleSize:  loadShedMinSampleSize,
 		LoadShedBreachLatency:  loadShedBreachLatency,
+		LoadShedPercentile:     loadShedPercentile,
 
 		// cors
 		AllowedOrigins:    allowedOrigins,
@@ -1057,6 +1072,9 @@ func (o Opts) Equal(other Opts) bool {
 			return false
 		}
 		if o.LoadShedBreachLatency != other.LoadShedBreachLatency {
+			return false
+		}
+		if int64(o.LoadShedPercentile) != int64(other.LoadShedPercentile) {
 			return false
 		}
 
