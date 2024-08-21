@@ -16,7 +16,7 @@ import (
 // logger is a middleware that logs http requests and responses using [log.Logger].
 func logger(
 	wrappedHandler http.Handler,
-	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
+	logFunc func(r http.Request, response http.Header, statusCode int, fields []any),
 	l *slog.Logger,
 ) http.HandlerFunc {
 	// The middleware should ideally share the same logger as the app.
@@ -55,7 +55,7 @@ func logger(
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
-			logFunc(w, *r, lrw.code, flds)
+			logFunc(*r, w.Header().Clone(), lrw.code, flds)
 		}()
 
 		wrappedHandler.ServeHTTP(lrw, r)
@@ -154,7 +154,7 @@ func (lrw *logRW) Unwrap() http.ResponseWriter {
 }
 
 // defaultLogFunc is the logging function used if the user did not explicitly provide one.
-func defaultLogFunc(l *slog.Logger) func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+func defaultLogFunc(l *slog.Logger) func(r http.Request, response http.Header, statusCode int, fields []any) {
 	const (
 		msg = "http_server"
 		// rateShedSamplePercent is the percentage of rate limited or loadshed responses that will be logged as errors, by default.
@@ -162,14 +162,14 @@ func defaultLogFunc(l *slog.Logger) func(w http.ResponseWriter, r http.Request, 
 	)
 
 	if l == nil {
-		return func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {}
+		return func(r http.Request, response http.Header, statusCode int, fields []any) {}
 	}
 
-	return func(w http.ResponseWriter, r http.Request, statusCode int, fields []any) {
+	return func(r http.Request, response http.Header, statusCode int, fields []any) {
 		// Each request should get its own context. That's why we call `log.WithID` for every request.
 		reqL := log.WithID(r.Context(), l)
 
-		if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && w.Header().Get(retryAfterHeader) != "" {
+		if (statusCode == http.StatusServiceUnavailable || statusCode == http.StatusTooManyRequests) && response.Get(retryAfterHeader) != "" {
 			// We are either in load shedding or rate-limiting.
 			// Only log (rateShedSamplePercent)% of the errors.
 			shouldLog := mathRand.IntN(100) <= rateShedSamplePercent
