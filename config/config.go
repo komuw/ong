@@ -262,7 +262,7 @@ func New(
 	// middleware
 	secretKey string,
 	strategy ClientIPstrategy,
-	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
+	logFunc func(r http.Request, response http.Header, statusCode int, fields []any),
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,
@@ -647,7 +647,7 @@ type middlewareOpts struct {
 	// - https://go.dev/play/p/wL2gqumZ23b
 	SecretKey secureKey
 	Strategy  ClientIPstrategy
-	LogFunc   func(w http.ResponseWriter, r http.Request, statusCode int, fields []any)
+	LogFunc   func(r http.Request, response http.Header, statusCode int, fields []any)
 
 	// ratelimit
 	RateLimit float64
@@ -725,7 +725,7 @@ func newMiddlewareOpts(
 	logger *slog.Logger,
 	secretKey string,
 	strategy ClientIPstrategy,
-	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
+	logFunc func(r http.Request, response http.Header, statusCode int, fields []any),
 	rateLimit float64,
 	loadShedSamplingPeriod time.Duration,
 	loadShedMinSampleSize int,

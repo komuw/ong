@@ -15,7 +15,7 @@ import (
 // When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
 func recoverer(
 	wrappedHandler http.Handler,
-	logFunc func(w http.ResponseWriter, r http.Request, statusCode int, fields []any),
+	logFunc func(r http.Request, response http.Header, statusCode int, fields []any),
 	l *slog.Logger,
 ) http.HandlerFunc {
 	code := http.StatusInternalServerError
@@ -58,7 +58,7 @@ func recoverer(
 				}
 				flds = append(flds, extra...)
 
-				logFunc(w, *r, code, flds)
+				logFunc(*r, w.Header().Clone(), code, flds)
 
 				// respond.
 				http.Error(
