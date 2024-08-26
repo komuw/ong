@@ -99,10 +99,12 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	msgToEncrypt := []byte(plainTextMsg)
 
 	// Select a random nonce, and leave capacity for the ciphertext.
-	nonce := random(
-		e.aead.NonceSize(),
-		e.aead.NonceSize()+len(msgToEncrypt)+e.aead.Overhead(),
-	)
+	// nonce := random(
+	// 	e.aead.NonceSize(),
+	// 	e.aead.NonceSize()+len(msgToEncrypt)+e.aead.Overhead(),
+	// )
+
+	nonce := random(chacha20poly1305.NonceSizeX, chacha20poly1305.NonceSizeX)
 
 	// Encrypt the message and append the ciphertext to the nonce.
 	encrypted := e.aead.Seal(nonce, nonce, msgToEncrypt, nil)
@@ -122,7 +124,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 
 // Decrypt authenticates and un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
 func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
-	if len(encryptedMsg) < e.aead.NonceSize() {
+	if len(encryptedMsg) < chacha20poly1305.NonceSizeX {
 		return nil, errors.New("ong/cry: ciphertext too short")
 	}
 
@@ -142,7 +144,7 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	}
 
 	// Split nonce and ciphertext.
-	nonce, ciphertext := encryptedMsg[:aead.NonceSize()], encryptedMsg[aead.NonceSize():]
+	nonce, ciphertext := encryptedMsg[:chacha20poly1305.NonceSizeX], encryptedMsg[chacha20poly1305.NonceSizeX:]
 
 	// Decrypt the message and check it wasn't tampered with.
 	return aead.Open(nil, nonce, ciphertext, nil)
