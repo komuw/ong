@@ -128,8 +128,8 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 		return nil, errors.New("ong/cry: ciphertext too short")
 	}
 
-	// get salt
-	salt, encryptedMsg := encryptedMsg[:saltLen], encryptedMsg[saltLen:]
+	// get constituent parts
+	salt, nonce, ciphertext := encryptedMsg[:saltLen], encryptedMsg[saltLen:saltLen+chacha20poly1305.NonceSizeX], encryptedMsg[saltLen+chacha20poly1305.NonceSizeX:]
 
 	aead := e.aead
 	if !slices.Equal(salt, e.salt) {
@@ -142,9 +142,6 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 			return nil, err
 		}
 	}
-
-	// Split nonce and ciphertext.
-	nonce, ciphertext := encryptedMsg[:chacha20poly1305.NonceSizeX], encryptedMsg[chacha20poly1305.NonceSizeX:]
 
 	// Decrypt the message and check it wasn't tampered with.
 	return aead.Open(nil, nonce, ciphertext, nil)
