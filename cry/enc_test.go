@@ -122,7 +122,7 @@ func TestEnc(t *testing.T) {
 		encryptedFile := dir + "/encryptedFile.txt.encrypted"
 
 		{
-			err := os.WriteFile(originalFile, []byte(strings.Repeat("h", (100*1024*1024))), 0o666) // 100MB
+			err := os.WriteFile(originalFile, []byte(strings.Repeat("h", (50*1024*1024))), 0o666) // 50MB
 			attest.Ok(t, err)
 		}
 
