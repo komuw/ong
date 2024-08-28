@@ -1,0 +1,16 @@
+goos: linux
+goarch: amd64
+pkg: github.com/komuw/ong/cry
+cpu: Intel(R) Core(TM) i5-6300U CPU @ 2.40GHz
+BenchmarkEnc-4   	  258367	      4322 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  267379	      4628 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  259783	      4440 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  263346	      4342 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  267564	      4338 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  256087	      4575 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  270484	      4333 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  268680	      4253 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  268243	      4562 ns/op	     672 B/op	      14 allocs/op
+BenchmarkEnc-4   	  272200	      4253 ns/op	     672 B/op	      14 allocs/op
+PASS
+ok  	github.com/komuw/ong/cry	13.857s
