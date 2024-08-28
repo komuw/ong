@@ -114,13 +114,14 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 
 	// Select a random nonce, and leave capacity for the ciphertext.
 	// https://github.com/golang/crypto/blob/v0.26.0/chacha20poly1305/chacha20poly1305_test.go#L222
-	nonce := random(
-		chacha20poly1305.NonceSizeX,
-		chacha20poly1305.NonceSizeX+len(msgToEncrypt)+chacha20poly1305.Overhead,
-	)
+	// nonce := random(
+	// 	chacha20poly1305.NonceSizeX,
+	// 	chacha20poly1305.NonceSizeX+len(msgToEncrypt)+chacha20poly1305.Overhead,
+	// )
+	nonce := random(chacha20poly1305.NonceSizeX, chacha20poly1305.NonceSizeX)
 
 	// Encrypt the message and append the ciphertext to the nonce.
-	encrypted := e.aead.Seal(nonce, nonce, msgToEncrypt, nil)
+	encrypted := e.aead.Seal(nil, nonce, msgToEncrypt, nil)
 
 	encrypted = append(
 		// "you can send the nonce in the clear before each message; so long as it's unique." - agl
@@ -128,9 +129,10 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 		//
 		// "salt does not need to be secret."
 		// see: https://crypto.stackexchange.com/a/99502
-		e.salt,
+		nonce,
 		encrypted...,
 	)
+	encrypted = append(e.salt, encrypted...)
 
 	return encrypted
 }
