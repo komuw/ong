@@ -59,9 +59,9 @@ type Enc struct {
 // String implements [fmt.Stringer]
 func (e Enc) String() string {
 	if len(e.key) <= 0 {
-		return "Enc{<EMPTY>}"
+		return "Enc{key:<EMPTY>}"
 	}
-	return fmt.Sprintf("Enc{%s<REDACTED>}", string(e.key[0]))
+	return fmt.Sprintf("Enc{key:%s<REDACTED>}", string(e.key[0]))
 }
 
 // GoString implements [fmt.GoStringer]
