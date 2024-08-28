@@ -75,7 +75,7 @@ func New(secretKey string) Enc {
 	derivedKey := deriveKey(password, salt)
 
 	/*
-		Another option would be to use argon2.
+		Another option would be to use scrypt.
 		  import "golang.org/x/crypto/scrypt"
 		  key := scrypt.Key("password", salt, 32768, 8, 1, keyLen)
 	*/
