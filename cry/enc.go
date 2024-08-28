@@ -8,6 +8,7 @@ import (
 	cryptoRand "crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"runtime"
 	"slices"
 
@@ -53,6 +54,19 @@ type Enc struct {
 	aead cipher.AEAD
 	salt []byte
 	key  []byte
+}
+
+// String implements [fmt.Stringer]
+func (e Enc) String() string {
+	if len(e.key) <= 0 {
+		return "Enc{<EMPTY>}"
+	}
+	return fmt.Sprintf("Enc{%s<REDACTED>}", string(e.key[0]))
+}
+
+// GoString implements [fmt.GoStringer]
+func (e Enc) GoString() string {
+	return e.String()
 }
 
 // New returns a [cipher.AEAD]
