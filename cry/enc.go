@@ -120,6 +120,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	encrypted := e.aead.Seal(msgToEncrypt[:0], nonce, msgToEncrypt, nil)
 
 	// Append the salt & nonce to encrypted msg.
+	// |salt|nonce|encryptedMsg|
 	encrypted = append(
 		// "you can send the nonce in the clear before each message; so long as it's unique." - agl
 		// see: https://crypto.stackexchange.com/a/5818
