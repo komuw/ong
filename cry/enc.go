@@ -122,7 +122,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	// Append the salt & nonce to encrypted msg.
 	// |salt|nonce|encryptedMsg|
 	encrypted = append(
-		// "you can send the nonce in the clear before each message; so long as it's unique." - agl
+		// "you can send the nonce in the clear before each message; so long as it's unique. it can even be a counter." - agl
 		// see: https://crypto.stackexchange.com/a/5818
 		//
 		// "salt does not need to be secret."
