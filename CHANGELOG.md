@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.10
+- ong/cry: refactor aead implementation: https://github.com/komuw/ong/pull/476
+
 # v0.1.9
 - ong/middleware: logFunc should not be passed a http.ResponseWriter: https://github.com/komuw/ong/pull/474
 

@@ -1,7 +1,9 @@
 package cry
 
 import (
+	"os"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 
@@ -105,6 +107,45 @@ func TestEnc(t *testing.T) {
 		enc2 := New(key) // server restarted
 		decryptedMsg, err := enc2.Decrypt(encryptedMsg)
 		attest.Ok(t, err)
+		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
+	})
+
+	t.Run("encrypt/decrypt file", func(t *testing.T) {
+		t.Parallel()
+
+		msgToEncrypt := ""
+		var decryptedMsg []byte
+		key := tst.SecretKey()
+
+		dir := t.TempDir()
+		originalFile := dir + "/originalFile.txt"
+		encryptedFile := dir + "/encryptedFile.txt.encrypted"
+
+		{
+			err := os.WriteFile(originalFile, []byte(strings.Repeat("h", (50*1024*1024))), 0o666) // 50MB
+			attest.Ok(t, err)
+		}
+
+		{
+			b, err := os.ReadFile(originalFile)
+			attest.Ok(t, err)
+			msgToEncrypt = string(b)
+
+			enc := New(key)
+			er := os.WriteFile(encryptedFile, enc.Encrypt(msgToEncrypt), 0o666)
+			attest.Ok(t, er)
+		}
+
+		{
+			b, err := os.ReadFile(encryptedFile)
+			attest.Ok(t, err)
+
+			enc := New(key)
+			msg, err := enc.Decrypt(b)
+			attest.Ok(t, err)
+			decryptedMsg = msg
+		}
+
 		attest.Equal(t, string(decryptedMsg), msgToEncrypt)
 	})
 
