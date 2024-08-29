@@ -2,15 +2,15 @@ goos: linux
 goarch: amd64
 pkg: github.com/komuw/ong/cry
 cpu: Intel(R) Core(TM) i5-6300U CPU @ 2.40GHz
-BenchmarkEnc-4   	  257118	      4630 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  271552	      4444 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  263355	      4360 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  266403	      4648 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  272487	      4366 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  267387	      4755 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  255350	      4686 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  263910	      4397 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  262440	      4391 ns/op	     768 B/op	      16 allocs/op
-BenchmarkEnc-4   	  254611	      4404 ns/op	     768 B/op	      16 allocs/op
+BenchmarkEnc-4   	  253567	      4510 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  265360	      4606 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  264580	      4430 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  241407	      4429 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  256453	      4489 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  252950	      4449 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  256627	      4437 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  264422	      4457 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  252207	      4525 ns/op	     728 B/op	      16 allocs/op
+BenchmarkEnc-4   	  252092	      4411 ns/op	     728 B/op	      16 allocs/op
 PASS
-ok  	github.com/komuw/ong/cry	16.186s
+ok  	github.com/komuw/ong/cry	15.865s
