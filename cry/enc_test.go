@@ -114,7 +114,7 @@ func TestEnc(t *testing.T) {
 		t.Parallel()
 
 		msgToEncrypt := ""
-		decryptedMsg := []byte{}
+		var decryptedMsg []byte
 		key := tst.SecretKey()
 
 		dir := t.TempDir()
