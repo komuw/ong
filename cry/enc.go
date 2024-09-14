@@ -128,6 +128,8 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 		// "you can send the nonce in the clear before each message; so long as it's unique. it can even be a counter." - agl
 		// see: https://crypto.stackexchange.com/a/5818
 		//
+		// there are problems if you use a counter as nonce - https://blog.trailofbits.com/2024/09/13/friends-dont-let-friends-reuse-nonces/
+		//
 		// "salt does not need to be secret."
 		// see: https://crypto.stackexchange.com/a/99502
 		e.salt,
