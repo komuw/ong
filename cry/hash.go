@@ -22,7 +22,7 @@ const (
 
 func deriveKey(password, salt []byte) []byte {
 	// IDKey is Argon2id
-	return argon2.IDKey(password, salt, time, memory, threads, keyLen)
+	return argon2.IDKey(password, salt, _time, memory, threads, keyLen)
 }
 
 // Hash returns the argon2id hash of the password.
