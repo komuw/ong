@@ -110,7 +110,9 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	)
 
 	// Encrypt the message and append the ciphertext to the nonce.
+	//
 	// version as additionalData ensures that encryption/decryption will fail if using different versions of `ong/cry`
+	// another option would be to prepend the version similar to salt.
 	encrypted := e.aead.Seal(nonce, nonce, msgToEncrypt, []byte{version})
 
 	// Append the salt & nonce to encrypted msg.
