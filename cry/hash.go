@@ -16,8 +16,14 @@ import (
 
 const (
 	// this should be increased every time the parameters passed to [argon2.IDKey] are changed.
-	version   = 1
+	version   = 2
 	separator = "$"
+
+	// The values recommended are:
+	// golang.org/x/crypto/argon2
+	_time   = uint32(1)
+	memory  = uint32(64 * 1024) // 64MB
+	threads = uint8(2)          // can be set to number of available CPUS. Can't use `runtime.NumCPU()` since that will be different between computers.
 )
 
 func deriveKey(password, salt []byte) []byte {
@@ -48,6 +54,7 @@ func Hash(password string) string {
 func Eql(password, hash string) error {
 	params := strings.Split(hash, "$")
 
+	fmt.Println("\n\t params: ", params)
 	if len(params) != 3 {
 		return errors.New("ong/cry: unable to parse")
 	}

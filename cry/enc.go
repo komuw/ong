@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"runtime"
 	"slices"
 
 	"github.com/komuw/ong/internal/key"
@@ -36,15 +35,6 @@ import (
 const (
 	keyLen  = chacha20poly1305.KeySize
 	saltLen = 8
-)
-
-var (
-	//
-	// The values recommended are:
-	// golang.org/x/crypto/argon2
-	_time   = uint32(1)               //nolint:gochecknoglobals
-	memory  = uint32(64 * 1024)       //nolint:gochecknoglobals  // 64MB
-	threads = uint8(runtime.NumCPU()) //nolint:gochecknoglobals
 )
 
 // Enc is an AEAD cipher mode providing authenticated encryption with associated data, ie [cipher.AEAD]
