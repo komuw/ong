@@ -23,7 +23,7 @@ const (
 	// In there we can see that the p95 response times for http GET requests is ~700ms: https://grafana.wikimedia.org/d/RIA1lzDZk/application-servers-red?orgId=1
 	// and the p95 response times for http POST requests is ~3seconds:
 	// Thus, we set the timeout to be twice that.
-	defaultTimeout = 3 * 2 * time.Second
+	defaultTimeout = 2 * 3 * time.Second
 )
 
 // Some of the code here is inspired by(or taken from):

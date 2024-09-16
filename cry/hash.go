@@ -15,14 +15,20 @@ import (
 //   (a) https://github.com/elithrar/simple-scrypt whose license(MIT) can be found here: https://github.com/elithrar/simple-scrypt/blob/v1.3.0/LICENSE
 
 const (
-	// this should be increased every time the parameters passed to [argon2.IDKey] are changed.
-	version   = 1
+	// this should be incremented every time the parameters passed to [argon2.IDKey] are changed.
+	version   = 2
 	separator = "$"
+
+	// The values recommended are:
+	// golang.org/x/crypto/argon2
+	_time   = uint32(1)
+	memory  = uint32(64 * 1024) // 64MB
+	threads = uint8(2)          // can be set to number of available CPUS. Can't use `runtime.NumCPU()` since that will be different between computers.
 )
 
 func deriveKey(password, salt []byte) []byte {
 	// IDKey is Argon2id
-	return argon2.IDKey(password, salt, time, memory, threads, keyLen)
+	return argon2.IDKey(password, salt, _time, memory, threads, keyLen)
 }
 
 // Hash returns the argon2id hash of the password.
@@ -33,6 +39,8 @@ func Hash(password string) string {
 
 	// Add version, salt to the derived key.
 	// The salt and the derived key are hex encoded.
+	// NB: We could include the other params(_time, memory, threads) in this serialization.
+	//     But we don't for simplicity & also because those params are hardcoded for each `ong/cry` version.
 	return fmt.Sprintf(
 		`%d%s%x%s%x`,
 		version,

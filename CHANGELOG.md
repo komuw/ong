@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.11
+- ong/cry: use constant parameters for argon key generation: https://github.com/komuw/ong/pull/477
+
 # v0.1.10
 - ong/cry: refactor aead implementation: https://github.com/komuw/ong/pull/476
 
