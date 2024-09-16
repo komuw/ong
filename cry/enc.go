@@ -110,7 +110,8 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 	)
 
 	// Encrypt the message and append the ciphertext to the nonce.
-	encrypted := e.aead.Seal(nonce, nonce, msgToEncrypt, nil)
+	// version as additionalData ensures that encryption/decryption will fail if using different versions of `ong/cry`
+	encrypted := e.aead.Seal(nonce, nonce, msgToEncrypt, []byte{version})
 
 	// Append the salt & nonce to encrypted msg.
 	// |salt|nonce|encryptedMsg|
@@ -151,7 +152,7 @@ func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
 	}
 
 	// Decrypt the message and check it wasn't tampered with.
-	return aead.Open(nil, nonce, ciphertext, nil)
+	return aead.Open(nil, nonce, ciphertext, []byte{version})
 }
 
 // EncryptEncode is like [Enc.Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]

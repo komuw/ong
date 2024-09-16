@@ -15,7 +15,7 @@ import (
 //   (a) https://github.com/elithrar/simple-scrypt whose license(MIT) can be found here: https://github.com/elithrar/simple-scrypt/blob/v1.3.0/LICENSE
 
 const (
-	// this should be increased every time the parameters passed to [argon2.IDKey] are changed.
+	// this should be incremented every time the parameters passed to [argon2.IDKey] are changed.
 	version   = 2
 	separator = "$"
 
@@ -40,7 +40,7 @@ func Hash(password string) string {
 	// Add version, salt to the derived key.
 	// The salt and the derived key are hex encoded.
 	// NB: We could include the other params(_time, memory, threads) in this serialization.
-	//     But we don't for simplicity & also because those params are hardcoded for each cry version.
+	//     But we don't for simplicity & also because those params are hardcoded for each `ong/cry` version.
 	return fmt.Sprintf(
 		`%d%s%x%s%x`,
 		version,
