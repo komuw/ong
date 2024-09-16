@@ -39,6 +39,8 @@ func Hash(password string) string {
 
 	// Add version, salt to the derived key.
 	// The salt and the derived key are hex encoded.
+	// NB: We could include the other params(_time, memory, threads) in this serialization.
+	//     But we don't for simplicity & also because those params are hardcoded for each cry version.
 	return fmt.Sprintf(
 		`%d%s%x%s%x`,
 		version,
@@ -54,7 +56,6 @@ func Hash(password string) string {
 func Eql(password, hash string) error {
 	params := strings.Split(hash, "$")
 
-	fmt.Println("\n\t params: ", params)
 	if len(params) != 3 {
 		return errors.New("ong/cry: unable to parse")
 	}
