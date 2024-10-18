@@ -444,33 +444,33 @@ func TestMuxFlexiblePattern(t *testing.T) {
 		defer ts.Close()
 
 		{
-			res, err := client.Get(ts.URL + "/UnknownUri")
-			attest.Ok(t, err)
+			res, errA := client.Get(ts.URL + "/UnknownUri")
+			attest.Ok(t, errA)
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
-
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.Equal(t, string(rb), msg)
-		}
-
-		{
-			res, err := client.Get(ts.URL + "/")
-			attest.Ok(t, err)
-
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+			rb, errB := io.ReadAll(res.Body)
+			attest.Ok(t, errB)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
 		}
 
 		{
-			res, err := client.Get(ts.URL + "/hey/a/b/cool")
-			attest.Ok(t, err)
+			res, errC := client.Get(ts.URL + "/")
+			attest.Ok(t, errC)
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
+			rb, errD := io.ReadAll(res.Body)
+			attest.Ok(t, errD)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+
+		{
+			res, errE := client.Get(ts.URL + "/hey/a/b/cool")
+			attest.Ok(t, errE)
+
+			rb, errF := io.ReadAll(res.Body)
+			attest.Ok(t, errF)
 
 			attest.Equal(t, res.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb), msg)
