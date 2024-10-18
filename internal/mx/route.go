@@ -70,13 +70,13 @@ func NewRoute(
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
-	if len(segs) > len(r.segments) {
-		return nil, false
-	}
-
 	if len(r.segments) == 1 && r.segments[0] == "*" {
 		// The router is allowed to handle all request paths
 		return ctx, true
+	}
+
+	if len(segs) > len(r.segments) {
+		return nil, false
 	}
 
 	for i, seg := range r.segments {
