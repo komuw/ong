@@ -488,19 +488,16 @@ func TestMuxKomu(t *testing.T) {
 		attest.Ok(t, err)
 		defer ts.Close()
 
-		// {
-		// 	rec := httptest.NewRecorder()
-		// 	req := httptest.NewRequest(http.MethodGet, "/UnknownUri", nil)
-		// 	mux.ServeHTTP(rec, req)
+		{
+			res, err := client.Get(ts.URL + "/UnknownUri")
+			attest.Ok(t, err)
 
-		// 	res := rec.Result()
-		// 	defer res.Body.Close()
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
 
-		// 	_, err := io.ReadAll(res.Body)
-		// 	attest.Ok(t, err)
-
-		// 	attest.Equal(t, res.StatusCode, http.StatusNotFound)
-		// }
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
 
 		{
 			res, err := client.Get(ts.URL + "/")
