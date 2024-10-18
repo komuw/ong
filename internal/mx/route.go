@@ -229,6 +229,10 @@ already exists and would conflict`,
 			getfunc(rt.originalHandler),
 		)
 
+		if len(existingSegments) == 1 && existingSegments[0] == "*" && len(incomingSegments) > 0 {
+			return errMsg
+		}
+
 		if pattern == rt.pattern {
 			return errMsg
 		}
