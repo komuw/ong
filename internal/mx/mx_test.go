@@ -452,3 +452,65 @@ func BenchmarkMuxNew(b *testing.B) {
 	// so the compiler cannot eliminate the Benchmark itself.
 	result = r
 }
+
+func TestMuxKomu(t *testing.T) {
+	t.Parallel()
+
+	tr := &http.Transport{
+		// since we are using self-signed certificates, we need to skip verification.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	httpsPort := tst.GetPort()
+	domain := "localhost"
+
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
+	t.Run("todo", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello world"
+		rt, err := NewRoute(
+			"/*",
+			MethodGet,
+			someMuxHandler(msg),
+		)
+		attest.Ok(t, err)
+		mux, err := New(
+			config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt,
+		)
+		attest.Ok(t, err)
+
+		ts, err := tst.TlsServer(mux, domain, httpsPort)
+		attest.Ok(t, err)
+		defer ts.Close()
+
+		// {
+		// 	rec := httptest.NewRecorder()
+		// 	req := httptest.NewRequest(http.MethodGet, "/UnknownUri", nil)
+		// 	mux.ServeHTTP(rec, req)
+
+		// 	res := rec.Result()
+		// 	defer res.Body.Close()
+
+		// 	_, err := io.ReadAll(res.Body)
+		// 	attest.Ok(t, err)
+
+		// 	attest.Equal(t, res.StatusCode, http.StatusNotFound)
+		// }
+
+		{
+			res, err := client.Get(ts.URL + "/")
+			attest.Ok(t, err)
+
+			rb, err := io.ReadAll(res.Body)
+			attest.Ok(t, err)
+
+			attest.Equal(t, res.StatusCode, http.StatusOK)
+			attest.Equal(t, string(rb), msg)
+		}
+	})
+}

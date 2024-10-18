@@ -73,6 +73,12 @@ func (r Route) match(ctx context.Context, segs []string) (context.Context, bool)
 	if len(segs) > len(r.segments) {
 		return nil, false
 	}
+
+	if len(r.segments) == 1 && r.segments[0] == "*" {
+		// The router is allowed to handle all request paths
+		return ctx, true
+	}
+
 	for i, seg := range r.segments {
 		if i > len(segs)-1 {
 			return nil, false
@@ -91,6 +97,7 @@ func (r Route) match(ctx context.Context, segs []string) (context.Context, bool)
 			ctx = context.WithValue(ctx, muxContextKey(seg), segs[i])
 		}
 	}
+
 	return ctx, true
 }
 
