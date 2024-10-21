@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.12
+- ong/mux: add flexible pattern that allows a handler to serve almost all request URIs: https://github.com/komuw/ong/pull/481
+- 
 # v0.1.11
 - ong/cry: use constant parameters for argon key generation: https://github.com/komuw/ong/pull/477
 
