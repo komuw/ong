@@ -70,9 +70,15 @@ func NewRoute(
 }
 
 func (r Route) match(ctx context.Context, segs []string) (context.Context, bool) {
+	if len(r.segments) == 1 && r.segments[0] == "*" {
+		// The router is allowed to handle all request paths
+		return ctx, true
+	}
+
 	if len(segs) > len(r.segments) {
 		return nil, false
 	}
+
 	for i, seg := range r.segments {
 		if i > len(segs)-1 {
 			return nil, false
@@ -91,6 +97,7 @@ func (r Route) match(ctx context.Context, segs []string) (context.Context, bool)
 			ctx = context.WithValue(ctx, muxContextKey(seg), segs[i])
 		}
 	}
+
 	return ctx, true
 }
 
@@ -221,6 +228,10 @@ already exists and would conflict`,
 			strings.ToUpper(rt.method),
 			getfunc(rt.originalHandler),
 		)
+
+		if len(existingSegments) == 1 && existingSegments[0] == "*" && len(incomingSegments) > 0 {
+			return errMsg
+		}
 
 		if pattern == rt.pattern {
 			return errMsg
