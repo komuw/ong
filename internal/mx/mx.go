@@ -146,7 +146,23 @@ func (m Muxer) Merge(mxs []Muxer) (Muxer, error) {
 		m.router.routes = append(m.router.routes, v.router.routes...)
 	}
 
-	// TODO: merge this logic with `router.detectConflict`
+	if err := detectConflict(m); err != nil {
+		return m, err
+	}
+
+	return m, nil
+}
+
+// Param gets the path/url parameter from the specified Context.
+func Param(ctx context.Context, param string) string {
+	vStr, ok := ctx.Value(muxContextKey(param)).(string)
+	if !ok {
+		return ""
+	}
+	return vStr
+}
+
+func detectConflict(m Muxer) error {
 	for k := range m.router.routes {
 		incoming := m.router.routes[k] // TODO: rename this to candidate.
 		pattern := incoming.pattern
@@ -185,31 +201,22 @@ already exists and would conflict`,
 			)
 
 			if len(existingSegments) == 1 && existingSegments[0] == "*" && len(incomingSegments) > 0 {
-				return m, errMsg
+				return errMsg
 			}
 
 			if pattern == rt.pattern {
-				return m, errMsg
+				return errMsg
 			}
 
 			if strings.Contains(pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-				return m, errMsg
+				return errMsg
 			}
 
 			if strings.Contains(rt.pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-				return m, errMsg
+				return errMsg
 			}
 		}
 	}
 
-	return m, nil
-}
-
-// Param gets the path/url parameter from the specified Context.
-func Param(ctx context.Context, param string) string {
-	vStr, ok := ctx.Value(muxContextKey(param)).(string)
-	if !ok {
-		return ""
-	}
-	return vStr
+	return nil
 }
