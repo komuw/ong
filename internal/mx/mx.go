@@ -146,7 +146,7 @@ func (m Muxer) AddRoute(rt Route) error {
 }
 
 // Merge combines mxs into m. The resulting muxer uses the opts & notFoundHandler of m.
-func (m Muxer) Merge(mxs []Muxer) (Muxer, error) {
+func (m Muxer) Merge(mxs ...Muxer) (Muxer, error) {
 	if len(mxs) < 1 {
 		return m, nil
 	}

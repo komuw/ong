@@ -24,11 +24,6 @@ const (
 	MethodTrace   = mx.MethodTrace
 )
 
-// func Merge(m []Muxer) Muxer {
-
-// 	nw:=New(m[0].internalMux)
-// }
-
 // Muxer is a HTTP request multiplexer.
 //
 // It matches the URL of each incoming request against a list of registered
@@ -93,6 +88,21 @@ func (m Muxer) Resolve(path string) Route {
 // It is for internal use(ONLY) by ong. Users of ong should not need to call it.
 func (m Muxer) Unwrap() mx.Muxer {
 	return m.internalMux
+}
+
+// Merge combines mxs into m. The resulting muxer uses the opts & notFoundHandler of m.
+func (m Muxer) Merge(mxs ...Muxer) (Muxer, error) {
+	mi := []mx.Muxer{}
+	for _, v := range mxs {
+		mi = append(mi, v.internalMux)
+	}
+
+	mm, err := m.internalMux.Merge(mi...)
+	if err != nil {
+		return Muxer{}, err
+	}
+
+	return Muxer{internalMux: mm}, nil
 }
 
 // Param gets the path/url parameter from the specified Context.

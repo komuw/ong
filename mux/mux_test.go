@@ -52,19 +52,47 @@ func TestNew(t *testing.T) {
 	})
 }
 
-// func TestMergeMux(t *testing.T) {
-// 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+func TestMerge(t *testing.T) {
+	t.Parallel()
 
-// 	rt1 := []Route{
-// 		NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
-// 		NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
-// 	}
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
-// 	rt2 := []Route{
-// 		NewRoute("/uri2", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
-// 	}
+	t.Run("okay", func(t *testing.T) {
+		t.Parallel()
 
-// 	mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
-// 	mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
+		rt1 := []Route{
+			NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
 
-// }
+		rt2 := []Route{
+			NewRoute("/uri2", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+
+		mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
+		mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
+
+		_, err := mx1.Merge(mx2)
+		attest.Ok(t, err)
+	})
+
+	t.Run("conflict", func(t *testing.T) {
+		t.Parallel()
+
+		rt1 := []Route{
+			NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+
+		rt2 := []Route{
+			NewRoute("/uri2", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			NewRoute("health", MethodPost, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+
+		mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
+		mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
+
+		_, err := mx1.Merge(mx2)
+		attest.Error(t, err)
+	})
+}

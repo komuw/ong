@@ -429,7 +429,7 @@ func TestMux(t *testing.T) {
 			mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2, rt3)
 			attest.Ok(t, err)
 
-			m, err := mux1.Merge([]Muxer{mux2})
+			m, err := mux1.Merge(mux2)
 			attest.Ok(t, err)
 
 			attest.Equal(t, m.opt, mux1.opt)
@@ -452,7 +452,7 @@ func TestMux(t *testing.T) {
 			mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2, rt3)
 			attest.Ok(t, err)
 
-			_, errM := mux1.Merge([]Muxer{mux2})
+			_, errM := mux1.Merge(mux2)
 			attest.Error(t, errM)
 			rStr := errM.Error()
 			attest.Subsequence(t, rStr, "would conflict")
