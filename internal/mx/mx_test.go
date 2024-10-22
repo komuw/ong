@@ -457,7 +457,7 @@ func TestMux(t *testing.T) {
 			rStr := errM.Error()
 			attest.Subsequence(t, rStr, "would conflict")
 			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:28")  // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:450") // location where the other handler is declared.
+			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:449") // location where the other handler is declared.
 		})
 	})
 }
