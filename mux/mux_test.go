@@ -94,5 +94,6 @@ func TestMerge(t *testing.T) {
 
 		_, err := mx1.Merge(mx2)
 		attest.Error(t, err)
+		attest.Subsequence(t, err.Error(), "would conflict")
 	})
 }
