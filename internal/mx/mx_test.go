@@ -431,7 +431,6 @@ func TestMux(t *testing.T) {
 
 			m, err := mux1.Merge([]Muxer{mux2})
 			attest.Ok(t, err)
-			fmt.Println("\n\t m:: ", m, fmt.Sprintf("%p", m.router.notFoundHandler))
 
 			attest.Equal(t, m.opt, mux1.opt)
 			attest.Equal(t, fmt.Sprintf("%p", m.router.notFoundHandler), fmt.Sprintf("%p", mux1.router.notFoundHandler))
