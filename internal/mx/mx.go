@@ -88,9 +88,15 @@ func New(opt config.Opts, notFoundHandler http.Handler, routes ...Route) (Muxer,
 		}
 	}
 
+	// Try and detect conflicting routes.
+	if err := detectConflict(m); err != nil {
+		return Muxer{}, err
+	}
+
 	return m, nil
 }
 
+// TODO: remove error return from this method.
 func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) error {
 	return m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
@@ -127,12 +133,19 @@ func (m Muxer) Resolve(path string) Route {
 // Users of ong should not use this method. Instead, pass all your routes when calling [New]
 func (m Muxer) AddRoute(rt Route) error {
 	// AddRoute should only be used internally by ong.
-	return m.addPattern(
+	m.addPattern(
 		rt.method,
 		rt.pattern,
 		rt.originalHandler,
 		middleware.All(rt.originalHandler, m.opt),
 	)
+
+	// Try and detect conflicting routes.
+	if err := detectConflict(m); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Merge combines mxs into m. The resulting muxer uses the opts & notFoundHandler of m.
@@ -162,6 +175,21 @@ func Param(ctx context.Context, param string) string {
 	return vStr
 }
 
+// detectConflict returns an error with a diagnostic message when you try to add a route that would conflict with an already existing one.
+//
+// The error message looks like:
+//
+//	You are trying to add
+//	  pattern: /post/:id/
+//	  method: GET
+//	  handler: github.com/myAPp/server/main.loginHandler - /home/server/main.go:351
+//	However
+//	  pattern: post/create
+//	  method: GET
+//	  handler: github.com/myAPp/server/main.logoutHandler - /home/server/main.go:345
+//	already exists and would conflict.
+//
+// /
 func detectConflict(m Muxer) error {
 	for k := range m.router.routes {
 		incoming := m.router.routes[k] // TODO: rename this to candidate.
