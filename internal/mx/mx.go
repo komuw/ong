@@ -94,7 +94,6 @@ func New(opt config.Opts, notFoundHandler http.Handler, routes ...Route) (Muxer,
 	return m, nil
 }
 
-// TODO: remove error return from this method.
 func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
 	m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
@@ -152,7 +151,6 @@ func (m Muxer) Merge(mxs []Muxer) (Muxer, error) {
 		return m, nil
 	}
 
-	// TODO: detect conflicts.
 	for _, v := range mxs {
 		m.router.routes = append(m.router.routes, v.router.routes...)
 	}
@@ -196,8 +194,6 @@ func detectConflict(m Muxer) error {
 
 		for _, rt := range m.router.routes {
 			if pattern == rt.pattern && (slices.Equal(incoming.segments, rt.segments)) && (getfunc(incoming.originalHandler) == getfunc(rt.originalHandler)) {
-				// TODO: this is bad, we should not include the one for incoming.
-				// Is this enough??
 				continue
 			}
 
