@@ -511,30 +511,44 @@ func TestConflicts(t *testing.T) {
 
 	t.Run("no conflict", func(t *testing.T) {
 		t.Parallel()
-		r := newRouter(nil)
 
 		msg1 := "firstRoute-one"
 		msg2 := "secondRoute-two"
-		err := r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
+
+		rt1, err := NewRoute("/w00tw00t.at.blackhats.romanian.anti-sec:)", http.MethodGet, firstRoute(msg1))
 		attest.Ok(t, err)
 
-		// This one should not conflict.
-		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
+		rt2, err := NewRoute("/index.php", http.MethodGet, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
 		attest.Ok(t, errH)
 	})
 
 	t.Run("http MethodAll conflicts with all other methods", func(t *testing.T) {
 		t.Parallel()
-		r := newRouter(nil)
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+
+		rt1, err := NewRoute("/post", http.MethodGet, firstRoute(msg1))
 		attest.Ok(t, err)
 
-		// This one returns with a conflict message.
-		errB := r.handle(MethodAll, "post/", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errB)
+		rt2, err := NewRoute("post/", MethodAll, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
+		attest.Error(t, errH)
 	})
 }
 
