@@ -188,12 +188,12 @@ func Param(ctx context.Context, param string) string {
 // /
 func detectConflict(m Muxer) error {
 	for k := range m.router.routes {
-		incoming := m.router.routes[k] // TODO: rename this to candidate.
-		pattern := incoming.pattern
+		candidate := m.router.routes[k]
+		pattern := candidate.pattern
 		incomingSegments := pathSegments(pattern)
 
 		for _, rt := range m.router.routes {
-			if pattern == rt.pattern && (slices.Equal(incoming.segments, rt.segments)) && (getfunc(incoming.originalHandler) == getfunc(rt.originalHandler)) {
+			if pattern == rt.pattern && (slices.Equal(candidate.segments, rt.segments)) && (getfunc(candidate.originalHandler) == getfunc(rt.originalHandler)) {
 				continue
 			}
 
@@ -215,8 +215,8 @@ However
   handler: %v
 already exists and would conflict`,
 				pattern,
-				strings.ToUpper(incoming.method),
-				getfunc(incoming.originalHandler),
+				strings.ToUpper(candidate.method),
+				getfunc(candidate.originalHandler),
 				path.Join(rt.segments...),
 				strings.ToUpper(rt.method),
 				getfunc(rt.originalHandler),
