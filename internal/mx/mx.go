@@ -138,6 +138,7 @@ func (m Muxer) Merge(mxs []Muxer) Muxer {
 		return m
 	}
 
+	// TODO: detect conflicts.
 	for _, v := range mxs {
 		m.router.routes = append(m.router.routes, v.router.routes...)
 	}
