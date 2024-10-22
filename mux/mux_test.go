@@ -11,6 +11,16 @@ import (
 	"go.akshayshah.org/attest"
 )
 
+func tarpitRoutes() []Route {
+	return []Route{
+		NewRoute(
+			"/libraries/joomla/",
+			MethodAll,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		),
+	}
+}
+
 func TestNew(t *testing.T) {
 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
@@ -40,14 +50,4 @@ func TestNew(t *testing.T) {
 		// does not panic.
 		_ = New(config.DevOpts(l, "secretKey12@34String"), nil, rtz...)
 	})
-}
-
-func tarpitRoutes() []Route {
-	return []Route{
-		NewRoute(
-			"/libraries/joomla/",
-			MethodAll,
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
-		),
-	}
 }
