@@ -139,7 +139,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) error {
+func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -159,8 +159,6 @@ func (r *router) handle(method, pattern string, originalHandler, wrappingHandler
 		wrappingHandler: wrappingHandler,
 	}
 	r.routes = append(r.routes, rt)
-
-	return nil
 }
 
 // serveHTTP routes the incoming http.Request based on method and path extracting path parameters as it goes.

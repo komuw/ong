@@ -78,14 +78,12 @@ func New(opt config.Opts, notFoundHandler http.Handler, routes ...Route) (Muxer,
 			mid = middleware.All
 		}
 
-		if err := m.addPattern(
+		m.addPattern(
 			rt.method,
 			rt.pattern,
 			rt.originalHandler,
 			mid(rt.originalHandler, opt),
-		); err != nil {
-			return Muxer{}, err
-		}
+		)
 	}
 
 	// Try and detect conflicting routes.
@@ -97,8 +95,8 @@ func New(opt config.Opts, notFoundHandler http.Handler, routes ...Route) (Muxer,
 }
 
 // TODO: remove error return from this method.
-func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) error {
-	return m.router.handle(method, pattern, originalHandler, wrappingHandler)
+func (m Muxer) addPattern(method, pattern string, originalHandler, wrappingHandler http.Handler) {
+	m.router.handle(method, pattern, originalHandler, wrappingHandler)
 }
 
 // ServeHTTP implements a http.Handler
