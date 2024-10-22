@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
+	"slices"
+	"strings"
 
 	"github.com/komuw/ong/config"
 	"github.com/komuw/ong/middleware"
@@ -132,10 +135,10 @@ func (m Muxer) AddRoute(rt Route) error {
 	)
 }
 
-// Merge combines the mxs into m. The resulting muxer
-func (m Muxer) Merge(mxs []Muxer) Muxer {
+// Merge combines mxs into m. The resulting muxer uses the opts & notFoundHandler of m.
+func (m Muxer) Merge(mxs []Muxer) (Muxer, error) {
 	if len(mxs) < 1 {
-		return m
+		return m, nil
 	}
 
 	// TODO: detect conflicts.
@@ -143,7 +146,63 @@ func (m Muxer) Merge(mxs []Muxer) Muxer {
 		m.router.routes = append(m.router.routes, v.router.routes...)
 	}
 
-	return m
+	// TODO: merge this logic with `router.detectConflict`
+	for k := range m.router.routes {
+		incoming := m.router.routes[k] // TODO: rename this to candidate.
+		pattern := incoming.pattern
+		incomingSegments := pathSegments(pattern)
+
+		for _, rt := range m.router.routes {
+			if pattern == rt.pattern && (slices.Equal(incoming.segments, rt.segments)) {
+				// TODO: this is bad, we should not include the one for incoming.
+				// Is this enough??
+				continue
+			}
+
+			existingSegments := rt.segments
+			sameLen := len(incomingSegments) == len(existingSegments)
+			if !sameLen {
+				// no conflict
+				continue
+			}
+
+			errMsg := fmt.Errorf(`
+You are trying to add
+  pattern: %s
+  method: %s
+  handler: %v
+However
+  pattern: %s
+  method: %s
+  handler: %v
+already exists and would conflict`,
+				pattern,
+				strings.ToUpper(incoming.method),
+				getfunc(incoming.originalHandler),
+				path.Join(rt.segments...),
+				strings.ToUpper(rt.method),
+				getfunc(rt.originalHandler),
+			)
+
+			if len(existingSegments) == 1 && existingSegments[0] == "*" && len(incomingSegments) > 0 {
+				return m, errMsg
+			}
+
+			if pattern == rt.pattern {
+				return m, errMsg
+			}
+
+			if strings.Contains(pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
+				return m, errMsg
+			}
+
+			if strings.Contains(rt.pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
+				return m, errMsg
+			}
+		}
+	}
+
+	return m, nil
 }
 
 // Param gets the path/url parameter from the specified Context.

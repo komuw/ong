@@ -413,7 +413,8 @@ func TestMux(t *testing.T) {
 		httpsPort := tst.GetPort()
 		domain := "localhost"
 
-		{
+		t.Run("success", func(t *testing.T) {
+			t.Parallel()
 			rt1, err := NewRoute("/abc", MethodGet, someMuxHandler("hello"))
 			attest.Ok(t, err)
 
@@ -428,14 +429,16 @@ func TestMux(t *testing.T) {
 			mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2, rt3)
 			attest.Ok(t, err)
 
-			m := mux1.Merge([]Muxer{mux2})
+			m, err := mux1.Merge([]Muxer{mux2})
+			attest.Ok(t, err)
 			fmt.Println("\n\t m:: ", m, fmt.Sprintf("%p", m.router.notFoundHandler))
+
 			attest.Equal(t, m.opt, mux1.opt)
 			attest.Equal(t, fmt.Sprintf("%p", m.router.notFoundHandler), fmt.Sprintf("%p", mux1.router.notFoundHandler))
 			attest.Equal(t, len(m.router.routes), 3)
-		}
+		})
 
-		{ // conflict
+		t.Run("conflict", func(t *testing.T) {
 			rt1, err := NewRoute("/abc", MethodGet, someMuxHandler("hello"))
 			attest.Ok(t, err)
 
@@ -450,13 +453,15 @@ func TestMux(t *testing.T) {
 			mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2, rt3)
 			attest.Ok(t, err)
 
-			m := mux1.Merge([]Muxer{mux2})
+			m, err := mux1.Merge([]Muxer{mux2})
+			attest.Ok(t, err)
 			fmt.Println("\n\t m:: ", m, fmt.Sprintf("%p", m.router.notFoundHandler))
+
 			attest.Equal(t, m.opt, mux1.opt)
 			attest.Equal(t, fmt.Sprintf("%p", m.router.notFoundHandler), fmt.Sprintf("%p", mux1.router.notFoundHandler))
 			attest.Equal(t, len(m.router.routes), 3)
 			attest.True(t, "TODO:" == "assert that there's a panic for conflict")
-		}
+		})
 	})
 }
 
