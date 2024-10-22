@@ -453,14 +453,12 @@ func TestMux(t *testing.T) {
 			mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2, rt3)
 			attest.Ok(t, err)
 
-			m, err := mux1.Merge([]Muxer{mux2})
-			attest.Ok(t, err)
-			fmt.Println("\n\t m:: ", m, fmt.Sprintf("%p", m.router.notFoundHandler))
-
-			attest.Equal(t, m.opt, mux1.opt)
-			attest.Equal(t, fmt.Sprintf("%p", m.router.notFoundHandler), fmt.Sprintf("%p", mux1.router.notFoundHandler))
-			attest.Equal(t, len(m.router.routes), 3)
-			attest.True(t, "TODO:" == "assert that there's a panic for conflict")
+			_, errM := mux1.Merge([]Muxer{mux2})
+			attest.Error(t, errM)
+			rStr := errM.Error()
+			attest.Subsequence(t, rStr, "would conflict")
+			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:28")  // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:450") // location where the other handler is declared.
 		})
 	})
 }

@@ -153,7 +153,7 @@ func (m Muxer) Merge(mxs []Muxer) (Muxer, error) {
 		incomingSegments := pathSegments(pattern)
 
 		for _, rt := range m.router.routes {
-			if pattern == rt.pattern && (slices.Equal(incoming.segments, rt.segments)) {
+			if pattern == rt.pattern && (slices.Equal(incoming.segments, rt.segments)) && (getfunc(incoming.originalHandler) == getfunc(rt.originalHandler)) {
 				// TODO: this is bad, we should not include the one for incoming.
 				// Is this enough??
 				continue
