@@ -3,7 +3,6 @@ package mx
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -318,86 +317,87 @@ func secondRoute(msg string) http.HandlerFunc {
 	}
 }
 
-func TestConflicts(t *testing.T) {
-	t.Parallel()
+// TODO: remove
+// func TestConflicts(t *testing.T) {
+// 	t.Parallel()
 
-	t.Run("conflicts detected", func(t *testing.T) {
-		t.Parallel()
-		r := newRouter(nil)
+// 	t.Run("conflicts detected", func(t *testing.T) {
+// 		t.Parallel()
+// 		r := newRouter(nil)
 
-		msg1 := "firstRoute"
-		msg2 := "secondRoute"
-		err := r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
-		attest.Ok(t, err)
+// 		msg1 := "firstRoute"
+// 		msg2 := "secondRoute"
+// 		err := r.handle(http.MethodGet, "/post/create", firstRoute(msg1), firstRoute(msg1))
+// 		attest.Ok(t, err)
 
-		// This one returns with a conflict message.
-		errH := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errH)
+// 		// This one returns with a conflict message.
+// 		errH := r.handle(http.MethodGet, "/post/:id", secondRoute(msg2), secondRoute(msg2))
+// 		attest.Error(t, errH)
 
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/post/create", nil)
-		r.serveHTTP(rec, req)
+// 		rec := httptest.NewRecorder()
+// 		req := httptest.NewRequest(http.MethodGet, "/post/create", nil)
+// 		r.serveHTTP(rec, req)
 
-		res := rec.Result()
-		defer res.Body.Close()
+// 		res := rec.Result()
+// 		defer res.Body.Close()
 
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
+// 		rb, err := io.ReadAll(res.Body)
+// 		attest.Ok(t, err)
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), msg1)
-	})
+// 		attest.Equal(t, res.StatusCode, http.StatusOK)
+// 		attest.Equal(t, string(rb), msg1)
+// 	})
 
-	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
-		t.Parallel()
-		r := newRouter(nil)
+// 	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
+// 		t.Parallel()
+// 		r := newRouter(nil)
 
-		msg1 := "firstRoute"
-		msg2 := "secondRoute"
-		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
-		attest.Ok(t, err)
+// 		msg1 := "firstRoute"
+// 		msg2 := "secondRoute"
+// 		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+// 		attest.Ok(t, err)
 
-		// This one returns with a conflict message.
-		errH := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errH)
+// 		// This one returns with a conflict message.
+// 		errH := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
+// 		attest.Error(t, errH)
 
-		// This one returns with a conflict message.
-		errB := r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errB)
+// 		// This one returns with a conflict message.
+// 		errB := r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
+// 		attest.Error(t, errB)
 
-		// This one returns with a conflict message.
-		errC := r.handle(http.MethodPut, "post", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errC)
-	})
+// 		// This one returns with a conflict message.
+// 		errC := r.handle(http.MethodPut, "post", secondRoute(msg2), secondRoute(msg2))
+// 		attest.Error(t, errC)
+// 	})
 
-	t.Run("no conflict", func(t *testing.T) {
-		t.Parallel()
-		r := newRouter(nil)
+// 	t.Run("no conflict", func(t *testing.T) {
+// 		t.Parallel()
+// 		r := newRouter(nil)
 
-		msg1 := "firstRoute-one"
-		msg2 := "secondRoute-two"
-		err := r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
-		attest.Ok(t, err)
+// 		msg1 := "firstRoute-one"
+// 		msg2 := "secondRoute-two"
+// 		err := r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
+// 		attest.Ok(t, err)
 
-		// This one should not conflict.
-		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
-		attest.Ok(t, errH)
-	})
+// 		// This one should not conflict.
+// 		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
+// 		attest.Ok(t, errH)
+// 	})
 
-	t.Run("http MethodAll conflicts with all other methods", func(t *testing.T) {
-		t.Parallel()
-		r := newRouter(nil)
+// 	t.Run("http MethodAll conflicts with all other methods", func(t *testing.T) {
+// 		t.Parallel()
+// 		r := newRouter(nil)
 
-		msg1 := "firstRoute"
-		msg2 := "secondRoute"
-		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
-		attest.Ok(t, err)
+// 		msg1 := "firstRoute"
+// 		msg2 := "secondRoute"
+// 		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+// 		attest.Ok(t, err)
 
-		// This one returns with a conflict message.
-		errB := r.handle(MethodAll, "post/", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errB)
-	})
-}
+// 		// This one returns with a conflict message.
+// 		errB := r.handle(MethodAll, "post/", secondRoute(msg2), secondRoute(msg2))
+// 		attest.Error(t, errB)
+// 	})
+// }
 
 func TestNotFound(t *testing.T) {
 	t.Parallel()

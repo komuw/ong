@@ -462,6 +462,83 @@ func TestMux(t *testing.T) {
 	})
 }
 
+func TestConflicts(t *testing.T) {
+	t.Parallel()
+
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
+	t.Run("conflicts detected", func(t *testing.T) {
+		t.Parallel()
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+
+		rt1, err := NewRoute("/post/create", http.MethodGet, firstRoute(msg1))
+		attest.Ok(t, err)
+
+		rt2, err := NewRoute("/post/:id", http.MethodGet, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
+		attest.Error(t, errH)
+	})
+
+	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
+		t.Parallel()
+		r := newRouter(nil)
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+		attest.Ok(t, err)
+
+		// This one returns with a conflict message.
+		errH := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errH)
+
+		// This one returns with a conflict message.
+		errB := r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errB)
+
+		// This one returns with a conflict message.
+		errC := r.handle(http.MethodPut, "post", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errC)
+	})
+
+	t.Run("no conflict", func(t *testing.T) {
+		t.Parallel()
+		r := newRouter(nil)
+
+		msg1 := "firstRoute-one"
+		msg2 := "secondRoute-two"
+		err := r.handle(http.MethodGet, "/w00tw00t.at.blackhats.romanian.anti-sec:)", firstRoute(msg1), firstRoute(msg1))
+		attest.Ok(t, err)
+
+		// This one should not conflict.
+		errH := r.handle(http.MethodGet, "/index.php", secondRoute(msg2), secondRoute(msg2))
+		attest.Ok(t, errH)
+	})
+
+	t.Run("http MethodAll conflicts with all other methods", func(t *testing.T) {
+		t.Parallel()
+		r := newRouter(nil)
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+		attest.Ok(t, err)
+
+		// This one returns with a conflict message.
+		errB := r.handle(MethodAll, "post/", secondRoute(msg2), secondRoute(msg2))
+		attest.Error(t, errB)
+	})
+}
+
 func TestMuxFlexiblePattern(t *testing.T) {
 	t.Parallel()
 
