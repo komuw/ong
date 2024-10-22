@@ -24,6 +24,11 @@ const (
 	MethodTrace   = mx.MethodTrace
 )
 
+// func Merge(m []Muxer) Muxer {
+
+// 	nw:=New(m[0].internalMux)
+// }
+
 // Muxer is a HTTP request multiplexer.
 //
 // It matches the URL of each incoming request against a list of registered

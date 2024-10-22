@@ -51,3 +51,20 @@ func TestNew(t *testing.T) {
 		_ = New(config.DevOpts(l, "secretKey12@34String"), nil, rtz...)
 	})
 }
+
+// func TestMergeMux(t *testing.T) {
+// 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
+// 	rt1 := []Route{
+// 		NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+// 		NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+// 	}
+
+// 	rt2 := []Route{
+// 		NewRoute("/uri2", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+// 	}
+
+// 	mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
+// 	mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
+
+// }

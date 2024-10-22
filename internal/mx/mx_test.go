@@ -406,6 +406,31 @@ func TestMux(t *testing.T) {
 			attest.Equal(t, string(rb2), "someOtherMuxHandler")
 		}
 	})
+
+	t.Run("merge", func(t *testing.T) {
+		t.Parallel()
+
+		httpsPort := tst.GetPort()
+		domain := "localhost"
+
+		rt1, err := NewRoute("/abc", MethodGet, someMuxHandler("hello"))
+		attest.Ok(t, err)
+
+		mux1, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt1)
+		attest.Ok(t, err)
+
+		rt2, err := NewRoute("/xyz", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		attest.Ok(t, err)
+
+		mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2)
+		attest.Ok(t, err)
+
+		m := mux1.Merge([]Muxer{mux2})
+		fmt.Println("\n\t m:: ", m, fmt.Sprintf("%p", m.router.notFoundHandler))
+		attest.Equal(t, m.opt, mux1.opt)
+		attest.Equal(t, fmt.Sprintf("%p", m.router.notFoundHandler), fmt.Sprintf("%p", mux1.router.notFoundHandler))
+		attest.Equal(t, len(m.router.routes), 2)
+	})
 }
 
 func TestMuxFlexiblePattern(t *testing.T) {

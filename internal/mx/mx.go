@@ -132,6 +132,19 @@ func (m Muxer) AddRoute(rt Route) error {
 	)
 }
 
+// Merge combines the mxs into m. The resulting muxer
+func (m Muxer) Merge(mxs []Muxer) Muxer {
+	if len(mxs) < 1 {
+		return m
+	}
+
+	for _, v := range mxs {
+		m.router.routes = append(m.router.routes, v.router.routes...)
+	}
+
+	return m
+}
+
 // Param gets the path/url parameter from the specified Context.
 func Param(ctx context.Context, param string) string {
 	vStr, ok := ctx.Value(muxContextKey(param)).(string)
