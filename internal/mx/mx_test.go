@@ -204,7 +204,7 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		uri1 := "/api/hi"
-		uri2 := "/api/:someId" // This conflicts with uri1
+		uri2 := "api/:someId" // This conflicts with uri1
 		method := MethodGet
 
 		rt1, err := NewRoute(
