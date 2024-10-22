@@ -490,24 +490,23 @@ func TestConflicts(t *testing.T) {
 
 	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
 		t.Parallel()
-		r := newRouter(nil)
 
 		msg1 := "firstRoute"
 		msg2 := "secondRoute"
-		err := r.handle(http.MethodGet, "/post", firstRoute(msg1), firstRoute(msg1))
+
+		rt1, err := NewRoute("/post", http.MethodGet, firstRoute(msg1))
 		attest.Ok(t, err)
 
-		// This one returns with a conflict message.
-		errH := r.handle(http.MethodGet, "/post/", secondRoute(msg2), secondRoute(msg2))
+		rt2, err := NewRoute("post/", http.MethodDelete, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
 		attest.Error(t, errH)
-
-		// This one returns with a conflict message.
-		errB := r.handle(http.MethodDelete, "post/", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errB)
-
-		// This one returns with a conflict message.
-		errC := r.handle(http.MethodPut, "post", secondRoute(msg2), secondRoute(msg2))
-		attest.Error(t, errC)
 	})
 
 	t.Run("no conflict", func(t *testing.T) {
