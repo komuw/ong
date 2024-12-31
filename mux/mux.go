@@ -91,7 +91,7 @@ func (m Muxer) Unwrap() mx.Muxer {
 }
 
 // Merge combines mxs into one.
-// The resulting muxer uses the opts & notFoundHandler of muxer at index 0.
+// NB: The resulting muxer uses the opts & notFoundHandler of muxer at index 0.
 func Merge(mxs ...Muxer) (Muxer, error) {
 	mi := []mx.Muxer{}
 	for _, v := range mxs {
