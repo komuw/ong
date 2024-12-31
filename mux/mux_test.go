@@ -72,7 +72,7 @@ func TestMerge(t *testing.T) {
 		mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
 		mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
 
-		_, err := mx1.Merge(mx2)
+		_, err := Merge(mx1, mx2)
 		attest.Ok(t, err)
 	})
 
@@ -92,7 +92,7 @@ func TestMerge(t *testing.T) {
 		mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
 		mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
 
-		_, err := mx1.Merge(mx2)
+		_, err := Merge(mx1, mx2)
 		attest.Error(t, err)
 		attest.Subsequence(t, err.Error(), "would conflict")
 	})

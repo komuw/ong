@@ -5,6 +5,7 @@ package mx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -145,13 +146,19 @@ func (m Muxer) AddRoute(rt Route) error {
 	return nil
 }
 
-// Merge combines mxs into m. The resulting muxer uses the opts & notFoundHandler of m.
-func (m Muxer) Merge(mxs ...Muxer) (Muxer, error) {
-	if len(mxs) < 1 {
-		return m, nil
+// Merge combines mxs into one. The resulting muxer uses the opts & notFoundHandler of muxer at index 0.
+func Merge(mxs ...Muxer) (Muxer, error) {
+	_len := len(mxs)
+
+	if _len <= 0 {
+		return Muxer{}, errors.New("ong/mux: no muxer")
+	}
+	if _len == 1 {
+		return mxs[0], nil
 	}
 
-	for _, v := range mxs {
+	m := mxs[0]
+	for _, v := range mxs[1:] {
 		m.router.routes = append(m.router.routes, v.router.routes...)
 	}
 

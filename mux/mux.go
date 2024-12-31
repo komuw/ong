@@ -90,14 +90,14 @@ func (m Muxer) Unwrap() mx.Muxer {
 	return m.internalMux
 }
 
-// Merge combines mxs into m. The resulting muxer uses the opts & notFoundHandler of m.
-func (m Muxer) Merge(mxs ...Muxer) (Muxer, error) {
+// Merge combines mxs into one. The resulting muxer uses the opts & notFoundHandler of muxer at index 0.
+func Merge(mxs ...Muxer) (Muxer, error) {
 	mi := []mx.Muxer{}
 	for _, v := range mxs {
 		mi = append(mi, v.internalMux)
 	}
 
-	mm, err := m.internalMux.Merge(mi...)
+	mm, err := mx.Merge(mi...)
 	if err != nil {
 		return Muxer{}, err
 	}
