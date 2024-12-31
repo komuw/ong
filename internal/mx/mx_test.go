@@ -204,7 +204,7 @@ func TestMux(t *testing.T) {
 
 		msg := "hello world"
 		uri1 := "/api/hi"
-		uri2 := "/api/:someId" // This conflicts with uri1
+		uri2 := "api/:someId" // This conflicts with uri1
 		method := MethodGet
 
 		rt1, err := NewRoute(
@@ -405,6 +405,150 @@ func TestMux(t *testing.T) {
 			attest.Equal(t, res2.StatusCode, http.StatusOK)
 			attest.Equal(t, string(rb2), "someOtherMuxHandler")
 		}
+	})
+
+	t.Run("merge", func(t *testing.T) {
+		t.Parallel()
+
+		httpsPort := tst.GetPort()
+		domain := "localhost"
+
+		t.Run("success", func(t *testing.T) {
+			t.Parallel()
+			rt1, err := NewRoute("/abc", MethodGet, someMuxHandler("hello"))
+			attest.Ok(t, err)
+
+			mux1, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt1)
+			attest.Ok(t, err)
+
+			rt2, err := NewRoute("/ijk", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			attest.Ok(t, err)
+			rt3, err := NewRoute("/xyz", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			attest.Ok(t, err)
+
+			mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2, rt3)
+			attest.Ok(t, err)
+
+			m, err := Merge(mux1, mux2)
+			attest.Ok(t, err)
+
+			attest.Equal(t, m.opt, mux1.opt)
+			attest.Equal(t, fmt.Sprintf("%p", m.router.notFoundHandler), fmt.Sprintf("%p", mux1.router.notFoundHandler))
+			attest.Equal(t, len(m.router.routes), 3)
+		})
+
+		t.Run("conflict", func(t *testing.T) {
+			rt1, err := NewRoute("/abc", MethodGet, someMuxHandler("hello"))
+			attest.Ok(t, err)
+
+			mux1, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt1)
+			attest.Ok(t, err)
+
+			rt2, err := NewRoute("/ijk", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			attest.Ok(t, err)
+			rt3, err := NewRoute("/abc", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			attest.Ok(t, err)
+
+			mux2, err := New(config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l), nil, rt2, rt3)
+			attest.Ok(t, err)
+
+			_, errM := Merge(mux1, mux2)
+			attest.Error(t, errM)
+			rStr := errM.Error()
+			attest.Subsequence(t, rStr, "would conflict")
+			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:28")  // location where `someMuxHandler` is declared.
+			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:449") // location where the other handler is declared.
+		})
+	})
+}
+
+func TestConflicts(t *testing.T) {
+	t.Parallel()
+
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
+	t.Run("conflicts detected", func(t *testing.T) {
+		t.Parallel()
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+
+		rt1, err := NewRoute("/post/create", http.MethodGet, firstRoute(msg1))
+		attest.Ok(t, err)
+
+		rt2, err := NewRoute("/post/:id", http.MethodGet, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
+		attest.Error(t, errH)
+	})
+
+	t.Run("different http methods same path conflicts detected", func(t *testing.T) {
+		t.Parallel()
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+
+		rt1, err := NewRoute("/post", http.MethodGet, firstRoute(msg1))
+		attest.Ok(t, err)
+
+		rt2, err := NewRoute("post/", http.MethodDelete, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
+		attest.Error(t, errH)
+	})
+
+	t.Run("no conflict", func(t *testing.T) {
+		t.Parallel()
+
+		msg1 := "firstRoute-one"
+		msg2 := "secondRoute-two"
+
+		rt1, err := NewRoute("/w00tw00t.at.blackhats.romanian.anti-sec:)", http.MethodGet, firstRoute(msg1))
+		attest.Ok(t, err)
+
+		rt2, err := NewRoute("/index.php", http.MethodGet, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
+		attest.Ok(t, errH)
+	})
+
+	t.Run("http MethodAll conflicts with all other methods", func(t *testing.T) {
+		t.Parallel()
+
+		msg1 := "firstRoute"
+		msg2 := "secondRoute"
+
+		rt1, err := NewRoute("/post", http.MethodGet, firstRoute(msg1))
+		attest.Ok(t, err)
+
+		rt2, err := NewRoute("post/", MethodAll, secondRoute(msg2))
+		attest.Ok(t, err)
+
+		_, errH := New(
+			config.WithOpts("localhost", 443, tst.SecretKey(), config.DirectIpStrategy, l),
+			nil,
+			rt1,
+			rt2,
+		)
+		attest.Error(t, errH)
 	})
 }
 

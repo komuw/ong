@@ -11,6 +11,16 @@ import (
 	"go.akshayshah.org/attest"
 )
 
+func tarpitRoutes() []Route {
+	return []Route{
+		NewRoute(
+			"/libraries/joomla/",
+			MethodAll,
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
+		),
+	}
+}
+
 func TestNew(t *testing.T) {
 	l := log.New(context.Background(), &bytes.Buffer{}, 500)
 
@@ -42,12 +52,48 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func tarpitRoutes() []Route {
-	return []Route{
-		NewRoute(
-			"/libraries/joomla/",
-			MethodAll,
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}),
-		),
-	}
+func TestMerge(t *testing.T) {
+	t.Parallel()
+
+	l := log.New(context.Background(), &bytes.Buffer{}, 500)
+
+	t.Run("okay", func(t *testing.T) {
+		t.Parallel()
+
+		rt1 := []Route{
+			NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+
+		rt2 := []Route{
+			NewRoute("/uri2", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+
+		mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
+		mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
+
+		_, err := Merge(mx1, mx2)
+		attest.Ok(t, err)
+	})
+
+	t.Run("conflict", func(t *testing.T) {
+		t.Parallel()
+
+		rt1 := []Route{
+			NewRoute("/home", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			NewRoute("/health/", MethodAll, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+
+		rt2 := []Route{
+			NewRoute("/uri2", MethodGet, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+			NewRoute("health", MethodPost, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})),
+		}
+
+		mx1 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt1...)
+		mx2 := New(config.DevOpts(l, "secretKey12@34String"), nil, rt2...)
+
+		_, err := Merge(mx1, mx2)
+		attest.Error(t, err)
+		attest.Subsequence(t, err.Error(), "would conflict")
+	})
 }

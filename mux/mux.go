@@ -90,6 +90,22 @@ func (m Muxer) Unwrap() mx.Muxer {
 	return m.internalMux
 }
 
+// Merge combines mxs into one.
+// NB: The resulting muxer uses the opts & notFoundHandler of muxer at index 0.
+func Merge(mxs ...Muxer) (Muxer, error) {
+	mi := []mx.Muxer{}
+	for _, v := range mxs {
+		mi = append(mi, v.internalMux)
+	}
+
+	mm, err := mx.Merge(mi...)
+	if err != nil {
+		return Muxer{}, err
+	}
+
+	return Muxer{internalMux: mm}, nil
+}
+
 // Param gets the path/url parameter from the specified Context.
 // It returns an empty string if the parameter was not found.
 func Param(ctx context.Context, param string) string {

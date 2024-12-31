@@ -153,21 +153,23 @@ func TestClient(t *testing.T) {
 			clean(res, cli)
 		}
 
-		{
-			// success
-			w := &bytes.Buffer{}
-			maxMsgs := 15
-			l := log.New(context.Background(), w, maxMsgs)
+		// todo: `example.com` no longer allows http POST.
+		//
+		// {
+		// 	// success
+		// 	w := &bytes.Buffer{}
+		// 	maxMsgs := 15
+		// 	l := log.New(context.Background(), w, maxMsgs)
 
-			cli := Safe(l)
+		// 	cli := Safe(l)
 
-			b := strings.NewReader(`{"key":"value"}`)
-			res, err := cli.Post("https://example.com", "application/json", b) // nolint:bodyclose
-			attest.NotZero(t, res)
-			attest.Ok(t, err)
-			attest.Zero(t, w.String())
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			clean(res, cli)
-		}
+		// 	b := strings.NewReader(`{"key":"value"}`)
+		// 	res, err := cli.Post("https://example.com", "application/json", b) // nolint:bodyclose
+		// 	attest.NotZero(t, res)
+		// 	attest.Ok(t, err)
+		// 	attest.Zero(t, w.String())
+		// 	attest.Equal(t, res.StatusCode, http.StatusOK)
+		// 	clean(res, cli)
+		// }
 	})
 }

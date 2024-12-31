@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 	"reflect"
 	"runtime"
 	"strings"
@@ -140,7 +139,7 @@ func pathSegments(p string) []string {
 // handle adds a handler with the specified method and pattern.
 // Pattern can contain path segments such as: /item/:id which is
 // accessible via the Param function.
-func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) error {
+func (r *router) handle(method, pattern string, originalHandler, wrappingHandler http.Handler) {
 	if !strings.HasSuffix(pattern, "/") {
 		// this will make the mux send requests for;
 		//   - localhost:80/check
@@ -152,11 +151,6 @@ func (r *router) handle(method, pattern string, originalHandler, wrappingHandler
 		pattern = "/" + pattern
 	}
 
-	// Try and detect conflict before adding a new route.
-	if err := r.detectConflict(method, pattern, originalHandler); err != nil {
-		return err
-	}
-
 	rt := Route{
 		method:          strings.ToUpper(method),
 		pattern:         pattern,
@@ -165,8 +159,6 @@ func (r *router) handle(method, pattern string, originalHandler, wrappingHandler
 		wrappingHandler: wrappingHandler,
 	}
 	r.routes = append(r.routes, rt)
-
-	return nil
 }
 
 // serveHTTP routes the incoming http.Request based on method and path extracting path parameters as it goes.
@@ -180,73 +172,6 @@ func (r *router) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	r.notFoundHandler.ServeHTTP(w, req)
-}
-
-// detectConflict returns an error with a diagnostic message when you try to add a route that would conflict with an already existing one.
-//
-// The error message looks like:
-//
-//	You are trying to add
-//	  pattern: /post/:id/
-//	  method: GET
-//	  handler: github.com/myAPp/server/main.loginHandler - /home/server/main.go:351
-//	However
-//	  pattern: post/create
-//	  method: GET
-//	  handler: github.com/myAPp/server/main.logoutHandler - /home/server/main.go:345
-//	already exists and would conflict.
-//
-// /
-func (r *router) detectConflict(method, pattern string, originalHandler http.Handler) error {
-	// Conflicting routes are a bad thing.
-	// They can be a source of bugs and confusion.
-	// see: https://www.alexedwards.net/blog/which-go-router-should-i-use
-
-	incomingSegments := pathSegments(pattern)
-	for _, rt := range r.routes {
-		existingSegments := rt.segments
-		sameLen := len(incomingSegments) == len(existingSegments)
-		if !sameLen {
-			// no conflict
-			continue
-		}
-
-		errMsg := fmt.Errorf(`
-You are trying to add
-  pattern: %s
-  method: %s
-  handler: %v
-However
-  pattern: %s
-  method: %s
-  handler: %v
-already exists and would conflict`,
-			pattern,
-			strings.ToUpper(method),
-			getfunc(originalHandler),
-			path.Join(rt.segments...),
-			strings.ToUpper(rt.method),
-			getfunc(rt.originalHandler),
-		)
-
-		if len(existingSegments) == 1 && existingSegments[0] == "*" && len(incomingSegments) > 0 {
-			return errMsg
-		}
-
-		if pattern == rt.pattern {
-			return errMsg
-		}
-
-		if strings.Contains(pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-			return errMsg
-		}
-
-		if strings.Contains(rt.pattern, ":") && (incomingSegments[0] == existingSegments[0]) {
-			return errMsg
-		}
-	}
-
-	return nil
 }
 
 func getfunc(handler http.Handler) string {
