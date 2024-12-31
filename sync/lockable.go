@@ -5,7 +5,7 @@ import (
 )
 
 type Lockable[T any] struct {
-	mu    sync.Mutex
+	mu    sync.RWMutex
 	value T
 }
 
@@ -32,10 +32,8 @@ func (l *Lockable[T]) Do(
 
 // Get returns the latest value.
 func (l *Lockable[T]) Get() (value T) {
-	// the error here is guaranteed to e nil
-	val, _ := l.Do(func(oldValue T) (newValue T, _ error) {
-		return oldValue, nil
-	})
+	l.mu.RLock()
+	defer l.mu.RUnlock()
 
-	return val
+	return l.value
 }
