@@ -1,7 +1,7 @@
 package sync_test
 
 import (
-	"fmt"
+	stdlibSync "sync"
 	"testing"
 
 	"github.com/komuw/ong/sync"
@@ -26,23 +26,32 @@ func TestLockable(t *testing.T) {
 		attest.Ok(t, err)
 		attest.Equal(t, val, 34)
 		attest.Equal(t, log.Get(), val)
+	})
 
-		_ = val
-		fmt.Println("val: ", log.Get())
+	t.Run("concurrency safe", func(t *testing.T) {
+		t.Parallel()
 
-		// for i := range 19 {
-		// 	go func(ii int) {
-		// 		val, err := log.Do(
-		// 			func(l *Lockable[int]) error {
-		// 				l.value = ii
-		// 				return nil
-		// 			},
-		// 		)
-		// 		if err != nil {
-		// 			panic(err)
-		// 		}
-		// 		fmt.Println("ii: ", ii, "val: ", val)
-		// 	}(i)
-		// }
+		age := sync.NewLockable(0)
+
+		runhandler := func(i int) {
+			val, err := age.Do(
+				func(oldval int) (int, error) {
+					return i, nil
+				},
+			)
+			attest.Ok(t, err)
+			attest.Equal(t, val, i)
+			attest.Equal(t, log.Get(), val)
+		}
+
+		wg := &stdlibSync.WaitGroup{}
+		for rN := 0; rN <= 34; rN++ {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				runhandler(i)
+			}(rN)
+		}
+		wg.Wait()
 	})
 }
