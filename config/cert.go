@@ -65,7 +65,11 @@ func createDevCertKey(l *slog.Logger) (certPath, keyPath string) {
 		l.Error("createDevCertKey", "error", err)
 		panic(err)
 	}
-	pubKey := privKey.(crypto.Signer).Public()
+	sg, ok := privKey.(crypto.Signer)
+	if !ok {
+		panic("privKey is not of type crypto.Signer")
+	}
+	pubKey := sg.Public()
 
 	serNum, err := randomSerialNumber()
 	if err != nil {
@@ -256,7 +260,11 @@ func newCA() error {
 	if err != nil {
 		return err
 	}
-	pubKey := privKey.(crypto.Signer).Public()
+	sg, ok := privKey.(crypto.Signer)
+	if !ok {
+		panic("privKey is not of type crypto.Signer")
+	}
+	pubKey := sg.Public()
 
 	spkiASN1, err := x509.MarshalPKIXPublicKey(pubKey)
 	if err != nil {
