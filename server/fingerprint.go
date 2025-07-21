@@ -161,12 +161,8 @@ func setFingerprint(info *tls.ClientHelloInfo) string {
 	}
 	s += fmt.Sprintf("%s,", strings.Join(vals, "-"))
 
-	// Go currently does not expose `tls.ClientHelloInfo.extensions`.
-	// This could be fixed if https://github.com/golang/go/issues/32936 is ever implemented.
-	// Tracked in: https://github.com/komuw/ong/issues/194
-	extensions := []uint16{}
 	vals = []string{}
-	for _, v := range extensions {
+	for _, v := range info.Extensions {
 		if _, okExt := greaseTable[v]; okExt {
 			continue
 		}
