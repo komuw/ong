@@ -164,10 +164,10 @@ jobs:
           # see: https://github.com/golang/go/commit/a98589711da5e9d935e8d690cfca92892e86d557
           /home/runner/go/bin/errcheck -ignoregenerated -ignoretests -asserts ./...
           /home/runner/go/bin/unconvert -v ./...
-          /home/runner/go/bin/gitleaks detect . -v --no-git --baseline-path .gitleaksignore
+          /home/runner/go/bin/gitleaks detect . -v --no-git --baseline-path .gitleaksignore.json
           # To create the gitleaksignore file, run;
-          # rm -rf .gitleaksignore; gitleaks detect . --no-git --report-path .gitleaksignore
-          
+          # rm -rf .gitleaksignore.json; gitleaks detect . --no-git --report-path .gitleaksignore.json
+
           # dont use golangci-lint
           # see: https://twitter.com/dominikhonnef/status/1394766501157167112
           #

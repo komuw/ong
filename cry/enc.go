@@ -179,8 +179,6 @@ func (e Enc) DecryptDecode(encryptedEncodedMsg string) (plainTextMsg string, err
 
 func random(n1, n2 int) []byte {
 	b := make([]byte, n1, n2)
-	if _, err := cryptoRand.Read(b); err != nil {
-		panic(err)
-	}
+	_, _ = cryptoRand.Read(b) // it panics internally on error
 	return b
 }
