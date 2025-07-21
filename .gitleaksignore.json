@@ -1,0 +1,22 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 38,
+  "EndLine": 38,
+  "StartColumn": 53,
+  "EndColumn": 110,
+  "Match": "octx.FingerPrintCtxKey, \"we4376t30lmbcflmh7a28d9d8eb38jk9\"",
+  "Secret": "we4376t30lmbcflmh7a28d9d8eb38jk9",
+  "File": "internal/finger/fingerprint_test.go",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 4.2653193,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "internal/finger/fingerprint_test.go:generic-api-key:38"
+ }
+]
