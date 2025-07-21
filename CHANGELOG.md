@@ -2,6 +2,8 @@
 
 Most recent version is listed first.  
 
+# v0.1.14
+- Include tls extensions in tls fingerprint: https://github.com/komuw/ong/pull/493
 
 # v0.1.13
 - ong/mux: add ability to merge Muxers: https://github.com/komuw/ong/pull/482
