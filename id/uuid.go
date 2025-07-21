@@ -75,9 +75,7 @@ func UUID4() UUID {
 	// Implementations SHOULD utilize a cryptographically secure pseudo-random number generator (CSPRNG) to provide values that are
 	// both difficult to predict (unguessable) and have a low likelihood of collision (unique).
 	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-6.8
-	if _, err := rand.Read(uuid[:]); err != nil {
-		panic(err)
-	}
+	_, _ = rand.Read(uuid[:]) // it panics internally on error
 
 	uuid.setVersion(version4)
 	uuid.setVariant()
@@ -118,9 +116,7 @@ func UUID8() UUID {
 	// Implementations SHOULD utilize a cryptographically secure pseudo-random number generator (CSPRNG) to provide values that are
 	// both difficult to predict (unguessable) and have a low likelihood of collision (unique).
 	// https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#section-6.8
-	if _, err := rand.Read(uuid[:]); err != nil {
-		panic(err)
-	}
+	_, _ = rand.Read(uuid[:]) // it panics internally on error
 
 	// 2. Set the first 6bytes with time.
 	//
