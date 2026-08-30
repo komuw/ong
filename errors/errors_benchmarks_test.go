@@ -58,3 +58,27 @@ func BenchmarkOtherWrappers(b *testing.B) {
 		globalTrace = err
 	})
 }
+
+func BenchmarkWrap(b *testing.B) {
+	b.Run("first", func(b *testing.B) {
+		err := stdErrors.New("error")
+		var wrapped error
+		b.ReportAllocs()
+		b.ResetTimer()
+		for range b.N {
+			wrapped = Wrap(err)
+		}
+		globalOng = wrapped
+	})
+
+	b.Run("existing", func(b *testing.B) {
+		err := New("error")
+		var wrapped error
+		b.ReportAllocs()
+		b.ResetTimer()
+		for range b.N {
+			wrapped = Wrap(err)
+		}
+		globalOng = wrapped
+	})
+}

@@ -220,7 +220,7 @@ func TestStackError(t *testing.T) {
 		err := f()
 		extendedFormatting := fmt.Sprintf("%+v", err)
 
-		attest.True(t, stdErrors.Is(err, &stackError{}))
+		attest.NotZero(t, StackTrace(err))
 		attest.Equal(t, err.Error(), "fmting: hey")
 		for _, v := range []string{
 			"ong/errors/errors_test.go:213",
@@ -297,6 +297,280 @@ func TestStackTrace(t *testing.T) {
 
 			got := StackTrace(err)
 			attest.Subsequence(t, got, "ong/errors/errors_test.go:295")
+		}
+	})
+}
+
+type contextError struct {
+	message string
+	err     error
+}
+
+func (e *contextError) Error() string {
+	return e.message + ": " + e.err.Error()
+}
+
+func (e *contextError) Unwrap() error {
+	return e.err
+}
+
+func TestWrapContract(t *testing.T) {
+	t.Parallel()
+
+	t.Run("repeated wrapping", func(t *testing.T) {
+		t.Parallel()
+
+		origin := New("failure")
+		originTrace := StackTrace(origin)
+
+		wrapped := Wrap(origin)
+		attest.True(t, wrapped == origin)
+
+		wrappedAgain := Wrap(wrapped)
+		attest.True(t, wrappedAgain == wrapped)
+
+		deferred := wrappedAgain
+		Dwrap(&deferred)
+		attest.True(t, deferred == wrappedAgain)
+		attest.Equal(t, StackTrace(deferred), originTrace)
+	})
+
+	t.Run("external wrappers", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name  string
+			outer func(error) (*contextError, error)
+		}{
+			{
+				name: "one wrapper",
+				outer: func(err error) (*contextError, error) {
+					outer := &contextError{message: "outer", err: err}
+					return outer, outer
+				},
+			},
+			{
+				name: "two wrappers",
+				outer: func(err error) (*contextError, error) {
+					inner := &contextError{message: "inner", err: err}
+					outer := &contextError{message: "outer", err: inner}
+					return outer, outer
+				},
+			},
+			{
+				name: "fmt wrapper",
+				outer: func(err error) (*contextError, error) {
+					inner := &contextError{message: "inner", err: err}
+					return inner, fmt.Errorf("outer: %w", inner)
+				},
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				origin := New("failure")
+				originTrace := StackTrace(origin)
+				targetErr, outer := test.outer(origin)
+
+				attest.Equal(t, StackTrace(outer), originTrace)
+
+				wrapped := Wrap(outer)
+				attest.Equal(t, wrapped.Error(), outer.Error())
+				attest.True(t, stdErrors.Unwrap(wrapped) == outer)
+				attest.True(t, stdErrors.Is(wrapped, origin))
+				attest.Equal(t, StackTrace(wrapped), originTrace)
+
+				var target *contextError
+				attest.True(t, stdErrors.As(wrapped, &target))
+				attest.True(t, target == targetErr)
+				attest.True(t, Wrap(wrapped) == wrapped)
+			})
+		}
+	})
+
+	t.Run("plain error", func(t *testing.T) {
+		t.Parallel()
+
+		origin := stdErrors.New("failure")
+		wrapped := Wrap(origin)
+		trace := StackTrace(wrapped)
+
+		attest.NotZero(t, trace)
+		attest.True(t, Wrap(wrapped) == wrapped)
+		attest.Equal(t, StackTrace(Wrap(wrapped)), trace)
+		attest.True(t, stdErrors.Is(wrapped, origin))
+	})
+
+	t.Run("standard multi cause", func(t *testing.T) {
+		t.Parallel()
+
+		plain := stdErrors.New("plain")
+		origin := New("failure")
+		joined := stdErrors.Join(plain, origin)
+		wrapped := Wrap(joined)
+
+		attest.True(t, stdErrors.Unwrap(wrapped) == joined)
+		attest.True(t, stdErrors.Is(wrapped, plain))
+		attest.True(t, stdErrors.Is(wrapped, origin))
+		attest.Equal(t, StackTrace(wrapped), StackTrace(origin))
+	})
+
+	t.Run("identity", func(t *testing.T) {
+		t.Parallel()
+
+		first := New("first")
+		second := New("second")
+
+		attest.False(t, stdErrors.Is(first, second))
+		attest.True(t, stdErrors.Is(first, first))
+	})
+
+	t.Run("formatting", func(t *testing.T) {
+		t.Parallel()
+
+		origin := New("failure")
+		outer := &contextError{message: "outer", err: origin}
+		wrapped := Wrap(outer)
+		message := outer.Error()
+		trace := StackTrace(origin)
+
+		tests := []struct {
+			name   string
+			format string
+			want   string
+		}{
+			{name: "string", format: "%s", want: message},
+			{name: "value", format: "%v", want: message},
+			{name: "quoted", format: "%q", want: fmt.Sprintf("%q", message)},
+			{name: "detailed", format: "%+v", want: message + trace},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+				attest.Equal(t, fmt.Sprintf(test.format, wrapped), test.want)
+			})
+		}
+	})
+}
+
+func TestErrorfContract(t *testing.T) {
+	t.Parallel()
+
+	t.Run("wrapped errors", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			make func() (error, string, []error, []error)
+		}{
+			{
+				name: "nested wrapper",
+				make: func() (error, string, []error, []error) {
+					origin := New("failure")
+					inner := &contextError{message: "inner", err: origin}
+					outer := fmt.Errorf("outer: %w", inner)
+					return Errorf("operation: %w", outer), StackTrace(origin), []error{origin, inner}, nil
+				},
+			},
+			{
+				name: "multiple wrapped errors",
+				make: func() (error, string, []error, []error) {
+					first := New("first")
+					second := New("second")
+					return Errorf("failures: %w; %w", first, second), StackTrace(first), []error{first, second}, nil
+				},
+			},
+			{
+				name: "mixed formatting",
+				make: func() (error, string, []error, []error) {
+					shown := New("shown")
+					wrapped := New("wrapped")
+					return Errorf("%v: %w", shown, wrapped), StackTrace(wrapped), []error{wrapped}, []error{shown}
+				},
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				err, wantTrace, wrapped, notWrapped := test.make()
+				attest.Equal(t, StackTrace(err), wantTrace)
+				for _, target := range wrapped {
+					attest.True(t, stdErrors.Is(err, target))
+				}
+				for _, target := range notWrapped {
+					attest.False(t, stdErrors.Is(err, target))
+				}
+				attest.Equal(t, fmt.Sprintf("%+v", err), err.Error()+wantTrace)
+			})
+		}
+	})
+
+	t.Run("does not duplicate a formatted canonical stack", func(t *testing.T) {
+		t.Parallel()
+
+		origin := New("failure")
+		trace := StackTrace(origin)
+		tests := []struct {
+			name   string
+			format string
+			args   []any
+		}{
+			{name: "formatted wrap", format: "operation: %+w", args: []any{origin}},
+			{name: "formatted value and wrap", format: "operation: %+v: %w", args: []any{origin, origin}},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				err := Errorf(test.format, test.args...)
+				formatted := fmt.Sprintf("%+v", err)
+
+				attest.Equal(t, StackTrace(err), trace)
+				attest.Subsequence(t, formatted, trace)
+				attest.Equal(t, formatted, err.Error())
+				attest.True(t, stdErrors.Is(err, origin))
+			})
+		}
+	})
+
+	t.Run("new stack", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			make func(error) error
+			want string
+		}{
+			{
+				name: "percent v error",
+				make: func(err error) error { return Errorf("operation: %v", err) },
+				want: "operation: failure",
+			},
+			{
+				name: "no error operand",
+				make: func(_ error) error { return Errorf("failure %d", 42) },
+				want: "failure 42",
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				origin := New("failure")
+				err := test.make(origin)
+
+				attest.Equal(t, err.Error(), test.want)
+				attest.False(t, stdErrors.Is(err, origin))
+				attest.NotZero(t, StackTrace(err))
+				attest.NotEqual(t, StackTrace(err), StackTrace(origin))
+			})
 		}
 	})
 }

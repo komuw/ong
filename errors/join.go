@@ -1,7 +1,7 @@
 package errors
 
 import (
-	stdErrors "errors"
+	"fmt"
 	"strings"
 )
 
@@ -15,33 +15,60 @@ import (
 // by calling the Error method of each element of errs, with a newline
 // between each string.
 //
-// A non-nil error returned by Join implements the Unwrap() error method.
-// Unwrap returns an error whose text is the concatenation of each of the errs texts.
-//
-// It only returns the stack trace of the first error.
-//
-// Note that this function is equivalent to the one in standard library mainly in spirit.
-// This is not a direct replacement of the standard library one.
+// A non-nil error returned by Join implements Unwrap() []error.
+// Its singular stack trace is the first stack found in the input errors.
+// If no input error has a stack from this package, Join records its own stack.
 func Join(errs ...error) error {
+	// Contract:
+	//   - Discard nil inputs and return nil when all inputs are nil.
+	//   - Retain every non-nil input through Unwrap() []error.
+	//   - Use the first available input stack, or capture the Join stack when none exists.
 	n := 0
-	msgs := []string{}
 	for _, err := range errs {
 		if err != nil {
 			n++
-			msgs = append(msgs, err.Error())
 		}
 	}
 	if n == 0 {
 		return nil
 	}
 
-	if ef, ok := errs[0].(*stackError); ok {
-		// If the first error was already a stack error, use its stacktrace.
-		return &stackError{
-			err:   stdErrors.New(strings.Join(msgs, "\n")),
-			stack: ef.stack,
+	joined := &joinError{errs: make([]error, 0, n)}
+	for _, err := range errs {
+		if err != nil {
+			joined.errs = append(joined.errs, err)
 		}
 	}
 
-	return wrap(stdErrors.New(strings.Join(msgs, "\n")), 3)
+	joined.stack = findStack(joined)
+	if len(joined.stack) == 0 {
+		joined.stack = captureStack(3)
+	}
+
+	return joined
+}
+
+type joinError struct {
+	errs  []error
+	stack []uintptr
+}
+
+func (e *joinError) Error() string {
+	messages := make([]string, 0, len(e.errs))
+	for _, err := range e.errs {
+		messages = append(messages, err.Error())
+	}
+	return strings.Join(messages, "\n")
+}
+
+func (e *joinError) Unwrap() []error {
+	return e.errs
+}
+
+func (e *joinError) stackTrace() []uintptr {
+	return e.stack
+}
+
+func (e *joinError) Format(f fmt.State, verb rune) {
+	formatError(f, verb, e.Error(), e.stack)
 }
