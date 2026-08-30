@@ -60,10 +60,7 @@ func setCpu(c ...config) func() {
 	}
 
 	quota := float64(cfs_quota_us) / float64(cfs_period_us)
-	maxProcs := int(math.Floor(quota))
-	if maxProcs < minGOMAXPROCS {
-		maxProcs = minGOMAXPROCS
-	}
+	maxProcs := max(int(math.Floor(quota)), minGOMAXPROCS)
 
 	runtime.GOMAXPROCS(maxProcs)
 

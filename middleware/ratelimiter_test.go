@@ -51,7 +51,7 @@ func TestRateLimiter(t *testing.T) {
 
 		msgsDelivered := []int{}
 		start := time.Now().UTC()
-		for i := 0; i < int(config.DefaultRateLimit*6); i++ {
+		for range int(config.DefaultRateLimit * 6) {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			wrappedHandler.ServeHTTP(rec, req)
@@ -125,11 +125,9 @@ func TestRateLimiter(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 14; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				runhandler()
-			}()
+			})
 		}
 		wg.Wait()
 	})

@@ -141,7 +141,6 @@ func TestCorsPreflight(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -224,7 +223,6 @@ func TestCorsPreflight(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -290,7 +288,6 @@ func TestCorsPreflight(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -406,7 +403,6 @@ func TestCorsActualRequest(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -470,7 +466,6 @@ func TestCorsActualRequest(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -523,11 +518,9 @@ func TestCorsActualRequest(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 10; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				runhandler()
-			}()
+			})
 		}
 		wg.Wait()
 	})
@@ -619,7 +612,6 @@ func TestIsOriginAllowed(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -678,7 +670,6 @@ func TestIsMethodAllowed(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -736,7 +727,6 @@ func TestAreHeadersAllowed(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

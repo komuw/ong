@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"slices"
 	"strings"
 )
 
@@ -208,8 +209,8 @@ func Rightmost(headers http.Header) string {
 		headerName := xForwardedForHeader // ought to be canonical. ie, http.CanonicalHeaderKey(xForwardedForHeader)
 		ipAddrs := getIPAddrList(headers, headerName)
 		// Look backwards through the list of IP addresses
-		for i := len(ipAddrs) - 1; i >= 0; i-- {
-			ip := ipAddrs[i]
+		for _, ip := range slices.Backward(ipAddrs) {
+
 			if isSafeIp(ip) {
 				// This is the rightmost non-private IP
 				theIP = ip.String()
@@ -222,8 +223,8 @@ func Rightmost(headers http.Header) string {
 		headerName := forwardedHeader
 		ipAddrs := getIPAddrList(headers, headerName)
 		// Look backwards through the list of IP addresses
-		for i := len(ipAddrs) - 1; i >= 0; i-- {
-			ip := ipAddrs[i]
+		for _, ip := range slices.Backward(ipAddrs) {
+
 			if isSafeIp(ip) {
 				// This is the rightmost non-private IP
 				theIP = ip.String()
@@ -274,7 +275,7 @@ func ProxyHeader(headers http.Header) string {
 	*/
 
 	s1 := s[11:] // len("PROXY TCP6 ")
-	ipStr := strings.Split(s1, " ")[0]
+	ipStr, _, _ := strings.Cut(s1, " ")
 
 	ipAddr := goodIPAddr(ipStr)
 	if ipAddr == nil {
@@ -385,7 +386,7 @@ func getIPAddrList(headers http.Header, headerName string) (result []*netip.Addr
 	// Note that Go's Header map uses canonicalized keys.
 	for _, h := range headers[headerName] {
 		// We now have a string with comma-separated list items
-		for _, rawListItem := range strings.Split(h, ",") {
+		for rawListItem := range strings.SplitSeq(h, ",") {
 			// The IPs are often comma-space separated, so we'll need to trim the string
 			rawListItem = strings.TrimSpace(rawListItem)
 

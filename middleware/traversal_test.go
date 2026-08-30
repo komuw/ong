@@ -41,7 +41,6 @@ func TestPathTraversal(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 
 		t.Run(fmt.Sprintf("pathTraversal. url=%s", tt.path), func(t *testing.T) {
 			t.Parallel()
@@ -94,11 +93,9 @@ func TestPathTraversal(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 14; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				runhandler()
-			}()
+			})
 		}
 		wg.Wait()
 	})

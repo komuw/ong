@@ -304,11 +304,9 @@ func BenchmarkSync(b *testing.B) {
 		b.ResetTimer()
 
 		for range b.N {
-			stdWg.Add(1)
-			go func() {
+			stdWg.Go(func() {
 				count = count + 1
-				stdWg.Done()
-			}()
+			})
 			stdWg.Wait()
 		}
 	})
@@ -365,7 +363,7 @@ func BenchmarkSync(b *testing.B) {
 	})
 }
 
-func panicTestHelper(t *testing.T, ctx context.Context, limit int, runFuncs ...func() error) (recov interface{}) {
+func panicTestHelper(t *testing.T, ctx context.Context, limit int, runFuncs ...func() error) (recov any) {
 	t.Helper()
 
 	defer func() {

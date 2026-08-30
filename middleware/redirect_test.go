@@ -122,7 +122,6 @@ func TestHttpsRedirector(t *testing.T) {
 			//
 			"/google/search?q=Wangari+Maathai&ei=JHSHS&ved=9Kjsh&uact=5&oq=Wangari+Maathai&gs_lcp=Mjandan-smmms&sclient=gws-wiz",
 		} {
-			uri := uri
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, uri, nil)
 			req.Host = "localhost"
@@ -309,7 +308,6 @@ func TestHttpsRedirector(t *testing.T) {
 			},
 		}
 		for _, tt := range tests {
-			tt := tt
 			_ = tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
@@ -357,11 +355,9 @@ func TestHttpsRedirector(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 14; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				runhandler()
-			}()
+			})
 		}
 		wg.Wait()
 	})

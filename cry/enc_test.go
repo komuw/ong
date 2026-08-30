@@ -75,7 +75,7 @@ func TestEnc(t *testing.T) {
 		encryptedMsg := enc.Encrypt(msgToEncrypt)
 
 		var em []byte
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			em = enc.Encrypt(msgToEncrypt)
 			if slices.Equal(encryptedMsg, em) {
 				t.Fatal("slices should not be equal")
@@ -166,11 +166,9 @@ func TestEnc(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 7; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				run()
-			}()
+			})
 		}
 		wg.Wait()
 	})

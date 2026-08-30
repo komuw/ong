@@ -129,7 +129,6 @@ func TestNewMiddlewareOpts(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -192,7 +191,6 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			if tt.expectErr {
@@ -256,49 +254,45 @@ func TestOpts(t *testing.T) {
 		got := DevOpts(l, tst.SecretKey())
 
 		want := Opts{
-			middlewareOpts: middlewareOpts{
-				Domain:                 "localhost",
-				HttpsPort:              65081,
-				SecretKey:              secureKey(tst.SecretKey()),
-				Strategy:               clientip.DirectIpStrategy,
-				LogFunc:                nil,
-				RateLimit:              DefaultRateLimit,
-				LoadShedSamplingPeriod: DefaultLoadShedSamplingPeriod,
-				LoadShedMinSampleSize:  DefaultLoadShedMinSampleSize,
-				LoadShedBreachLatency:  DefaultLoadShedBreachLatency,
-				LoadShedPercentile:     DefaultLoadShedPercentile,
-				AllowedOrigins:         []string{},
-				AllowedMethods:         []string{},
-				AllowedHeaders:         []string{},
-				CorsCacheDuration:      DefaultCorsCacheDuration,
-				CsrfTokenDuration:      DefaultCsrfCookieDuration,
-				SessionCookieDuration:  DefaultSessionCookieDuration,
-				SessionAntiReplayFunc:  DefaultSessionAntiReplayFunc,
-			},
+			Domain:                 "localhost",
+			HttpsPort:              65081,
+			SecretKey:              secureKey(tst.SecretKey()),
+			Strategy:               clientip.DirectIpStrategy,
+			LogFunc:                nil,
+			RateLimit:              DefaultRateLimit,
+			LoadShedSamplingPeriod: DefaultLoadShedSamplingPeriod,
+			LoadShedMinSampleSize:  DefaultLoadShedMinSampleSize,
+			LoadShedBreachLatency:  DefaultLoadShedBreachLatency,
+			LoadShedPercentile:     DefaultLoadShedPercentile,
+			AllowedOrigins:         []string{},
+			AllowedMethods:         []string{},
+			AllowedHeaders:         []string{},
+			CorsCacheDuration:      DefaultCorsCacheDuration,
+			CsrfTokenDuration:      DefaultCsrfCookieDuration,
+			SessionCookieDuration:  DefaultSessionCookieDuration,
+			SessionAntiReplayFunc:  DefaultSessionAntiReplayFunc,
 
-			serverOpts: serverOpts{
-				port:              65081,
-				MaxBodyBytes:      DefaultMaxBodyBytes,
-				ServerLogLevel:    DefaultServerLogLevel,
-				ReadHeaderTimeout: 1 * time.Second,
-				ReadTimeout:       2 * time.Second,
-				WriteTimeout:      3 * time.Second,
-				IdleTimeout:       113 * time.Second,
-				DrainTimeout:      DefaultDrainDuration,
-				Tls: tlsOpts{
-					CertFile:              "/tmp/ong_dev_certificate.pem",
-					KeyFile:               "/tmp/ong_dev_key.pem",
-					AcmeEmail:             "",
-					Hosts:                 []string{"localhost"},
-					AcmeDirectoryUrl:      "",
-					ClientCertificatePool: nil,
-				},
-				Host:          "127.0.0.1",
-				ServerPort:    ":65081",
-				ServerAddress: "127.0.0.1:65081",
-				Network:       "tcp",
-				HttpPort:      ":65080",
+			port:              65081,
+			MaxBodyBytes:      DefaultMaxBodyBytes,
+			ServerLogLevel:    DefaultServerLogLevel,
+			ReadHeaderTimeout: 1 * time.Second,
+			ReadTimeout:       2 * time.Second,
+			WriteTimeout:      3 * time.Second,
+			IdleTimeout:       113 * time.Second,
+			DrainTimeout:      DefaultDrainDuration,
+			Tls: tlsOpts{
+				CertFile:              "/tmp/ong_dev_certificate.pem",
+				KeyFile:               "/tmp/ong_dev_key.pem",
+				AcmeEmail:             "",
+				Hosts:                 []string{"localhost"},
+				AcmeDirectoryUrl:      "",
+				ClientCertificatePool: nil,
 			},
+			Host:          "127.0.0.1",
+			ServerPort:    ":65081",
+			ServerAddress: "127.0.0.1:65081",
+			Network:       "tcp",
+			HttpPort:      ":65080",
 		}
 
 		attest.Equal(t, got, want)

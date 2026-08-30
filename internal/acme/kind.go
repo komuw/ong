@@ -66,7 +66,7 @@ type order struct {
 	Expires        string       `json:"expires,omitempty"`        // Optional
 	NotBefore      string       `json:"notBefore,omitempty"`      // Optional
 	NotAfter       string       `json:"notAfter,omitempty"`       // Optional
-	Error          acmeError    `json:"error,omitempty"`          // Optional
+	Error          acmeError    `json:"error"`                    // Optional
 
 	// This we added ourself, it is not in the object definition for directory in the rfc
 	// The client should then send a POST-as-GET request to the order resource to obtain its current state.
@@ -95,7 +95,7 @@ type challenge struct {
 	// https://datatracker.ietf.org/doc/html/rfc8555#section-8.3
 	Token     string    `json:"token,omitempty"` // Required
 	Validated string    `json:"validated"`       // Optional
-	Error     acmeError `json:"error,omitempty"` // Optional
+	Error     acmeError `json:"error"`           // Optional
 }
 
 func (c challenge) String() string {
@@ -110,14 +110,14 @@ func (c challenge) String() string {
 
 // https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.4
 type authorization struct {
-	Identifier identifier  `json:"identifier,omitempty"` // Required
+	Identifier identifier  `json:"identifier"`           // Required
 	Status     string      `json:"status,omitempty"`     // Required
 	Challenges []challenge `json:"challenges,omitempty"` // Required
 	Expires    string      `json:"expires,omitempty"`    // Optional
 	Wildcard   bool        `json:"wildcard,omitempty"`   // Optional
 
 	// This we added ourself, it is not in the object definition for authorization in the rfc
-	EffectiveChallenge challenge `json:"effectiveChallenge,omitempty"`
+	EffectiveChallenge challenge `json:"effectiveChallenge"`
 }
 
 func (a authorization) String() string {

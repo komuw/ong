@@ -26,7 +26,7 @@ func (p panicError) Unwrap() error { return p.Recovered }
 // A panicValue wraps a value that does not implement the error interface
 // recovered from an unhandled panic when calling a function passed to Go.
 type panicValue struct {
-	Recovered interface{}
+	Recovered any
 	Stack     []byte
 }
 
@@ -39,7 +39,7 @@ func (p panicValue) String() string {
 
 // addStack returns a PanicError or PanicValue that wraps v with a stack trace
 // of the panicking goroutine.
-func addStack(v interface{}) interface{} {
+func addStack(v any) any {
 	// Taken from https://go-review.googlesource.com/c/sync/+/416555
 	//
 	stack := make([]byte, 2<<10)

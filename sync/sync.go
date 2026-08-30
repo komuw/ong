@@ -29,8 +29,8 @@ import (
 // If callers of [Go] cancel ctx, it will return after the current executing func has finished.
 func Go(ctx context.Context, n int, funcs ...func() error) error {
 	var (
-		wg                        = &sync.WaitGroup{}
-		toPanic       interface{} = nil // PanicError or PanicValue
+		wg                = &sync.WaitGroup{}
+		toPanic       any = nil // PanicError or PanicValue
 		errRet        error
 		errMu         sync.Mutex // protects collectedErrs
 		collectedErrs []error

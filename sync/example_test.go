@@ -22,7 +22,6 @@ func ExampleGo_justErrors() {
 
 	funcs := []func() error{}
 	for _, url := range urls {
-		url := url // https://golang.org/doc/faq#closures_and_goroutines
 		funcs = append(
 			funcs,
 			func() error {
