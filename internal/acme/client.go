@@ -119,8 +119,8 @@ func getDirectory(ctx context.Context, directoryURL string, l *slog.Logger) (dir
 	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusOK {
-		ae := &acmeError{}
-		if errB := json.NewDecoder(res.Body).Decode(ae); errB != nil {
+		ae := acmeError{}
+		if errB := json.NewDecoder(res.Body).Decode(&ae); errB != nil {
 			return d, fmt.Errorf("ong/acme: unable to unmarshall directoryURL response : %w", errB)
 		}
 
@@ -148,8 +148,8 @@ func getNonce(ctx context.Context, newNonceURL string, l *slog.Logger) (string, 
 	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusOK {
-		ae := &acmeError{}
-		if errB := json.NewDecoder(res.Body).Decode(ae); errB != nil {
+		ae := acmeError{}
+		if errB := json.NewDecoder(res.Body).Decode(&ae); errB != nil {
 			return "", fmt.Errorf("ong/acme: unable to unmarshall newNonceURL response : %w", errB)
 		}
 
@@ -224,8 +224,8 @@ func getAccount(ctx context.Context, newAccountURL, newNonceURL, email string, a
 		return actResponse, nil
 	}
 
-	ae := &acmeError{}
-	if errE := json.NewDecoder(res.Body).Decode(ae); errE != nil {
+	ae := acmeError{}
+	if errE := json.NewDecoder(res.Body).Decode(&ae); errE != nil {
 		return actResponse, fmt.Errorf("ong/acme: unable to unmarshall newAccountURL response : %w", errE)
 	}
 
@@ -303,8 +303,8 @@ func submitOrder(ctx context.Context, newOrderURL, newNonceURL, kid string, doma
 		return orderResponse, nil
 	}
 
-	ae := &acmeError{}
-	if errE := json.NewDecoder(res.Body).Decode(ae); errE != nil {
+	ae := acmeError{}
+	if errE := json.NewDecoder(res.Body).Decode(&ae); errE != nil {
 		return orderResponse, fmt.Errorf("ong/acme: unable to unmarshall newOrderURL response : %w", errE)
 	}
 
@@ -379,8 +379,8 @@ func fetchChallenges(ctx context.Context, authorizationURLS []string, newNonceUR
 		return authorizationResponse, nil
 	}
 
-	ae := &acmeError{}
-	if errD := json.NewDecoder(res.Body).Decode(ae); errD != nil {
+	ae := acmeError{}
+	if errD := json.NewDecoder(res.Body).Decode(&ae); errD != nil {
 		return authorizationResponse, fmt.Errorf("ong/acme: unable to unmarshall authorizationURL response : %w", errD)
 	}
 
@@ -456,8 +456,8 @@ func checkChallengeStatus(
 		dur = retryAfter(res.Header.Get("Retry-After"), dur) + (2 * time.Second)
 
 		if res.StatusCode != http.StatusOK {
-			ae := &acmeError{}
-			if errC := json.NewDecoder(res.Body).Decode(ae); errC != nil {
+			ae := acmeError{}
+			if errC := json.NewDecoder(res.Body).Decode(&ae); errC != nil {
 				checkError = fmt.Errorf("ong/acme: unable to unmarshall checkAuthorizationStatus response : %w", errC)
 				continue
 			}
@@ -535,8 +535,8 @@ func respondToChallenge(ctx context.Context, ch challenge, newNonceURL, kid stri
 		return challengeResponse, nil
 	}
 
-	ae := &acmeError{}
-	if errF := json.NewDecoder(res.Body).Decode(ae); errF != nil {
+	ae := acmeError{}
+	if errF := json.NewDecoder(res.Body).Decode(&ae); errF != nil {
 		return challengeResponse, fmt.Errorf("ong/acme: unable to unmarshall challengeURL response : %w", errF)
 	}
 
@@ -627,8 +627,8 @@ func checkOrderStatus(
 		dur = retryAfter(res.Header.Get("Retry-After"), dur) + (2 * time.Second)
 
 		if res.StatusCode != http.StatusOK {
-			ae := &acmeError{}
-			if errC := json.NewDecoder(res.Body).Decode(ae); errC != nil {
+			ae := acmeError{}
+			if errC := json.NewDecoder(res.Body).Decode(&ae); errC != nil {
 				checkError = fmt.Errorf("ong/acme: unable to unmarshall checkAuthorizationStatus response : %w", errC)
 				continue
 			}
@@ -748,8 +748,8 @@ func sendCSR(ctx context.Context, domain string, o order, newNonceURL, kid strin
 		return o, nil
 	}
 
-	ae := &acmeError{}
-	if errG := json.NewDecoder(res.Body).Decode(ae); errG != nil {
+	ae := acmeError{}
+	if errG := json.NewDecoder(res.Body).Decode(&ae); errG != nil {
 		return o, fmt.Errorf("ong/acme: unable to unmarshall finalizeURL response : %w", errG)
 	}
 
@@ -818,8 +818,8 @@ func downloadCertificate(ctx context.Context, o order, newNonceURL, kid string, 
 		return c, nil
 	}
 
-	ae := &acmeError{}
-	if errE := json.NewDecoder(res.Body).Decode(ae); errE != nil {
+	ae := acmeError{}
+	if errE := json.NewDecoder(res.Body).Decode(&ae); errE != nil {
 		return nil, fmt.Errorf("ong/acme: unable to unmarshall certificateDownload response : %w", errE)
 	}
 

@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -192,6 +193,29 @@ func someAcmeServerHandler(t *testing.T, domain string) http.HandlerFunc {
 		dumpDebugW(buf, r, &http.Response{})
 		panic(fmt.Sprintf("unexpected request to: %s", buf))
 	}
+}
+
+func TestAcmeErrorWrapping(t *testing.T) {
+	t.Parallel()
+
+	want := acmeError{
+		Type:     "urn:ietf:params:acme:error:malformed",
+		Detail:   "the request was malformed",
+		Title:    "malformed request",
+		Instance: "request-123",
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		attest.Ok(t, json.NewEncoder(w).Encode(want))
+	}))
+	defer server.Close()
+
+	_, err := getDirectory(context.Background(), server.URL, slog.Default())
+	attest.Error(t, err)
+
+	got, ok := errors.AsType[acmeError](err)
+	attest.True(t, ok)
+	attest.Equal(t, got, want)
 }
 
 func TestAcmeFunctions(t *testing.T) {

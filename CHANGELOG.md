@@ -2,6 +2,10 @@
 
 Most recent version is listed first.  
 
+
+# v0.1.15
+- Update golang version: https://github.com/komuw/ong/pull/496 
+
 # v0.1.14
 - Include tls extensions in tls fingerprint: https://github.com/komuw/ong/pull/493
 - crypto/rand.Read panics internally in newer versions of Golang: https://github.com/komuw/ong/pull/494

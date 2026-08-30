@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -46,37 +45,33 @@ func TestRateLimiter(t *testing.T) {
 	t.Run("rate limiting happens", func(t *testing.T) {
 		t.Parallel()
 
+		const rateLimit = 5.0
 		msg := "hello"
-		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), config.DefaultRateLimit)
+		wrappedHandler := rateLimiter(someRateLimiterHandler(msg), rateLimit)
 
-		msgsDelivered := []int{}
-		start := time.Now().UTC()
-		for range int(config.DefaultRateLimit * 6) {
+		successfulRequests := 0
+		rateLimitedRequests := 0
+		for range int(rateLimit) + 1 {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
-			defer res.Body.Close()
-
-			msgsDelivered = append(msgsDelivered, res.StatusCode)
-		}
-
-		rateLimitedreqs := 0
-		for _, v := range msgsDelivered {
-			if v == http.StatusTooManyRequests {
-				rateLimitedreqs = rateLimitedreqs + 1
+			switch res.StatusCode {
+			case http.StatusOK:
+				successfulRequests++
+			case http.StatusTooManyRequests:
+				rateLimitedRequests++
+				attest.Equal(t, res.Header.Get(retryAfterHeader), "900")
+				attest.NotZero(t, res.Header.Get(ongMiddlewareErrorHeader))
+			default:
+				t.Fatalf("unexpected status code: %d", res.StatusCode)
 			}
+			_ = res.Body.Close()
 		}
 
-		timeTakenToDeliver := time.Now().UTC().Sub(start)
-		totalMsgsDelivered := len(msgsDelivered)
-		effectiveMessageRate := int(float64(totalMsgsDelivered) / timeTakenToDeliver.Seconds())
-
-		attest.True(t, slices.Contains(msgsDelivered, http.StatusTooManyRequests))
-		attest.True(t, slices.Contains(msgsDelivered, http.StatusOK))
-		attest.True(t, rateLimitedreqs > 4)
-		attest.Approximately(t, effectiveMessageRate, int(config.DefaultRateLimit), 4)
+		attest.Equal(t, successfulRequests, int(rateLimit))
+		attest.Equal(t, rateLimitedRequests, 1)
 	})
 
 	t.Run("bad remoteAddr", func(t *testing.T) {

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"slices"
 	"strings"
 
 	"github.com/komuw/ong/config"
@@ -199,8 +198,8 @@ func detectConflict(m Muxer) error {
 		pattern := candidate.pattern
 		incomingSegments := pathSegments(pattern)
 
-		for _, rt := range m.router.routes {
-			if pattern == rt.pattern && (slices.Equal(candidate.segments, rt.segments)) && (getfunc(candidate.originalHandler) == getfunc(rt.originalHandler)) {
+		for i, rt := range m.router.routes {
+			if k == i {
 				continue
 			}
 
