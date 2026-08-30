@@ -6,6 +6,7 @@ Most recent version is listed first.
 # v0.1.15
 - Update golang version: https://github.com/komuw/ong/pull/496 
 - ong/errors: Ensure error handling is consistent: https://github.com/komuw/ong/pull/497
+- Apply various static analysis fixes: https://github.com/komuw/ong/pull/498
 
 # v0.1.14
 - Include tls extensions in tls fingerprint: https://github.com/komuw/ong/pull/493
