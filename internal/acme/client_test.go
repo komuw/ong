@@ -319,7 +319,8 @@ func TestAcmeFunctions(t *testing.T) {
 			dir.NewNonceURL,
 			"hey+sample@gmail.com",
 			accountPrivKey,
-			l)
+			l,
+		)
 		attest.Ok(t, err)
 
 		attest.NotZero(t, actResponse.Status)
@@ -341,7 +342,8 @@ func TestAcmeFunctions(t *testing.T) {
 			acct.kid,
 			domains,
 			accountPrivKey,
-			l)
+			l,
+		)
 		attest.Ok(t, err)
 
 		attest.NotZero(t, orderResponse.Identifiers)
@@ -362,7 +364,8 @@ func TestAcmeFunctions(t *testing.T) {
 			dir.NewNonceURL,
 			acct.kid,
 			accountPrivKey,
-			l)
+			l,
+		)
 		attest.Ok(t, err)
 
 		attest.NotZero(t, authorizationResponse.Identifier)

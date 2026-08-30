@@ -210,7 +210,6 @@ func Rightmost(headers http.Header) string {
 		ipAddrs := getIPAddrList(headers, headerName)
 		// Look backwards through the list of IP addresses
 		for _, ip := range slices.Backward(ipAddrs) {
-
 			if isSafeIp(ip) {
 				// This is the rightmost non-private IP
 				theIP = ip.String()
@@ -224,7 +223,6 @@ func Rightmost(headers http.Header) string {
 		ipAddrs := getIPAddrList(headers, headerName)
 		// Look backwards through the list of IP addresses
 		for _, ip := range slices.Backward(ipAddrs) {
-
 			if isSafeIp(ip) {
 				// This is the rightmost non-private IP
 				theIP = ip.String()

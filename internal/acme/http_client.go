@@ -138,12 +138,15 @@ func prepBody(ctx context.Context, url, newNonceURL, kid string, dataPayload []b
 	var prot any
 	alg, sha := jwsHasher(accountPrivKey.PublicKey)
 	if kid == "" {
-		jwk := jwkEncode(accountPrivKey.PublicKey)
+		encodedJWK, errJWK := jwkEncode(accountPrivKey.PublicKey)
+		if errJWK != nil {
+			return nil, errJWK
+		}
 		prot = &protected{
 			Alg:   alg,
 			Nonce: nonce,
 			Url:   url,
-			Jwk:   &jwk,
+			Jwk:   &encodedJWK,
 		}
 	} else {
 		k := new(string)

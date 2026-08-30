@@ -265,7 +265,7 @@ func TestLogger(t *testing.T) {
 		l := New(context.Background(), w, maxMsgs)
 		{
 			logger1 := l
-			for i := 0; i <= (maxMsgs); i++ {
+			for i := 0; i <= maxMsgs; i++ {
 				infoMsg := "hello world" + " : " + fmt.Sprint(i)
 				logger1.Info(infoMsg)
 			}
