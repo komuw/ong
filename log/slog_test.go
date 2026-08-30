@@ -66,7 +66,6 @@ func TestSlogtest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-
 		t.Run(fmt.Sprintf("%s-%d", tt.name, tt.maxSize), func(t *testing.T) {
 			t.Parallel()
 

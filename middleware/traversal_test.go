@@ -41,7 +41,6 @@ func TestPathTraversal(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-
 		t.Run(fmt.Sprintf("pathTraversal. url=%s", tt.path), func(t *testing.T) {
 			t.Parallel()
 

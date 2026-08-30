@@ -155,14 +155,14 @@ func installCA(l *slog.Logger) (caCert *x509.Certificate, caKey any, err error) 
 
 	cmd := commandWithSudo(l, "tee", systemTrustFilename())
 	cmd.Stdin = bytes.NewReader(cert)
-	out, err := cmd.CombinedOutput()
+	_, err = cmd.CombinedOutput()
 	if err != nil {
 		return nil, nil, errors.Wrap(err)
 	}
 
 	sysTrustCmd := []string{"update-ca-certificates"}
 	cmd = commandWithSudo(l, sysTrustCmd...)
-	out, err = cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	l.Info(string(out))
 	if err != nil {
 		return nil, nil, errors.Wrap(err)

@@ -464,31 +464,31 @@ func TestErrorfContract(t *testing.T) {
 
 		tests := []struct {
 			name string
-			make func() (error, string, []error, []error)
+			make func() (string, []error, []error, error)
 		}{
 			{
 				name: "nested wrapper",
-				make: func() (error, string, []error, []error) {
+				make: func() (string, []error, []error, error) {
 					origin := New("failure")
 					inner := &contextError{message: "inner", err: origin}
 					outer := fmt.Errorf("outer: %w", inner)
-					return Errorf("operation: %w", outer), StackTrace(origin), []error{origin, inner}, nil
+					return StackTrace(origin), []error{origin, inner}, nil, Errorf("operation: %w", outer)
 				},
 			},
 			{
 				name: "multiple wrapped errors",
-				make: func() (error, string, []error, []error) {
+				make: func() (string, []error, []error, error) {
 					first := New("first")
 					second := New("second")
-					return Errorf("failures: %w; %w", first, second), StackTrace(first), []error{first, second}, nil
+					return StackTrace(first), []error{first, second}, nil, Errorf("failures: %w; %w", first, second)
 				},
 			},
 			{
 				name: "mixed formatting",
-				make: func() (error, string, []error, []error) {
+				make: func() (string, []error, []error, error) {
 					shown := New("shown")
 					wrapped := New("wrapped")
-					return Errorf("%v: %w", shown, wrapped), StackTrace(wrapped), []error{wrapped}, []error{shown}
+					return StackTrace(wrapped), []error{wrapped}, []error{shown}, Errorf("%v: %w", shown, wrapped)
 				},
 			},
 		}
@@ -497,7 +497,7 @@ func TestErrorfContract(t *testing.T) {
 			t.Run(test.name, func(t *testing.T) {
 				t.Parallel()
 
-				err, wantTrace, wrapped, notWrapped := test.make()
+				wantTrace, wrapped, notWrapped, err := test.make()
 				attest.Equal(t, StackTrace(err), wantTrace)
 				for _, target := range wrapped {
 					attest.True(t, stdErrors.Is(err, target))

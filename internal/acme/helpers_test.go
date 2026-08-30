@@ -1,13 +1,60 @@
 package acme
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"testing"
 	"time"
 
 	"go.akshayshah.org/attest"
 )
+
+func TestJWKEncode(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		curve elliptic.Curve
+	}{
+		{name: "P-256", curve: elliptic.P256()},
+		{name: "P-384", curve: elliptic.P384()},
+		{name: "P-521", curve: elliptic.P521()},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			key, err := ecdsa.GenerateKey(test.curve, rand.Reader)
+			attest.Ok(t, err)
+			point, err := key.PublicKey.Bytes()
+			attest.Ok(t, err)
+
+			coordinateSize := (len(point) - 1) / 2
+			want := jwk{
+				Crv: test.curve.Params().Name,
+				Kty: "EC",
+				X:   base64.RawURLEncoding.EncodeToString(point[1 : 1+coordinateSize]),
+				Y:   base64.RawURLEncoding.EncodeToString(point[1+coordinateSize:]),
+			}
+
+			got, err := jwkEncode(key.PublicKey)
+			attest.Ok(t, err)
+			attest.Equal(t, got, want)
+		})
+	}
+
+	t.Run("invalid public key", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := jwkEncode(ecdsa.PublicKey{})
+		attest.Error(t, err)
+	})
+}
 
 // taken from  https://github.com/golang/crypto/blob/05595931fe9d3f8894ab063e1981d28e9873e2cb/acme/autocert/autocert_test.go#L672
 func TestWildcardHostWhitelist(t *testing.T) {
@@ -295,7 +342,6 @@ func TestCertIsValid(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

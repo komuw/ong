@@ -62,21 +62,20 @@ func diskCachedir() string {
 // https://tools.ietf.org/html/rfc7517
 //
 // see: https://github.com/golang/crypto/blob/v0.10.0/acme/jws.go#L157-L160
-func jwkEncode(pub ecdsa.PublicKey) jwk {
+func jwkEncode(pub ecdsa.PublicKey) (jwk, error) {
 	// https://tools.ietf.org/html/rfc7518#section-6.2.1
+	point, err := pub.Bytes()
+	if err != nil {
+		return jwk{}, err
+	}
+
 	p := pub.Curve.Params()
 	n := p.BitSize / 8
 	if p.BitSize%8 != 0 {
 		n++
 	}
-	x := pub.X.Bytes()
-	if n > len(x) {
-		x = append(make([]byte, n-len(x)), x...)
-	}
-	y := pub.Y.Bytes()
-	if n > len(y) {
-		y = append(make([]byte, n-len(y)), y...)
-	}
+	x := point[1 : 1+n]
+	y := point[1+n:]
 
 	return jwk{
 		// Field order is important.
@@ -85,7 +84,7 @@ func jwkEncode(pub ecdsa.PublicKey) jwk {
 		Kty: "EC",
 		X:   base64.RawURLEncoding.EncodeToString(x),
 		Y:   base64.RawURLEncoding.EncodeToString(y),
-	}
+	}, nil
 }
 
 // jwsHasher indicates suitable JWS algorithm name and a hash function
@@ -166,7 +165,10 @@ func parsePrivateKey(der []byte) (*ecdsa.PrivateKey, error) {
 // When ACME calls your server at `http://myDomain.com/.well-known/acme-challenge/<token>`
 // Your server should respond with the value returned by this function.
 func jWKThumbprint(pub ecdsa.PublicKey, token string) (string, error) {
-	jwk := jwkEncode(pub)
+	jwk, err := jwkEncode(pub)
+	if err != nil {
+		return "", err
+	}
 	jwkBytes, err := json.Marshal(jwk)
 	if err != nil {
 		return "", err

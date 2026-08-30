@@ -245,7 +245,6 @@ func TestLatencyQueue(t *testing.T) {
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 50+config.DefaultLoadShedMinSampleSize; rN++ {
 			wg.Go(func() {
-
 				lq.add(1 * time.Second)
 				lq.reSize()
 				lq.getPercentile(99, 3)
