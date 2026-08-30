@@ -467,11 +467,9 @@ func TestCsrf(t *testing.T) {
 
 			wg := &sync.WaitGroup{}
 			for tabNumber := 0; tabNumber <= 5; tabNumber++ {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					runTestPerTab()
-				}()
+				})
 			}
 			wg.Wait()
 		}

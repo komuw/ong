@@ -19,7 +19,7 @@ import (
 
 func bigMap() map[string]string {
 	y := map[string]string{}
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		k := fmt.Sprintf("key:%d", i)
 		v := fmt.Sprintf("val:%d", i)
 		y[k] = v
@@ -295,11 +295,9 @@ func TestSession(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 10; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				runhandler()
-			}()
+			})
 		}
 		wg.Wait()
 	})

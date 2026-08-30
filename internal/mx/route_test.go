@@ -232,7 +232,6 @@ func TestRouter(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		name := fmt.Sprintf("%s-%s-%s-%s-%v",
 			tt.RouteMethod,
 			tt.RoutePattern,

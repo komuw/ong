@@ -91,11 +91,9 @@ func TestLoadShedder(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 50+config.DefaultLoadShedMinSampleSize; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				runhandler()
-			}()
+			})
 		}
 		wg.Wait()
 	})
@@ -246,14 +244,12 @@ func TestLatencyQueue(t *testing.T) {
 
 		wg := &sync.WaitGroup{}
 		for rN := 0; rN <= 50+config.DefaultLoadShedMinSampleSize; rN++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 
 				lq.add(1 * time.Second)
 				lq.reSize()
 				lq.getPercentile(99, 3)
-			}()
+			})
 		}
 		wg.Wait()
 	})
@@ -283,7 +279,7 @@ func BenchmarkLoadShedder(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < 100; n++ {
+	for range 100 {
 		wrappedHandler.ServeHTTP(rec, req)
 		res := rec.Result()
 		defer res.Body.Close()

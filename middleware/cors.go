@@ -250,10 +250,8 @@ func isOriginAllowed(
 	}
 
 	origin = strings.ToLower(origin)
-	for _, o := range allowedOrigins {
-		if o == origin {
-			return true, false
-		}
+	if slices.Contains(allowedOrigins, origin) {
+		return true, false
 	}
 
 	for _, w := range allowedWildcardOrigins {
@@ -337,10 +335,10 @@ func getOrigins(ao []string, domain string) (allowedOrigins []string, allowedWil
 	allowedOrigins = canon
 
 	for _, origin := range allowedOrigins {
-		if i := strings.IndexByte(origin, '*'); i >= 0 {
+		if before, after, ok := strings.Cut(origin, "*"); ok {
 			// Split the origin in two: start and end string without the *
-			prefix := origin[0:i]
-			suffix := origin[i+1:]
+			prefix := before
+			suffix := after
 			w := wildcard{
 				prefix: prefix,
 				suffix: suffix,

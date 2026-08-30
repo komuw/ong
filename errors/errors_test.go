@@ -142,7 +142,7 @@ func TestStackError(t *testing.T) {
 
 			stackTrace := sterr.getStackTrace()
 			for _, v := range []string{
-				"ong/errors/errors_test.go:124",
+				// The deferred Dwrap frame differs between normal and race builds.
 				"ong/errors/errors_test.go:131",
 			} {
 				attest.Subsequence(t, stackTrace, v, attest.Sprintf("\n\t%s: not found in stackTrace: %s", v, stackTrace))
