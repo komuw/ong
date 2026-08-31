@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.16
+- ong/middleware: Add ability to specify custom CSP policy and security headers: https://github.com/komuw/ong/pull/499
+
 # v0.1.15
 - Update golang version: https://github.com/komuw/ong/pull/496 
 - ong/errors: Ensure error handling is consistent: https://github.com/komuw/ong/pull/497

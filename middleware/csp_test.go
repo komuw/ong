@@ -1,14 +1,12 @@
 package middleware
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
-	"time"
 
 	"go.akshayshah.org/attest"
 )
@@ -23,7 +21,7 @@ func echoHandler(msg string) http.HandlerFunc {
 	}
 }
 
-func TestSecurity(t *testing.T) {
+func TestCsp(t *testing.T) {
 	t.Parallel()
 
 	t.Run("middleware succeds", func(t *testing.T) {
@@ -47,7 +45,7 @@ func TestSecurity(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 	})
 
-	t.Run("all headers set succsfully", func(t *testing.T) {
+	t.Run("header set successfully", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
@@ -56,27 +54,12 @@ func TestSecurity(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		req.TLS = &tls.ConnectionState{} // fake tls so that the STS header is set.
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
 
-		expect := map[string]string{
-			permissionsPolicyHeader: "interest-cohort=()",
-			cspHeader:               getCsp(domain, res.Header.Get(nonceHeader)),
-			xContentOptionsHeader:   "nosniff",
-			xFrameHeader:            "DENY",
-			corpHeader:              "same-site",
-			coopHeader:              "same-origin",
-			referrerHeader:          "strict-origin-when-cross-origin",
-			stsHeader:               getSts(60 * 24 * time.Hour),
-		}
-
-		for k, v := range expect {
-			got := rec.Header().Get(k)
-			attest.Equal(t, got, v)
-		}
+		attest.Equal(t, rec.Header().Get(cspHeader), getCsp(domain, res.Header.Get(nonceHeader)))
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -91,7 +74,6 @@ func TestSecurity(t *testing.T) {
 		runhandler := func() {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.TLS = &tls.ConnectionState{} // fake tls so that the STS header is set.
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
