@@ -3,11 +3,14 @@ package middleware
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 
+	"github.com/komuw/ong/config"
+	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
 )
 
@@ -29,7 +32,7 @@ func TestCsp(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -50,7 +53,7 @@ func TestCsp(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -59,7 +62,49 @@ func TestCsp(t *testing.T) {
 		res := rec.Result()
 		defer res.Body.Close()
 
-		attest.Equal(t, rec.Header().Get(cspHeader), getCsp(domain, res.Header.Get(nonceHeader)))
+		attest.Equal(t, rec.Header().Get(cspHeader), config.DefaultCSPPolicy(domain, res.Header.Get(nonceHeader)))
+	})
+
+	t.Run("custom policy", func(t *testing.T) {
+		t.Parallel()
+
+		domain := "example.com"
+		gotDomain := ""
+		gotNonce := ""
+		policy := func(domain, nonce string) string {
+			gotDomain = domain
+			gotNonce = nonce
+			return fmt.Sprintf("default-src 'none'; script-src 'nonce-%s';", nonce)
+		}
+		wrappedHandler := csp(echoHandler("hello"), domain, policy)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		nonce := res.Header.Get(nonceHeader)
+		attest.Equal(t, gotDomain, domain)
+		attest.Equal(t, gotNonce, nonce)
+		attest.Equal(t, res.Header.Get(cspHeader), fmt.Sprintf("default-src 'none'; script-src 'nonce-%s';", nonce))
+	})
+
+	t.Run("nil policy uses default", func(t *testing.T) {
+		t.Parallel()
+
+		domain := "example.com"
+		wrappedHandler := csp(echoHandler("hello"), domain, nil)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.Header.Get(cspHeader), config.DefaultCSPPolicy(domain, res.Header.Get(nonceHeader)))
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -69,7 +114,7 @@ func TestCsp(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -96,6 +141,28 @@ func TestCsp(t *testing.T) {
 	})
 }
 
+func TestConfiguredCSPPolicy(t *testing.T) {
+	t.Parallel()
+
+	domain := "localhost"
+	o := config.CertOpts(domain, tst.SecretKey(), config.DirectIpStrategy, slog.Default(), "", "", nil)
+	o.CSPPolicy = func(domain, nonce string) string {
+		return fmt.Sprintf("default-src https://%s; script-src 'nonce-%s';", domain, nonce)
+	}
+	wrappedHandler := All(echoHandler("hello"), o)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "https://localhost/someUri", nil)
+	wrappedHandler.ServeHTTP(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	nonce := res.Header.Get(nonceHeader)
+	attest.NotZero(t, nonce)
+	attest.Equal(t, res.Header.Get(cspHeader), fmt.Sprintf("default-src https://%s; script-src 'nonce-%s';", domain, nonce))
+}
+
 func TestGetCspNonce(t *testing.T) {
 	t.Parallel()
 
@@ -104,7 +171,7 @@ func TestGetCspNonce(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)

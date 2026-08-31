@@ -51,6 +51,10 @@ func ExampleNew() {
 		200*time.Millisecond,
 		// We check for loadshed breach at the 83 percentile
 		83,
+		// Set the Content-Security-Policy for each request.
+		func(_ string, nonce string) string {
+			return fmt.Sprintf("default-src 'self'; script-src 'self' 'nonce-%s';", nonce)
+		},
 		// Allow access from these origins for CORs.
 		[]string{"http://example.net", "https://example.org"},
 		// Allow only GET and POST for CORs.

@@ -68,6 +68,9 @@ func allDefaultMiddlewares(
 	loadShedBreachLatency := o.LoadShedBreachLatency
 	loadShedPercentile := o.LoadShedPercentile
 
+	// csp
+	cspPolicy := o.CSPPolicy
+
 	// cors
 	allowedOrigins := o.AllowedOrigins
 	allowedMethods := o.AllowedOrigins
@@ -164,6 +167,7 @@ func allDefaultMiddlewares(
 														domain,
 													),
 													domain,
+													cspPolicy,
 												),
 											),
 											httpsPort,
