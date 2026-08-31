@@ -23,6 +23,14 @@ const (
 // securityHeaders is a middleware that sets HTTP security headers other than Content-Security-Policy.
 func securityHeaders(wrappedHandler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+		// - https://web.dev/security-headers/
+		// - https://stackoverflow.com/a/66955464/2768067
+		// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src
+		// - https://web.dev/security-headers/#tt
+		// - https://securityheaders.com/
+		//
+
 		w.Header().Set(
 			permissionsPolicyHeader,
 			// flocOptOut disables floc which is otherwise ON by default
