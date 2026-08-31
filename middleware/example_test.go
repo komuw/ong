@@ -64,10 +64,10 @@ func ExampleGet() {
 
 func ExampleGet_customCSPPolicy() {
 	l := log.New(context.Background(), os.Stdout, 100)
-	opts := config.CertOpts("example.com", "super-h@rd-Pas1word", config.DirectIpStrategy, l, "", "", nil)
-	opts.CSPPolicy = func(_, nonce string) string {
-		return fmt.Sprintf("default-src 'self'; script-src 'self' 'nonce-%s';", nonce)
-	}
+	opts := config.CertOpts("example.com", "super-h@rd-Pas1word", config.DirectIpStrategy, l, "", "", nil).
+		WithCSPPolicy(func(_, nonce string) string {
+			return fmt.Sprintf("default-src 'self'; script-src 'self' 'nonce-%s';", nonce)
+		})
 	handler := middleware.Get(loginHandler(), opts)
 	_ = handler
 

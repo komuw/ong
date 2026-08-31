@@ -421,6 +421,16 @@ func WithOpts(
 	)
 }
 
+// WithCSPPolicy returns a copy of o that uses policy for Content-Security-Policy values.
+// If policy is nil, [DefaultCSPPolicy] is used instead.
+func (o Opts) WithCSPPolicy(policy CSPPolicyFunc) Opts {
+	if policy == nil {
+		policy = DefaultCSPPolicy
+	}
+	o.CSPPolicy = policy
+	return o
+}
+
 // DevOpts returns a new Opts that has sensible defaults, especially for dev environments.
 // It also automatically creates & configures the developer TLS certificates/key.
 // It panics on error.

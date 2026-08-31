@@ -274,6 +274,23 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 	}
 }
 
+func TestWithCSPPolicy(t *testing.T) {
+	t.Parallel()
+
+	domain := "example.com"
+	nonce := "nonce"
+	o := validOpts(t)
+	custom := o.WithCSPPolicy(func(domain, nonce string) string {
+		return domain + nonce
+	})
+
+	attest.Equal(t, custom.CSPPolicy(domain, nonce), domain+nonce)
+	attest.Equal(t, o.CSPPolicy(domain, nonce), DefaultCSPPolicy(domain, nonce))
+
+	withDefault := custom.WithCSPPolicy(nil)
+	attest.Equal(t, withDefault.CSPPolicy(domain, nonce), DefaultCSPPolicy(domain, nonce))
+}
+
 func TestOpts(t *testing.T) {
 	t.Parallel()
 

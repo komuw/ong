@@ -145,10 +145,10 @@ func TestConfiguredCSPPolicy(t *testing.T) {
 	t.Parallel()
 
 	domain := "localhost"
-	o := config.CertOpts(domain, tst.SecretKey(), config.DirectIpStrategy, slog.Default(), "", "", nil)
-	o.CSPPolicy = func(domain, nonce string) string {
-		return fmt.Sprintf("default-src https://%s; script-src 'nonce-%s';", domain, nonce)
-	}
+	o := config.CertOpts(domain, tst.SecretKey(), config.DirectIpStrategy, slog.Default(), "", "", nil).
+		WithCSPPolicy(func(domain, nonce string) string {
+			return fmt.Sprintf("default-src https://%s; script-src 'nonce-%s';", domain, nonce)
+		})
 	wrappedHandler := All(echoHandler("hello"), o)
 
 	rec := httptest.NewRecorder()
