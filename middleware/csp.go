@@ -53,17 +53,6 @@ func csp(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 	}
 }
 
-// GetCspNonce returns the Content-Security-Policy nonce that was set for the http request in question.
-func GetCspNonce(c context.Context) string {
-	v := c.Value(cspCtxKey)
-	if v != nil {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	return cspDefaultNonce
-}
-
 func getCsp(domain, nonce string) string {
 	// This csp only permitts content from:
 	// - the document's origin(and subdomains)
@@ -80,4 +69,15 @@ func getCsp(domain, nonce string) string {
 		domain, domain,
 		domain, domain, nonce,
 	)
+}
+
+// GetCspNonce returns the Content-Security-Policy nonce that was set for the http request in question.
+func GetCspNonce(c context.Context) string {
+	v := c.Value(cspCtxKey)
+	if v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return cspDefaultNonce
 }
