@@ -34,7 +34,15 @@ const (
 
 // csp is a middleware that sets Content-Security-Policy(CSP) and adds some important HTTP security headers and assigns them sensible default values.
 //
-// Some of the headers set are Permissions-Policy, Content-Security-Policy, X-Content-Type-Options, X-Frame-Options, Cross-Origin-Resource-Policy, Cross-Origin-Opener-Policy, Referrer-Policy & Strict-Transport-Security
+// Some of the headers set are;
+// - Permissions-Policy
+// - Content-Security-Policy
+// - X-Content-Type-Options
+// - X-Frame-Options
+// - Cross-Origin-Resource-Policy
+// - Cross-Origin-Opener-Policy
+// - Referrer-Policy
+// - Strict-Transport-Security
 func csp(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
