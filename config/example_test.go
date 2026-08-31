@@ -52,7 +52,7 @@ func ExampleNew() {
 		// We check for loadshed breach at the 83 percentile
 		83,
 		// Set the Content-Security-Policy for each request.
-		func(_ string, nonce string) string {
+		func(_, nonce string) string {
 			return fmt.Sprintf("default-src 'self'; script-src 'self' 'nonce-%s';", nonce)
 		},
 		// Allow access from these origins for CORs.

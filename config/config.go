@@ -23,6 +23,14 @@ type CSPPolicyFunc func(domain, nonce string) string
 
 // DefaultCSPPolicy returns the default Content-Security-Policy value.
 func DefaultCSPPolicy(domain, nonce string) string {
+	// This csp only permitts content from:
+	// - the document's origin(and subdomains)
+	// - images may load from anywhere
+	// - media is allowed from domain(and its subdomains)
+	// - executable scripts is only allowed from self(& subdomains).
+	// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
+	//
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 	return fmt.Sprintf(
 		"default-src 'self' %s *.%s; img-src 'self' *; media-src 'self' %s *.%s; object-src 'none'; base-uri 'none'; require-trusted-types-for 'script'; script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';",
 		domain, domain,
