@@ -1,9 +1,7 @@
 // Package id generates unique random identifiers.
 package id
 
-import (
-	"math/rand/v2"
-)
+import "crypto/rand"
 
 /*
 alphabet is similar to the alphabet used in [base64.URLEncoding] except we remove:
@@ -26,35 +24,29 @@ Z,z           : They both look similar to each other.
 
 This is done to try and reduce ambiguity.
 
-# Collisions:
-If there are n objects available from which to select, and permutations (P) are to be formed using k of the objects at a time,
-the number of different permutations possible is denoted by the symbol nPk. A formula for its evaluation is;
-nPk = n!/(n − k)!. Note ! is factorial.
-If you have 5 objects(A, B, C, D, E) and we select 2 objects, the number of permutations(NOT combinations) is;
-nPk = 5!/(5-2)! == 120/6 = 20
-
-Permutations allows repetitions whereas combinations do not. In permutation, AB & BA are distinct.
+Each character is selected independently and can repeat.
+An n-character result has len(alphabet)ⁿ possible values.
 */
 const alphabet = "ABEGHNQRTadeghnqrt2345789"
 
-// https://www.britannica.com/science/permutation
-
-// New returns a new random string consisting of a legible character set.
-// It is not suitable for cryptographic uses.
+// New returns a cryptographically random string consisting of a legible character set.
+// The result contains at least 128 bits of randomness.
 //
 // Also see [UUID4] and [UUID8]
 func New() string {
-	return Random(16)
+	// ⌈log₂₅ 2¹²⁸⌉ = 28 chars.
+	// Also see [rand.Text]
+	return Random(28)
 }
 
-// Random generates a random string of size n consisting of a legible character set.
+// Random generates a cryptographically random string of size n consisting of a legible character set.
 // If n < 1 or significantly large, it is set to reasonable bounds.
-// It is not suitable for cryptographic uses.
+// The security of the result depends on n.
 //
 // Also see [UUID4] and [UUID8]
 func Random(n int) string {
 	if n < 1 {
-		n = 1
+		n = 6
 	}
 	if n > 100_000 {
 		// the upper limit of a slice is some significant fraction of the address space of a process.
@@ -62,12 +54,24 @@ func Random(n int) string {
 		n = 100_000
 	}
 
-	length := len(alphabet)
-	b := make([]byte, n)
+	// Reject the incomplete range before using modulo to keep each character equally likely.
+	const randomByteLimit = 256 - (256 % len(alphabet))
 
-	for i := range b {
-		j := rand.N(length)
-		b[i] = alphabet[j]
+	b := make([]byte, n)
+	alphabetLength := len(alphabet)
+
+	for i := 0; i < n; {
+		randomBytes := b[i:]
+		_, _ = rand.Read(randomBytes)
+
+		for _, randomByte := range randomBytes {
+			if int(randomByte) >= randomByteLimit {
+				continue
+			}
+
+			b[i] = alphabet[int(randomByte)%alphabetLength]
+			i++
+		}
 	}
 
 	return string(b)

@@ -4,6 +4,9 @@ Most recent version is listed first.
 
 
 # v0.1.15
+- ong/id: make id cryptographically secure: https://github.com/komuw/ong/pull/500
+
+# v0.1.15
 - Update golang version: https://github.com/komuw/ong/pull/496 
 - ong/errors: Ensure error handling is consistent: https://github.com/komuw/ong/pull/497
 - Apply various static analysis fixes: https://github.com/komuw/ong/pull/498
