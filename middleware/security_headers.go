@@ -31,49 +31,29 @@ func securityHeaders(wrappedHandler http.Handler) http.HandlerFunc {
 		// - https://securityheaders.com/
 		//
 
-		w.Header().Set(
-			permissionsPolicyHeader,
-			// flocOptOut disables floc which is otherwise ON by default
-			// see: https://github.com/WICG/floc#opting-out-of-computation
-			"interest-cohort=()",
-		)
+		h := w.Header()
 
-		w.Header().Set(
-			xContentOptionsHeader,
-			"nosniff",
-		)
-
-		w.Header().Set(
-			xFrameHeader,
-			"DENY",
-		)
-
-		w.Header().Set(
-			corpHeader,
-			"same-site",
-		)
-
-		w.Header().Set(
-			coopHeader,
-			"same-origin",
-		)
-
-		w.Header().Set(
-			referrerHeader,
-			// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
-			"strict-origin-when-cross-origin",
-		)
+		// flocOptOut disables floc which is otherwise ON by default
+		// see: https://github.com/WICG/floc#opting-out-of-computation
+		setDefaultHeader(h, permissionsPolicyHeader, "interest-cohort=()")
+		setDefaultHeader(h, xContentOptionsHeader, "nosniff")
+		setDefaultHeader(h, xFrameHeader, "DENY")
+		setDefaultHeader(h, corpHeader, "same-site")
+		setDefaultHeader(h, coopHeader, "same-origin")
+		setDefaultHeader(h, referrerHeader, "strict-origin-when-cross-origin")
 
 		if r.TLS != nil {
-			w.Header().Set(
-				stsHeader,
-				// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
-				// A max-age(in seconds) of 2yrs is recommended
-				getSts(60*24*time.Hour), // 60 days
-			)
+			// A max-age(in seconds) of 2yrs is recommended
+			setDefaultHeader(h, stsHeader, getSts(60*24*time.Hour))
 		}
 
 		wrappedHandler.ServeHTTP(w, r)
+	}
+}
+
+func setDefaultHeader(h http.Header, name, value string) {
+	if h.Get(name) == "" {
+		h.Set(name, value)
 	}
 }
 

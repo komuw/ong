@@ -50,6 +50,39 @@ func TestSecurityHeaders(t *testing.T) {
 		attest.Zero(t, rec.Header().Get(cspHeader))
 	})
 
+	t.Run("preserves an existing header", func(t *testing.T) {
+		t.Parallel()
+
+		customValue := "cross-origin"
+		wrappedHandler := securityHeaders(echoHandler("hello"))
+		rec := httptest.NewRecorder()
+		rec.Header().Set(corpHeader, customValue)
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.Header.Get(corpHeader), customValue)
+	})
+
+	t.Run("wrapped handler can modify a header", func(t *testing.T) {
+		t.Parallel()
+
+		customValue := "cross-origin"
+		wrappedHandler := securityHeaders(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set(corpHeader, customValue)
+		}))
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.Header.Get(corpHeader), customValue)
+	})
+
 	t.Run("strict transport security omitted without TLS", func(t *testing.T) {
 		t.Parallel()
 
