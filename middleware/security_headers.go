@@ -40,11 +40,13 @@ func securityHeaders(wrappedHandler http.Handler) http.HandlerFunc {
 		setDefaultHeader(h, xFrameHeader, "DENY")
 		setDefaultHeader(h, corpHeader, "same-site")
 		setDefaultHeader(h, coopHeader, "same-origin")
+		// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
 		setDefaultHeader(h, referrerHeader, "strict-origin-when-cross-origin")
 
 		if r.TLS != nil {
+			// - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
 			// A max-age(in seconds) of 2yrs is recommended
-			setDefaultHeader(h, stsHeader, getSts(60*24*time.Hour))
+			setDefaultHeader(h, stsHeader, getSts(60*24*time.Hour)) // 60 days
 		}
 
 		wrappedHandler.ServeHTTP(w, r)
