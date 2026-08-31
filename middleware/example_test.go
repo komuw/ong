@@ -62,6 +62,18 @@ func ExampleGet() {
 	// Output:
 }
 
+func ExampleGet_customCSPPolicy() {
+	l := log.New(context.Background(), os.Stdout, 100)
+	opts := config.CertOpts("example.com", "super-h@rd-Pas1word", config.DirectIpStrategy, l, "", "", nil).
+		WithCSPPolicy(func(_, nonce string) string {
+			return fmt.Sprintf("default-src 'self'; script-src 'self' 'nonce-%s';", nonce)
+		})
+	handler := middleware.Get(loginHandler(), opts)
+	_ = handler
+
+	// Output:
+}
+
 func ExampleAll() {
 	l := log.New(context.Background(), os.Stdout, 100)
 	opts := config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l)

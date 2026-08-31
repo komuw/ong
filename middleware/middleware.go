@@ -68,6 +68,9 @@ func allDefaultMiddlewares(
 	loadShedBreachLatency := o.LoadShedBreachLatency
 	loadShedPercentile := o.LoadShedPercentile
 
+	// csp
+	cspPolicy := o.CSPPolicy
+
 	// cors
 	allowedOrigins := o.AllowedOrigins
 	allowedMethods := o.AllowedOrigins
@@ -94,11 +97,12 @@ func allDefaultMiddlewares(
 	// 9.  acme needs to come before httpsRedirector because ACME challenge requests need to be handled under http(not https).
 	// 10.  httpsRedirector since it can be cpu intensive, thus should be behind the ratelimiter & loadshedder.
 	// 11. securityHeaders since we want some minimum level of security.
-	// 12. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 13. csrf since this one is a bit more involved perf-wise.
-	// 14. Gzip since it is very involved perf-wise.
-	// 15. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
-	// 16. session since we want sessions to saved as soon as possible.
+	// 12. csp since we want to set Content-Security-Policy and make its nonce available to inner middlewares.
+	// 13. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
+	// 14. csrf since this one is a bit more involved perf-wise.
+	// 15. Gzip since it is very involved perf-wise.
+	// 16. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
+	// 17. session since we want sessions to saved as soon as possible.
 	//
 	// user ->
 	//  trace ->
@@ -112,12 +116,13 @@ func allDefaultMiddlewares(
 	//          acme ->
 	//           httpsRedirector ->
 	//            securityHeaders ->
-	//             cors ->
-	//              csrf ->
-	//               Gzip ->
-	//                reloadProtector ->
-	//                 session ->
-	//                  actual-handler
+	//             csp ->
+	//              cors ->
+	//               csrf ->
+	//                Gzip ->
+	//                 reloadProtector ->
+	//                  session ->
+	//                   actual-handler
 
 	// We have disabled Gzip for now, since it is about 2.5times slower than no-gzip for a 50MB sample response.
 	// see: https://github.com/komuw/ong/issues/85
@@ -135,32 +140,35 @@ func allDefaultMiddlewares(
 								loadShedder(
 									acme.Handler(
 										httpsRedirector(
-											csp(
-												cors(
-													csrf(
-														// TODO: re-enable after https://github.com/komuw/ong/issues/447 is fixed.
-														// reloadProtector(
-														session(
-															wrappedHandler,
+											securityHeaders(
+												csp(
+													cors(
+														csrf(
+															// TODO: re-enable after https://github.com/komuw/ong/issues/447 is fixed.
+															// reloadProtector(
+															session(
+																wrappedHandler,
+																string(secretKey),
+																domain,
+																sessionCookieDuration,
+																SessionAntiReplayFunc,
+															),
+															// 	domain,
+															// ),
 															string(secretKey),
 															domain,
-															sessionCookieDuration,
-															SessionAntiReplayFunc,
+															csrfTokenDuration,
 														),
-														// 	domain,
-														// ),
-														string(secretKey),
+														allowedOrigins,
+														allowedMethods,
+														allowedHeaders,
+														allowCredentials,
+														corsCacheDuration,
 														domain,
-														csrfTokenDuration,
 													),
-													allowedOrigins,
-													allowedMethods,
-													allowedHeaders,
-													allowCredentials,
-													corsCacheDuration,
 													domain,
+													cspPolicy,
 												),
-												domain,
 											),
 											httpsPort,
 											domain,

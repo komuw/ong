@@ -17,6 +17,28 @@ import (
 	"github.com/komuw/ong/internal/key"
 )
 
+// CSPPolicyFunc returns the complete Content-Security-Policy value for a domain and request nonce.
+// It must be safe for concurrent use. The function must add the nonce to each directive that needs it.
+type CSPPolicyFunc func(domain, nonce string) string
+
+// DefaultCSPPolicy returns the default Content-Security-Policy value.
+func DefaultCSPPolicy(domain, nonce string) string {
+	// This csp only permitts content from:
+	// - the document's origin(and subdomains)
+	// - images may load from anywhere
+	// - media is allowed from domain(and its subdomains)
+	// - executable scripts is only allowed from self(& subdomains).
+	// - DOM xss(eg setting innerHtml) is blocked by require-trusted-types.
+	//
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+	return fmt.Sprintf(
+		"default-src 'self' %s *.%s; img-src 'self' *; media-src 'self' %s *.%s; object-src 'none'; base-uri 'none'; require-trusted-types-for 'script'; script-src 'self' %s *.%s 'unsafe-inline' 'nonce-%s';",
+		domain, domain,
+		domain, domain,
+		domain, domain, nonce,
+	)
+}
+
 // ratelimit middleware.
 const (
 	// DefaultRateLimit is the maximum requests allowed (from one IP address) per second, by default.
@@ -211,6 +233,9 @@ func (o Opts) GoString() string {
 // loadShedBreachLatency is the latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
 // loadShedPercentile is percentile used to check for load breach, by default. If it is less than 0, [DefaultLoadShedPercentile] is used instead.
 //
+// cspPolicy returns the Content-Security-Policy value for each request. It receives the configured domain and the request nonce.
+// If it is nil, [DefaultCSPPolicy] is used instead. It must be safe for concurrent use.
+//
 // allowedOrigins, allowedMethods, allowedHeaders, allowCredentials & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, [domain] and its www variant are used. Use []string{"*"} to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
@@ -268,6 +293,7 @@ func New(
 	loadShedMinSampleSize int,
 	loadShedBreachLatency time.Duration,
 	loadShedPercentile float64,
+	cspPolicy CSPPolicyFunc,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
@@ -303,6 +329,7 @@ func New(
 		loadShedMinSampleSize,
 		loadShedBreachLatency,
 		loadShedPercentile,
+		cspPolicy,
 		allowedOrigins,
 		allowedMethods,
 		allowedHeaders,
@@ -368,6 +395,7 @@ func WithOpts(
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
 		DefaultLoadShedPercentile,
+		DefaultCSPPolicy,
 		nil,
 		nil,
 		nil,
@@ -391,6 +419,16 @@ func WithOpts(
 		"",
 		nil,
 	)
+}
+
+// WithCSPPolicy returns a copy of o that uses policy for Content-Security-Policy values.
+// If policy is nil, [DefaultCSPPolicy] is used instead.
+func (o Opts) WithCSPPolicy(policy CSPPolicyFunc) Opts {
+	if policy == nil {
+		policy = DefaultCSPPolicy
+	}
+	o.CSPPolicy = policy
+	return o
 }
 
 // DevOpts returns a new Opts that has sensible defaults, especially for dev environments.
@@ -418,6 +456,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
 		DefaultLoadShedPercentile,
+		DefaultCSPPolicy,
 		nil,
 		nil,
 		nil,
@@ -475,6 +514,7 @@ func CertOpts(
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
 		DefaultLoadShedPercentile,
+		DefaultCSPPolicy,
 		nil,
 		nil,
 		nil,
@@ -535,6 +575,7 @@ func AcmeOpts(
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
 		DefaultLoadShedPercentile,
+		DefaultCSPPolicy,
 		nil,
 		nil,
 		nil,
@@ -594,6 +635,7 @@ func LetsEncryptOpts(
 		DefaultLoadShedMinSampleSize,
 		DefaultLoadShedBreachLatency,
 		DefaultLoadShedPercentile,
+		DefaultCSPPolicy,
 		nil,
 		nil,
 		nil,
@@ -658,6 +700,9 @@ type middlewareOpts struct {
 	LoadShedBreachLatency  time.Duration
 	LoadShedPercentile     float64
 
+	// CSPPolicy returns the Content-Security-Policy value for each request.
+	CSPPolicy CSPPolicyFunc
+
 	// cors
 	AllowedOrigins    []string
 	AllowedMethods    []string
@@ -685,6 +730,7 @@ func (m middlewareOpts) String() string {
   LoadShedMinSampleSize: %v,
   LoadShedBreachLatency: %v,
   LoadShedPercentile: %v,
+  CSPPolicy: %T,
   AllowedOrigins: %v,
   AllowedMethods: %v,
   AllowedHeaders: %v,
@@ -703,6 +749,7 @@ func (m middlewareOpts) String() string {
 		m.LoadShedMinSampleSize,
 		m.LoadShedBreachLatency,
 		m.LoadShedPercentile,
+		m.CSPPolicy,
 		m.AllowedOrigins,
 		m.AllowedMethods,
 		m.AllowedHeaders,
@@ -731,6 +778,7 @@ func newMiddlewareOpts(
 	loadShedMinSampleSize int,
 	loadShedBreachLatency time.Duration,
 	loadShedPercentile float64,
+	cspPolicy CSPPolicyFunc,
 	allowedOrigins []string,
 	allowedMethods []string,
 	allowedHeaders []string,
@@ -755,6 +803,10 @@ func newMiddlewareOpts(
 
 	if err := key.IsSecure(secretKey); err != nil {
 		return middlewareOpts{}, err
+	}
+
+	if cspPolicy == nil {
+		cspPolicy = DefaultCSPPolicy
 	}
 
 	{ // cors validation.
@@ -794,6 +846,9 @@ func newMiddlewareOpts(
 		LoadShedMinSampleSize:  loadShedMinSampleSize,
 		LoadShedBreachLatency:  loadShedBreachLatency,
 		LoadShedPercentile:     loadShedPercentile,
+
+		// csp
+		CSPPolicy: cspPolicy,
 
 		// cors
 		AllowedOrigins:    allowedOrigins,
@@ -1075,6 +1130,13 @@ func (o Opts) Equal(other Opts) bool {
 			return false
 		}
 		if int64(o.LoadShedPercentile) != int64(other.LoadShedPercentile) {
+			return false
+		}
+
+		if (o.CSPPolicy == nil) != (other.CSPPolicy == nil) {
+			return false
+		}
+		if o.CSPPolicy != nil && o.CSPPolicy(o.Domain, "nonce") != other.CSPPolicy(other.Domain, "nonce") {
 			return false
 		}
 

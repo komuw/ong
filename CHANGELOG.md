@@ -3,7 +3,8 @@
 Most recent version is listed first.  
 
 
-# v0.1.15
+# v0.1.16
+- ong/middleware: Add ability to specify custom CSP policy and security headers: https://github.com/komuw/ong/pull/499
 - ong/id: make id cryptographically secure: https://github.com/komuw/ong/pull/500
 
 # v0.1.15

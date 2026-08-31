@@ -1,15 +1,16 @@
 package middleware
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
-	"time"
 
+	"github.com/komuw/ong/config"
+	"github.com/komuw/ong/internal/tst"
 	"go.akshayshah.org/attest"
 )
 
@@ -23,7 +24,7 @@ func echoHandler(msg string) http.HandlerFunc {
 	}
 }
 
-func TestSecurity(t *testing.T) {
+func TestCsp(t *testing.T) {
 	t.Parallel()
 
 	t.Run("middleware succeds", func(t *testing.T) {
@@ -31,7 +32,7 @@ func TestSecurity(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -47,36 +48,63 @@ func TestSecurity(t *testing.T) {
 		attest.Equal(t, string(rb), msg)
 	})
 
-	t.Run("all headers set succsfully", func(t *testing.T) {
+	t.Run("header set successfully", func(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-		req.TLS = &tls.ConnectionState{} // fake tls so that the STS header is set.
 		wrappedHandler.ServeHTTP(rec, req)
 
 		res := rec.Result()
 		defer res.Body.Close()
 
-		expect := map[string]string{
-			permissionsPolicyHeader: "interest-cohort=()",
-			cspHeader:               getCsp(domain, res.Header.Get(nonceHeader)),
-			xContentOptionsHeader:   "nosniff",
-			xFrameHeader:            "DENY",
-			corpHeader:              "same-site",
-			coopHeader:              "same-origin",
-			referrerHeader:          "strict-origin-when-cross-origin",
-			stsHeader:               getSts(60 * 24 * time.Hour),
-		}
+		attest.Equal(t, rec.Header().Get(cspHeader), config.DefaultCSPPolicy(domain, res.Header.Get(nonceHeader)))
+	})
 
-		for k, v := range expect {
-			got := rec.Header().Get(k)
-			attest.Equal(t, got, v)
+	t.Run("custom policy", func(t *testing.T) {
+		t.Parallel()
+
+		domain := "example.com"
+		gotDomain := ""
+		gotNonce := ""
+		policy := func(domain, nonce string) string {
+			gotDomain = domain
+			gotNonce = nonce
+			return fmt.Sprintf("default-src 'none'; script-src 'nonce-%s';", nonce)
 		}
+		wrappedHandler := csp(echoHandler("hello"), domain, policy)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		nonce := res.Header.Get(nonceHeader)
+		attest.Equal(t, gotDomain, domain)
+		attest.Equal(t, gotNonce, nonce)
+		attest.Equal(t, res.Header.Get(cspHeader), fmt.Sprintf("default-src 'none'; script-src 'nonce-%s';", nonce))
+	})
+
+	t.Run("nil policy uses default", func(t *testing.T) {
+		t.Parallel()
+
+		domain := "example.com"
+		wrappedHandler := csp(echoHandler("hello"), domain, nil)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.Header.Get(cspHeader), config.DefaultCSPPolicy(domain, res.Header.Get(nonceHeader)))
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {
@@ -86,12 +114,11 @@ func TestSecurity(t *testing.T) {
 		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
-			req.TLS = &tls.ConnectionState{} // fake tls so that the STS header is set.
 			wrappedHandler.ServeHTTP(rec, req)
 
 			res := rec.Result()
@@ -114,6 +141,28 @@ func TestSecurity(t *testing.T) {
 	})
 }
 
+func TestConfiguredCSPPolicy(t *testing.T) {
+	t.Parallel()
+
+	domain := "localhost"
+	o := config.CertOpts(domain, tst.SecretKey(), config.DirectIpStrategy, slog.Default(), "", "", nil).
+		WithCSPPolicy(func(domain, nonce string) string {
+			return fmt.Sprintf("default-src https://%s; script-src 'nonce-%s';", domain, nonce)
+		})
+	wrappedHandler := All(echoHandler("hello"), o)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "https://localhost/someUri", nil)
+	wrappedHandler.ServeHTTP(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	nonce := res.Header.Get(nonceHeader)
+	attest.NotZero(t, nonce)
+	attest.Equal(t, res.Header.Get(cspHeader), fmt.Sprintf("default-src https://%s; script-src 'nonce-%s';", domain, nonce))
+}
+
 func TestGetCspNonce(t *testing.T) {
 	t.Parallel()
 
@@ -122,7 +171,7 @@ func TestGetCspNonce(t *testing.T) {
 
 		msg := "hello"
 		domain := "example.com"
-		wrappedHandler := csp(echoHandler(msg), domain)
+		wrappedHandler := csp(echoHandler(msg), domain, config.DefaultCSPPolicy)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)

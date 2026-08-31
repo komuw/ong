@@ -50,6 +50,7 @@ func validOpts(t *testing.T) Opts {
 		200*time.Millisecond,
 		// We check for loadshed breach at the 83 percentile
 		83,
+		DefaultCSPPolicy,
 		// Allow access from these origins for CORs.
 		[]string{"http://example.net", "https://example.org"},
 		// Allow only GET and POST for CORs.
@@ -101,6 +102,32 @@ func TestNewMiddlewareOpts(t *testing.T) {
 		assert func(middlewareOpts)
 	}{
 		{
+			name: "nil CSP policy uses default",
+			opt: func() middlewareOpts {
+				opt := validOpts(t)
+				opt.middlewareOpts.CSPPolicy = nil
+				return opt.middlewareOpts
+			},
+			assert: func(o middlewareOpts) {
+				domain := "example.com"
+				nonce := "nonce"
+				attest.Equal(t, o.CSPPolicy(domain, nonce), DefaultCSPPolicy(domain, nonce))
+			},
+		},
+		{
+			name: "custom CSP policy",
+			opt: func() middlewareOpts {
+				opt := validOpts(t)
+				opt.middlewareOpts.CSPPolicy = func(domain, nonce string) string {
+					return domain + nonce
+				}
+				return opt.middlewareOpts
+			},
+			assert: func(o middlewareOpts) {
+				attest.Equal(t, o.CSPPolicy("example.com", "nonce"), "example.comnonce")
+			},
+		},
+		{
 			name: "zero cache duration",
 			opt: func() middlewareOpts {
 				opt := validOpts(t)
@@ -145,6 +172,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 				opt.LoadShedMinSampleSize,
 				opt.LoadShedBreachLatency,
 				opt.LoadShedPercentile,
+				opt.CSPPolicy,
 				opt.AllowedOrigins,
 				opt.AllowedMethods,
 				opt.AllowedHeaders,
@@ -206,6 +234,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					DefaultLoadShedMinSampleSize,
 					DefaultLoadShedBreachLatency,
 					DefaultLoadShedPercentile,
+					DefaultCSPPolicy,
 					nil,
 					nil,
 					nil,
@@ -229,6 +258,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					DefaultLoadShedMinSampleSize,
 					DefaultLoadShedBreachLatency,
 					DefaultLoadShedPercentile,
+					DefaultCSPPolicy,
 					nil,
 					nil,
 					nil,
@@ -242,6 +272,23 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWithCSPPolicy(t *testing.T) {
+	t.Parallel()
+
+	domain := "example.com"
+	nonce := "nonce"
+	o := validOpts(t)
+	custom := o.WithCSPPolicy(func(domain, nonce string) string {
+		return domain + nonce
+	})
+
+	attest.Equal(t, custom.CSPPolicy(domain, nonce), domain+nonce)
+	attest.Equal(t, o.CSPPolicy(domain, nonce), DefaultCSPPolicy(domain, nonce))
+
+	withDefault := custom.WithCSPPolicy(nil)
+	attest.Equal(t, withDefault.CSPPolicy(domain, nonce), DefaultCSPPolicy(domain, nonce))
 }
 
 func TestOpts(t *testing.T) {
@@ -264,6 +311,7 @@ func TestOpts(t *testing.T) {
 			LoadShedMinSampleSize:  DefaultLoadShedMinSampleSize,
 			LoadShedBreachLatency:  DefaultLoadShedBreachLatency,
 			LoadShedPercentile:     DefaultLoadShedPercentile,
+			CSPPolicy:              DefaultCSPPolicy,
 			AllowedOrigins:         []string{},
 			AllowedMethods:         []string{},
 			AllowedHeaders:         []string{},
