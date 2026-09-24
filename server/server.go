@@ -58,18 +58,13 @@ func Run(h http.Handler, o config.Opts) error {
 			}
 
 			{ // 2. Add pprof route handler.
-				var (
-					errJ        error
-					profHandler = pprofHandler(o)
-				)
-
 				basicAuth, errA := middleware.BasicAuth(
-					profHandler,
-					string(o.SecretKey),
+					pprofHandler(o),
+					"admin",
 					string(o.SecretKey),
 				)
 				if errA != nil {
-					errJ = errors.Join(errJ, errA)
+					return fmt.Errorf("ong/server: unable to add pprof handler: %w", errA)
 				}
 
 				if errB := m.Unwrap().AddRoute(
@@ -79,7 +74,7 @@ func Run(h http.Handler, o config.Opts) error {
 						basicAuth,
 					),
 				); errB != nil {
-					errJ = errors.Join(errJ, errB)
+					return fmt.Errorf("ong/server: unable to add pprof handler: %w", errB)
 				}
 
 				if errC := m.Unwrap().AddRoute(
@@ -89,11 +84,7 @@ func Run(h http.Handler, o config.Opts) error {
 						basicAuth,
 					),
 				); errC != nil {
-					errJ = errors.Join(errJ, errC)
-				}
-
-				if errJ != nil {
-					return fmt.Errorf("ong/server: unable to add pprof handler: %w", errJ)
+					return fmt.Errorf("ong/server: unable to add pprof handler: %w", errC)
 				}
 			}
 		}

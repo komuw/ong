@@ -3,9 +3,9 @@ module github.com/komuw/ong
 go 1.27
 
 require (
-	golang.org/x/crypto v0.55.0
-	golang.org/x/net v0.58.0
-	golang.org/x/sys v0.47.0
+	golang.org/x/crypto v0.57.0
+	golang.org/x/net v0.59.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
@@ -19,13 +19,13 @@ require (
 	github.com/tmthrgd/httputils v0.0.0-20190904060602-27fdf7d93acd // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )
 
 require (
 	braces.dev/errtrace v0.4.0 // test
 	github.com/NYTimes/gziphandler v1.1.1 // test
-	github.com/klauspost/compress v1.19.2 // test
+	github.com/klauspost/compress v1.20.0 // test
 	github.com/pkg/errors v0.9.1 // test
 	github.com/rs/zerolog v1.35.1 // test
 	github.com/sirupsen/logrus v1.10.2 // test
@@ -35,5 +35,5 @@ require (
 	go.akshayshah.org/attest v1.1.0 // test
 	go.uber.org/goleak v1.3.0 // test
 	go.uber.org/zap v1.28.0 // test
-	golang.org/x/sync v0.22.0 // test
+	golang.org/x/sync v0.23.0 // test
 )

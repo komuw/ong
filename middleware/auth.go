@@ -2,15 +2,20 @@ package middleware
 
 import (
 	"crypto/subtle"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/komuw/ong/internal/key"
 )
 
 // BasicAuth is a middleware that protects wrappedHandler using basic authentication.
-func BasicAuth(wrappedHandler http.Handler, user, passwd string) (http.HandlerFunc, error) {
-	if err := key.IsSecure(passwd); err != nil {
+func BasicAuth(wrappedHandler http.Handler, user, password string) (http.HandlerFunc, error) {
+	if err := key.IsSecure(password); err != nil {
 		return nil, err
+	}
+	if strings.EqualFold(user, password) {
+		return nil, errors.New("ong/middleware/auth: user should not equal password")
 	}
 
 	// See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
@@ -34,7 +39,7 @@ func BasicAuth(wrappedHandler http.Handler, user, passwd string) (http.HandlerFu
 			return
 		}
 
-		if subtle.ConstantTimeCompare([]byte(p), []byte(passwd)) != 1 {
+		if subtle.ConstantTimeCompare([]byte(p), []byte(password)) != 1 {
 			e(w)
 			return
 		}
