@@ -74,7 +74,7 @@ func Set(
 		// Security
 		HttpOnly: httpOnly, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
 		Secure:   true,     // https only.
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 
 	// Session cookies are those that do not specify the Expires or Max-Age attribute.
