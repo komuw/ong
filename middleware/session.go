@@ -19,7 +19,6 @@ import (
 func session(
 	wrappedHandler http.Handler,
 	secretKey string,
-	domain string,
 	sessionCookieDuration time.Duration,
 	antiReplay func(r http.Request) string,
 ) http.HandlerFunc {
@@ -33,7 +32,7 @@ func session(
 		// 3. Get that cookie and save it to r.context
 		r = sess.Initialise(r, secretKey, antiReplay(*r))
 
-		srw := newSessRW(w, r, domain, secretKey, sessionCookieDuration)
+		srw := newSessRW(w, r, secretKey, sessionCookieDuration)
 
 		wrappedHandler.ServeHTTP(srw, r)
 	}
@@ -43,7 +42,6 @@ func session(
 type sessRW struct {
 	http.ResponseWriter
 	r                     *http.Request
-	domain                string
 	secretKey             string
 	sessionCookieDuration time.Duration
 	written               bool
@@ -65,14 +63,12 @@ var (
 func newSessRW(
 	w http.ResponseWriter,
 	r *http.Request,
-	domain string,
 	secretKey string,
 	sessionCookieDuration time.Duration,
 ) *sessRW {
 	return &sessRW{
 		ResponseWriter:        w,
 		r:                     r,
-		domain:                domain,
 		secretKey:             secretKey,
 		sessionCookieDuration: sessionCookieDuration,
 		written:               false,
@@ -92,7 +88,6 @@ func (srw *sessRW) Write(b []byte) (int, error) {
 		sess.Save(
 			srw.r,
 			srw.ResponseWriter,
-			srw.domain,
 			srw.sessionCookieDuration,
 			srw.secretKey,
 		)

@@ -31,7 +31,6 @@ func shoppingCartHandler() http.HandlerFunc {
 			w,
 			cookieName,
 			string(b),
-			"example.com",
 			2*time.Hour,
 			secretKey,
 		)
@@ -55,5 +54,5 @@ func ExampleSetEncrypted() {
 	fmt.Println(res.Cookies()[0].Name)
 
 	// Output:
-	// cart
+	// __Host-cart
 }

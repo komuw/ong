@@ -20,8 +20,8 @@ type (
 
 const (
 	ctxKey = sessionContextKeyType("ong-session-key")
-	// CookieName is the name of the http cookie under which sessions are stored.
-	CookieName = "ong_sess"
+	// CookieName is the name of the HTTP cookie under which sessions are stored.
+	CookieName = cookie.HostCookiePrefix + "ong_sess"
 )
 
 // Initialise returns a new http.Request (based on r) that has sessions properly setup.
@@ -120,7 +120,6 @@ func GetM(r *http.Request) map[string]string {
 func Save(
 	r *http.Request,
 	w http.ResponseWriter,
-	domain string,
 	mAge time.Duration,
 	secretKey string,
 ) {
@@ -141,7 +140,6 @@ func Save(
 		w,
 		CookieName,
 		string(value),
-		domain,
 		mAge,
 		secretKey,
 	)

@@ -15,7 +15,7 @@ const reloadProtectCookiePrefix = "ong_form_reload_protect"
 // reloadProtector is a middleware that attempts to provides protection against a form re-submission when a user reloads/refreshes an already submitted web page/form.
 //
 // If such a situation is detected; this middleware will issue a http GET redirect to the same url.
-func reloadProtector(wrappedHandler http.Handler, domain string) http.HandlerFunc {
+func reloadProtector(wrappedHandler http.Handler) http.HandlerFunc {
 	safeMethods := []string{
 		// safe methods under rfc7231: https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.1
 		http.MethodGet,
@@ -34,14 +34,13 @@ func reloadProtector(wrappedHandler http.Handler, domain string) http.HandlerFun
 			)
 
 			// todo: should we check if gotCookie.MaxAge > 0
-			gotCookie, err := r.Cookie(theCookie)
+			gotCookie, err := cookie.Get(r, theCookie)
 			if err == nil && gotCookie != nil {
 				// It means that the form had been submitted before.
 
 				cookie.Delete(
 					w,
 					theCookie,
-					domain,
 				)
 				http.Redirect(
 					w,
@@ -57,7 +56,6 @@ func reloadProtector(wrappedHandler http.Handler, domain string) http.HandlerFun
 					w,
 					theCookie,
 					"YES",
-					domain,
 					1*time.Hour,
 					false,
 				)

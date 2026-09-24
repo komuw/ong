@@ -70,13 +70,11 @@ func TestSession(t *testing.T) {
 
 		msg := "hello"
 		secretKey := tst.SecretKey()
-		domain := "localhost"
 		key := "name"
 		value := "John Doe"
 		wrappedHandler := session(
 			someSessionHandler(msg, key, value),
 			secretKey,
-			domain,
 			config.DefaultSessionCookieDuration,
 			func(r http.Request) string { return r.RemoteAddr },
 		)
@@ -100,7 +98,6 @@ func TestSession(t *testing.T) {
 
 		msg := "hello world wide."
 		secretKey := tst.SecretKey()
-		domain := "localhost"
 		key := "name"
 		value := "John Doe"
 
@@ -111,7 +108,6 @@ func TestSession(t *testing.T) {
 		wrappedHandler := session(
 			someSessionHandler(msg, key, value),
 			secretKey,
-			domain,
 			config.DefaultSessionCookieDuration,
 			antiReplayFunc,
 		)
@@ -168,12 +164,10 @@ func TestSession(t *testing.T) {
 		t.Parallel()
 
 		secretKey := tst.SecretKey()
-		domain := "localhost"
 		name := "John Doe"
 		wrappedHandler := session(
 			templateVarsHandler(t, name),
 			secretKey,
-			domain,
 			config.DefaultSessionCookieDuration,
 			func(r http.Request) string { return r.RemoteAddr },
 		)
@@ -201,7 +195,6 @@ func TestSession(t *testing.T) {
 
 		msg := "hello"
 		secretKey := tst.SecretKey()
-		domain := "localhost"
 		key := "name"
 		value := "John Doe"
 
@@ -209,7 +202,6 @@ func TestSession(t *testing.T) {
 		wrappedHandler := session(
 			someSessionHandler(msg, key, value),
 			secretKey,
-			domain,
 			config.DefaultSessionCookieDuration,
 			antiReplayFunc,
 		)
@@ -267,13 +259,11 @@ func TestSession(t *testing.T) {
 
 		msg := "hello"
 		secretKey := tst.SecretKey()
-		domain := "localhost"
 		key := "bothNames"
 		value := "John Doe Jnr"
 		wrappedHandler := session(
 			someSessionHandler(msg, key, value),
 			secretKey,
-			domain,
 			config.DefaultSessionCookieDuration,
 			func(r http.Request) string { return r.RemoteAddr },
 		)

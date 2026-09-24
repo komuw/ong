@@ -43,8 +43,7 @@ func TestTraceMiddleware(t *testing.T) {
 		t.Parallel()
 
 		successMsg := "hello"
-		domain := "example.com"
-		wrappedHandler := trace(someTraceHandler(successMsg), domain)
+		wrappedHandler := trace(someTraceHandler(successMsg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -62,7 +61,7 @@ func TestTraceMiddleware(t *testing.T) {
 		logHeader := res.Header.Get(logIDKey)
 		attest.NotZero(t, logHeader)
 		attest.True(t, len(res.Cookies()) >= 1)
-		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, res.Cookies()[0].Name, "__Host-"+logIDKey)
 		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 	})
 
@@ -71,8 +70,7 @@ func TestTraceMiddleware(t *testing.T) {
 
 		errorMsg := "someTraceHandler failed"
 		successMsg := "hello"
-		domain := "example.com"
-		wrappedHandler := trace(someTraceHandler(successMsg), domain)
+		wrappedHandler := trace(someTraceHandler(successMsg))
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
@@ -91,7 +89,7 @@ func TestTraceMiddleware(t *testing.T) {
 		logHeader := res.Header.Get(logIDKey)
 		attest.NotZero(t, logHeader)
 		attest.True(t, len(res.Cookies()) >= 1)
-		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, res.Cookies()[0].Name, "__Host-"+logIDKey)
 		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 	})
 
@@ -100,8 +98,7 @@ func TestTraceMiddleware(t *testing.T) {
 
 		successMsg := "hello"
 		errorMsg := "someTraceHandler failed"
-		domain := "example.com"
-		wrappedHandler := trace(someTraceHandler(successMsg), domain)
+		wrappedHandler := trace(someTraceHandler(successMsg))
 
 		{
 			// first request that succeds
@@ -121,7 +118,7 @@ func TestTraceMiddleware(t *testing.T) {
 			logHeader := res.Header.Get(logIDKey)
 			attest.NotZero(t, logHeader)
 			attest.True(t, len(res.Cookies()) >= 1)
-			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, res.Cookies()[0].Name, "__Host-"+logIDKey)
 			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 
@@ -143,7 +140,7 @@ func TestTraceMiddleware(t *testing.T) {
 			logHeader := res.Header.Get(logIDKey)
 			attest.NotZero(t, logHeader)
 			attest.True(t, len(res.Cookies()) >= 1)
-			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, res.Cookies()[0].Name, "__Host-"+logIDKey)
 			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 
@@ -166,7 +163,7 @@ func TestTraceMiddleware(t *testing.T) {
 			logHeader := res.Header.Get(logIDKey)
 			attest.NotZero(t, logHeader)
 			attest.True(t, len(res.Cookies()) >= 1)
-			attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+			attest.Equal(t, res.Cookies()[0].Name, "__Host-"+logIDKey)
 			attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		}
 	})
@@ -175,15 +172,14 @@ func TestTraceMiddleware(t *testing.T) {
 		t.Parallel()
 
 		successMsg := "hello"
-		domain := "example.com"
-		wrappedHandler := trace(someTraceHandler(successMsg), domain)
+		wrappedHandler := trace(someTraceHandler(successMsg))
 
 		someLogID := "hey-some-log-id:" + id.New()
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  logIDKey,
+			Name:  "__Host-" + logIDKey,
 			Value: someLogID,
 		})
 		wrappedHandler.ServeHTTP(rec, req)
@@ -200,7 +196,7 @@ func TestTraceMiddleware(t *testing.T) {
 		logHeader := res.Header.Get(logIDKey)
 		attest.NotZero(t, logHeader)
 		attest.True(t, len(res.Cookies()) >= 1)
-		attest.Equal(t, res.Cookies()[0].Name, logIDKey)
+		attest.Equal(t, res.Cookies()[0].Name, "__Host-"+logIDKey)
 		attest.Equal(t, logHeader, res.Cookies()[0].Value)
 		attest.Equal(t, logHeader, someLogID)
 	})
@@ -208,10 +204,9 @@ func TestTraceMiddleware(t *testing.T) {
 		t.Parallel()
 
 		successMsg := "hello"
-		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := trace(someTraceHandler(successMsg), domain)
+		wrappedHandler := trace(someTraceHandler(successMsg))
 
 		runhandler := func() {
 			rec := httptest.NewRecorder()
@@ -244,9 +239,41 @@ func TestGetLogId(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 		{
+			id := getLogId(nil)
+			attest.NotZero(t, id)
+		}
+
+		{
 			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 			id := getLogId(req)
 			attest.NotZero(t, id)
+		}
+
+		{
+			expected := "cookie-logID"
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req.AddCookie(&http.Cookie{
+				Name:  "__Host-" + logIDKey,
+				Value: expected,
+			})
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
+		}
+
+		{
+			// Match net/http's duplicate-cookie behavior by using the first cookie.
+			expected := "first-cookie-logID"
+			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
+			req.AddCookie(&http.Cookie{
+				Name:  "__Host-" + logIDKey,
+				Value: expected,
+			})
+			req.AddCookie(&http.Cookie{
+				Name:  "__Host-" + logIDKey,
+				Value: "second-cookie-logID",
+			})
+			id := getLogId(req)
+			attest.Equal(t, id, expected)
 		}
 
 		{
@@ -270,7 +297,7 @@ func TestGetLogId(t *testing.T) {
 			// header take precedence.
 			req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 			req.AddCookie(&http.Cookie{
-				Name:  logIDKey,
+				Name:  "__Host-" + logIDKey,
 				Value: "cookie-expected-three",
 			})
 

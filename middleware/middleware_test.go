@@ -207,7 +207,7 @@ func TestAllMiddleware(t *testing.T) {
 			attest.Ok(t, err)
 			req.AddCookie(
 				&http.Cookie{
-					Name:   csrfCookieName,
+					Name:   "__Host-" + csrfCookieName,
 					Value:  csrfToken,
 					Domain: "localhost",
 				},
@@ -407,7 +407,7 @@ func TestMiddlewareServer(t *testing.T) {
 		req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
 		attest.Ok(t, err)
 		req.AddCookie(&http.Cookie{
-			Name:  logIDKey,
+			Name:  "__Host-" + logIDKey,
 			Value: "hey-some-log-id:" + id.New(),
 		})
 

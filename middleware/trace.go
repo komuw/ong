@@ -13,7 +13,7 @@ import (
 const logIDKey = string(octx.LogCtxKey)
 
 // trace is a middleware that adds logID to request and response.
-func trace(wrappedHandler http.Handler, domain string) http.HandlerFunc {
+func trace(wrappedHandler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -32,7 +32,6 @@ func trace(wrappedHandler http.Handler, domain string) http.HandlerFunc {
 			w,
 			logIDKey,
 			logID,
-			domain,
 			// Hopefully 15mins is enough.
 			// Google considers a session to be 30mins.
 			// https://support.google.com/analytics/answer/2731565?hl=en#time-based-expiration
@@ -56,19 +55,15 @@ func getLogId(req *http.Request) string {
 	}
 
 	fromCookie := func(r *http.Request) string {
-		if r != nil {
-			var cookies []*http.Cookie
-			for _, v := range r.Cookies() {
-				if v.Name == logIDKey && v.Value != "" {
-					cookies = append(cookies, v)
-				}
-			}
-			// there can be multiple cookies with the same name. get the latest
-			if len(cookies) > 0 {
-				return cookies[len(cookies)-1].Value
-			}
+		if r == nil {
+			return ""
 		}
-		return ""
+
+		c, err := cookie.Get(r, logIDKey)
+		if err != nil {
+			return ""
+		}
+		return c.Value
 	}
 
 	fromCtx := func(ctx context.Context) string {
@@ -88,5 +83,8 @@ func getLogId(req *http.Request) string {
 		return logID
 	}
 
+	if req == nil {
+		return fromCtx(context.Background())
+	}
 	return fromCtx(req.Context())
 }

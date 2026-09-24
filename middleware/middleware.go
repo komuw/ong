@@ -149,14 +149,11 @@ func allDefaultMiddlewares(
 															session(
 																wrappedHandler,
 																string(secretKey),
-																domain,
 																sessionCookieDuration,
 																SessionAntiReplayFunc,
 															),
-															// 	domain,
 															// ),
 															string(secretKey),
-															domain,
 															csrfTokenDuration,
 														),
 														allowedOrigins,
@@ -191,7 +188,6 @@ func allDefaultMiddlewares(
 			),
 			strategy,
 		),
-		domain,
 	)
 }
 
