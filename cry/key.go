@@ -1,5 +1,4 @@
-// Package key implements some common secure functionality.
-package key
+package cry
 
 import (
 	"errors"
@@ -22,9 +21,8 @@ func IsSecure(secretKey string) error {
 		// see:
 		//   - https://www.passwordmonster.com/
 		//   - https://thesecurityfactory.be/password-cracking-speed/
-		minLen          = 16
+		minLen          = 16 // NIST recommends at least 15 characters; https://www.nist.gov/cybersecurity-and-privacy/how-do-i-create-good-password#what-is-nist%E2%80%99s-guidance-for-passwords
 		maxLen          = 256
-		minUniqueLen    = 10
 		minEntropy      = 64
 		minCombinations = 3
 		expected        = 1
@@ -76,7 +74,7 @@ func IsSecure(secretKey string) error {
 	}
 
 	if combinations < minCombinations {
-		return errors.New("ong: secretKey should be a combination of digits, letters, symbols")
+		return errors.New("ong: secretKey/password should be a combination of digits, letters, symbols")
 	}
 
 	return nil

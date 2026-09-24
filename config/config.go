@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/komuw/ong/cry"
 	"github.com/komuw/ong/internal/acme"
 	"github.com/komuw/ong/internal/clientip"
-	"github.com/komuw/ong/internal/key"
 )
 
 // CSPPolicyFunc returns the complete Content-Security-Policy value for a domain and request nonce.
@@ -801,7 +801,7 @@ func newMiddlewareOpts(
 		return middlewareOpts{}, errors.New("both logger and logFunc should not be nil at the same time")
 	}
 
-	if err := key.IsSecure(secretKey); err != nil {
+	if err := cry.IsSecure(secretKey); err != nil {
 		return middlewareOpts{}, err
 	}
 

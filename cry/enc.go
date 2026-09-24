@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/komuw/ong/internal/key"
-
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -69,7 +67,7 @@ func New(secretKey string) Enc {
 	// Since this is a crypto library, it is better to fail loudly than fail silently.
 	//
 
-	if err := key.IsSecure(secretKey); err != nil {
+	if err := IsSecure(secretKey); err != nil {
 		panic(err)
 	}
 

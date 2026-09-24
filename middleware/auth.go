@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/komuw/ong/internal/key"
+	"github.com/komuw/ong/cry"
 )
 
 // BasicAuth is a middleware that protects wrappedHandler using basic authentication.
 func BasicAuth(wrappedHandler http.Handler, user, password string) (http.HandlerFunc, error) {
-	if err := key.IsSecure(password); err != nil {
+	if err := cry.IsSecure(password); err != nil {
 		return nil, err
 	}
 	if strings.EqualFold(user, password) {
