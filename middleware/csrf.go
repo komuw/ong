@@ -67,7 +67,6 @@ const (
 func csrf(
 	wrappedHandler http.Handler,
 	secretKey string,
-	domain string,
 	csrfTokenDuration time.Duration,
 ) http.HandlerFunc {
 	once.Do(func() {
@@ -128,7 +127,7 @@ func csrf(
 				//   -d "firstName=john&csrftoken=bogusToken" https://localhost:65081/login/
 				// Do NOT use `-X POST`, see: https://stackoverflow.com/a/41890653/2768067
 				//
-				cookie.Delete(w, csrfCookieName, domain)
+				cookie.Delete(w, csrfCookieName)
 				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
 				http.Redirect(
 					w,
@@ -143,7 +142,7 @@ func csrf(
 
 			res := strings.Split(tokVal, sep)
 			if len(res) != 2 {
-				cookie.Delete(w, csrfCookieName, domain)
+				cookie.Delete(w, csrfCookieName)
 				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenWrongFormat.Error())
 				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
 				return
@@ -151,7 +150,7 @@ func csrf(
 
 			expires, errP := strconv.ParseInt(res[1], 10, 64)
 			if errP != nil {
-				cookie.Delete(w, csrfCookieName, domain)
+				cookie.Delete(w, csrfCookieName)
 				w.Header().Set(ongMiddlewareErrorHeader, errP.Error())
 				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
 				return
@@ -159,7 +158,7 @@ func csrf(
 
 			diff := expires - time.Now().UTC().Unix()
 			if diff <= 0 {
-				cookie.Delete(w, csrfCookieName, domain)
+				cookie.Delete(w, csrfCookieName)
 				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenExpired.Error())
 				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
 				return
@@ -197,7 +196,6 @@ func csrf(
 			w,
 			csrfCookieName,
 			tokenToIssue,
-			domain,
 			csrfTokenDuration,
 			true, // accessible to javascript
 		)
@@ -234,7 +232,7 @@ func GetCsrfToken(c context.Context) string {
 // It tries to fetch from cookies, http-forms, headers in that order.
 func getToken(r *http.Request) (actualToken string) {
 	fromCookie := func() string {
-		c, err := r.Cookie(csrfCookieName)
+		c, err := cookie.Get(r, csrfCookieName)
 		if err != nil {
 			return ""
 		}

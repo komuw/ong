@@ -18,6 +18,8 @@ import (
 )
 
 const (
+	// HostCookiePrefix is the prefix used for host-only secure cookie names.
+	HostCookiePrefix    = "__Host-" // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies#cookie_prefixes
 	serverCookieHeader  = "Set-Cookie"
 	clientCookieHeader  = "Cookie"
 	_                   = clientCookieHeader // silence unused var linter
@@ -26,9 +28,17 @@ const (
 	// see: https://datatracker.ietf.org/doc/html/rfc6265#section-6.1
 )
 
+func hostCookieName(name string) string {
+	if strings.HasPrefix(name, HostCookiePrefix) {
+		return name
+	}
+
+	return HostCookiePrefix + name
+}
+
 // Set creates a cookie on the HTTP response.
 //
-// If domain is an empty string, the cookie is set for the current host(excluding subdomains) else it is set for the given domain and its subdomains.
+// The cookie is set for the current host (excluding subdomains) and its name is given a __Host- prefix.
 // If mAge == 0, a session cookie is created. If mAge < 0, it means delete the cookie now.
 // If jsAccess is false, the cookie will be in-accesible to Javascript.
 // In most cases you should set it to false(exceptions are rare, like when setting a csrf cookie)
@@ -36,10 +46,11 @@ func Set(
 	w http.ResponseWriter,
 	name string,
 	value string,
-	domain string,
 	mAge time.Duration,
 	jsAccess bool,
 ) {
+	name = hostCookieName(name)
+
 	// Since expires is relative to the browser & we are calculating it on the server-side;
 	// there's a possibility of it not doing what u expect.
 	// However, browsers usually ignore this in place of maxAge.
@@ -60,9 +71,9 @@ func Set(
 	c := &http.Cookie{
 		Name:  name,
 		Value: value,
-		// If Domain is omitted(empty string), it defaults to the current host, excluding including subdomains.
+		// If Domain is omitted(empty string), it defaults to the current host, excluding subdomains.
 		// If a domain is specified, then subdomains are always included.
-		Domain: domain,
+		Domain: "",
 		// Expires is relative to the client the cookie is being set on, not the server.
 		// Session cookies are those that do not specify the Expires or Max-Age attribute.
 		Expires: expires,
@@ -89,8 +100,9 @@ func Set(
 }
 
 // Get returns a copy of the named cookie.
+// The __Host- prefix is added to name if it is not already present.
 func Get(r *http.Request, name string) (*http.Cookie, error) {
-	c, err := r.Cookie(name)
+	c, err := r.Cookie(hostCookieName(name))
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +150,6 @@ func SetEncrypted(
 	w http.ResponseWriter,
 	name string,
 	value string,
-	domain string,
 	mAge time.Duration,
 	secretKey string,
 ) {
@@ -166,7 +177,6 @@ func SetEncrypted(
 		w,
 		name,
 		encryptedEncodedVal,
-		domain,
 		mAge,
 		false,
 	)
@@ -237,8 +247,9 @@ func GetEncrypted(
 	return c, nil
 }
 
-// Delete removes the named cookie.
-func Delete(w http.ResponseWriter, name, domain string) {
+// Delete removes the named cookie from the current host.
+// The __Host- prefix is added to name if it is not already present.
+func Delete(w http.ResponseWriter, name string) {
 	h := w.Header().Values(serverCookieHeader)
 	if len(h) <= 0 {
 		return
@@ -251,12 +262,14 @@ func Delete(w http.ResponseWriter, name, domain string) {
 	}
 
 	c := &http.Cookie{
-		Name:    name,
-		Value:   "",
-		Domain:  domain,
-		Path:    "/",
-		MaxAge:  -1,
-		Expires: time.Unix(0, 0),
+		Name:     hostCookieName(name),
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, c)
 }

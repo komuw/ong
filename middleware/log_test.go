@@ -198,7 +198,7 @@ func TestLogMiddleware(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodHead, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
-			Name:  logIDKey,
+			Name:  "__Host-" + logIDKey,
 			Value: someLogID,
 		})
 		wrappedHandler.ServeHTTP(rec, req)

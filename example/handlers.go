@@ -261,7 +261,6 @@ func (a app) login(secretKey string) http.HandlerFunc {
 			w,
 			cookieName,
 			string(s),
-			"localhost",
 			23*24*time.Hour,
 			secretKey,
 		)

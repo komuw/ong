@@ -12,16 +12,16 @@ import (
 	"go.uber.org/goleak"
 )
 
-func setHandler(name, value, domain string, mAge time.Duration, jsAccess bool) http.HandlerFunc {
+func setHandler(name, value string, mAge time.Duration, jsAccess bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		Set(w, name, value, domain, mAge, jsAccess)
+		Set(w, name, value, mAge, jsAccess)
 		fmt.Fprint(w, "hello")
 	}
 }
 
-func setEncryptedHandler(name, value, domain string, mAge time.Duration, secretKey string) http.HandlerFunc {
+func setEncryptedHandler(name, value string, mAge time.Duration, secretKey string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		SetEncrypted(r, w, name, value, domain, mAge, secretKey)
+		SetEncrypted(r, w, name, value, mAge, secretKey)
 		fmt.Fprint(w, "hello")
 	}
 }
@@ -39,9 +39,8 @@ func TestCookies(t *testing.T) {
 
 		name := "logId"
 		value := "skmHajue8k"
-		domain := "localhost"
 		mAge := 1 * time.Minute
-		handler := setHandler(name, value, domain, mAge, false)
+		handler := setHandler(name, value, mAge, false)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -52,7 +51,7 @@ func TestCookies(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, len(res.Cookies()), 1)
-		attest.Equal(t, res.Cookies()[0].Name, name)
+		attest.Equal(t, res.Cookies()[0].Name, HostCookiePrefix+name)
 
 		cookie := res.Cookies()[0]
 		now := time.Now()
@@ -67,9 +66,8 @@ func TestCookies(t *testing.T) {
 
 		name := "logId"
 		value := "skmHajue8k"
-		domain := "localhost"
 		mAge := 0 * time.Minute
-		handler := setHandler(name, value, domain, mAge, false)
+		handler := setHandler(name, value, mAge, false)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -80,7 +78,7 @@ func TestCookies(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, len(res.Cookies()), 1)
-		attest.Equal(t, res.Cookies()[0].Name, name)
+		attest.Equal(t, res.Cookies()[0].Name, HostCookiePrefix+name)
 
 		cookie := res.Cookies()[0]
 		attest.Equal(t, cookie.MaxAge, 0)
@@ -93,10 +91,9 @@ func TestCookies(t *testing.T) {
 
 		name := "csrf"
 		value := "skmHajue8k"
-		domain := "localhost"
 		mAge := 1 * time.Minute
 		jsAccess := true
-		handler := setHandler(name, value, domain, mAge, jsAccess)
+		handler := setHandler(name, value, mAge, jsAccess)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -107,7 +104,7 @@ func TestCookies(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, len(res.Cookies()), 1)
-		attest.Equal(t, res.Cookies()[0].Name, name)
+		attest.Equal(t, res.Cookies()[0].Name, HostCookiePrefix+name)
 
 		cookie := res.Cookies()[0]
 		now := time.Now()
@@ -122,10 +119,9 @@ func TestCookies(t *testing.T) {
 
 		name := "logId"
 		value := "hello world are you okay"
-		domain := "localhost"
 		mAge := 23 * time.Hour
 		secretKey := tst.SecretKey()
-		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
+		handler := setEncryptedHandler(name, value, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -136,7 +132,7 @@ func TestCookies(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, len(res.Cookies()), 1)
-		attest.Equal(t, res.Cookies()[0].Name, name)
+		attest.Equal(t, res.Cookies()[0].Name, HostCookiePrefix+name)
 
 		cookie := res.Cookies()[0]
 		now := time.Now()
@@ -158,10 +154,9 @@ func TestCookies(t *testing.T) {
 
 		name := "logId"
 		value := "hello world are you okay"
-		domain := "localhost"
 		mAge := -23 * time.Hour
 		secretKey := tst.SecretKey()
-		handler := setEncryptedHandler(name, value, domain, mAge, secretKey)
+		handler := setEncryptedHandler(name, value, mAge, secretKey)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -172,7 +167,7 @@ func TestCookies(t *testing.T) {
 
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, len(res.Cookies()), 1)
-		attest.Equal(t, res.Cookies()[0].Name, name)
+		attest.Equal(t, res.Cookies()[0].Name, HostCookiePrefix+name)
 
 		cookie := res.Cookies()[0]
 
@@ -203,10 +198,10 @@ func TestCookies(t *testing.T) {
 	})
 }
 
-func deleteHandler(name, value, domain string, mAge time.Duration) http.HandlerFunc {
+func deleteHandler(name, value string, mAge time.Duration) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		Set(w, name, value, domain, mAge, false)
-		Delete(w, name, domain)
+		Set(w, name, value, mAge, false)
+		Delete(w, name)
 		fmt.Fprint(w, "hello")
 	}
 }
@@ -218,11 +213,10 @@ func TestDelete(t *testing.T) {
 		t.Parallel()
 
 		name := "logId"
-		domain := "localhost"
 		value := "skmHajue8k"
 		mAge := 1 * time.Minute
 		rec := httptest.NewRecorder()
-		handler := deleteHandler(name, value, domain, mAge)
+		handler := deleteHandler(name, value, mAge)
 
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		handler.ServeHTTP(rec, req)
@@ -256,6 +250,6 @@ func BenchmarkSetEncrypted(b *testing.B) {
 }
 
 func testSetEncrypted(req *http.Request, res http.ResponseWriter) int {
-	SetEncrypted(req, res, "name", "value", "example.com", 2*time.Hour, tst.SecretKey())
+	SetEncrypted(req, res, "name", "value", 2*time.Hour, tst.SecretKey())
 	return 3
 }

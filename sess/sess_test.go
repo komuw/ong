@@ -130,7 +130,7 @@ func TestSess(t *testing.T) {
 			attest.Equal(t, res, m)
 		}
 		{
-			Save(req, rec, "localhost", 2*time.Hour, tst.SecretKey())
+			Save(req, rec, 2*time.Hour, tst.SecretKey())
 		}
 	})
 }

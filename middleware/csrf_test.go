@@ -35,7 +35,7 @@ func TestGetToken(t *testing.T) {
 		want := id.Random(csrfBytesTokenLength / 2)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
-			Name:     csrfCookieName,
+			Name:     "__Host-" + csrfCookieName,
 			Value:    want,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -52,7 +52,7 @@ func TestGetToken(t *testing.T) {
 		want := id.Random(csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
-			Name:     csrfCookieName,
+			Name:     "__Host-" + csrfCookieName,
 			Value:    want,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -93,7 +93,7 @@ func TestGetToken(t *testing.T) {
 		formToken := id.Random(2 * csrfBytesTokenLength)
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
-			Name:     csrfCookieName,
+			Name:     "__Host-" + csrfCookieName,
 			Value:    cookieToken,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -126,8 +126,7 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -147,14 +146,13 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
-			Name:     csrfCookieName,
+			Name:     "__Host-" + csrfCookieName,
 			Value:    reqCsrfTok,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -178,8 +176,7 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength)
 		rec := httptest.NewRecorder()
@@ -202,8 +199,7 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -224,8 +220,7 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
@@ -248,7 +243,7 @@ func TestCsrf(t *testing.T) {
 
 		// (a)
 		attest.Equal(t, len(res.Cookies()), 1)
-		attest.Equal(t, res.Cookies()[0].Name, csrfCookieName)
+		attest.Equal(t, res.Cookies()[0].Name, "__Host-"+csrfCookieName)
 		attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
 
 		// (b)
@@ -265,14 +260,13 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		reqCsrfTok := id.Random(csrfBytesTokenLength * 2)
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 		req.AddCookie(&http.Cookie{
-			Name:     csrfCookieName,
+			Name:     "__Host-" + csrfCookieName,
 			Value:    reqCsrfTok,
 			Path:     "/",
 			HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -294,8 +288,7 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		key := tst.SecretKey()
 		enc2 := cry.New(key)
@@ -324,7 +317,7 @@ func TestCsrf(t *testing.T) {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 			req.AddCookie(&http.Cookie{
-				Name:     csrfCookieName,
+				Name:     "__Host-" + csrfCookieName,
 				Value:    reqCsrfTok,
 				Path:     "/",
 				HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -349,7 +342,7 @@ func TestCsrf(t *testing.T) {
 
 			// (a)
 			attest.Equal(t, len(res.Cookies()), 1)
-			attest.Equal(t, res.Cookies()[0].Name, csrfCookieName)
+			attest.Equal(t, res.Cookies()[0].Name, "__Host-"+csrfCookieName)
 			attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
 
 			// (b)
@@ -367,8 +360,7 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		rec := httptest.NewRecorder()
 		postMsg := "my name is John"
@@ -394,10 +386,9 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		msg := "hello"
-		domain := "example.com"
 		// for this concurrency test, we have to re-use the same wrappedHandler
 		// so that state is shared and thus we can see if there is any state which is not handled correctly.
-		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), domain, config.DefaultCsrfCookieDuration)
+		wrappedHandler := csrf(someCsrfHandler(msg), tst.SecretKey(), config.DefaultCsrfCookieDuration)
 
 		key := tst.SecretKey()
 		enc2 := cry.New(key)
@@ -427,7 +418,7 @@ func TestCsrf(t *testing.T) {
 				rec := httptest.NewRecorder()
 				req := httptest.NewRequest(http.MethodPost, "/someUri", nil)
 				req.AddCookie(&http.Cookie{
-					Name:     csrfCookieName,
+					Name:     "__Host-" + csrfCookieName,
 					Value:    reqCsrfTok,
 					Path:     "/",
 					HttpOnly: false, // If true, makes cookie inaccessible to JS. Should be false for csrf cookies.
@@ -452,7 +443,7 @@ func TestCsrf(t *testing.T) {
 
 				// (a)
 				attest.Equal(t, len(res.Cookies()), 1)
-				attest.Equal(t, res.Cookies()[0].Name, csrfCookieName)
+				attest.Equal(t, res.Cookies()[0].Name, "__Host-"+csrfCookieName)
 				attest.Equal(t, res.Cookies()[0].Value, res.Header.Get(tokenHeader))
 
 				// (b)
