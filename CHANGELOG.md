@@ -3,6 +3,20 @@
 Most recent version is listed first.  
 
 
+# v0.1.20
+- ong/middleware: Fix race in loadshed: https://github.com/komuw/ong/pull/503
+
+# v0.1.19
+- ong/cookie: Make cookies apply only to the current host and not its subdomains. Cookie names now have a `__Host-` prefix and `cookie.Set`, `cookie.SetEncrypted` and `cookie.Delete` no longer take a domain argument: https://github.com/komuw/ong/pull/502
+
+# v0.1.18
+- ong/cookie: Use `SameSite=Lax` instead of `SameSite=Strict`, so that sessions carry over when a user follows a link from another site.
+
+# v0.1.17
+- ong/cry: Move `IsSecure` from internal/key to ong/cry and make it public: https://github.com/komuw/ong/issues/490
+- ong/middleware: Basic auth should reject a user that is equal to the password: https://github.com/komuw/ong/issues/483
+- Bump versions of dependencies used
+
 # v0.1.16
 - ong/middleware: Add ability to specify custom CSP policy and security headers: https://github.com/komuw/ong/pull/499
 - ong/id: make id cryptographically secure: https://github.com/komuw/ong/pull/500
