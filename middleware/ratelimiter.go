@@ -25,6 +25,9 @@ func rateLimiter(
 		rateLimit = config.DefaultRateLimit
 	}
 
+	// todo: we need to handle ipv6 ratelimiting better.
+	//       see: https://adam-p.ca/blog/2022/02/ipv6-rate-limiting/
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		rl.reSize()
 
