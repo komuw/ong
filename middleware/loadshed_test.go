@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/komuw/ong/config"
@@ -96,6 +97,49 @@ func TestLoadShedder(t *testing.T) {
 			})
 		}
 		wg.Wait()
+	})
+
+	t.Run("concurrency safe after resizePeriod", func(t *testing.T) {
+		t.Parallel()
+
+		synctest.Test(t, func(t *testing.T) {
+			msg := "hello"
+			samplingPeriod := 1 * time.Second
+			wrappedHandler := loadShedder(
+				someLoadShedderHandler(msg),
+				samplingPeriod,
+				config.DefaultLoadShedMinSampleSize,
+				config.DefaultLoadShedBreachLatency,
+				99,
+			)
+
+			runhandler := func() {
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+				req.Header.Set(loadShedderTestHeader, "4")
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				rb, err := io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				attest.Equal(t, res.StatusCode, http.StatusOK)
+				attest.Equal(t, string(rb), msg)
+			}
+
+			// Move past resizePeriod so that the handlers try to resize the latencyQueue.
+			time.Sleep(samplingPeriod + 4*time.Minute)
+
+			wg := &sync.WaitGroup{}
+			for rN := 0; rN <= 50+config.DefaultLoadShedMinSampleSize; rN++ {
+				wg.Go(func() {
+					runhandler()
+				})
+			}
+			wg.Wait()
+		})
 	})
 }
 
@@ -226,7 +270,7 @@ func TestLatencyQueue(t *testing.T) {
 		_ = percentile(lq.sl, 90, len(lq.sl))
 
 		// 4. resize.
-		lq.reSize()
+		lq.reSize(time.Now().UTC().Add(time.Hour), 0)
 
 		latest := time.Duration(lq.sl[len(lq.sl)-1]) * time.Millisecond
 		secondLatest := time.Duration(lq.sl[len(lq.sl)-1]) * time.Millisecond
@@ -246,11 +290,31 @@ func TestLatencyQueue(t *testing.T) {
 		for rN := 0; rN <= 50+config.DefaultLoadShedMinSampleSize; rN++ {
 			wg.Go(func() {
 				lq.add(1 * time.Second)
-				lq.reSize()
+				lq.reSize(time.Now().UTC(), 0)
 				lq.getPercentile(99, 3)
 			})
 		}
 		wg.Wait()
+	})
+
+	t.Run("resize only after resizePeriod", func(t *testing.T) {
+		t.Parallel()
+
+		resizePeriod := 3 * time.Minute
+		lq := newLatencyQueue()
+		for i := 1; i <= maxLatencyItems+2; i++ {
+			lq.add(1 * time.Second)
+		}
+		start := lq.lastResize
+
+		lq.reSize(start.Add(resizePeriod), resizePeriod)
+		attest.Equal(t, len(lq.sl), maxLatencyItems+2)
+		attest.Equal(t, lq.lastResize, start)
+
+		later := start.Add(resizePeriod + time.Second)
+		lq.reSize(later, resizePeriod)
+		attest.Equal(t, len(lq.sl), (maxLatencyItems+2)/2)
+		attest.Equal(t, lq.lastResize, later)
 	})
 }
 

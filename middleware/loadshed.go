@@ -37,7 +37,6 @@ func loadShedder(
 	// lq should not be a global variable, we want it to be per handler.
 	// This is because different handlers(URIs) could have different latencies and we want each to be loadshed independently.
 	lq := newLatencyQueue()
-	loadShedCheckStart := time.Now().UTC()
 
 	if loadShedSamplingPeriod < 1*time.Second {
 		loadShedSamplingPeriod = config.DefaultLoadShedSamplingPeriod
@@ -70,12 +69,7 @@ func loadShedder(
 				lq.add(durReq)
 			}
 
-			// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getPercentile()` will always return zero.
-			if endReq.Sub(loadShedCheckStart) > resizePeriod {
-				// lets reduce the size of latencyQueue
-				lq.reSize()
-				loadShedCheckStart = endReq
-			}
+			lq.reSize(endReq, resizePeriod)
 		}()
 
 		sendProbe := false
@@ -105,7 +99,7 @@ func loadShedder(
 }
 
 type latencyQueue struct {
-	mu sync.Mutex // protects sl
+	mu sync.Mutex // protects sl and lastResize
 	/*
 		unsafe.Sizeof(sl) == 8bytes.
 		latency is how long the operation took(ie latency)
@@ -116,10 +110,13 @@ type latencyQueue struct {
 	*/
 	// +checklocks:mu
 	sl []int64
+	// lastResize is the time at which [latencyQueue.reSize] last checked the size of sl.
+	// +checklocks:mu
+	lastResize time.Time
 }
 
 func newLatencyQueue() *latencyQueue {
-	return &latencyQueue{sl: []int64{}}
+	return &latencyQueue{sl: []int64{}, lastResize: time.Now().UTC()}
 }
 
 func (lq *latencyQueue) add(durReq time.Duration) {
@@ -128,9 +125,16 @@ func (lq *latencyQueue) add(durReq time.Duration) {
 	lq.mu.Unlock()
 }
 
-func (lq *latencyQueue) reSize() {
+// reSize trims the latencyQueue if more than resizePeriod has passed since the last call that did the check.
+func (lq *latencyQueue) reSize(now time.Time, resizePeriod time.Duration) {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
+
+	// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getPercentile()` will always return zero.
+	if now.Sub(lq.lastResize) <= resizePeriod {
+		return
+	}
+	lq.lastResize = now
 
 	size := len(lq.sl)
 	if size > maxLatencyItems {

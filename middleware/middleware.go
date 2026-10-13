@@ -73,7 +73,7 @@ func allDefaultMiddlewares(
 
 	// cors
 	allowedOrigins := o.AllowedOrigins
-	allowedMethods := o.AllowedOrigins
+	allowedMethods := o.AllowedMethods
 	allowedHeaders := o.AllowedHeaders
 	allowCredentials := o.AllowCredentials
 	corsCacheDuration := o.CorsCacheDuration
