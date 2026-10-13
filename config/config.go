@@ -224,7 +224,9 @@ func (o Opts) GoString() string {
 // This function is not used in the server.
 // If it is nil, a suitable default(that utilizes [logger]) is used. To disable logging, use a function that does nothing.
 //
-// rateLimit is the maximum requests allowed (from one IP address) per second. If it is les than 1.0, [DefaultRateLimit] is used instead.
+// rateLimit is the maximum requests allowed (from one IP address) per second. If it is less than 1.0, [DefaultRateLimit] is used instead.
+// Up to rateLimit(rounded up) requests are allowed at the same instant.
+// For IPv6, the limit applies to the /64 prefix. The /56 and /48 prefixes have a limit that is 8 and 64 times higher respectively.
 //
 // loadShedSamplingPeriod is the duration over which we calculate response latencies for purposes of determining whether to loadshed. If it is less than 1second, [DefaultLoadShedSamplingPeriod] is used instead.
 // loadShedMinSampleSize is the minimum number of past requests that have to be available, in the last [loadShedSamplingPeriod] for us to make a decision, by default.
