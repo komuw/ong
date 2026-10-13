@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.21
+- ong/middleware: Use GCRA(generic cell rate algorithm) for rate limiting. Rate limited requests no longer sleep, `Retry-After` is accurate and IPv6 clients are limited by /64, /56 and /48 prefixes: https://github.com/komuw/ong/pull/504 
+
 # v0.1.20
 - ong/middleware: Fix race in loadshed: https://github.com/komuw/ong/pull/503
 
