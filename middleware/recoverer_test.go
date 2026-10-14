@@ -173,4 +173,52 @@ func TestPanic(t *testing.T) {
 		}
 		wg.Wait()
 	})
+
+	t.Run("logger outside recoverer logs panic one time", func(t *testing.T) {
+		t.Parallel()
+
+		statusWrittenBeforePanic := func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			panic(errors.New("99 problems after write"))
+		}
+
+		tests := []struct {
+			name      string
+			handler   http.HandlerFunc
+			errMsg    string
+			wantStack bool
+		}{
+			{name: "panic with error", handler: handlerThatPanics("hello", false, errors.New("99 problems")), errMsg: "99 problems", wantStack: true},
+			{name: "panic with string", handler: handlerThatPanics("hello", true, nil), errMsg: "hello", wantStack: false},
+			{name: "panic after status is written", handler: statusWrittenBeforePanic, errMsg: "99 problems after write", wantStack: true},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				logOutput := &bytes.Buffer{}
+				l := getLogger(logOutput)
+				// This is the same order as in allDefaultMiddlewares.
+				wrappedHandler := logger(recoverer(tt.handler, nil, l), nil, l)
+
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				logs := strings.TrimSpace(logOutput.String())
+				attest.Equal(t, len(strings.Split(logs, "\n")), 1, attest.Sprint(logs))
+				attest.Subsequence(t, logs, `"level":"ERROR"`)
+				attest.Subsequence(t, logs, `"code":500`)
+				attest.Subsequence(t, logs, http.StatusText(http.StatusInternalServerError))
+				attest.Subsequence(t, logs, tt.errMsg)
+				attest.Subsequence(t, logs, "durationMS") // the line is from logger.
+				attest.False(t, strings.Contains(logs, `"code":0`))
+				attest.Equal(t, strings.Contains(logs, "stack"), tt.wantStack)
+			})
+		}
+	})
 }

@@ -6,10 +6,10 @@ package cry
 import (
 	"crypto/cipher"
 	cryptoRand "crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
-	"fmt"
-	"slices"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )
@@ -41,15 +41,14 @@ const (
 type Enc struct {
 	aead cipher.AEAD
 	salt []byte
-	key  []byte
 }
 
 // String implements [fmt.Stringer]
 func (e Enc) String() string {
-	if len(e.key) <= 0 {
+	if e.aead == nil {
 		return "Enc{key:<EMPTY>}"
 	}
-	return fmt.Sprintf("Enc{key:%s<REDACTED>}", string(e.key[0]))
+	return "Enc{key:<REDACTED>}"
 }
 
 // GoString implements [fmt.GoStringer]
@@ -73,7 +72,7 @@ func New(secretKey string) Enc {
 
 	// derive a key.
 	password := []byte(secretKey)
-	salt := random(saltLen, saltLen) // should be random, 8 bytes is a good length.
+	salt := saltFor(password)
 	derivedKey := deriveKey(password, salt)
 
 	/*
@@ -92,8 +91,23 @@ func New(secretKey string) Enc {
 	return Enc{
 		aead: aead,
 		salt: salt,
-		key:  password,
 	}
+}
+
+// saltFor returns the salt that is used to derive the encryption key from secretKey.
+//
+// It is the same in all processes that use the same secretKey. So a ciphertext from another process(eg after a restart,
+// or from another server) can be decrypted without a new argon2 key derivation. And a ciphertext with any other salt can be
+// rejected before argon2 is called; argon2 uses 64MB of memory and about 35ms, and clients can choose the salt(eg in a cookie).
+//
+// It does not need to be random. [IsSecure] makes sure that secretKey has enough entropy, so tables that are computed in advance do not help.
+// The salt is also not secret; it is sent in clear text with each ciphertext.
+func saltFor(secretKey []byte) []byte {
+	h := sha256.New()
+	h.Write([]byte("ong/cry: salt for encryption key\x00")) // domain separation.
+	h.Write(secretKey)
+	// The capacity is limited to saltLen, so that `append(e.salt, ...)` in [Enc.Encrypt] always makes a new slice.
+	return h.Sum(nil)[:saltLen:saltLen]
 }
 
 // Encrypt, encrypts and authenticates(tamper-proofs) the plainTextMsg using XChaCha20-Poly1305 and returns encrypted bytes.
@@ -132,27 +146,21 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 
 // Decrypt authenticates and un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
 func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
-	if len(encryptedMsg) < chacha20poly1305.NonceSizeX {
+	if len(encryptedMsg) < saltLen+chacha20poly1305.NonceSizeX {
 		return nil, errors.New("ong/cry: ciphertext too short")
 	}
 
 	// get constituent parts
 	salt, nonce, ciphertext := encryptedMsg[:saltLen], encryptedMsg[saltLen:saltLen+chacha20poly1305.NonceSizeX], encryptedMsg[saltLen+chacha20poly1305.NonceSizeX:]
 
-	aead := e.aead
-	if !slices.Equal(salt, e.salt) {
-		// The encryptedMsg was encrypted using a different salt.
-		// So, we need to get the derived key for that salt and use it for decryption.
-		derivedKey := deriveKey(e.key, salt)
-
-		aead, err = chacha20poly1305.NewX(derivedKey)
-		if err != nil {
-			return nil, err
-		}
+	if subtle.ConstantTimeCompare(salt, e.salt) != 1 {
+		// It was not encrypted with this secretKey, or it was encrypted by an older version of ong/cry that used random salts.
+		// We do not derive a key for this salt, see [saltFor].
+		return nil, errors.New("ong/cry: unknown salt")
 	}
 
 	// Decrypt the message and check it wasn't tampered with.
-	return aead.Open(nil, nonce, ciphertext, []byte{version})
+	return e.aead.Open(nil, nonce, ciphertext, []byte{version})
 }
 
 // EncryptEncode is like [Enc.Encrypt] except that it returns a string that is encoded using [base64.RawURLEncoding]

@@ -75,6 +75,28 @@ func TestCorsPreflight(t *testing.T) {
 		attest.NotZero(t, res.Header.Get(acmaHeader))
 	})
 
+	t.Run("no allow headers if no request headers", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
+		req.Header.Add(acrmHeader, http.MethodGet) // preflight request header set
+		req.Header.Add(originHeader, "http://example.com")
+		// No acrhHeader.
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusNoContent)
+		attest.NotZero(t, res.Header.Get(acmaHeader)) // preflight succeeded.
+		attest.NotZero(t, res.Header.Get(acamHeader))
+		_, ok := res.Header[acahHeader]
+		attest.False(t, ok)
+	})
+
 	t.Run("http OPTIONS without preflight request header", func(t *testing.T) {
 		t.Parallel()
 
@@ -587,27 +609,19 @@ func TestIsOriginAllowed(t *testing.T) {
 			allowAll:       true,
 		},
 		{
-			name:           "wildcard allowedOrigins",
+			name:           "origin is compared in lower case",
 			domain:         "example.com",
-			origin:         "http://example.com",
-			allowedOrigins: []string{"*example.com"},
+			origin:         "HTTPS://Example.NET",
+			allowedOrigins: []string{"https://EXAMPLE.net"},
 			allow:          true,
 			allowAll:       false,
 		},
 		{
-			name:           "wildcard even in scheme ",
+			name:           "subdomain of allowedOrigin is not allowed",
 			domain:         "example.com",
-			origin:         "https://www.example.com",
-			allowedOrigins: []string{"*example.com"},
-			allow:          true,
-			allowAll:       false,
-		},
-		{
-			name:           "wildcard subdomain",
-			domain:         "example.com",
-			origin:         "https://subdomain.example.com",
-			allowedOrigins: []string{"*example.com"},
-			allow:          true,
+			origin:         "https://app.example.net",
+			allowedOrigins: []string{"https://example.net"},
+			allow:          false,
 			allowAll:       false,
 		},
 	}
@@ -615,10 +629,85 @@ func TestIsOriginAllowed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			allowedOrigins, allowedWildcardOrigins := getOrigins(tt.allowedOrigins, tt.domain)
-			allow, allowAll := isOriginAllowed(tt.origin, allowedOrigins, allowedWildcardOrigins)
+			allowedOrigins := getOrigins(tt.allowedOrigins, tt.domain)
+			allow, allowAll := isOriginAllowed(tt.origin, allowedOrigins)
 			attest.Equal(t, allow, tt.allow)
 			attest.Equal(t, allowAll, tt.allowAll)
+		})
+	}
+}
+
+func TestGetOrigins(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		domain         string
+		allowedOrigins []string
+		want           []string
+	}{
+		{
+			name:           "nil allowedOrigins uses domain and www",
+			domain:         "example.com",
+			allowedOrigins: nil,
+			want:           []string{"https://example.com", "https://www.example.com"},
+		},
+		{
+			name:           "empty allowedOrigins uses domain and www",
+			domain:         "example.com",
+			allowedOrigins: []string{},
+			want:           []string{"https://example.com", "https://www.example.com"},
+		},
+		{
+			name:           "www domain does not add another www",
+			domain:         "www.example.com",
+			allowedOrigins: nil,
+			want:           []string{"https://www.example.com"},
+		},
+		{
+			name:           "subdomain does not add www",
+			domain:         "api.example.com",
+			allowedOrigins: nil,
+			want:           []string{"https://api.example.com"},
+		},
+		{
+			name:           "wildcard domain uses its parent domain and www",
+			domain:         "*.example.com",
+			allowedOrigins: nil,
+			want:           []string{"https://example.com", "https://www.example.com"},
+		},
+		{
+			name:           "wildcard subdomain uses its parent domain",
+			domain:         "*.api.example.com",
+			allowedOrigins: nil,
+			want:           []string{"https://api.example.com"},
+		},
+		{
+			name:           "allowedOrigins are used instead of domain",
+			domain:         "example.com",
+			allowedOrigins: []string{"https://example.net", "http://example.org:8080"},
+			want:           []string{"https://example.net", "http://example.org:8080"},
+		},
+		{
+			name:           "allowedOrigins are made lower case",
+			domain:         "example.com",
+			allowedOrigins: []string{"HTTPS://Example.NET"},
+			want:           []string{"https://example.net"},
+		},
+		{
+			name:           "star allowedOrigins",
+			domain:         "example.com",
+			allowedOrigins: []string{"*"},
+			want:           []string{"*"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := getOrigins(tt.allowedOrigins, tt.domain)
+			attest.Equal(t, got, tt.want)
 		})
 	}
 }

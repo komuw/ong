@@ -83,14 +83,6 @@ const (
 	DefaultCorsCacheDuration = 2 * time.Hour
 )
 
-// csrf
-const (
-	// DefaultCsrfCookieDuration is the duration that csrf cookie will be valid for by default.
-	//
-	// At the time of writing; gorilla/csrf uses 12hrs, django uses 1yr & gofiber/fiber uses 1hr.
-	DefaultCsrfCookieDuration = 12 * time.Hour
-)
-
 // session middleware.
 const (
 	// DefaultSessionCookieDuration is the duration that session cookie will be valid for by default.
@@ -233,19 +225,20 @@ func (o Opts) GoString() string {
 // If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
 // If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
 // loadShedBreachLatency is the latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
-// loadShedPercentile is percentile used to check for load breach, by default. If it is less than 0, [DefaultLoadShedPercentile] is used instead.
+// loadShedPercentile is percentile used to check for load breach, by default. It should be in the range 0 to 100(inclusive).
 //
 // cspPolicy returns the Content-Security-Policy value for each request. It receives the configured domain and the request nonce.
 // If it is nil, [DefaultCSPPolicy] is used instead. It must be safe for concurrent use.
 //
 // allowedOrigins, allowedMethods, allowedHeaders, allowCredentials & corsCacheDuration are used by the CORS middleware.
 // If allowedOrigins is nil, [domain] and its www variant are used. Use []string{"*"} to allow all.
+// The wildcard "*" can only be used on its own. Wildcard subdomains like `https://*.example.com` are not supported.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use []string{"*"} to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use []string{"*"} to allow all.
 // allowCredentials indicates whether the request can include user credentials like cookies, HTTP authentication or client side SSL certificates.
 // corsCacheDuration is the duration that preflight responses will be cached. If it is less than 1second, [DefaultCorsCacheDuration] is used instead, 0 second is an exception and is used as is.
 //
-// csrfTokenDuration is the duration that csrf cookie will be valid for. If it is less than 1second, [DefaultCsrfCookieDuration] is used instead.
+// trustedCsrfOrigins is a list of origins that the CSRF middleware trusts. If it is nil, no extra origins are trusted.
 //
 // sessionCookieDuration is the duration that session cookie will be valid. If it is less than 1second, [DefaultSessionCookieDuration] is used instead.
 // sessionAntiReplayFunc is the function used to return a token that will be used to try and mitigate against [replay attacks]. This mitigation not foolproof.
@@ -301,7 +294,7 @@ func New(
 	allowedHeaders []string,
 	allowCredentials bool,
 	corsCacheDuration time.Duration,
-	csrfTokenDuration time.Duration,
+	trustedCsrfOrigins []string,
 	sessionCookieDuration time.Duration,
 	sessionAntiReplayFunc func(r http.Request) string,
 	// server
@@ -337,7 +330,7 @@ func New(
 		allowedHeaders,
 		allowCredentials,
 		corsCacheDuration,
-		csrfTokenDuration,
+		trustedCsrfOrigins,
 		sessionCookieDuration,
 		sessionAntiReplayFunc,
 	)
@@ -403,7 +396,7 @@ func WithOpts(
 		nil,
 		false,
 		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
+		nil,
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
@@ -464,7 +457,7 @@ func DevOpts(logger *slog.Logger, secretKey string) Opts {
 		nil,
 		false,
 		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
+		nil,
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
@@ -522,7 +515,7 @@ func CertOpts(
 		nil,
 		false,
 		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
+		nil,
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
@@ -583,7 +576,7 @@ func AcmeOpts(
 		nil,
 		false,
 		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
+		nil,
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
@@ -643,7 +636,7 @@ func LetsEncryptOpts(
 		nil,
 		false,
 		DefaultCorsCacheDuration,
-		DefaultCsrfCookieDuration,
+		nil,
 		DefaultSessionCookieDuration,
 		DefaultSessionAntiReplayFunc,
 		// server
@@ -713,7 +706,7 @@ type middlewareOpts struct {
 	CorsCacheDuration time.Duration
 
 	// csrf
-	CsrfTokenDuration time.Duration
+	TrustedCsrfOrigins []string
 
 	// session
 	SessionCookieDuration time.Duration
@@ -738,7 +731,7 @@ func (m middlewareOpts) String() string {
   AllowedHeaders: %v,
   AllowCredentials: %v,
   CorsCacheDuration: %v,
-  CsrfTokenDuration: %v,
+  TrustedCsrfOrigins: %v,
   SessionCookieDuration: %v,
   SessionAntiReplayFunc: %T,
 }`,
@@ -757,7 +750,7 @@ func (m middlewareOpts) String() string {
 		m.AllowedHeaders,
 		m.AllowCredentials,
 		m.CorsCacheDuration,
-		m.CsrfTokenDuration,
+		m.TrustedCsrfOrigins,
 		m.SessionCookieDuration,
 		m.SessionAntiReplayFunc,
 	)
@@ -786,7 +779,7 @@ func newMiddlewareOpts(
 	allowedHeaders []string,
 	allowCredentials bool,
 	corsCacheDuration time.Duration,
-	csrfTokenDuration time.Duration,
+	trustedCsrfOrigins []string,
 	sessionCookieDuration time.Duration,
 	sessionAntiReplayFunc func(r http.Request) string,
 ) (middlewareOpts, error) {
@@ -804,6 +797,10 @@ func newMiddlewareOpts(
 	}
 
 	if err := cry.IsSecure(secretKey); err != nil {
+		return middlewareOpts{}, err
+	}
+
+	if err := validateLoadShedPercentile(loadShedPercentile); err != nil {
 		return middlewareOpts{}, err
 	}
 
@@ -830,6 +827,10 @@ func newMiddlewareOpts(
 			// Specifying a value of 0 tells browsers not to cache the preflight response, hence we should make it possible for one to specify zero seconds.
 			corsCacheDuration = DefaultCorsCacheDuration
 		}
+	}
+
+	if err := validateTrustedCsrfOrigins(trustedCsrfOrigins); err != nil {
+		return middlewareOpts{}, err
 	}
 
 	return middlewareOpts{
@@ -860,7 +861,7 @@ func newMiddlewareOpts(
 		CorsCacheDuration: corsCacheDuration,
 
 		// csrf
-		CsrfTokenDuration: csrfTokenDuration,
+		TrustedCsrfOrigins: trustedCsrfOrigins,
 
 		// session
 		SessionCookieDuration: sessionCookieDuration,
@@ -1160,9 +1161,10 @@ func (o Opts) Equal(other Opts) bool {
 			}
 		}
 
-		if o.CsrfTokenDuration != other.CsrfTokenDuration {
+		if !slices.Equal(o.TrustedCsrfOrigins, other.TrustedCsrfOrigins) {
 			return false
 		}
+
 		if o.SessionCookieDuration != other.SessionCookieDuration {
 			return false
 		}

@@ -32,18 +32,30 @@ func logger(
 		lrw := &logRW{ResponseWriter: w}
 
 		defer func() {
+			code := lrw.code
+			if lrw.panicErr != nil {
+				// A panic is a server error, even if the handler wrote another status code before it panicked.
+				// This makes sure that the panic is logged as an error.
+				code = http.StatusInternalServerError
+				lrw.code = code
+			}
+
 			flds := []any{
 				"clientIP", ClientIP(r),
 				"clientFingerPrint", ClientFingerPrint(r),
 				"method", r.Method,
 				"path", r.URL.Redacted(),
-				"code", lrw.code,
-				"status", http.StatusText(lrw.code),
+				"code", code,
+				"status", http.StatusText(code),
 				"durationMS", time.Since(start).Milliseconds(),
 			}
 			if ongError := lrw.Header().Get(ongMiddlewareErrorHeader); ongError != "" {
 				extra := []any{"ongError", ongError}
 				flds = append(flds, extra...)
+			}
+			if lrw.panicErr != nil {
+				// The recoverer middleware(inside logger) recovered from a panic and passed it to us.
+				flds = append(flds, "error", lrw.panicErr)
 			}
 
 			// Remove header so that users dont see it.
@@ -55,7 +67,8 @@ func logger(
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
-			logFunc(*r, w.Header().Clone(), lrw.code, flds)
+			// todo: logFunc is user supplied and if it panics we wouldn't be able to collect its logs.
+			logFunc(*r, w.Header().Clone(), code, flds)
 		}()
 
 		wrappedHandler.ServeHTTP(lrw, r)
@@ -75,6 +88,9 @@ type logRW struct {
 	// method.
 	code          int
 	writtenHeader bool
+
+	// panicErr is the panic that the recoverer middleware recovered from, if any.
+	panicErr any
 }
 
 var (
@@ -87,6 +103,7 @@ var (
 	_ http.Pusher         = &logRW{}
 	_ io.ReaderFrom       = &logRW{}
 	_ httpRespCtrler      = &logRW{}
+	_ panicRecorder       = &logRW{}
 	// _ http.CloseNotifier  = &logRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
@@ -123,6 +140,11 @@ func (lrw *logRW) WriteHeader(statusCode int) {
 // This is the same check that net/http uses in response.WriteHeader.
 func isInformational(statusCode int) bool {
 	return statusCode >= 100 && statusCode <= 199 && statusCode != http.StatusSwitchingProtocols
+}
+
+// recordPanic implements panicRecorder
+func (lrw *logRW) recordPanic(err any) {
+	lrw.panicErr = err
 }
 
 // Flush implements http.Flusher

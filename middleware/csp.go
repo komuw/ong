@@ -14,7 +14,7 @@ const (
 	cspCtxKey           = cspContextKey("cspContextKey")
 	cspDefaultNonce     = ""
 	cspHeader           = "Content-Security-Policy"
-	cspBytesTokenLength = csrfBytesTokenLength
+	cspBytesTokenLength = 32
 )
 
 // csp is a middleware that sets Content-Security-Policy and adds its nonce to the request context.

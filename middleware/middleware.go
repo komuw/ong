@@ -35,7 +35,7 @@ const (
 	// The logger & recoverer middleware will log the value of this header if it is set.
 	//
 	// An example, is when the Get middleware fails because it has been called with the wrong http method.
-	// Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
+	// Or when the csrf middleware rejects a cross-origin POST/DELETE/etc request.
 	ongMiddlewareErrorHeader = "Ong-Middleware-Error"
 
 	allowHeader = "Allow"
@@ -79,7 +79,7 @@ func allDefaultMiddlewares(
 	corsCacheDuration := o.CorsCacheDuration
 
 	// csrf
-	csrfTokenDuration := o.CsrfTokenDuration
+	trustedCsrfOrigins := o.TrustedCsrfOrigins
 
 	// session
 	sessionCookieDuration := o.SessionCookieDuration
@@ -88,9 +88,13 @@ func allDefaultMiddlewares(
 	// The way the middlewares are layered is:
 	// 1.  trace on outer most since we need to add logID's earliest for use by inner middlewares.
 	// 2.  clientIP on outer since client IP is needed by a couple of inner middlewares.
-	// 3.  fingerprint because it is needed by recoverer & logger.
-	// 4.  recoverer on the outer since we want it to watch all other middlewares.
-	// 5.  logger since we would like to get logs as early in the lifecycle as possible.
+	// 3.  fingerprint because it is needed by logger & recoverer.
+	// 4.  logger since we would like to get logs as early in the lifecycle as possible.
+	//     It is outside recoverer so that each request(including one that panics) is logged only one time and with the correct status code.
+	//     If logger was inside recoverer; when the handler panics, logger would log the request with status code 0, and then
+	//     recoverer would log the same request again with status code 500.
+	//     Now; recoverer writes the 500 response and passes the panic to logger(see panicRecorder), which logs it with the stack trace.
+	// 5.  recoverer, so that it watches all the other inner middlewares.
 	// 6.  traversal comes after logger since we would want to log the actual initial path requested.
 	// 7.  rateLimiter since we want bad traffic to be filtered early.
 	// 8.  loadShedder for the same reason.
@@ -99,7 +103,7 @@ func allDefaultMiddlewares(
 	// 11. securityHeaders since we want some minimum level of security.
 	// 12. csp since we want to set Content-Security-Policy and make its nonce available to inner middlewares.
 	// 13. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 14. csrf since this one is a bit more involved perf-wise.
+	// 14. csrf since it needs to come after cors handles pre-flight requests.
 	// 15. Gzip since it is very involved perf-wise.
 	// 16. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
 	// 17. session since we want sessions to saved as soon as possible.
@@ -108,8 +112,8 @@ func allDefaultMiddlewares(
 	//  trace ->
 	//   clientIP ->
 	//    fingerprint ->
-	//     recoverer ->
-	//      logger ->
+	//     logger ->
+	//      recoverer ->
 	//       traversal ->
 	//        rateLimiter ->
 	//         loadShedder ->
@@ -133,8 +137,8 @@ func allDefaultMiddlewares(
 	return trace(
 		clientIP(
 			fingerprint(
-				recoverer(
-					logger(
+				logger(
+					recoverer(
 						pathTraversal(
 							rateLimiter(
 								loadShedder(
@@ -153,8 +157,7 @@ func allDefaultMiddlewares(
 																SessionAntiReplayFunc,
 															),
 															// ),
-															string(secretKey),
-															csrfTokenDuration,
+															trustedCsrfOrigins,
 														),
 														allowedOrigins,
 														allowedMethods,

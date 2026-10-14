@@ -1,6 +1,8 @@
 package config
 
 import (
+	"math"
+	"strings"
 	"testing"
 
 	"go.akshayshah.org/attest"
@@ -58,18 +60,6 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			errMsg:         "single wildcard should not be used together with other allowedOrigins",
 		},
 		{
-			name:           "multiple wildcard",
-			allowedOrigins: []string{"http://*h*.com"},
-			succeeds:       false,
-			errMsg:         "should not contain more than one wildcard",
-		},
-		{
-			name:           "wildcard should be prefixed to host",
-			allowedOrigins: []string{"http://i*.com"},
-			succeeds:       false,
-			errMsg:         "wildcard should be prefixed to host",
-		},
-		{
 			// null origin should be rejected, see: https://jub0bs.com/posts/2023-02-08-fearless-cors/#do-not-support-the-null-origin
 			name:           "null origin",
 			allowedOrigins: []string{"null"},
@@ -77,22 +67,100 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			errMsg:         "scheme should not be empty",
 		},
 		{
-			name:           "wildcard is okay",
-			allowedOrigins: []string{"http://*j.com"},
-			succeeds:       true,
-			errMsg:         "",
-		},
-		{
-			name:           "wildcard in different domains",
-			allowedOrigins: []string{"http://*k.com", "http://*another.com"},
-			succeeds:       true,
-			errMsg:         "",
-		},
-		{
 			name:           "one wildcard",
 			allowedOrigins: []string{"*"},
 			succeeds:       true,
 			errMsg:         "",
+		},
+		{
+			name:           "upper case is okay",
+			allowedOrigins: []string{"HTTPS://Example.ORG"},
+			succeeds:       true,
+			errMsg:         "",
+		},
+		{
+			name:           "wildcard subdomain",
+			allowedOrigins: []string{"https://*.example.org"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "wildcard subdomain with port",
+			allowedOrigins: []string{"https://*.example.org:8443"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "wildcard subdomain with other origins",
+			allowedOrigins: []string{"https://example.net", "https://*.example.org"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "wildcard without a dot",
+			allowedOrigins: []string{"https://*example.org"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "wildcard in middle of host",
+			allowedOrigins: []string{"http://i*.com"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "multiple wildcard",
+			allowedOrigins: []string{"http://*h*.com"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "wildcard only host",
+			allowedOrigins: []string{"https://*"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "wildcard only host with port",
+			allowedOrigins: []string{"https://*:8443"},
+			succeeds:       false,
+			errMsg:         "wildcard should only be used on its own",
+		},
+		{
+			name:           "has query",
+			allowedOrigins: []string{"https://a.com?x=1"},
+			succeeds:       false,
+			errMsg:         "should only contain scheme, host and optional port",
+		},
+		{
+			name:           "has empty query",
+			allowedOrigins: []string{"https://a.com?"},
+			succeeds:       false,
+			errMsg:         "should only contain scheme, host and optional port",
+		},
+		{
+			name:           "has fragment",
+			allowedOrigins: []string{"https://a.com#f"},
+			succeeds:       false,
+			errMsg:         "should only contain scheme, host and optional port",
+		},
+		{
+			name:           "has empty fragment",
+			allowedOrigins: []string{"https://a.com#"},
+			succeeds:       false,
+			errMsg:         "should only contain scheme, host and optional port",
+		},
+		{
+			name:           "cannot be parsed",
+			allowedOrigins: []string{"https://[::1"},
+			succeeds:       false,
+			errMsg:         "missing ']' in host",
+		},
+		{
+			name:           "has userinfo",
+			allowedOrigins: []string{"https://user:pw@a.com"},
+			succeeds:       false,
+			errMsg:         "should only contain scheme, host and optional port",
 		},
 	}
 
@@ -106,6 +174,41 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			} else {
 				attest.Error(t, err)
 				attest.Subsequence(t, err.Error(), tt.errMsg)
+				attest.True(t, strings.HasPrefix(err.Error(), "ong/middleware/cors: "), attest.Sprint(err))
+			}
+		})
+	}
+}
+
+func TestValidateTrustedCsrfOrigins(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		origins []string
+		wantErr bool
+	}{
+		{name: "nil"},
+		{name: "valid", origins: []string{"https://example.com", "https://example.net:8443"}},
+		{name: "invalid second origin", origins: []string{"https://example.com", "example.net"}, wantErr: true},
+		{name: "missing scheme", origins: []string{"example.com"}, wantErr: true},
+		{name: "missing host", origins: []string{"https://"}, wantErr: true},
+		{name: "path", origins: []string{"https://example.com/path"}, wantErr: true},
+		{name: "query", origins: []string{"https://example.com?query"}, wantErr: true},
+		{name: "fragment", origins: []string{"https://example.com#fragment"}, wantErr: true},
+		{name: "wildcard", origins: []string{"*"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateTrustedCsrfOrigins(tt.origins)
+			if tt.wantErr {
+				attest.Error(t, err)
+				attest.True(t, strings.HasPrefix(err.Error(), "ong/middleware/csrf: "), attest.Sprint(err))
+			} else {
+				attest.Ok(t, err)
 			}
 		})
 	}
@@ -268,6 +371,39 @@ func TestValidateAllowCredentials(t *testing.T) {
 			} else {
 				attest.Error(t, err)
 				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestValidateLoadShedPercentile(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		pctl     float64
+		succeeds bool
+	}{
+		{name: "zero", pctl: 0, succeeds: true},
+		{name: "default", pctl: DefaultLoadShedPercentile, succeeds: true},
+		{name: "fraction", pctl: 99.9, succeeds: true},
+		{name: "hundred", pctl: 100, succeeds: true},
+		{name: "negative", pctl: -1, succeeds: false},
+		{name: "above hundred", pctl: 100.1, succeeds: false},
+		{name: "infinity", pctl: math.Inf(1), succeeds: false},
+		{name: "NaN", pctl: math.NaN(), succeeds: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateLoadShedPercentile(tt.pctl)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.True(t, strings.HasPrefix(err.Error(), "ong/middleware/loadshed: "), attest.Sprint(err))
 			}
 		})
 	}

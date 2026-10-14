@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strings"
@@ -9,13 +10,15 @@ import (
 	"github.com/komuw/ong/errors"
 )
 
+const originsErrPrefix = "ong/middleware/cors: "
+
 func validateAllowedOrigins(allowedOrigins []string) error {
 	/*
 		origin is defined by the scheme (protocol), hostname (domain), and port
 		https://developer.mozilla.org/en-US/docs/Glossary/Origin
 	*/
 	if len(allowedOrigins) > 1 && slices.Contains(allowedOrigins, "*") {
-		return errors.New("ong/middleware/cors: single wildcard should not be used together with other allowedOrigins")
+		return errors.New(originsErrPrefix + "single wildcard should not be used together with other allowedOrigins")
 	}
 
 	if len(allowedOrigins) == 1 && allowedOrigins[0] == "*" {
@@ -25,26 +28,40 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 	for _, origin := range allowedOrigins {
 		u, err := url.Parse(origin)
 		if err != nil {
-			return err
+			return fmt.Errorf(originsErrPrefix+"%w", err)
 		}
 
 		if u.Scheme == "" {
-			return fmt.Errorf("ong/middleware/cors: scheme should not be empty `%v`", origin)
+			return fmt.Errorf(originsErrPrefix+"scheme should not be empty `%v`", origin)
 		}
 		if u.Host == "" {
-			return fmt.Errorf("ong/middleware/cors: host should not be empty `%v`", origin)
+			return fmt.Errorf(originsErrPrefix+"host should not be empty `%v`", origin)
 		}
 		if u.Path != "" {
-			return fmt.Errorf("ong/middleware/cors: should not contain url path `%v`", origin)
+			return fmt.Errorf(originsErrPrefix+"should not contain url path `%v`", origin)
+		}
+		if !strings.EqualFold(origin, u.Scheme+"://"+u.Host) {
+			// Browsers send origins without userinfo, query or fragment.
+			return fmt.Errorf(originsErrPrefix+"should only contain scheme, host and optional port `%v`", origin)
 		}
 
-		if strings.Count(origin, "*") > 1 {
-			return fmt.Errorf("ong/middleware/cors: should not contain more than one wildcard `%v`", origin)
+		if strings.Contains(origin, "*") {
+			// The wildcard "*" can only be used on its own, ie allowedOrigins == []string{"*"}.
+			// Wildcard subdomains like `https://*.example.com` are not supported. They are hard to match correctly;
+			// eg `https://*example.com` would also match `https://attackerexample.com`.
+			// They would also need to be trusted by the csrf middleware, which only supports exact origins.
+			return fmt.Errorf(originsErrPrefix+"wildcard should only be used on its own `%v`", origin)
 		}
-		if strings.Count(origin, "*") == 1 {
-			if !strings.HasPrefix(u.Host, "*") {
-				return fmt.Errorf("ong/middleware/cors: wildcard should be prefixed to host `%v`", origin)
-			}
+	}
+
+	return nil
+}
+
+func validateTrustedCsrfOrigins(trustedCsrfOrigins []string) error {
+	cop := http.NewCrossOriginProtection()
+	for _, origin := range trustedCsrfOrigins {
+		if err := cop.AddTrustedOrigin(origin); err != nil {
+			return fmt.Errorf("ong/middleware/csrf: %w", err)
 		}
 	}
 
@@ -134,12 +151,21 @@ func validateAllowCredentials(
 		for _, origin := range allowedOrigins {
 			u, err := url.Parse(origin)
 			if err != nil {
-				return err
+				return fmt.Errorf("ong/middleware/cors: %w", err)
 			}
 			if u.Scheme == "http" {
 				return fmt.Errorf("ong/middleware/cors: allowCredentials should not be used together with origin that uses unsecure scheme `%v`", origin)
 			}
 		}
+	}
+
+	return nil
+}
+
+func validateLoadShedPercentile(loadShedPercentile float64) error {
+	// This also rejects NaN, since all comparisons with NaN are false.
+	if !(loadShedPercentile >= 0 && loadShedPercentile <= 100) {
+		return fmt.Errorf("ong/middleware/loadshed: loadShedPercentile should be in the range 0 to 100 `%v`", loadShedPercentile)
 	}
 
 	return nil

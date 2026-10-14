@@ -22,30 +22,10 @@ func loginHandler() http.HandlerFunc {
 	}
 }
 
-func welcomeHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		csrfToken := middleware.GetCsrfToken(r.Context())
-		_ = csrfToken // use CSRF token
-
-		_, _ = fmt.Fprint(w, "welcome.")
-	}
-}
-
 func Example_getCspNonce() {
 	l := log.New(context.Background(), os.Stdout, 100)
 	handler := middleware.Get(
 		loginHandler(),
-		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l),
-	)
-	_ = handler // use handler
-
-	// Output:
-}
-
-func Example_getCsrfToken() {
-	l := log.New(context.Background(), os.Stdout, 100)
-	handler := middleware.Get(
-		welcomeHandler(),
 		config.WithOpts("example.com", 443, "super-h@rd-Pas1word", config.DirectIpStrategy, l),
 	)
 	_ = handler // use handler
