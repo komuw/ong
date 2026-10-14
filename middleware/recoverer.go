@@ -11,8 +11,17 @@ import (
 // Some of the code here is inspired(or taken from) by:
 //   (a) https://github.com/eliben/code-for-blog whose license(Unlicense) can be found here: https://github.com/eliben/code-for-blog/blob/464a32f686d7646ba3fc612c19dbb550ec8a05b1/LICENSE
 
+// panicRecorder is implemented by a [http.ResponseWriter] that logs the request, like the one used by the logger middleware.
+type panicRecorder interface {
+	// recordPanic saves the panic so that it is added to the log of the request.
+	recordPanic(err any)
+}
+
 // recoverer is a middleware that recovers from panics in wrappedHandler.
-// When/if a panic occurs, it logs the stack trace and returns an InternalServerError response.
+// When/if a panic occurs, it returns an InternalServerError response.
+//
+// If the logger middleware is outside recoverer(as it is in [allDefaultMiddlewares]), recoverer passes the panic(and stack trace)
+// to logger, which logs the request one time. Otherwise, recoverer logs the panic itself.
 func recoverer(
 	wrappedHandler http.Handler,
 	logFunc func(r http.Request, response http.Header, statusCode int, fields []any),
@@ -28,8 +37,19 @@ func recoverer(
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			errR := recover()
-			if errR != nil {
+			if errR == nil {
+				return
+			}
 
+			var errV any = fmt.Sprint(errR)
+			if e, ok := errR.(error); ok {
+				errV = errors.Wrap(e) // wrap with ong/errors so that the log will have a stacktrace.
+			}
+
+			if pr, ok := w.(panicRecorder); ok {
+				// logger will log this request after we return. Do not log it here, so that it is not logged two times.
+				pr.recordPanic(errV)
+			} else {
 				flds := []any{
 					"clientIP", ClientIP(r),
 					"clientFingerPrint", ClientFingerPrint(r),
@@ -52,21 +72,17 @@ func recoverer(
 				// 1xx class or the modified headers are trailers.
 				w.Header().Del(ongMiddlewareErrorHeader)
 
-				extra := []any{"error", fmt.Sprint(errR)}
-				if e, ok := errR.(error); ok {
-					extra = []any{"error", errors.Wrap(e)} // wrap with ong/errors so that the log will have a stacktrace.
-				}
-				flds = append(flds, extra...)
+				flds = append(flds, "error", errV)
 
 				logFunc(*r, w.Header().Clone(), code, flds)
-
-				// respond.
-				http.Error(
-					w,
-					status,
-					code,
-				)
 			}
+
+			// respond.
+			http.Error(
+				w,
+				status,
+				code,
+			)
 		}()
 
 		wrappedHandler.ServeHTTP(w, r)

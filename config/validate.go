@@ -150,3 +150,12 @@ func validateAllowCredentials(
 
 	return nil
 }
+
+func validateLoadShedPercentile(loadShedPercentile float64) error {
+	// This also rejects NaN, since all comparisons with NaN are false.
+	if !(loadShedPercentile >= 0 && loadShedPercentile <= 100) {
+		return fmt.Errorf("ong/middleware/loadshed: loadShedPercentile should be in the range 0 to 100 `%v`", loadShedPercentile)
+	}
+
+	return nil
+}

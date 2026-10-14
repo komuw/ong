@@ -185,6 +185,35 @@ func TestNewMiddlewareOpts(t *testing.T) {
 	}
 }
 
+func TestNewMiddlewareOptsLoadShedPercentile(t *testing.T) {
+	t.Parallel()
+
+	opt := validOpts(t).middlewareOpts
+	_, err := newMiddlewareOpts(
+		opt.Domain,
+		opt.HttpsPort,
+		slog.Default(),
+		string(opt.SecretKey),
+		opt.Strategy,
+		nil,
+		opt.RateLimit,
+		opt.LoadShedSamplingPeriod,
+		opt.LoadShedMinSampleSize,
+		opt.LoadShedBreachLatency,
+		101,
+		opt.CSPPolicy,
+		opt.AllowedOrigins,
+		opt.AllowedMethods,
+		opt.AllowedHeaders,
+		opt.AllowCredentials,
+		opt.CorsCacheDuration,
+		opt.SessionCookieDuration,
+		opt.SessionAntiReplayFunc,
+	)
+	attest.Error(t, err)
+	attest.Subsequence(t, err.Error(), "loadShedPercentile should be in the range 0 to 100")
+}
+
 func TestNewMiddlewareOptsDomain(t *testing.T) {
 	t.Parallel()
 

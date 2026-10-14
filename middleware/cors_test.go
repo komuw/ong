@@ -75,6 +75,28 @@ func TestCorsPreflight(t *testing.T) {
 		attest.NotZero(t, res.Header.Get(acmaHeader))
 	})
 
+	t.Run("no allow headers if no request headers", func(t *testing.T) {
+		t.Parallel()
+
+		msg := "hello"
+		wrappedHandler := cors(someCorsHandler(msg), []string{"*"}, []string{"*"}, []string{"*"}, false, config.DefaultCorsCacheDuration, "example.com")
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodOptions, "/someUri", nil)
+		req.Header.Add(acrmHeader, http.MethodGet) // preflight request header set
+		req.Header.Add(originHeader, "http://example.com")
+		// No acrhHeader.
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusNoContent)
+		attest.NotZero(t, res.Header.Get(acmaHeader)) // preflight succeeded.
+		attest.NotZero(t, res.Header.Get(acamHeader))
+		_, ok := res.Header[acahHeader]
+		attest.False(t, ok)
+	})
+
 	t.Run("http OPTIONS without preflight request header", func(t *testing.T) {
 		t.Parallel()
 

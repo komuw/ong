@@ -274,6 +274,58 @@ func TestDelete(t *testing.T) {
 		cookie := res.Cookies()[1]
 		attest.True(t, cookie.MaxAge < 0)
 	})
+
+	t.Run("delete with no other cookies", func(t *testing.T) {
+		t.Parallel()
+
+		name := "logId"
+		rec := httptest.NewRecorder()
+		handler := func(w http.ResponseWriter, r *http.Request) {
+			Delete(w, name)
+			fmt.Fprint(w, "hello")
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, len(res.Cookies()), 1)
+
+		cookie := res.Cookies()[0]
+		attest.Equal(t, cookie.Name, HostCookiePrefix+name)
+		attest.Zero(t, cookie.Value)
+		attest.True(t, cookie.MaxAge < 0)
+		attest.Equal(t, cookie.Path, "/")
+		attest.True(t, cookie.Secure)
+	})
+
+	t.Run("delete with many cookies", func(t *testing.T) {
+		t.Parallel()
+
+		name := "logId"
+		others := 60
+		rec := httptest.NewRecorder()
+		handler := func(w http.ResponseWriter, r *http.Request) {
+			for i := range others {
+				Set(w, fmt.Sprintf("other%d", i), "value", time.Minute, false)
+			}
+			Delete(w, name)
+			fmt.Fprint(w, "hello")
+		}
+
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler(rec, req)
+		res := rec.Result()
+		defer res.Body.Close()
+
+		// The other cookies are not removed, and the named cookie is deleted.
+		attest.Equal(t, len(res.Cookies()), others+1)
+		cookie := res.Cookies()[others]
+		attest.Equal(t, cookie.Name, HostCookiePrefix+name)
+		attest.True(t, cookie.MaxAge < 0)
+	})
 }
 
 var result int //nolint:gochecknoglobals

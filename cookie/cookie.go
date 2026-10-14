@@ -19,13 +19,9 @@ import (
 
 const (
 	// HostCookiePrefix is the prefix used for host-only secure cookie names.
-	HostCookiePrefix    = "__Host-" // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies#cookie_prefixes
-	serverCookieHeader  = "Set-Cookie"
-	clientCookieHeader  = "Cookie"
-	_                   = clientCookieHeader // silence unused var linter
-	maxCookiesPerDomain = 50
-	maxCookieSize       = 4096 // bytes
-	// see: https://datatracker.ietf.org/doc/html/rfc6265#section-6.1
+	HostCookiePrefix   = "__Host-" // https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies#cookie_prefixes
+	clientCookieHeader = "Cookie"
+	_                  = clientCookieHeader // silence unused var linter
 )
 
 func hostCookieName(name string) string {
@@ -256,18 +252,10 @@ func GetEncrypted(
 
 // Delete removes the named cookie from the current host.
 // The __Host- prefix is added to name if it is not already present.
+//
+// It always adds an expired cookie to the response, even if the response has no other cookies.
+// The expired cookie is added after any cookies already in the response. Browsers use the last one, so the cookie is deleted.
 func Delete(w http.ResponseWriter, name string) {
-	h := w.Header().Values(serverCookieHeader)
-	if len(h) <= 0 {
-		return
-	}
-
-	if len(h) >= maxCookiesPerDomain || len(h[0]) > maxCookieSize {
-		// cookies exceed limits set out in RFC6265
-		w.Header().Del(serverCookieHeader)
-		return
-	}
-
 	c := &http.Cookie{
 		Name:     hostCookieName(name),
 		Value:    "",

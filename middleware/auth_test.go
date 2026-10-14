@@ -80,6 +80,9 @@ func TestBasicAuth(t *testing.T) {
 			defer res.Body.Close()
 
 			attest.Equal(t, res.StatusCode, tt.wantCode)
+			if tt.wantCode == http.StatusUnauthorized {
+				attest.Equal(t, res.Header.Get("WWW-Authenticate"), `Basic realm="enter username and password"`)
+			}
 		})
 	}
 

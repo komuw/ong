@@ -163,5 +163,7 @@ func percentile(N []int64, pctl float64, lenSl int) int64 {
 
 	slices.Sort(newN)
 	index := int((pctl / 100) * float64(lenSl))
+	// When pctl is 100, index is equal to lenSl. That is out of range, so use the last item(the largest latency).
+	index = min(index, lenSl-1)
 	return newN[index]
 }

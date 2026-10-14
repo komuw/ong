@@ -1,6 +1,7 @@
 package config
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -336,6 +337,39 @@ func TestValidateAllowCredentials(t *testing.T) {
 			} else {
 				attest.Error(t, err)
 				attest.Subsequence(t, err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestValidateLoadShedPercentile(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		pctl     float64
+		succeeds bool
+	}{
+		{name: "zero", pctl: 0, succeeds: true},
+		{name: "default", pctl: DefaultLoadShedPercentile, succeeds: true},
+		{name: "fraction", pctl: 99.9, succeeds: true},
+		{name: "hundred", pctl: 100, succeeds: true},
+		{name: "negative", pctl: -1, succeeds: false},
+		{name: "above hundred", pctl: 100.1, succeeds: false},
+		{name: "infinity", pctl: math.Inf(1), succeeds: false},
+		{name: "NaN", pctl: math.NaN(), succeeds: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateLoadShedPercentile(tt.pctl)
+			if tt.succeeds {
+				attest.Ok(t, err)
+			} else {
+				attest.Error(t, err)
+				attest.True(t, strings.HasPrefix(err.Error(), "ong/middleware/loadshed: "), attest.Sprint(err))
 			}
 		})
 	}

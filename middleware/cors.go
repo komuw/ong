@@ -171,7 +171,7 @@ func handlePreflight(
 	)
 
 	// (c)
-	if len(reqMethod) > 0 {
+	if len(reqHeader) > 0 {
 		// spec says we can return the headers that came in via the `acrhHeader`
 		headers.Set(acahHeader, reqHeader)
 		// we do not set the `acacHeader`

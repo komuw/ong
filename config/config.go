@@ -225,7 +225,7 @@ func (o Opts) GoString() string {
 // If there were fewer requests(than [loadShedMinSampleSize]) in the [loadShedSamplingPeriod], then we do decide to let things continue without load shedding.
 // If it is less than 1, [DefaultLoadShedMinSampleSize] is used instead.
 // loadShedBreachLatency is the latency at which point we start dropping(loadshedding) requests. If it is less than 1nanosecond, [DefaultLoadShedBreachLatency] is used instead.
-// loadShedPercentile is percentile used to check for load breach, by default. If it is less than 0, [DefaultLoadShedPercentile] is used instead.
+// loadShedPercentile is percentile used to check for load breach, by default. It should be in the range 0 to 100(inclusive).
 //
 // cspPolicy returns the Content-Security-Policy value for each request. It receives the configured domain and the request nonce.
 // If it is nil, [DefaultCSPPolicy] is used instead. It must be safe for concurrent use.
@@ -783,6 +783,10 @@ func newMiddlewareOpts(
 	}
 
 	if err := cry.IsSecure(secretKey); err != nil {
+		return middlewareOpts{}, err
+	}
+
+	if err := validateLoadShedPercentile(loadShedPercentile); err != nil {
 		return middlewareOpts{}, err
 	}
 

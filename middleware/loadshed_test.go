@@ -218,6 +218,25 @@ func TestPercentile(t *testing.T) {
 			attest.Equal(t, got, 1215)
 		}
 	})
+
+	t.Run("range of percentiles", func(t *testing.T) {
+		t.Parallel()
+
+		N := []int64{4, 1, 3, 2}
+		tests := []struct {
+			pctl float64
+			want int64
+		}{
+			{pctl: 0, want: 1},
+			{pctl: 50, want: 3},
+			{pctl: 99.9, want: 4},
+			{pctl: 100, want: 4}, // index is clamped to the last item.
+		}
+		for _, tt := range tests {
+			got := percentile(N, tt.pctl, len(N))
+			attest.Equal(t, got, tt.want, attest.Sprint(tt.pctl))
+		}
+	})
 }
 
 func TestLatencyQueue(t *testing.T) {

@@ -109,7 +109,10 @@ func TestReloadProtector(t *testing.T) {
 
 			attest.Equal(t, res.StatusCode, http.StatusSeeOther)
 			attest.Equal(t, string(rb), "")
-			attest.Equal(t, len(res.Cookies()), 0)
+			// The cookie is deleted.
+			attest.Equal(t, len(res.Cookies()), 1)
+			attest.Equal(t, res.Cookies()[0].Name, addedCookie.Name)
+			attest.True(t, res.Cookies()[0].MaxAge < 0)
 		}
 	})
 
