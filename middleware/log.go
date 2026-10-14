@@ -67,6 +67,7 @@ func logger(
 			// 1xx class or the modified headers are trailers.
 			lrw.Header().Del(ongMiddlewareErrorHeader)
 
+			// todo: logFunc is user supplied and if it panics we wouldn't be able to collect its logs.
 			logFunc(*r, w.Header().Clone(), code, flds)
 		}()
 

@@ -174,7 +174,41 @@ func TestValidateAllowedOrigins(t *testing.T) {
 			} else {
 				attest.Error(t, err)
 				attest.Subsequence(t, err.Error(), tt.errMsg)
-				attest.True(t, strings.HasPrefix(err.Error(), "ong/middleware/cors,csrf: "), attest.Sprint(err))
+				attest.True(t, strings.HasPrefix(err.Error(), "ong/middleware/cors: "), attest.Sprint(err))
+			}
+		})
+	}
+}
+
+func TestValidateTrustedCsrfOrigins(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		origins []string
+		wantErr bool
+	}{
+		{name: "nil"},
+		{name: "valid", origins: []string{"https://example.com", "https://example.net:8443"}},
+		{name: "invalid second origin", origins: []string{"https://example.com", "example.net"}, wantErr: true},
+		{name: "missing scheme", origins: []string{"example.com"}, wantErr: true},
+		{name: "missing host", origins: []string{"https://"}, wantErr: true},
+		{name: "path", origins: []string{"https://example.com/path"}, wantErr: true},
+		{name: "query", origins: []string{"https://example.com?query"}, wantErr: true},
+		{name: "fragment", origins: []string{"https://example.com#fragment"}, wantErr: true},
+		{name: "wildcard", origins: []string{"*"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateTrustedCsrfOrigins(tt.origins)
+			if tt.wantErr {
+				attest.Error(t, err)
+				attest.True(t, strings.HasPrefix(err.Error(), "ong/middleware/csrf: "), attest.Sprint(err))
+			} else {
+				attest.Ok(t, err)
 			}
 		})
 	}

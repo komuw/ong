@@ -65,6 +65,8 @@ func ExampleNew() {
 		false,
 		// Cache CORs preflight requests for 1day.
 		24*time.Hour,
+		// Trust non-safe requests from this origin.
+		[]string{"https://trusted.example.com"},
 		// Expire session cookie after 6hours.
 		6*time.Hour,
 		// Use a given header to try and mitigate against replay-attacks.

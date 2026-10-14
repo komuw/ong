@@ -78,6 +78,9 @@ func allDefaultMiddlewares(
 	allowCredentials := o.AllowCredentials
 	corsCacheDuration := o.CorsCacheDuration
 
+	// csrf
+	trustedCsrfOrigins := o.TrustedCsrfOrigins
+
 	// session
 	sessionCookieDuration := o.SessionCookieDuration
 	SessionAntiReplayFunc := o.SessionAntiReplayFunc
@@ -154,8 +157,7 @@ func allDefaultMiddlewares(
 																SessionAntiReplayFunc,
 															),
 															// ),
-															allowedOrigins,
-															domain,
+															trustedCsrfOrigins,
 														),
 														allowedOrigins,
 														allowedMethods,

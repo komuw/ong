@@ -299,7 +299,7 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 	return true
 }
 
-// getOrigins returns the allowedOrigins that are used by the cors and csrf middlewares.
+// getOrigins returns the allowedOrigins that are used by the cors middleware.
 // If ao is empty, domain and its www variant are used. Otherwise, ao is used in lower case.
 func getOrigins(ao []string, domain string) []string {
 	if len(ao) == 0 {

@@ -463,6 +463,7 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		nil,
 		false,
 		config.DefaultCorsCacheDuration,
+		nil,
 		config.DefaultSessionCookieDuration,
 		config.DefaultSessionAntiReplayFunc,
 		20*1024*1024,

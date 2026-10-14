@@ -61,6 +61,8 @@ func validOpts(t *testing.T) Opts {
 		false,
 		// Cache CORs preflight requests for 1day.
 		24*time.Hour,
+		// Trust non-safe requests from this origin.
+		[]string{"https://trusted.example.com"},
 		// Expire session cookie after 6hours.
 		6*time.Hour,
 		// Use a given header to try and mitigate against replay-attacks.
@@ -152,6 +154,15 @@ func TestNewMiddlewareOpts(t *testing.T) {
 			},
 			assert: func(o middlewareOpts) { attest.Equal(t, o.CorsCacheDuration, 372*time.Hour) },
 		},
+		{
+			name: "trusted CSRF origins are preserved",
+			opt: func() middlewareOpts {
+				return validOpts(t).middlewareOpts
+			},
+			assert: func(o middlewareOpts) {
+				attest.Equal(t, o.TrustedCsrfOrigins, []string{"https://trusted.example.com"})
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -176,6 +187,7 @@ func TestNewMiddlewareOpts(t *testing.T) {
 				opt.AllowedHeaders,
 				opt.AllowCredentials,
 				opt.CorsCacheDuration,
+				opt.TrustedCsrfOrigins,
 				opt.SessionCookieDuration,
 				opt.SessionAntiReplayFunc,
 			)
@@ -207,6 +219,7 @@ func TestNewMiddlewareOptsLoadShedPercentile(t *testing.T) {
 		opt.AllowedHeaders,
 		opt.AllowCredentials,
 		opt.CorsCacheDuration,
+		opt.TrustedCsrfOrigins,
 		opt.SessionCookieDuration,
 		opt.SessionAntiReplayFunc,
 	)
@@ -266,6 +279,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					nil,
 					false,
 					DefaultCorsCacheDuration,
+					nil,
 					DefaultSessionCookieDuration,
 					DefaultSessionAntiReplayFunc,
 				)
@@ -289,6 +303,7 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					nil,
 					false,
 					DefaultCorsCacheDuration,
+					nil,
 					DefaultSessionCookieDuration,
 					DefaultSessionAntiReplayFunc,
 				)
@@ -340,6 +355,7 @@ func TestOpts(t *testing.T) {
 			AllowedMethods:         []string{},
 			AllowedHeaders:         []string{},
 			CorsCacheDuration:      DefaultCorsCacheDuration,
+			TrustedCsrfOrigins:     nil,
 			SessionCookieDuration:  DefaultSessionCookieDuration,
 			SessionAntiReplayFunc:  DefaultSessionAntiReplayFunc,
 

@@ -24,12 +24,12 @@ func TestCsrf(t *testing.T) {
 	const domain = "example.com"
 
 	tests := []struct {
-		name           string
-		method         string
-		secFetchSite   string
-		origin         string
-		allowedOrigins []string
-		wantStatus     int
+		name               string
+		method             string
+		secFetchSite       string
+		origin             string
+		trustedCsrfOrigins []string
+		wantStatus         int
 	}{
 		// safe methods.
 		{name: "GET cross-site", method: http.MethodGet, secFetchSite: "cross-site", origin: "https://attacker.example", wantStatus: http.StatusOK},
@@ -52,17 +52,13 @@ func TestCsrf(t *testing.T) {
 		{name: "POST origin does not match host", method: http.MethodPost, origin: "https://attacker.example", wantStatus: http.StatusForbidden},
 		{name: "POST null origin", method: http.MethodPost, origin: "null", wantStatus: http.StatusForbidden},
 
-		// allowedOrigins.
-		{name: "default allowedOrigins trust www", method: http.MethodPost, secFetchSite: "same-site", origin: "https://www." + domain, wantStatus: http.StatusOK},
-		{name: "default allowedOrigins do not trust other subdomains", method: http.MethodPost, secFetchSite: "same-site", origin: "https://blog." + domain, wantStatus: http.StatusForbidden},
-		{name: "allowedOrigin is trusted", method: http.MethodPost, secFetchSite: "cross-site", origin: "https://example.net", allowedOrigins: []string{"https://example.net"}, wantStatus: http.StatusOK},
-		{name: "allowedOrigin is trusted without Sec-Fetch-Site", method: http.MethodPost, origin: "https://example.net", allowedOrigins: []string{"https://example.net"}, wantStatus: http.StatusOK},
-		{name: "origin not in allowedOrigins", method: http.MethodPost, secFetchSite: "cross-site", origin: "https://attacker.example", allowedOrigins: []string{"https://example.net"}, wantStatus: http.StatusForbidden},
-		{name: "subdomain of allowedOrigin is not trusted", method: http.MethodPost, secFetchSite: "same-site", origin: "https://app.example.net", allowedOrigins: []string{"https://example.net"}, wantStatus: http.StatusForbidden},
-		{name: "allowedOrigin * is not trusted", method: http.MethodPost, secFetchSite: "cross-site", origin: "https://attacker.example", allowedOrigins: []string{"*"}, wantStatus: http.StatusForbidden},
-		{name: "allowedOrigin * is not trusted without Sec-Fetch-Site", method: http.MethodPost, origin: "https://attacker.example", allowedOrigins: []string{"*"}, wantStatus: http.StatusForbidden},
-		{name: "allowedOrigin * allows same-origin", method: http.MethodPost, secFetchSite: "same-origin", allowedOrigins: []string{"*"}, wantStatus: http.StatusOK},
-		{name: "allowedOrigin * allows requests not from browser", method: http.MethodPost, allowedOrigins: []string{"*"}, wantStatus: http.StatusOK},
+		// trustedCsrfOrigins.
+		{name: "www is not trusted by default", method: http.MethodPost, secFetchSite: "same-site", origin: "https://www." + domain, wantStatus: http.StatusForbidden},
+		{name: "other subdomains are not trusted by default", method: http.MethodPost, secFetchSite: "same-site", origin: "https://blog." + domain, wantStatus: http.StatusForbidden},
+		{name: "trusted origin", method: http.MethodPost, secFetchSite: "cross-site", origin: "https://example.net", trustedCsrfOrigins: []string{"https://example.net"}, wantStatus: http.StatusOK},
+		{name: "trusted origin without Sec-Fetch-Site", method: http.MethodPost, origin: "https://example.net", trustedCsrfOrigins: []string{"https://example.net"}, wantStatus: http.StatusOK},
+		{name: "untrusted origin", method: http.MethodPost, secFetchSite: "cross-site", origin: "https://attacker.example", trustedCsrfOrigins: []string{"https://example.net"}, wantStatus: http.StatusForbidden},
+		{name: "subdomain of trusted origin is not trusted", method: http.MethodPost, secFetchSite: "same-site", origin: "https://app.example.net", trustedCsrfOrigins: []string{"https://example.net"}, wantStatus: http.StatusForbidden},
 	}
 
 	for _, tt := range tests {
@@ -70,7 +66,7 @@ func TestCsrf(t *testing.T) {
 			t.Parallel()
 
 			msg := "hello"
-			wrappedHandler := csrf(someCsrfHandler(msg), tt.allowedOrigins, domain)
+			wrappedHandler := csrf(someCsrfHandler(msg), tt.trustedCsrfOrigins)
 
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(tt.method, "https://"+domain+"/someUri", nil)
@@ -103,7 +99,7 @@ func TestCsrf(t *testing.T) {
 		t.Parallel()
 
 		attest.Panics(t, func() {
-			_ = csrf(someCsrfHandler("hello"), []string{"https://example.net/some/path"}, domain)
+			_ = csrf(someCsrfHandler("hello"), []string{"https://example.net/some/path"})
 		})
 	})
 }

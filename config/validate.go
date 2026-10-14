@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strings"
@@ -9,8 +10,7 @@ import (
 	"github.com/komuw/ong/errors"
 )
 
-// allowedOrigins are used by both the cors and csrf middlewares.
-const originsErrPrefix = "ong/middleware/cors,csrf: "
+const originsErrPrefix = "ong/middleware/cors: "
 
 func validateAllowedOrigins(allowedOrigins []string) error {
 	/*
@@ -51,6 +51,17 @@ func validateAllowedOrigins(allowedOrigins []string) error {
 			// eg `https://*example.com` would also match `https://attackerexample.com`.
 			// They would also need to be trusted by the csrf middleware, which only supports exact origins.
 			return fmt.Errorf(originsErrPrefix+"wildcard should only be used on its own `%v`", origin)
+		}
+	}
+
+	return nil
+}
+
+func validateTrustedCsrfOrigins(trustedCsrfOrigins []string) error {
+	cop := http.NewCrossOriginProtection()
+	for _, origin := range trustedCsrfOrigins {
+		if err := cop.AddTrustedOrigin(origin); err != nil {
+			return fmt.Errorf("ong/middleware/csrf: %w", err)
 		}
 	}
 
