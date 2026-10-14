@@ -154,8 +154,11 @@ func TestMux(t *testing.T) {
 			attest.NotZero(t, csrfToken)
 		}
 
-		req, err := http.NewRequest(http.MethodPost, ts.URL+uri, nil)
+		// Use the domain, not ts.URL(an IP address). Otherwise the request is redirected to the domain,
+		// and the http client removes the cookie header on a redirect to a different host.
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s:%d%s", domain, httpsPort, uri), nil)
 		attest.Ok(t, err)
+		req.AddCookie(&http.Cookie{Name: "__Host-" + middleware.CsrfTokenFormName, Value: csrfToken})
 		req.Header.Set(middleware.CsrfHeader, csrfToken)
 		res, err := client.Do(req)
 		attest.Ok(t, err)
@@ -455,7 +458,7 @@ func TestMux(t *testing.T) {
 			rStr := errM.Error()
 			attest.Subsequence(t, rStr, "would conflict")
 			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:28")  // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:447") // location where the other handler is declared.
+			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:450") // location where the other handler is declared.
 		})
 	})
 }

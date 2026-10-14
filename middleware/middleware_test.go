@@ -203,16 +203,12 @@ func TestAllMiddleware(t *testing.T) {
 			attest.Ok(t, err)
 			defer ts.Close()
 
-			req, err := http.NewRequest(tt.httpMethod, ts.URL, nil)
+			// Use the domain, not ts.URL(an IP address). Otherwise the request is redirected to the domain,
+			// and the http client removes the cookie header on a redirect to a different host.
+			req, err := http.NewRequest(tt.httpMethod, fmt.Sprintf("https://%s:%d", domain, httpsPort), nil)
 			attest.Ok(t, err)
-			req.AddCookie(
-				&http.Cookie{
-					Name:   "__Host-" + csrfCookieName,
-					Value:  csrfToken,
-					Domain: "localhost",
-				},
-			)
-			req.Header.Set(CsrfHeader, csrfToken) // setting the cookie appears not to work, so set the header.
+			req.AddCookie(&http.Cookie{Name: "__Host-" + csrfCookieName, Value: csrfToken})
+			req.Header.Set(CsrfHeader, csrfToken)
 			res, err := client.Do(req)
 			attest.Ok(t, err)
 
@@ -305,8 +301,11 @@ func TestMiddlewareServer(t *testing.T) {
 		defer ts.Close()
 
 		postMsg := "This is a post message"
-		req, err := http.NewRequest(http.MethodPost, ts.URL, strings.NewReader(postMsg))
+		// Use the domain, not ts.URL(an IP address). Otherwise the request is redirected to the domain,
+		// and the http client removes the cookie header on a redirect to a different host.
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s:%d", domain, httpsPort), strings.NewReader(postMsg))
 		attest.Ok(t, err)
+		req.AddCookie(&http.Cookie{Name: "__Host-" + csrfCookieName, Value: csrfToken})
 		req.Header.Set(CsrfHeader, csrfToken)
 		res, err := client.Do(req)
 		attest.Ok(t, err)

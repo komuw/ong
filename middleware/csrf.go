@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"mime"
@@ -27,6 +28,7 @@ var (
 	errCsrfTokenNotFound    = errors.New("ong/middleware/csrf: token not found")
 	errCsrfTokenExpired     = errors.New("ong/middleware/csrf: token is expired")
 	errCsrfTokenWrongFormat = errors.New("ong/middleware/csrf: token wrong format")
+	errCsrfTokenMismatch    = errors.New("ong/middleware/csrf: token mismatch")
 	once                    sync.Once //nolint:gochecknoglobals
 	enc                     cry.Enc   //nolint:gochecknoglobals
 )
@@ -72,7 +74,6 @@ func csrf(
 	once.Do(func() {
 		enc = cry.New(secretKey)
 	})
-	msgToEncrypt := id.Random(16)
 
 	if csrfTokenDuration < 1*time.Second { // is measured in seconds.
 		csrfTokenDuration = config.DefaultCsrfCookieDuration
@@ -82,23 +83,23 @@ func csrf(
 		// - https://docs.djangoproject.com/en/4.0/ref/csrf/
 		// - https://github.com/django/django/blob/4.0.5/django/middleware/csrf.py
 		// - https://github.com/gofiber/fiber/blob/v2.34.1/middleware/csrf/csrf.go
+		// - https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#signed-double-submit-cookie-recommended
 
-		// 1. check http method.
-		//     - if it is a 'safe' method like GET, try and get `actualToken` from request.
-		//     - if it is not a 'safe' method, try and get `actualToken` from header/cookies/httpForm
-		//        - take the found token and try to get it from memory store.
-		//            - if not found in memory store, delete the cookie & return an error.
+		// 1. Each token contains a clientID. All tokens issued to one client contain the same clientID.
+		//     - if it is a 'safe' method like GET, re-use the clientID from the csrf cookie, if it is valid.
+		//     - if it is not a 'safe' method, the csrf cookie and the token from the header/httpForm must both be valid
+		//       and must contain the same clientID. Otherwise, delete the cookie & redirect.
 
 		ctx := r.Context()
+		clientID := id.Random(csrfBytesTokenLength)
 
 		switch r.Method {
 		// safe methods under rfc7231: https://datatracker.ietf.org/doc/html/rfc7231#section-4.2.1
 		case http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodTrace:
-			break
+			if cid, err := parseCsrfToken(getCookieToken(r)); err == nil {
+				clientID = cid
+			}
 		default:
-			// For POST requests, we insist on a CSRF cookie, and in this way we can avoid all CSRF attacks, including login CSRF.
-			actualToken := getToken(r)
-
 			ct, _, err := mime.ParseMediaType(r.Header.Get(ctHeader))
 			if err == nil &&
 				ct != formUrlEncoded &&
@@ -116,53 +117,34 @@ func csrf(
 				break
 			}
 
-			tokVal, errN := enc.DecryptDecode(actualToken)
-			if errN != nil {
-				// We should redirect the request since it means that the server is not aware of such a token.
-				// It shoulbe be a temporary redirect to the same page but this time send a http GET request.
-				//
-				// To test using curl, use;
-				//   curl -kL \
-				//   -H "Content-Type: application/x-www-form-urlencoded" \
-				//   -d "firstName=john&csrftoken=bogusToken" https://localhost:65081/login/
-				// Do NOT use `-X POST`, see: https://stackoverflow.com/a/41890653/2768067
-				//
-				cookie.Delete(w, csrfCookieName)
-				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenNotFound.Error())
-				http.Redirect(
-					w,
-					r,
-					r.URL.String(),
-					// http 303(StatusSeeOther) is guaranteed by the spec to always use http GET.
-					// https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
-					http.StatusSeeOther,
-				)
+			// For all other non-safe requests, we insist on a CSRF cookie and a matching token in the header or form.
+			// A cross-site attacker cannot read the victim's cookie, and cannot set it(it has the __Host- prefix).
+			// In this way we can avoid CSRF attacks, including login CSRF.
+			//
+			// If the check fails, we redirect the request to the same page but this time with a http GET request.
+			// To test using curl, use;
+			//   curl -kL \
+			//   -H "Content-Type: application/x-www-form-urlencoded" \
+			//   -d "firstName=john&csrftoken=bogusToken" https://localhost:65081/login/
+			// Do NOT use `-X POST`, see: https://stackoverflow.com/a/41890653/2768067
+			cookieID, errC := parseCsrfToken(getCookieToken(r))
+			if errC != nil {
+				csrfFail(w, r, errC)
 				return
 			}
 
-			res := strings.Split(tokVal, sep)
-			if len(res) != 2 {
-				cookie.Delete(w, csrfCookieName)
-				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenWrongFormat.Error())
-				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+			reqID, errR := parseCsrfToken(getRequestToken(r))
+			if errR != nil {
+				csrfFail(w, r, errR)
 				return
 			}
 
-			expires, errP := strconv.ParseInt(res[1], 10, 64)
-			if errP != nil {
-				cookie.Delete(w, csrfCookieName)
-				w.Header().Set(ongMiddlewareErrorHeader, errP.Error())
-				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
+			if subtle.ConstantTimeCompare([]byte(cookieID), []byte(reqID)) != 1 {
+				csrfFail(w, r, errCsrfTokenMismatch)
 				return
 			}
 
-			diff := expires - time.Now().UTC().Unix()
-			if diff <= 0 {
-				cookie.Delete(w, csrfCookieName)
-				w.Header().Set(ongMiddlewareErrorHeader, errCsrfTokenExpired.Error())
-				http.Redirect(w, r, r.URL.String(), http.StatusSeeOther)
-				return
-			}
+			clientID = cookieID
 		}
 
 		// 2. generate a new token.
@@ -188,7 +170,7 @@ func csrf(
 		)
 		tokenToIssue := enc.EncryptEncode(
 			// see: https://github.com/golang/net/blob/v0.8.0/xsrftoken/xsrf.go#L33-L46
-			fmt.Sprintf("%s%s%s", msgToEncrypt, sep, expires),
+			fmt.Sprintf("%s%s%s", clientID, sep, expires),
 		)
 
 		// 3. create cookie
@@ -228,38 +210,65 @@ func GetCsrfToken(c context.Context) string {
 	return csrfDefaultToken
 }
 
-// getToken tries to fetch a csrf token from the incoming request r.
-// It tries to fetch from cookies, http-forms, headers in that order.
-func getToken(r *http.Request) (actualToken string) {
-	fromCookie := func() string {
-		c, err := cookie.Get(r, csrfCookieName)
-		if err != nil {
-			return ""
-		}
-		return c.Value
+// getCookieToken returns the csrf token in the csrf cookie of the request r.
+func getCookieToken(r *http.Request) string {
+	c, err := cookie.Get(r, csrfCookieName)
+	if err != nil {
+		return ""
 	}
+	return c.Value
+}
 
-	fromForm := func() string {
-		return r.FormValue(CsrfTokenFormName) // calls ParseMultipartForm and ParseForm if necessary
+// getRequestToken returns the csrf token in the request r.
+// It tries to fetch from headers, then http-forms.
+func getRequestToken(r *http.Request) string {
+	if tok := r.Header.Get(CsrfHeader); tok != "" {
+		return tok
 	}
+	return r.FormValue(CsrfTokenFormName) // calls ParseMultipartForm and ParseForm if necessary
+}
 
-	fromHeader := func() string {
-		return r.Header.Get(CsrfHeader)
-	}
-
-	tok := fromCookie()
-	if tok == "" {
-		tok = fromForm()
-	}
-	if tok == "" {
-		tok = fromHeader()
-	}
-
+// parseCsrfToken decrypts the csrf token tok and returns the clientID in it.
+// It returns an error if tok was not issued by this server, or if it is expired.
+func parseCsrfToken(tok string) (clientID string, err error) {
 	if len(tok) < csrfBytesTokenLength {
 		// Request has presented a token that we probably didn't generate coz this library issues
 		// tokens with len > csrfBytesTokenLength
-		tok = ""
+		return "", errCsrfTokenNotFound
 	}
 
-	return tok
+	tokVal, err := enc.DecryptDecode(tok)
+	if err != nil {
+		return "", errCsrfTokenNotFound
+	}
+
+	res := strings.Split(tokVal, sep)
+	if len(res) != 2 {
+		return "", errCsrfTokenWrongFormat
+	}
+
+	expires, err := strconv.ParseInt(res[1], 10, 64)
+	if err != nil {
+		return "", err
+	}
+
+	if expires-time.Now().UTC().Unix() <= 0 {
+		return "", errCsrfTokenExpired
+	}
+
+	return res[0], nil
+}
+
+// csrfFail deletes the csrf cookie and redirects the request r to the same url using http GET.
+func csrfFail(w http.ResponseWriter, r *http.Request, err error) {
+	cookie.Delete(w, csrfCookieName)
+	w.Header().Set(ongMiddlewareErrorHeader, err.Error())
+	http.Redirect(
+		w,
+		r,
+		r.URL.String(),
+		// http 303(StatusSeeOther) is guaranteed by the spec to always use http GET.
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
+		http.StatusSeeOther,
+	)
 }
