@@ -217,6 +217,13 @@ func GetEncrypted(
 		return nil, err
 	}
 
+	if lenOfAntiReplay < 0 ||
+		lenOfExpires < 0 ||
+		lenOfAntiReplay > len(decryptedVal) ||
+		lenOfExpires > len(decryptedVal)-lenOfAntiReplay {
+		return nil, errors.New("ong/cookie: invalid cookie")
+	}
+
 	antiReplay, expiresStr, val := decryptedVal[:lenOfAntiReplay],
 		decryptedVal[lenOfAntiReplay:lenOfAntiReplay+lenOfExpires],
 		decryptedVal[lenOfAntiReplay+lenOfExpires:]

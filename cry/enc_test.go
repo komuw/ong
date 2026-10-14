@@ -62,6 +62,22 @@ func TestEnc(t *testing.T) {
 		attest.Equal(t, decryptedMsg, msgToEncrypt)
 	})
 
+	t.Run("short input does not panic", func(t *testing.T) {
+		t.Parallel()
+
+		enc := New(tst.SecretKey())
+
+		for n := 0; n <= 40; n++ {
+			msg := []byte(strings.Repeat("A", n))
+
+			_, err := enc.Decrypt(msg)
+			attest.Error(t, err)
+
+			_, err = enc.DecryptDecode(string(msg))
+			attest.Error(t, err)
+		}
+	})
+
 	t.Run("encrypt same msg is unique", func(t *testing.T) {
 		t.Parallel()
 

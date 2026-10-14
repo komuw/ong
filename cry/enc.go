@@ -132,7 +132,7 @@ func (e Enc) Encrypt(plainTextMsg string) (encryptedMsg []byte) {
 
 // Decrypt authenticates and un-encrypts the encryptedMsg using XChaCha20-Poly1305 and returns decrypted bytes.
 func (e Enc) Decrypt(encryptedMsg []byte) (decryptedMsg []byte, err error) {
-	if len(encryptedMsg) < chacha20poly1305.NonceSizeX {
+	if len(encryptedMsg) < saltLen+chacha20poly1305.NonceSizeX {
 		return nil, errors.New("ong/cry: ciphertext too short")
 	}
 
