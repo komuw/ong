@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -251,6 +252,82 @@ func TestSession(t *testing.T) {
 			attest.Error(t, errG)
 			attest.Zero(t, c)
 			attest.Subsequence(t, errG.Error(), "mismatched anti replay value")
+		}
+	})
+
+	t.Run("session is saved", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			h    http.HandlerFunc
+		}{
+			{
+				name: "redirect",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					sess.Set(r, "name", "John Doe")
+					http.Redirect(w, r, "/home", http.StatusFound)
+				},
+			},
+			{
+				name: "WriteHeader only",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					sess.Set(r, "name", "John Doe")
+					w.WriteHeader(http.StatusNoContent)
+				},
+			},
+			{
+				name: "ReadFrom",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					sess.Set(r, "name", "John Doe")
+					// struct{ io.Reader } hides the WriteTo method so that io.Copy calls ReadFrom.
+					_, _ = io.Copy(w, struct{ io.Reader }{strings.NewReader("hello")})
+				},
+			},
+			{
+				name: "Flush",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					sess.Set(r, "name", "John Doe")
+					w.(http.Flusher).Flush()
+					fmt.Fprint(w, "hello")
+				},
+			},
+			{
+				name: "no write",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					sess.Set(r, "name", "John Doe")
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				ts := httptest.NewServer(
+					session(
+						tt.h,
+						tst.SecretKey(),
+						config.DefaultSessionCookieDuration,
+						func(r http.Request) string { return "" },
+					),
+				)
+				t.Cleanup(ts.Close)
+
+				c := ts.Client()
+				c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+				for _, method := range []string{http.MethodGet, http.MethodPost} {
+					req, err := http.NewRequest(method, ts.URL, nil)
+					attest.Ok(t, err)
+					res, err := c.Do(req)
+					attest.Ok(t, err)
+					t.Cleanup(func() { res.Body.Close() })
+
+					attest.Equal(t, len(res.Cookies()), 1, attest.Sprintf("method: %s", method))
+					attest.Equal(t, res.Cookies()[0].Name, sess.CookieName)
+				}
+			})
 		}
 	})
 

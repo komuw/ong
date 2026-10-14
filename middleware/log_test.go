@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -234,6 +235,81 @@ func TestLogMiddleware(t *testing.T) {
 		attest.Equal(t, res.StatusCode, http.StatusOK)
 		attest.Equal(t, string(rb), successMsg)
 		attest.Zero(t, logOutput.String())
+	})
+
+	t.Run("logged status code", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			h    http.HandlerFunc
+			want int
+		}{
+			{
+				name: "ReadFrom",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					// struct{ io.Reader } hides the WriteTo method so that io.Copy calls ReadFrom.
+					_, _ = io.Copy(w, struct{ io.Reader }{strings.NewReader("hello")})
+				},
+				want: http.StatusOK,
+			},
+			{
+				name: "Flush",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.(http.Flusher).Flush()
+				},
+				want: http.StatusOK,
+			},
+			{
+				name: "informational then final",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Link", "</style.css>; rel=preload; as=style")
+					w.WriteHeader(http.StatusEarlyHints)
+					w.WriteHeader(http.StatusNotFound)
+				},
+				want: http.StatusNotFound,
+			},
+			{
+				name: "superfluous WriteHeader",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusCreated)
+					w.WriteHeader(http.StatusInternalServerError)
+				},
+				want: http.StatusCreated,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				var mu sync.Mutex
+				var code int
+				wrappedHandler := logger(
+					tt.h,
+					func(_ http.Request, _ http.Header, statusCode int, _ []any) {
+						mu.Lock()
+						code = statusCode
+						mu.Unlock()
+					},
+					nil,
+				)
+
+				ts := httptest.NewServer(wrappedHandler)
+				t.Cleanup(ts.Close)
+
+				res, err := ts.Client().Get(ts.URL)
+				attest.Ok(t, err)
+				t.Cleanup(func() { res.Body.Close() })
+				_, err = io.ReadAll(res.Body)
+				attest.Ok(t, err)
+
+				mu.Lock()
+				defer mu.Unlock()
+				attest.Equal(t, res.StatusCode, tt.want)
+				attest.Equal(t, code, tt.want)
+			})
+		}
 	})
 
 	t.Run("concurrency safe", func(t *testing.T) {

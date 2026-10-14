@@ -90,18 +90,22 @@ var (
 	// _ http.CloseNotifier  = &logRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
+// setDefaultCode sets the status code to http.StatusOK if it is not already set.
+//
+// If WriteHeader is not called explicitly, the first call to Write(or Flush)
+// will trigger an implicit WriteHeader(http.StatusOK).
+// See: https://github.com/golang/go/blob/go1.20.5/src/net/http/server.go#L141-L159
+func (lrw *logRW) setDefaultCode() {
+	if !lrw.writtenHeader {
+		lrw.code = http.StatusOK
+		lrw.writtenHeader = true
+	}
+}
+
 // Write sets the default status code if not already set.
 // todo: In future, it could also recode the size of bytes sent for logging purposes.
 func (lrw *logRW) Write(b []byte) (int, error) {
-	if lrw.code == 0 {
-		// If WriteHeader is not called explicitly, the first call to Write
-		// will trigger an implicit WriteHeader(http.StatusOK).
-		// See: https://github.com/golang/go/blob/go1.20.5/src/net/http/server.go#L141-L159
-		//
-		// Thus here we need to obey that convention
-		lrw.code = http.StatusOK
-	}
-	lrw.writtenHeader = true
+	lrw.setDefaultCode()
 	return lrw.ResponseWriter.Write(b)
 }
 
@@ -109,14 +113,21 @@ func (lrw *logRW) Write(b []byte) (int, error) {
 func (lrw *logRW) WriteHeader(statusCode int) {
 	lrw.ResponseWriter.WriteHeader(statusCode)
 
-	if !lrw.writtenHeader {
+	if !lrw.writtenHeader && !isInformational(statusCode) {
 		lrw.code = statusCode
 		lrw.writtenHeader = true
 	}
 }
 
+// isInformational reports whether statusCode is an informational(1xx) status code that is not final.
+// This is the same check that net/http uses in response.WriteHeader.
+func isInformational(statusCode int) bool {
+	return statusCode >= 100 && statusCode <= 199 && statusCode != http.StatusSwitchingProtocols
+}
+
 // Flush implements http.Flusher
 func (lrw *logRW) Flush() {
+	lrw.setDefaultCode()
 	if fw, ok := lrw.ResponseWriter.(http.Flusher); ok {
 		fw.Flush()
 	}
@@ -143,6 +154,7 @@ func (lrw *logRW) Push(target string, opts *http.PushOptions) error {
 // https://github.com/caddyserver/caddy/pull/5022
 // https://github.com/caddyserver/caddy/blob/v2.7.4/modules/caddyhttp/responsewriter.go#L45-L49
 func (lrw *logRW) ReadFrom(src io.Reader) (n int64, err error) {
+	lrw.setDefaultCode()
 	return io.Copy(lrw.ResponseWriter, src)
 }
 

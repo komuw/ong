@@ -35,6 +35,9 @@ func session(
 		srw := newSessRW(w, r, secretKey, sessionCookieDuration)
 
 		wrappedHandler.ServeHTTP(srw, r)
+
+		// The handler may not have written anything.
+		srw.save()
 	}
 }
 
@@ -56,7 +59,7 @@ var (
 	_ http.Hijacker       = &sessRW{}
 	_ http.Pusher         = &sessRW{}
 	_ io.ReaderFrom       = &sessRW{}
-	_ httpRespCtrler      = &logRW{}
+	_ httpRespCtrler      = &sessRW{}
 	// _ http.CloseNotifier  = &sessRW{} // `http.CloseNotifier` has been deprecated sinc Go v1.11(year 2018)
 )
 
@@ -75,30 +78,39 @@ func newSessRW(
 	}
 }
 
+// save saves the session cookie to the response.
+//
+// According to: https://pkg.go.dev/net/http#ResponseWriter
+// Changing the header map after a call to WriteHeader/Write has no effect unless in some specific cases.
+// Thus, it has to be called before any method that can send the headers.
+func (srw *sessRW) save() {
+	if srw.written {
+		return
+	}
+	srw.written = true
+	sess.Save(
+		srw.r,
+		srw.ResponseWriter,
+		srw.sessionCookieDuration,
+		srw.secretKey,
+	)
+}
+
 // Write saves session data.
 func (srw *sessRW) Write(b []byte) (int, error) {
-	// 3. Save session cookie to response.
-
-	// We have to call `sess.Save` here.
-	//
-	// According to: https://pkg.go.dev/net/http#ResponseWriter
-	// Changing the header map after a call to WriteHeader/Write has no effect unless in some specific cases.
-	// Thus, we call sess.Save here just before any call to `ResponseWriter.Write` goes through.
-	if !srw.written {
-		sess.Save(
-			srw.r,
-			srw.ResponseWriter,
-			srw.sessionCookieDuration,
-			srw.secretKey,
-		)
-		srw.written = true
-	}
-
+	srw.save()
 	return srw.ResponseWriter.Write(b)
+}
+
+// WriteHeader saves session data.
+func (srw *sessRW) WriteHeader(statusCode int) {
+	srw.save()
+	srw.ResponseWriter.WriteHeader(statusCode)
 }
 
 // Flush implements http.Flusher
 func (srw *sessRW) Flush() {
+	srw.save()
 	if fw, ok := srw.ResponseWriter.(http.Flusher); ok {
 		fw.Flush()
 	}
@@ -125,6 +137,7 @@ func (srw *sessRW) Push(target string, opts *http.PushOptions) error {
 // https://github.com/caddyserver/caddy/pull/5022
 // https://github.com/caddyserver/caddy/blob/v2.7.4/modules/caddyhttp/responsewriter.go#L45-L49
 func (srw *sessRW) ReadFrom(src io.Reader) (n int64, err error) {
+	srw.save()
 	return io.Copy(srw.ResponseWriter, src)
 }
 

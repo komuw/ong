@@ -252,6 +252,136 @@ func TestGzip(t *testing.T) {
 		attest.Subsequence(t, strBody, "Welcome to awesome website.")
 	})
 
+	t.Run("body matches Content-Encoding", func(t *testing.T) {
+		t.Parallel()
+
+		msg := strings.Repeat("hello world. ", 50)
+		webm := "\x1A\x45\xDF\xA3webmdata"
+
+		tests := []struct {
+			name     string
+			h        http.HandlerFunc
+			wantCode int
+			wantCE   string
+			wantBody string
+		}{
+			{
+				name: "WriteHeader then Write",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprint(w, msg)
+				},
+				wantCode: http.StatusCreated,
+				wantCE:   thisMiddlewareEncoding,
+				wantBody: msg,
+			},
+			{
+				name: "http.Error",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					http.Error(w, msg, http.StatusBadRequest)
+				},
+				wantCode: http.StatusBadRequest,
+				wantCE:   thisMiddlewareEncoding,
+				wantBody: msg + "\n",
+			},
+			{
+				name: "Flush before Write",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set(contentTypeHeader, "text/plain")
+					w.(http.Flusher).Flush()
+					fmt.Fprint(w, msg)
+				},
+				wantCode: http.StatusOK,
+				wantCE:   thisMiddlewareEncoding,
+				wantBody: msg,
+			},
+			{
+				name: "not compressible then Flush",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set(contentTypeHeader, "video/webm")
+					fmt.Fprint(w, msg)
+					w.(http.Flusher).Flush()
+				},
+				wantCode: http.StatusOK,
+				wantCE:   "",
+				wantBody: msg,
+			},
+			{
+				name: "decision is made once",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, webm)
+					fmt.Fprint(w, msg)
+				},
+				wantCode: http.StatusOK,
+				wantCE:   "",
+				wantBody: webm + msg,
+			},
+			{
+				name: "Write then ReadFrom",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, msg)
+					// struct{ io.Reader } hides the WriteTo method so that io.Copy calls ReadFrom.
+					_, _ = io.Copy(w, struct{ io.Reader }{strings.NewReader(msg)})
+				},
+				wantCode: http.StatusOK,
+				wantCE:   thisMiddlewareEncoding,
+				wantBody: msg + msg,
+			},
+			{
+				name: "ReadFrom",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					_, _ = io.Copy(w, struct{ io.Reader }{strings.NewReader(msg)})
+				},
+				wantCode: http.StatusOK,
+				wantCE:   thisMiddlewareEncoding,
+				wantBody: msg,
+			},
+			{
+				name: "no body",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set(contentTypeHeader, "text/plain")
+					w.WriteHeader(http.StatusNoContent)
+				},
+				wantCode: http.StatusNoContent,
+				wantCE:   "",
+				wantBody: "",
+			},
+			{
+				name: "no write",
+				h: func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set(contentTypeHeader, "text/plain")
+				},
+				wantCode: http.StatusOK,
+				wantCE:   "",
+				wantBody: "",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				ts := httptest.NewServer(gzip(tt.h))
+				t.Cleanup(ts.Close)
+
+				req, err := http.NewRequest(http.MethodGet, ts.URL, nil)
+				attest.Ok(t, err)
+				req.Header.Add(acceptEncodingHeader, "gzip")
+				// Do not let the client decompress the body.
+				c := &http.Client{Transport: &http.Transport{DisableCompression: true}}
+				t.Cleanup(c.CloseIdleConnections)
+				res, err := c.Do(req)
+				attest.Ok(t, err)
+
+				strBody := readBody(t, res)
+
+				attest.Equal(t, res.StatusCode, tt.wantCode)
+				attest.Equal(t, res.Header.Get(contentEncodingHeader), tt.wantCE)
+				attest.Equal(t, strBody, tt.wantBody)
+			})
+		}
+	})
+
 	t.Run("concurrency safe", func(t *testing.T) {
 		t.Parallel()
 
