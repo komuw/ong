@@ -17,8 +17,13 @@ import (
 //   (b) https://github.com/komuw/celery_experiments/blob/77e6090f7adee0cf800ea5575f2cb22bc798753d/limiter/
 
 const (
-	// maxLatencyItems is the number of items past which we have to resize the latencyQueue.
-	maxLatencyItems = 1_000
+	// maxLatencyItems is the maximum number of latency samples that are kept for each loadShedder.
+	// When the queue is full, each new sample replaces the oldest one.
+	// Each sample is 16 bytes, and each item of the slice used for sorting is 8 bytes. So they use 24*maxLatencyItems bytes(96KB).
+	maxLatencyItems = 4096
+	// percentileInterval is how often the percentile is calculated again.
+	// Between calculations, the last result is used. This is so that each request does not sort all the samples.
+	percentileInterval = 1 * time.Second
 
 	retryAfterHeader = "Retry-After"
 
@@ -34,10 +39,6 @@ func loadShedder(
 	loadShedBreachLatency time.Duration,
 	loadShedPercentile float64,
 ) http.HandlerFunc {
-	// lq should not be a global variable, we want it to be per handler.
-	// This is because different handlers(URIs) could have different latencies and we want each to be loadshed independently.
-	lq := newLatencyQueue()
-
 	if loadShedSamplingPeriod < 1*time.Second {
 		loadShedSamplingPeriod = config.DefaultLoadShedSamplingPeriod
 	}
@@ -50,27 +51,16 @@ func loadShedder(
 	if loadShedPercentile < 0 { // zero is a valid user choice.
 		loadShedPercentile = config.DefaultLoadShedPercentile
 	}
-	var (
-		// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
-		retryAfter = loadShedSamplingPeriod + (5 * time.Minute)
-		// resizePeriod is the duration after which we should trim the latencyQueue.
-		// It should always be > loadShedSamplingPeriod
-		// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getPercentile()` will always return zero.
-		resizePeriod = loadShedSamplingPeriod + (3 * time.Minute)
-	)
+
+	// lq should not be a global variable, we want it to be per handler.
+	// This is because different handlers(URIs) could have different latencies and we want each to be loadshed independently.
+	lq := newLatencyQueue(loadShedPercentile, loadShedMinSampleSize, loadShedSamplingPeriod)
+
+	// retryAfter is how long we expect users to retry requests after getting a http 503, loadShedding.
+	retryAfter := loadShedSamplingPeriod + (5 * time.Minute)
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		startReq := time.Now().UTC()
-		defer func() {
-			endReq := time.Now().UTC()
-			durReq := endReq.Sub(startReq)
-			if !strings.HasPrefix(r.URL.Path, pprofEndpoints) {
-				// Ignore latencies of pprof endpoints.
-				lq.add(durReq)
-			}
-
-			lq.reSize(endReq, resizePeriod)
-		}()
+		startReq := time.Now()
 
 		sendProbe := false
 		{
@@ -80,7 +70,7 @@ func loadShedder(
 			sendProbe = mathRand.IntN(100) == 1 // let 1% of requests through. NB: Intn(100) is `0-99` ie, 100 is not included.
 		}
 
-		pctl := lq.getPercentile(loadShedPercentile, loadShedMinSampleSize)
+		pctl := lq.getPercentile(startReq)
 		if pctl.Milliseconds() > loadShedBreachLatency.Milliseconds() && !sendProbe {
 			// drop request
 			err := fmt.Errorf("ong/middleware/loadshed: server is overloaded, retry after %s", retryAfter)
@@ -94,76 +84,128 @@ func loadShedder(
 			return
 		}
 
+		// This is after the request could have been shed. A request that is shed takes about 0ms; if it was
+		// added as a sample, it would make the percentile lower and stop the load shedding even if the server is still slow.
+		defer func() {
+			if !strings.HasPrefix(r.URL.Path, pprofEndpoints) {
+				// Ignore latencies of pprof endpoints.
+				endReq := time.Now()
+				lq.add(endReq, endReq.Sub(startReq))
+			}
+		}()
+
 		wrappedHandler.ServeHTTP(w, r)
 	}
 }
 
+// latencyQueue keeps the latencies of the latest requests(see maxLatencyItems), and calculates a percentile of them.
+//
+// It has a fixed size(a ring buffer), so its memory use and the time to sort it have a limit.
+// The percentile is calculated at most one time in each percentileInterval. Each request uses the last result.
+// Only the samples that were added in the last samplingPeriod are used.
 type latencyQueue struct {
-	mu sync.Mutex // protects sl and lastResize
-	/*
-		unsafe.Sizeof(sl) == 8bytes.
-		latency is how long the operation took(ie latency)
+	// pctl is the percentile to calculate. It is in the range 0 to 100.
+	pctl float64
+	// minSampleSize is the minimum number of samples(in the last samplingPeriod) that are necessary to calculate the percentile.
+	minSampleSize int
+	// samplingPeriod is the age after which a sample is not used.
+	samplingPeriod time.Duration
 
-		We do not need to have a field specifying when the latency measurement was taken.
-		Since [latencyQueue.reSize] is called oftenly; all the latencies in the queue will
-		aways be within `loadShedSamplingPeriod` give or take.
-	*/
+	mu sync.Mutex // protects all the fields below.
+	// buf is a ring buffer of samples. len(buf) == max(maxLatencyItems, minSampleSize).
 	// +checklocks:mu
-	sl []int64
-	// lastResize is the time at which [latencyQueue.reSize] last checked the size of sl.
+	buf []sample
+	// next is the index in buf where the next sample is written.
 	// +checklocks:mu
-	lastResize time.Time
+	next int
+	// full is true after buf has been filled one time. Then all the items in buf are samples.
+	// +checklocks:mu
+	full bool
+	// scratch is re-used to sort the samples, so that a calculation does not allocate memory.
+	// +checklocks:mu
+	scratch []int64
+	// result is the last calculated percentile.
+	// +checklocks:mu
+	result time.Duration
+	// resultAt is the time at which result was calculated.
+	// +checklocks:mu
+	resultAt time.Time
 }
 
-func newLatencyQueue() *latencyQueue {
-	return &latencyQueue{sl: []int64{}, lastResize: time.Now().UTC()}
+// sample is the latency of one request.
+type sample struct {
+	// atMs is the time(unix milliseconds) at which the sample was added.
+	atMs int64
+	// latencyMs is the latency of the request in milliseconds.
+	latencyMs int64
 }
 
-func (lq *latencyQueue) add(durReq time.Duration) {
-	lq.mu.Lock()
-	lq.sl = append(lq.sl, durReq.Milliseconds())
-	lq.mu.Unlock()
+func newLatencyQueue(pctl float64, minSampleSize int, samplingPeriod time.Duration) *latencyQueue {
+	// The queue should be able to keep at least minSampleSize samples, otherwise the percentile would never be calculated.
+	size := max(maxLatencyItems, minSampleSize)
+	return &latencyQueue{
+		pctl:           pctl,
+		minSampleSize:  minSampleSize,
+		samplingPeriod: samplingPeriod,
+		buf:            make([]sample, size),
+		scratch:        make([]int64, 0, size),
+	}
 }
 
-// reSize trims the latencyQueue if more than resizePeriod has passed since the last call that did the check.
-func (lq *latencyQueue) reSize(now time.Time, resizePeriod time.Duration) {
+// add adds a sample that was taken at time now. If the queue is full, the sample replaces the oldest one.
+func (lq *latencyQueue) add(now time.Time, durReq time.Duration) {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
-	// we do not want to reduce size of `lq` before a period `> loadShedSamplingPeriod` otherwise `lq.getPercentile()` will always return zero.
-	if now.Sub(lq.lastResize) <= resizePeriod {
-		return
-	}
-	lq.lastResize = now
-
-	size := len(lq.sl)
-	if size > maxLatencyItems {
-		// Each `latency` struct is 8bytes. So we can afford to have upto 1_000(8KB) items.
-		half := size / 2
-		lq.sl = lq.sl[half:] // retain the latest half.
+	lq.buf[lq.next] = sample{atMs: now.UnixMilli(), latencyMs: durReq.Milliseconds()}
+	lq.next = (lq.next + 1) % len(lq.buf)
+	if lq.next == 0 {
+		lq.full = true
 	}
 }
 
-func (lq *latencyQueue) getPercentile(pctl float64, loadShedMinSampleSize int) (latency time.Duration) {
+// getPercentile returns the lq.pctl percentile of the samples that were added in the last lq.samplingPeriod.
+// It returns zero if there are fewer than lq.minSampleSize of those samples.
+// It calculates the percentile again only if more than percentileInterval has passed since the last calculation.
+func (lq *latencyQueue) getPercentile(now time.Time) time.Duration {
 	lq.mu.Lock()
 	defer lq.mu.Unlock()
 
-	lenSl := len(lq.sl)
-	if lenSl < loadShedMinSampleSize {
-		// the number of requests in the last `loadShedSamplingPeriod` seconds is less than
-		// is neccessary to make a decision
-		return 0 * time.Millisecond
+	if !lq.resultAt.IsZero() && now.Sub(lq.resultAt) < percentileInterval {
+		return lq.result
+	}
+	lq.resultAt = now
+
+	n := lq.next
+	if lq.full {
+		n = len(lq.buf)
 	}
 
-	return time.Duration(percentile(lq.sl, pctl, lenSl)) * time.Millisecond
+	// Copy the latencies, so that the order of samples in buf(oldest to newest) does not change when they are sorted.
+	oldest := now.Add(-lq.samplingPeriod).UnixMilli()
+	lq.scratch = lq.scratch[:0]
+	for _, s := range lq.buf[:n] {
+		if s.atMs >= oldest {
+			lq.scratch = append(lq.scratch, s.latencyMs)
+		}
+	}
+
+	if len(lq.scratch) < lq.minSampleSize {
+		// the number of samples in the last samplingPeriod is less than is necessary to make a decision.
+		lq.result = 0
+		return lq.result
+	}
+
+	slices.Sort(lq.scratch)
+	lq.result = time.Duration(percentile(lq.scratch, lq.pctl)) * time.Millisecond
+
+	return lq.result
 }
 
-func percentile(N []int64, pctl float64, lenSl int) int64 {
-	newN := slices.Clone(N)
-
-	slices.Sort(newN)
-	index := int((pctl / 100) * float64(lenSl))
-	// When pctl is 100, index is equal to lenSl. That is out of range, so use the last item(the largest latency).
-	index = min(index, lenSl-1)
-	return newN[index]
+// percentile returns the pctl percentile of sorted. sorted should be sorted in increasing order and should not be empty.
+func percentile(sorted []int64, pctl float64) int64 {
+	index := int((pctl / 100) * float64(len(sorted)))
+	// When pctl is 100, index is equal to len(sorted). That is out of range, so use the last item(the largest latency).
+	index = min(index, len(sorted)-1)
+	return sorted[index]
 }
