@@ -44,6 +44,7 @@ const (
 	// If we ever implement this, read; https://jub0bs.com/posts/2023-02-08-fearless-cors/#3-provide-support-for-private-network-access
 	acrpnHeader = "Access-Control-Request-Private-Network"
 	_           = acrpnHeader
+	varyHeader  = "Vary"
 	// acmaHeader stores how long(in seconds) the results of a preflight request can be cached.
 	acmaHeader = "Access-Control-Max-Age"
 	// allows a server to indicate which response headers should be made available to scripts running in the browser for cross-origin-requests.
@@ -55,7 +56,7 @@ const (
 
 // cors is a middleware to implement Cross-Origin Resource Sharing support.
 //
-// If allowedOrigins is nil, domain and its www variant are used. You can also use * to allow all.
+// If allowedOrigins is nil, domain and its www variant are used. You can also use * on its own to allow all.
 // If allowedMethods is nil, "GET", "POST", "HEAD" are allowed. Use * to allow all.
 // If allowedHeaders is nil, "Origin", "Accept", "Content-Type", "X-Requested-With" are allowed. Use * to allow all.
 //
@@ -70,7 +71,7 @@ func cors(
 	domain string,
 ) http.HandlerFunc {
 	// Validation of arguments should already have happened in `github.com/komuw/ong/config`
-	allowedOrigins, allowedWildcardOrigins := getOrigins(allowedOrigins, domain)
+	allowedOrigins = getOrigins(allowedOrigins, domain)
 	allowedMethods = getMethods(allowedMethods)
 	allowedHeaders = getHeaders(allowedHeaders)
 
@@ -85,14 +86,14 @@ func cors(
 				- https://jub0bs.com/posts/2023-02-08-fearless-cors/#4-categorise-requests-correctly
 			*/
 			// handle preflight request
-			handlePreflight(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowedHeaders, allowCredentials, int(corsCacheDuration.Seconds()))
+			handlePreflight(w, r, allowedOrigins, allowedMethods, allowedHeaders, allowCredentials, int(corsCacheDuration.Seconds()))
 			// Preflight requests are standalone and should stop the chain as some other
 			// middleware may not handle OPTIONS requests correctly. One typical example
 			// is authentication middleware ; OPTIONS requests won't carry authentication headers.
 			w.WriteHeader(http.StatusNoContent)
 		} else {
 			// handle actual request
-			handleActualRequest(w, r, allowedOrigins, allowedWildcardOrigins, allowedMethods, allowCredentials)
+			handleActualRequest(w, r, allowedOrigins, allowedMethods, allowCredentials)
 			wrappedHandler.ServeHTTP(w, r)
 		}
 	}
@@ -102,7 +103,6 @@ func handlePreflight(
 	w http.ResponseWriter,
 	r *http.Request,
 	allowedOrigins []string,
-	allowedWildcardOrigins []wildcard,
 	allowedMethods []string,
 	allowedHeaders []string,
 	allowCredentials bool,
@@ -130,7 +130,7 @@ func handlePreflight(
 		return
 	}
 
-	allow, allowAll := isOriginAllowed(origin, allowedOrigins, allowedWildcardOrigins)
+	allow, allowAll := isOriginAllowed(origin, allowedOrigins)
 	if !allow {
 		return
 	}
@@ -190,7 +190,6 @@ func handleActualRequest(
 	w http.ResponseWriter,
 	r *http.Request,
 	allowedOrigins []string,
-	allowedWildcardOrigins []wildcard,
 	allowedMethods []string,
 	allowCredentials bool,
 ) {
@@ -205,7 +204,7 @@ func handleActualRequest(
 		return
 	}
 
-	allow, allowAll := isOriginAllowed(origin, allowedOrigins, allowedWildcardOrigins)
+	allow, allowAll := isOriginAllowed(origin, allowedOrigins)
 	if !allow {
 		return
 	}
@@ -228,22 +227,12 @@ func handleActualRequest(
 	}
 }
 
-type wildcard struct {
-	prefix string
-	suffix string
-	len    int
-}
-
-func (w wildcard) match(s string) bool {
-	return len(s) >= w.len &&
-		strings.HasPrefix(s, w.prefix) &&
-		strings.HasSuffix(s, w.suffix)
-}
-
+// isOriginAllowed reports whether origin is in allowedOrigins.
+// `github.com/komuw/ong/config` makes sure that the wildcard "*" can only be used on its own,
+// so all other allowedOrigins are compared exactly.
 func isOriginAllowed(
 	origin string,
 	allowedOrigins []string,
-	allowedWildcardOrigins []wildcard,
 ) (allow, allowAll bool) {
 	if slices.Contains(allowedOrigins, "*") {
 		return true, true
@@ -252,12 +241,6 @@ func isOriginAllowed(
 	origin = strings.ToLower(origin)
 	if slices.Contains(allowedOrigins, origin) {
 		return true, false
-	}
-
-	for _, w := range allowedWildcardOrigins {
-		if w.match(origin) {
-			return true, false
-		}
 	}
 
 	return false, false
@@ -316,7 +299,9 @@ func areHeadersAllowed(reqHeader string, allowedHeaders []string) bool {
 	return true
 }
 
-func getOrigins(ao []string, domain string) (allowedOrigins []string, allowedWildcardOrigins []wildcard) {
+// getOrigins returns the allowedOrigins that are used by the cors and csrf middlewares.
+// If ao is empty, domain and its www variant are used. Otherwise, ao is used in lower case.
+func getOrigins(ao []string, domain string) []string {
 	if len(ao) == 0 {
 		if strings.Contains(domain, "*") { // `acme.Validate(domain)` should have been called prior.
 			domain = domain[2:] // remove the `*` and `.`
@@ -325,29 +310,14 @@ func getOrigins(ao []string, domain string) (allowedOrigins []string, allowedWil
 		if !strings.HasPrefix(domain, "www") && strings.Count(domain, ".") == 1 {
 			domains = append(domains, "https://www."+domain) // as a special case, add `www`
 		}
-		return domains, []wildcard{}
+		return domains
 	}
 
 	canon := []string{}
 	for _, v := range ao {
 		canon = append(canon, strings.ToLower(v))
 	}
-	allowedOrigins = canon
-
-	for _, origin := range allowedOrigins {
-		if before, after, ok := strings.Cut(origin, "*"); ok {
-			// Split the origin in two: start and end string without the *
-			prefix := before
-			suffix := after
-			w := wildcard{
-				prefix: prefix,
-				suffix: suffix,
-				len:    len(prefix) + len(suffix),
-			}
-			allowedWildcardOrigins = append(allowedWildcardOrigins, w)
-		}
-	}
-	return allowedOrigins, allowedWildcardOrigins
+	return canon
 }
 
 func getMethods(am []string) []string {

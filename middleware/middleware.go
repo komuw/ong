@@ -35,7 +35,7 @@ const (
 	// The logger & recoverer middleware will log the value of this header if it is set.
 	//
 	// An example, is when the Get middleware fails because it has been called with the wrong http method.
-	// Or when the csrf middleware fails because a csrf token was not found for POST/DELETE/etc requests.
+	// Or when the csrf middleware rejects a cross-origin POST/DELETE/etc request.
 	ongMiddlewareErrorHeader = "Ong-Middleware-Error"
 
 	allowHeader = "Allow"
@@ -78,9 +78,6 @@ func allDefaultMiddlewares(
 	allowCredentials := o.AllowCredentials
 	corsCacheDuration := o.CorsCacheDuration
 
-	// csrf
-	csrfTokenDuration := o.CsrfTokenDuration
-
 	// session
 	sessionCookieDuration := o.SessionCookieDuration
 	SessionAntiReplayFunc := o.SessionAntiReplayFunc
@@ -99,7 +96,7 @@ func allDefaultMiddlewares(
 	// 11. securityHeaders since we want some minimum level of security.
 	// 12. csp since we want to set Content-Security-Policy and make its nonce available to inner middlewares.
 	// 13. cors since we might get pre-flight requests and we don't want those to go through all the middlewares for performance reasons.
-	// 14. csrf since this one is a bit more involved perf-wise.
+	// 14. csrf since it needs to come after cors handles pre-flight requests.
 	// 15. Gzip since it is very involved perf-wise.
 	// 16. reloadProtector, ideally I feel like it should come earlier but I'm yet to figure out where.
 	// 17. session since we want sessions to saved as soon as possible.
@@ -153,8 +150,8 @@ func allDefaultMiddlewares(
 																SessionAntiReplayFunc,
 															),
 															// ),
-															string(secretKey),
-															csrfTokenDuration,
+															allowedOrigins,
+															domain,
 														),
 														allowedOrigins,
 														allowedMethods,

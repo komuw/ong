@@ -145,7 +145,7 @@ func (a app) check(msg string) http.HandlerFunc {
 }
 
 // login handler showcases the use of:
-// - csrf tokens.
+// - csrf protection(no tokens are needed).
 // - csp tokens.
 // - encrypted cookies
 // - hashing passwords.
@@ -195,8 +195,6 @@ func (a app) login(secretKey string) http.HandlerFunc {
 	<input type="text" id="email" name="email"><br>
 	<label>Password:</label><br>
 	<input type="password" id="password" name="password"><br>
-	
-	<input type="hidden" id="{{.CsrfTokenName}}" name="{{.CsrfTokenName}}" value="{{.CsrfTokenValue}}"><br>
 	<input type="submit">
 	</form>
 
@@ -216,13 +214,9 @@ func (a app) login(secretKey string) http.HandlerFunc {
 
 		if r.Method != http.MethodPost {
 			data := struct {
-				CsrfTokenName  string
-				CsrfTokenValue string
-				CspNonceValue  string
+				CspNonceValue string
 			}{
-				CsrfTokenName:  middleware.CsrfTokenFormName,
-				CsrfTokenValue: middleware.GetCsrfToken(r.Context()),
-				CspNonceValue:  middleware.GetCspNonce(r.Context()),
+				CspNonceValue: middleware.GetCspNonce(r.Context()),
 			}
 
 			if errE := tmpl.Execute(w, data); errE != nil {

@@ -65,8 +65,6 @@ func ExampleNew() {
 		false,
 		// Cache CORs preflight requests for 1day.
 		24*time.Hour,
-		// Expire csrf cookie after 3days.
-		3*24*time.Hour,
 		// Expire session cookie after 6hours.
 		6*time.Hour,
 		// Use a given header to try and mitigate against replay-attacks.

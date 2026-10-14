@@ -55,7 +55,6 @@ func login() http.HandlerFunc {
 	<label>First Name:</label><br>
 	<input type="text" id="firstName" name="firstName"><br>
 
-	<input type="hidden" id="{{.CsrfTokenName}}" name="{{.CsrfTokenName}}" value="{{.CsrfTokenValue}}"><br>
 	<input type="submit">
 	</form>
 
@@ -73,13 +72,9 @@ func login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			data := struct {
-				CsrfTokenName  string
-				CsrfTokenValue string
-				CspNonceValue  string
+				CspNonceValue string
 			}{
-				CsrfTokenName:  CsrfTokenFormName,
-				CsrfTokenValue: GetCsrfToken(r.Context()),
-				CspNonceValue:  GetCspNonce(r.Context()),
+				CspNonceValue: GetCspNonce(r.Context()),
 			}
 			if err = tmpl.Execute(w, data); err != nil {
 				panic(err)

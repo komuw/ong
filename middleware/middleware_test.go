@@ -162,34 +162,6 @@ func TestAllMiddleware(t *testing.T) {
 		},
 	}
 
-	csrfToken := ""
-	{
-		// non-safe http methods(like POST) require a server-known csrf token;
-		// otherwise it fails with http 403
-		// so here we make a http GET so that we can have a csrf token.
-		httpsPort := tst.GetPort()
-		domain := "localhost"
-		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
-		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
-		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
-		attest.Ok(t, err)
-		defer ts.Close()
-
-		res, err := client.Get(ts.URL)
-		attest.Ok(t, err)
-
-		rb, err := io.ReadAll(res.Body)
-		attest.Ok(t, err)
-		t.Cleanup(func() {
-			res.Body.Close()
-		})
-
-		csrfToken = res.Header.Get(CsrfHeader)
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.NotZero(t, csrfToken)
-		attest.Equal(t, string(rb), msg)
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -203,12 +175,8 @@ func TestAllMiddleware(t *testing.T) {
 			attest.Ok(t, err)
 			defer ts.Close()
 
-			// Use the domain, not ts.URL(an IP address). Otherwise the request is redirected to the domain,
-			// and the http client removes the cookie header on a redirect to a different host.
-			req, err := http.NewRequest(tt.httpMethod, fmt.Sprintf("https://%s:%d", domain, httpsPort), nil)
+			req, err := http.NewRequest(tt.httpMethod, ts.URL, nil)
 			attest.Ok(t, err)
-			req.AddCookie(&http.Cookie{Name: "__Host-" + csrfCookieName, Value: csrfToken})
-			req.Header.Set(CsrfHeader, csrfToken)
 			res, err := client.Do(req)
 			attest.Ok(t, err)
 
@@ -262,33 +230,33 @@ func TestMiddlewareServer(t *testing.T) {
 	t.Run("http POST succeds", func(t *testing.T) {
 		t.Parallel()
 
-		csrfToken := ""
-		{
-			// non-safe http methods(like POST) require a server-known csrf token;
-			// otherwise it fails with http 403
-			// so here we make a http GET so that we can have a csrf token.
-			httpsPort := tst.GetPort()
-			domain := "localhost"
-			o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
-			msg := "hey"
-			wrappedHandler := All(someMiddlewareTestHandler(msg), o)
+		msg := "hello world"
+		httpsPort := tst.GetPort()
+		domain := "localhost"
+		o := config.WithOpts(domain, httpsPort, tst.SecretKey(), config.DirectIpStrategy, l)
+		wrappedHandler := All(someMiddlewareTestHandler(msg), o)
 
-			ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
-			attest.Ok(t, err)
-			defer ts.Close()
+		ts, err := tst.TlsServer(wrappedHandler, domain, httpsPort)
+		attest.Ok(t, err)
+		defer ts.Close()
 
-			res, err := client.Get(ts.URL)
-			attest.Ok(t, err)
+		postMsg := "This is a post message"
+		req, err := http.NewRequest(http.MethodPost, ts.URL, strings.NewReader(postMsg))
+		attest.Ok(t, err)
+		req.Header.Set(secFetchSiteHeader, "same-origin")
+		res, err := client.Do(req)
+		attest.Ok(t, err)
 
-			rb, err := io.ReadAll(res.Body)
-			attest.Ok(t, err)
-			defer res.Body.Close()
+		rb, err := io.ReadAll(res.Body)
+		attest.Ok(t, err)
+		defer res.Body.Close()
 
-			csrfToken = res.Header.Get(CsrfHeader)
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.NotZero(t, csrfToken)
-			attest.Equal(t, string(rb), msg)
-		}
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, string(rb), postMsg)
+	})
+
+	t.Run("cross-site http POST fails", func(t *testing.T) {
+		t.Parallel()
 
 		msg := "hello world"
 		httpsPort := tst.GetPort()
@@ -301,12 +269,10 @@ func TestMiddlewareServer(t *testing.T) {
 		defer ts.Close()
 
 		postMsg := "This is a post message"
-		// Use the domain, not ts.URL(an IP address). Otherwise the request is redirected to the domain,
-		// and the http client removes the cookie header on a redirect to a different host.
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s:%d", domain, httpsPort), strings.NewReader(postMsg))
+		req, err := http.NewRequest(http.MethodPost, ts.URL, strings.NewReader(postMsg))
 		attest.Ok(t, err)
-		req.AddCookie(&http.Cookie{Name: "__Host-" + csrfCookieName, Value: csrfToken})
-		req.Header.Set(CsrfHeader, csrfToken)
+		req.Header.Set(secFetchSiteHeader, "cross-site")
+		req.Header.Set(originHeader, "https://attacker.example")
 		res, err := client.Do(req)
 		attest.Ok(t, err)
 
@@ -314,8 +280,9 @@ func TestMiddlewareServer(t *testing.T) {
 		attest.Ok(t, err)
 		defer res.Body.Close()
 
-		attest.Equal(t, res.StatusCode, http.StatusOK)
-		attest.Equal(t, string(rb), postMsg)
+		attest.Equal(t, res.StatusCode, http.StatusForbidden)
+		attest.NotZero(t, res.Header.Get(ongMiddlewareErrorHeader))
+		attest.False(t, strings.Contains(string(rb), postMsg))
 	})
 
 	t.Run("acme succeds", func(t *testing.T) {
@@ -496,7 +463,6 @@ func BenchmarkAllMiddlewares(b *testing.B) {
 		nil,
 		false,
 		config.DefaultCorsCacheDuration,
-		config.DefaultCsrfCookieDuration,
 		config.DefaultSessionCookieDuration,
 		config.DefaultSessionAntiReplayFunc,
 		20*1024*1024,

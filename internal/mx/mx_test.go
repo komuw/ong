@@ -140,26 +140,8 @@ func TestMux(t *testing.T) {
 		attest.Ok(t, errTlS)
 		defer ts.Close()
 
-		csrfToken := ""
-		{
-			// non-safe http methods(like POST) require a server-known csrf token;
-			// otherwise it fails with http 403
-			// so here we make a http GET so that we can have a csrf token.
-			res, errG := client.Get(ts.URL + uri)
-			attest.Ok(t, errG)
-			defer res.Body.Close()
-
-			csrfToken = res.Header.Get(middleware.CsrfHeader)
-			attest.Equal(t, res.StatusCode, http.StatusOK)
-			attest.NotZero(t, csrfToken)
-		}
-
-		// Use the domain, not ts.URL(an IP address). Otherwise the request is redirected to the domain,
-		// and the http client removes the cookie header on a redirect to a different host.
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://%s:%d%s", domain, httpsPort, uri), nil)
+		req, err := http.NewRequest(http.MethodPost, ts.URL+uri, nil)
 		attest.Ok(t, err)
-		req.AddCookie(&http.Cookie{Name: "__Host-" + middleware.CsrfTokenFormName, Value: csrfToken})
-		req.Header.Set(middleware.CsrfHeader, csrfToken)
 		res, err := client.Do(req)
 		attest.Ok(t, err)
 		defer res.Body.Close()
@@ -458,7 +440,7 @@ func TestMux(t *testing.T) {
 			rStr := errM.Error()
 			attest.Subsequence(t, rStr, "would conflict")
 			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:28")  // location where `someMuxHandler` is declared.
-			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:450") // location where the other handler is declared.
+			attest.Subsequence(t, rStr, "ong/internal/mx/mx_test.go:432") // location where the other handler is declared.
 		})
 	})
 }

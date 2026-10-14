@@ -74,8 +74,7 @@ func main() {
 func hello(msg string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := middleware.GetCspNonce(r.Context())
-		csrfToken := middleware.GetCsrfToken(r.Context())
-		fmt.Printf("hello called cspNonce: %s, csrfToken: %s", cspNonce, csrfToken)
+		fmt.Printf("hello called cspNonce: %s", cspNonce)
 
 		// use msg, which is a dependency specific to this handler
 		fmt.Fprint(w, msg)

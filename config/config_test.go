@@ -61,8 +61,6 @@ func validOpts(t *testing.T) Opts {
 		false,
 		// Cache CORs preflight requests for 1day.
 		24*time.Hour,
-		// Expire csrf cookie after 3days.
-		3*24*time.Hour,
 		// Expire session cookie after 6hours.
 		6*time.Hour,
 		// Use a given header to try and mitigate against replay-attacks.
@@ -178,7 +176,6 @@ func TestNewMiddlewareOpts(t *testing.T) {
 				opt.AllowedHeaders,
 				opt.AllowCredentials,
 				opt.CorsCacheDuration,
-				opt.CsrfTokenDuration,
 				opt.SessionCookieDuration,
 				opt.SessionAntiReplayFunc,
 			)
@@ -240,7 +237,6 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					nil,
 					false,
 					DefaultCorsCacheDuration,
-					DefaultCsrfCookieDuration,
 					DefaultSessionCookieDuration,
 					DefaultSessionAntiReplayFunc,
 				)
@@ -264,7 +260,6 @@ func TestNewMiddlewareOptsDomain(t *testing.T) {
 					nil,
 					false,
 					DefaultCorsCacheDuration,
-					DefaultCsrfCookieDuration,
 					DefaultSessionCookieDuration,
 					DefaultSessionAntiReplayFunc,
 				)
@@ -316,7 +311,6 @@ func TestOpts(t *testing.T) {
 			AllowedMethods:         []string{},
 			AllowedHeaders:         []string{},
 			CorsCacheDuration:      DefaultCorsCacheDuration,
-			CsrfTokenDuration:      DefaultCsrfCookieDuration,
 			SessionCookieDuration:  DefaultSessionCookieDuration,
 			SessionAntiReplayFunc:  DefaultSessionAntiReplayFunc,
 
