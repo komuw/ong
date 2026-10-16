@@ -3,6 +3,9 @@
 Most recent version is listed first.  
 
 
+# v0.1.23
+- ong/middleware: Redirect www to bare variant if bare is configured domain. And vice versa : https://github.com/komuw/dushed/commit/e56bcbce86546e3acaf36b378e96a99e916bd4b4 
+
 # v0.1.22
 - ong/middleware: Fix bugs in implementation of http.ResponseWriter: https://github.com/komuw/ong/pull/505 
 - ong/middleware: Fix a number of bugs: https://github.com/komuw/ong/pull/506   
