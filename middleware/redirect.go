@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/netip"
 	"strings"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 // httpsRedirector is a middleware that redirects http requests to https.
@@ -16,8 +18,11 @@ import (
 //
 // [DNS rebinding]: https://en.wikipedia.org/wiki/DNS_rebinding
 func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain string) http.HandlerFunc {
+	alternateDomain, hasAlternateDomain := wwwDomain(domain)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		host, _ := getHostPort(r.Host)
+		isAlternateDomain := hasAlternateDomain && host == alternateDomain
 
 		/*
 		   The protections should happen in the order listed.
@@ -65,7 +70,7 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			// todo: before calling `isDomainOrSubdomain` we need to make sure that both args are already be in canonical form.
 			// see; https://github.com/golang/go/blob/master/src/net/http/client.go#L1001-L1003
 			// We know that domain is kinda already canonical since [New] validates that. But host is not.
-			if !isDomainOrSubdomain(host, domain) {
+			if !isDomainOrSubdomain(host, domain) && !isAlternateDomain {
 				err := fmt.Errorf("ong/middleware/redirect: the HOST http header has an unexpected value: %s", host)
 				w.Header().Set(ongMiddlewareErrorHeader, err.Error())
 				http.Error(
@@ -77,7 +82,19 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 			}
 		}
 
-		{ // 3. http -> https redirect.
+		{ // 3. www variant -> configured domain redirect.
+			if isAlternateDomain {
+				url := r.URL
+				url.Scheme = "https"
+				url.Host = joinHostPort(domain, fmt.Sprint(httpsPort))
+				path := url.String()
+
+				http.Redirect(w, r, path, http.StatusPermanentRedirect)
+				return
+			}
+		}
+
+		{ // 4. http -> https redirect.
 			isTls := strings.EqualFold(r.URL.Scheme, "https") || r.TLS != nil
 			if !isTls {
 				url := r.URL
@@ -92,6 +109,24 @@ func httpsRedirector(wrappedHandler http.Handler, httpsPort uint16, domain strin
 
 		wrappedHandler.ServeHTTP(w, r)
 	}
+}
+
+// wwwDomain returns the www or bare variant of domain.
+func wwwDomain(domain string) (string, bool) {
+	registrableDomain, err := publicsuffix.EffectiveTLDPlusOne(domain)
+	if err != nil {
+		return "", false
+	}
+
+	if domain == registrableDomain {
+		return "www." + domain, true
+	}
+
+	if domain == "www."+registrableDomain {
+		return registrableDomain, true
+	}
+
+	return "", false
 }
 
 // joinHostPort is like `net.JoinHostPort` except suited for this package.

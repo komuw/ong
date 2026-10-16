@@ -81,6 +81,130 @@ func TestHttpsRedirector(t *testing.T) {
 		attest.Equal(t, res.Header.Get(locationHeader), "https://api.localhost"+"/someUri")
 	})
 
+	t.Run("www variant is redirected to configured domain", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name             string
+			domain           string
+			host             string
+			httpsPort        uint16
+			isTLS            bool
+			expectedLocation string
+		}{
+			{
+				name:             "bare domain is canonical over http",
+				domain:           "example.com",
+				host:             "www.example.com",
+				httpsPort:        443,
+				isTLS:            false,
+				expectedLocation: "https://example.com/someUri?name=value",
+			},
+			{
+				name:             "bare domain is canonical over https",
+				domain:           "example.com",
+				host:             "www.example.com",
+				httpsPort:        443,
+				isTLS:            true,
+				expectedLocation: "https://example.com/someUri?name=value",
+			},
+			{
+				name:             "www domain is canonical over http",
+				domain:           "www.example.com",
+				host:             "example.com",
+				httpsPort:        8443,
+				isTLS:            false,
+				expectedLocation: "https://www.example.com:8443/someUri?name=value",
+			},
+			{
+				name:             "www domain is canonical over https",
+				domain:           "www.example.com",
+				host:             "example.com",
+				httpsPort:        443,
+				isTLS:            true,
+				expectedLocation: "https://www.example.com/someUri?name=value",
+			},
+			{
+				name:             "multi-part suffix domain",
+				domain:           "example.co.uk",
+				host:             "www.example.co.uk",
+				httpsPort:        443,
+				isTLS:            true,
+				expectedLocation: "https://example.co.uk/someUri?name=value",
+			},
+			{
+				name:             "multi-part suffix www domain",
+				domain:           "www.example.co.uk",
+				host:             "example.co.uk",
+				httpsPort:        443,
+				isTLS:            true,
+				expectedLocation: "https://www.example.co.uk/someUri?name=value",
+			},
+			{
+				name:             "domain beginning with www",
+				domain:           "wwwfoo.com",
+				host:             "www.wwwfoo.com",
+				httpsPort:        443,
+				isTLS:            true,
+				expectedLocation: "https://wwwfoo.com/someUri?name=value",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				wrappedHandler := httpsRedirector(
+					someHttpsRedirectorHandler("hello"),
+					tt.httpsPort,
+					tt.domain,
+				)
+
+				rec := httptest.NewRecorder()
+				req := httptest.NewRequest(
+					http.MethodPost,
+					"/someUri?name=value",
+					strings.NewReader("body"),
+				)
+				req.Host = tt.host
+				if tt.isTLS {
+					req.TLS = &tls.ConnectionState{}
+				}
+
+				wrappedHandler.ServeHTTP(rec, req)
+
+				res := rec.Result()
+				defer res.Body.Close()
+
+				attest.Equal(t, res.StatusCode, http.StatusPermanentRedirect)
+				attest.Equal(t, res.Header.Get(locationHeader), tt.expectedLocation)
+			})
+		}
+	})
+
+	t.Run("www variant does not allow sibling domains", func(t *testing.T) {
+		t.Parallel()
+
+		wrappedHandler := httpsRedirector(
+			someHttpsRedirectorHandler("hello"),
+			443,
+			"www.example.com",
+		)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		req.Host = "api.example.com"
+		req.TLS = &tls.ConnectionState{}
+
+		wrappedHandler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusNotFound)
+		attest.Zero(t, res.Header.Get(locationHeader))
+	})
+
 	t.Run("post is redirected to https", func(t *testing.T) {
 		t.Parallel()
 

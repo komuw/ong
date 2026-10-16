@@ -386,6 +386,59 @@ func TestHostWhitelist(t *testing.T) {
 		}
 	})
 
+	t.Run("www domain also allows bare domain", func(t *testing.T) {
+		t.Parallel()
+
+		policy, errW := hostWhitelist("www.example.com")
+		attest.Ok(t, errW)
+
+		tt := []struct {
+			host  string
+			allow bool
+		}{
+			{"www.example.com", true},
+			{"WWW.EXAMPLE.COM", true},
+			{"example.com", true},
+			{"EXAMPLE.COM", true},
+			//
+			{"api.example.com", false},
+			{"one.www.example.com", false},
+			{"example.org", false},
+			{"www.example.org", false},
+			{"dummy", false},
+		}
+
+		for i, test := range tt {
+			err := policy(test.host)
+			if err != nil && test.allow {
+				t.Errorf("%d: policy(%q): %v; want nil", i, test.host, err)
+			}
+			if err == nil && !test.allow {
+				t.Errorf("%d: policy(%q): nil; want an error", i, test.host)
+			}
+		}
+	})
+
+	t.Run("registrable domain variants", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			domain          string
+			alternateDomain string
+		}{
+			{domain: "example.co.uk", alternateDomain: "www.example.co.uk"},
+			{domain: "www.example.co.uk", alternateDomain: "example.co.uk"},
+			{domain: "wwwfoo.com", alternateDomain: "www.wwwfoo.com"},
+		}
+
+		for _, tt := range tests {
+			policy, err := hostWhitelist(tt.domain)
+			attest.Ok(t, err)
+			attest.Ok(t, policy(tt.domain))
+			attest.Ok(t, policy(tt.alternateDomain))
+		}
+	})
+
 	t.Run("sub-domain", func(t *testing.T) {
 		t.Parallel()
 
@@ -402,6 +455,7 @@ func TestHostWhitelist(t *testing.T) {
 			//
 			{"example.com", false},
 			{"www.example.com", false},
+			{"www.api.example.com", false},
 			{"one.example.com", false},
 			{"one.abcd.example.com", false},
 			//

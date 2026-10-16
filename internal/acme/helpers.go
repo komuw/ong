@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"golang.org/x/net/idna"
+	"golang.org/x/net/publicsuffix"
 )
 
 // diskCachedir is directory for acme configs like certificates.
@@ -380,10 +381,10 @@ func hostWhitelist(hosts ...string) (hostPolicy, error) {
 		return wildcardHostWhitelist(hosts[0])
 	}
 
-	// As a special case, add `www`
+	// As a special case, add the www or bare variant.
 	for h := range whitelist {
-		if !strings.HasPrefix(h, "www") && strings.Count(h, ".") == 1 {
-			whitelist["www."+h] = true
+		if alternateDomain, ok := wwwDomain(h); ok {
+			whitelist[alternateDomain] = true
 		}
 	}
 
@@ -394,6 +395,24 @@ func hostWhitelist(hosts ...string) (hostPolicy, error) {
 		}
 		return nil
 	}, nil
+}
+
+// wwwDomain returns the www or bare variant of domain.
+func wwwDomain(domain string) (string, bool) {
+	registrableDomain, err := publicsuffix.EffectiveTLDPlusOne(domain)
+	if err != nil {
+		return "", false
+	}
+
+	if domain == registrableDomain {
+		return "www." + domain, true
+	}
+
+	if domain == "www."+registrableDomain {
+		return registrableDomain, true
+	}
+
+	return "", false
 }
 
 // See [hostWhitelist]
