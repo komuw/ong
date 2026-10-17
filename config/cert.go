@@ -178,7 +178,7 @@ func installCA(l *slog.Logger) (caCert *x509.Certificate, caKey any, err error) 
 		nssDb := filepath.Join(u.HomeDir, ".pki/nssdb")
 
 		createDir := []string{"mkdir", "-p", nssDb}
-		cmd = commandWithSudo(l, createDir...)
+		cmd = exec.Command(createDir[0], createDir[1:]...)
 		out, err = cmd.CombinedOutput()
 		l.Info(string(out), "args", cmd.Args, "error", err)
 		if err != nil {
@@ -186,13 +186,13 @@ func installCA(l *slog.Logger) (caCert *x509.Certificate, caKey any, err error) 
 		}
 
 		delete := []string{"certutil", "-D", "-d", nssDb, "-n", caUniqename}
-		cmd = commandWithSudo(l, delete...)
+		cmd = exec.Command(delete[0], delete[1:]...)
 		out, err = cmd.CombinedOutput()
 		l.Info(string(out), "args", cmd.Args, "error", err)
 		_ = err // ignore error
 
 		add := []string{"certutil", "-A", "-d", nssDb, "-t", "C,,", "-n", caUniqename, "-i", rootCACertPath}
-		cmd = commandWithSudo(l, add...)
+		cmd = exec.Command(add[0], add[1:]...)
 		out, err = cmd.CombinedOutput()
 		l.Info(string(out), "args", cmd.Args)
 		if err != nil {
@@ -212,7 +212,7 @@ func loadCA() (caCert *x509.Certificate, caKey any, err error) {
 		return nil, nil, errors.Wrap(err)
 	}
 
-	if _, errSt := os.Stat(rootCACertPath); errSt != nil {
+	if errV := checkCertValidity(rootCACertPath); errV != nil {
 		if e := newCA(); e != nil {
 			return nil, nil, e
 		}
@@ -343,7 +343,7 @@ func checkCertValidity(path string) error {
 	}
 	certDERBlock, _ := pem.Decode(certPEMBlock)
 	if certDERBlock == nil || certDERBlock.Type != "CERTIFICATE" {
-		return err
+		return errors.New("failed to decode certificate PEM")
 	}
 
 	cert, errX := x509.ParseCertificate(certDERBlock.Bytes)
