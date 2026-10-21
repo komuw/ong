@@ -250,6 +250,10 @@ func listenerConfig() *net.ListenConfig {
 	return &net.ListenConfig{
 		Control: func(network, address string, conn syscall.RawConn) error {
 			return conn.Control(func(descriptor uintptr) {
+				// When a SO_REUSEPORT listener closes, linux resets the connections that are still waiting in that listener's accept queue.
+				// Those clients see a connection reset during the switch.
+				// You can set `net.ipv4.tcp_migrate_req=1`, which moves those connections to the remaining listener instead.
+
 				_ = unix.SetsockoptInt(
 					int(descriptor),
 					unix.SOL_SOCKET,
