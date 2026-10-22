@@ -35,7 +35,6 @@ import (
 //
 // The server shuts down cleanly after receiving any termination signal.
 func Run(h http.Handler, o config.Opts) error {
-	_ = automax.SetCpu()
 	_ = automax.SetMem()
 
 	{ // Add handlers.

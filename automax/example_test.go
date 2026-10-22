@@ -10,10 +10,3 @@ func ExampleSetMem() {
 
 	// Output:
 }
-
-func ExampleSetCpu() {
-	undo := automax.SetCpu()
-	defer undo()
-
-	// Output:
-}

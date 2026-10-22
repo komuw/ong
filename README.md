@@ -137,7 +137,7 @@ func hello() http.HandlerFunc {
 ```
 If you do that, these are the features you would enjoy automatically without doing any extra configuration;
 1. Http server. You get a server that automatically;     
-   - sets GOMEMLIMIT & GOMAXPROCS to match linux container memory & cpu quotas.  
+   - sets GOMEMLIMIT to match linux cgroup memory limits(containers, systemd, etc). The Go runtime sets GOMAXPROCS.  
    - fetches and auto renews TLS certificates from [letsencrypt](https://letsencrypt.org/) or any other compatible ACME authority.
    - serves pprof endpoints that are secured by basic authentication. The `secretKey` is used as the username and password.
    - handles automatic http->https redirection.
