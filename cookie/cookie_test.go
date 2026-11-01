@@ -150,6 +150,39 @@ func TestCookies(t *testing.T) {
 		attest.Ok(t, err)
 		attest.Equal(t, val.Value, value)
 		attest.Equal(t, val.Name, cookie.Name)
+		attest.True(t, val.Expires.After(now))
+		attest.True(t, val.Expires.Before(now.Add(mAge+time.Second)))
+	})
+
+	t.Run("encrypted session cookie", func(t *testing.T) {
+		t.Parallel()
+
+		name := "logId"
+		value := "hello world are you okay"
+		mAge := time.Duration(0)
+		secretKey := tst.SecretKey()
+		handler := setEncryptedHandler(name, value, mAge, secretKey)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, res.StatusCode, http.StatusOK)
+		attest.Equal(t, len(res.Cookies()), 1)
+
+		cookie := res.Cookies()[0]
+		attest.Equal(t, cookie.MaxAge, 0)
+		attest.Equal(t, cookie.Expires, time.Time{})
+
+		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
+		val, err := GetEncrypted(req, cookie.Name, secretKey)
+
+		attest.Ok(t, err)
+		attest.Equal(t, val.Value, value)
+		attest.Equal(t, val.Expires, time.Time{})
 	})
 
 	t.Run("encrypted expired", func(t *testing.T) {
@@ -175,6 +208,32 @@ func TestCookies(t *testing.T) {
 		cookie := res.Cookies()[0]
 
 		attest.Equal(t, cookie.HttpOnly, true)
+
+		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
+		val, err := GetEncrypted(req, cookie.Name, secretKey)
+
+		attest.Zero(t, val)
+		attest.Error(t, err)
+	})
+
+	t.Run("encrypted expired at unix epoch", func(t *testing.T) {
+		t.Parallel()
+
+		name := "logId"
+		value := "hello world are you okay"
+		mAge := -time.Duration(time.Now().Unix()) * time.Second
+		secretKey := tst.SecretKey()
+		handler := setEncryptedHandler(name, value, mAge, secretKey)
+
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/someUri", nil)
+		handler.ServeHTTP(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		attest.Equal(t, len(res.Cookies()), 1)
+		cookie := res.Cookies()[0]
 
 		req.AddCookie(&http.Cookie{Name: cookie.Name, Value: cookie.Value})
 		val, err := GetEncrypted(req, cookie.Name, secretKey)

@@ -155,10 +155,13 @@ func SetEncrypted(
 	})
 
 	antiReplay := getAntiReplay(r)
-	expires := strconv.FormatInt(
-		time.Now().UTC().Add(mAge).Unix(),
-		10,
-	)
+	expires := "0" // A value of 0 is reserved for session cookies.
+	if mAge != 0 {
+		expires = strconv.FormatInt(
+			max(time.Now().UTC().Add(mAge).Unix(), 1),
+			10,
+		)
+	}
 	combined := antiReplay + expires + value
 
 	encryptedEncodedVal := fmt.Sprintf(
@@ -180,6 +183,7 @@ func SetEncrypted(
 }
 
 // GetEncrypted authenticates, un-encrypts and returns a copy of the named cookie with the value decrypted.
+// The Expires field of the returned cookie is set from the authenticated value. It is zero for session cookies.
 func GetEncrypted(
 	r *http.Request,
 	name string,
@@ -241,11 +245,13 @@ func GetEncrypted(
 		// You cannot trust anything about the incoming cookie except its value.
 		// This is because, it is the only thing that was encrypted/authenticated.
 		// So we cannot use `c.MaxAge` here, since a client could have modified that.
-		expiresAt := time.Unix(expires, 0).UTC()
-		if !time.Now().UTC().Before(expiresAt) {
-			return nil, errors.New("ong/cookie: cookie is expired")
+		if expires != 0 {
+			expiresAt := time.Unix(expires, 0).UTC()
+			if !time.Now().UTC().Before(expiresAt) {
+				return nil, errors.New("ong/cookie: cookie is expired")
+			}
+			c.Expires = expiresAt
 		}
-		c.Expires = expiresAt
 	}
 
 	c.Value = val
