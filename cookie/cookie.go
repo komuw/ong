@@ -106,6 +106,7 @@ func Get(r *http.Request, name string) (*http.Cookie, error) {
 	c2 := &http.Cookie{
 		Name:     c.Name,
 		Value:    c.Value,
+		Quoted:   c.Quoted,
 		Path:     c.Path,
 		Domain:   c.Domain,
 		Expires:  c.Expires,
@@ -240,10 +241,11 @@ func GetEncrypted(
 		// You cannot trust anything about the incoming cookie except its value.
 		// This is because, it is the only thing that was encrypted/authenticated.
 		// So we cannot use `c.MaxAge` here, since a client could have modified that.
-		diff := expires - time.Now().UTC().Unix()
-		if diff <= 0 {
+		expiresAt := time.Unix(expires, 0).UTC()
+		if !time.Now().UTC().Before(expiresAt) {
 			return nil, errors.New("ong/cookie: cookie is expired")
 		}
+		c.Expires = expiresAt
 	}
 
 	c.Value = val
